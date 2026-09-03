@@ -29,7 +29,7 @@ const patterns = config.patterns.map((pattern) => ({
 const roots = ['apps', 'packages'];
 if (existsSync(join(repoRoot, 'apps', 'web', 'dist'))) roots.push(join('apps', 'web', 'dist'));
 
-const SKIP_DIRS = new Set(['node_modules', '.git', '.vite', '.npm-cache', '__pycache__', '.pytest_cache']);
+const SKIP_DIRS = new Set(['node_modules', '.git', '.vite', '.npm-cache', '__pycache__', '.pytest_cache', 'coverage', 'test-results', 'playwright-report']);
 const MAX_BYTES = 12 * 1024 * 1024;
 
 function* walk(dir) {

@@ -17,7 +17,7 @@ function renderHarness(fixtureId: string | null, mode: 'light' | 'dark' | 'force
   document.body.append(rootElement);
   const root = createRoot(rootElement);
   act(() => {
-    root.render(<HarnessPage fixtureId={fixtureId} mode={mode} policy="collapsed" />);
+    root.render(<HarnessPage fixtureId={fixtureId} mode={mode} />);
   });
   const unmount = () => {
     act(() => root.unmount());
@@ -56,9 +56,11 @@ describe('visual harness', () => {
     long.unmount();
   });
 
-  it('marks the dark mode wrapper for the token system', () => {
+  it('marks the night wrapper with the legacy color scheme', () => {
     const { rootElement, unmount } = renderHarness('active-across', 'dark');
-    expect(rootElement.querySelector('.harness-root')?.classList.contains('theme-dark')).toBe(true);
+    expect(rootElement.querySelector('.harness-root')?.classList.contains('harness-night')).toBe(true);
+    const wrapper = rootElement.querySelector<HTMLElement>('.harness-root');
+    expect(wrapper?.style.colorScheme).toBe('dark');
     unmount();
   });
 });

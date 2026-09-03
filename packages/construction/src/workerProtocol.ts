@@ -35,7 +35,12 @@ function isFillRequest(value: unknown): value is FillRequest {
   if (value.seed !== undefined && !Number.isInteger(value.seed)) return false;
   if (value.maxNodes !== undefined && (typeof value.maxNodes !== 'number' || !Number.isInteger(value.maxNodes) || value.maxNodes < 1)) return false;
   if (value.qualityThreshold !== undefined && !isFiniteNumber(value.qualityThreshold)) return false;
-  return value.excludedWords === undefined || (Array.isArray(value.excludedWords) && value.excludedWords.every((word) => typeof word === 'string'));
+  if (value.excludedWords !== undefined && !(Array.isArray(value.excludedWords) && value.excludedWords.every((word) => typeof word === 'string'))) return false;
+  if (value.lockedWords !== undefined) {
+    if (!isRecord(value.lockedWords)) return false;
+    if (!Object.values(value.lockedWords).every((word) => typeof word === 'string' && word.length > 0)) return false;
+  }
+  return true;
 }
 
 export type ConstructorWorkerRequest = Readonly<

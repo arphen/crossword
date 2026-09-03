@@ -1,0 +1,15 @@
+{
+  "id": "freq-prior-v1",
+  "schemaVersion": 1,
+  "derivedFrom": "Household-local NYT answer corpus (14,576 published grids), frequency of answer strings across puzzles",
+  "transformation": [
+    "count answer strings across all puzzles",
+    "keep /^[A-Z]+$/ with length >= 3",
+    "keep the top 6000 by frequency",
+    "emit \"WORD COUNT\" lines, descending count"
+  ],
+  "entryCount": 6000,
+  "sha256": "00be7a40e579647c7749f7926ca665a76e7f0322351804139bf7a1c20ba237d8",
+  "emittedAt": "2026-09-03T07:36:13.964Z",
+  "status": "laboratory — frequency prior only; never a clue/answer source. Private household use; excluded from public artifacts."
+}

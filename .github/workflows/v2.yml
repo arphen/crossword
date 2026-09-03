@@ -1,0 +1,45 @@
+name: v2 app CI
+
+on:
+  push:
+    branches: [v2]
+  pull_request:
+    branches: [v2]
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.browsers
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Domain unit tests
+        run: npm --workspace @crossword/domain run test
+      - name: Web unit tests
+        run: npm run web:test
+      - name: Production build
+        run: npm run web:build
+      - name: Forbidden-content scan
+        run: npm run scan:content
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: .browsers
+          key: playwright-chromium-${{ hashFiles('package-lock.json') }}
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+      - name: Browser journeys, paint guards, visual baselines
+        run: npm run e2e
+      - name: Upload e2e artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: apps/web/test-results/
+          retention-days: 7

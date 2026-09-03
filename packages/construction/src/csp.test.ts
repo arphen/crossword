@@ -161,8 +161,8 @@ describe('deterministic fill CSP', () => {
       candidates: [candidate('CAT', 4)]
     } satisfies FillRequest;
 
-    expect(solveFill({ ...request, qualityThreshold: 4 }).status).toBe('solved');
-    const belowThreshold = solveFill({ ...request, qualityThreshold: 5 });
+    expect(solveFill({ ...request, minimumAssignmentScore: 4 }).status).toBe('solved');
+    const belowThreshold = solveFill({ ...request, minimumAssignmentScore: 5 });
     expect(belowThreshold.status).toBe('failed');
     expect(belowThreshold.failure?.code).toBe('unsatisfiable');
   });

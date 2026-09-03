@@ -1,36 +1,75 @@
 {
   "patterns": [
-    { "id": "nyt-host", "regex": "nytimes\\.com", "flags": "i" },
-    { "id": "nyt-syndication", "regex": "nytsyn|syndication[/._-]|/syndication", "flags": "i" },
-    { "id": "xwordinfo", "regex": "xwordinfo", "flags": "i" },
-    { "id": "local-inference-server", "regex": "ollama", "flags": "i" },
-    { "id": "loopback-inference-port", "regex": "127\\.0\\.0\\.1:11434" },
-    { "id": "legacy-provider-route", "regex": "random_crossword", "flags": "i" }
+    {
+      "id": "nyt-host",
+      "regex": "nytimes\\.com",
+      "flags": "i"
+    },
+    {
+      "id": "nyt-syndication",
+      "regex": "nytsyn|syndication[/._-]|/syndication",
+      "flags": "i"
+    },
+    {
+      "id": "xwordinfo",
+      "regex": "xwordinfo",
+      "flags": "i"
+    },
+    {
+      "id": "local-inference-server",
+      "regex": "ollama",
+      "flags": "i"
+    },
+    {
+      "id": "loopback-inference-port",
+      "regex": "127\\.0\\.0\\.1:11434"
+    },
+    {
+      "id": "legacy-provider-route",
+      "regex": "random_crossword",
+      "flags": "i"
+    }
   ],
   "exemptions": [
     {
       "path": "apps/web/src/nytApi.ts",
-      "patterns": ["legacy-provider-route"],
+      "patterns": [
+        "legacy-provider-route"
+      ],
       "reason": "Continuity bridge loading for the household during migration; the deployable artifact must lose this file at Phase 4 (M4.1 allowlist).",
       "until": "M4.1 release allowlist"
     },
     {
       "path": "apps/web/src/nytApi.test.ts",
-      "patterns": ["legacy-provider-route"],
+      "patterns": [
+        "legacy-provider-route"
+      ],
       "reason": "Tests for the continuity loader; removed together with nytApi.ts.",
       "until": "M4.1 release allowlist"
     },
     {
       "path": "apps/web/vite.config.ts",
-      "patterns": ["legacy-provider-route"],
+      "patterns": [
+        "legacy-provider-route"
+      ],
       "reason": "Dev-server proxy to the local Flask bridge; continuity-only, never in a release artifact.",
       "until": "M4.1 release allowlist"
     },
     {
       "path": "apps/web/dist",
-      "patterns": ["legacy-provider-route"],
+      "patterns": [
+        "legacy-provider-route"
+      ],
       "reason": "Local development bundle still contains the continuity loader; release candidates are built from the M4.1 allowlist and re-scanned without this exemption.",
       "until": "M4.1 release allowlist"
+    },
+    {
+      "path": "apps/web/e2e",
+      "patterns": [
+        "legacy-provider-route"
+      ],
+      "reason": "Negative network assertions reference the banned route literal to prove it is never called; exempted as test-only.",
+      "until": "M4.1 release allowlist (e2e specs are not part of the deployable artifact)"
     }
   ]
 }

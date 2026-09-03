@@ -1,0 +1,2150 @@
+/* static/styles.css */
+:root {
+    --cell-size: 2.5rem;
+    /* Reduced from 3.5rem for smaller grid */
+    --border-width: 1px;
+    --cell-border: color-mix(in srgb, currentColor 20%, transparent);
+    --cell-bg: color-mix(in srgb, Canvas 95%, currentColor);
+    --cell-focus-bg: color-mix(in srgb, Canvas 85%, currentColor);
+    --cell-text: currentColor;
+    --font-system: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+        Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --correct-color: #2e7d32;
+    --incorrect-color: #cc0000;
+    --correct-bg: rgba(46, 125, 50, 0.3);
+    --incorrect-bg: rgba(255, 200, 200, 0.7);
+    --orange-primary: #ff9800;
+    --orange-secondary: #ff6d00;
+    --blue-primary: #2196f3;
+    --blue-secondary: #0d47a1;
+    --black-cell-bg: #333333;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --black-cell-bg: black;
+    }
+}
+
+:root[style*="color-scheme: dark"] {
+    --black-cell-bg: black;
+}
+
+:root[style*="color-scheme: light"] {
+    --black-cell-bg: #333333;
+}
+
+html {
+    scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none;
+}
+
+/* Smooth entrance animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Reset body margins and set full viewport coverage */
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    min-width: 100vw;
+    overflow-x: hidden;
+    /* Prevent horizontal scrolling */
+    font-family: var(--font-system);
+}
+
+#app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+}
+
+#notmenu {
+    display: flex;
+    gap: 0;
+    padding: 0;
+    margin: 0;
+    min-height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    align-items: flex-start;
+    /* Align everything to top */
+}
+
+.center-column {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    justify-content: flex-start;
+    /* Start from top instead of center */
+    background-color: var(--cell-bg);
+    margin: 0;
+    padding: 1rem 0;
+    min-height: 100vh;
+    /* Ensure it takes full height */
+}
+
+.menu-section {
+    width: min(600px, 95vw);
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04));
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Bar 1: Info Bar - Centered, single line, compact */
+.info-bar {
+    justify-content: center;
+    text-align: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--cell-border);
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.info-bar>* {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+}
+
+.info-bar .puzzle-date {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.info-bar .puzzle-weekday {
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0.85;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.info-bar .puzzle-authors {
+    font-size: 0.7rem;
+    font-style: italic;
+    opacity: 0.75;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+    line-height: 1;
+    position: relative;
+    cursor: help;
+}
+
+.info-bar .puzzle-authors:hover::after {
+    content: attr(data-full-text);
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    margin-top: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    background: linear-gradient(145deg, rgba(40, 40, 40, 0.98), rgba(20, 20, 20, 0.98));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    color: white;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+.info-bar .puzzle-separator {
+    opacity: 0.5;
+    font-size: 0.7rem;
+    line-height: 1;
+}
+
+.info-bar .puzzle-notepad {
+    font-size: 0.65rem;
+    font-style: italic;
+    opacity: 0.8;
+    color: var(--cell-text);
+    padding: 0.4rem 0.6rem;
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(33, 150, 243, 0.1));
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+    width: 100%;
+    flex-basis: 100%;
+    line-height: 1.3;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    margin-top: 0.35rem;
+}
+
+/* Bar 2: Indicator Bar - Stats with gradient split */
+.indicator-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 0.4rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--cell-border);
+    position: relative;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    flex: 1;
+    padding: 0.35rem 0.5rem;
+    border-radius: 8px;
+    position: relative;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+}
+
+.stat-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    opacity: 0.75;
+    line-height: 1;
+}
+
+.stat-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+/* Blue stats (left side) */
+.blue-stat {
+    background: linear-gradient(145deg, rgba(33, 150, 243, 0.25), rgba(13, 71, 161, 0.15));
+    border: 1px solid rgba(33, 150, 243, 0.4);
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
+}
+
+.blue-stat .stat-label {
+    color: rgba(121, 183, 255, 0.9);
+}
+
+.blue-stat .stat-value {
+    color: rgba(121, 183, 255, 1);
+}
+
+.blue-stat:hover {
+    background: linear-gradient(145deg, rgba(33, 150, 243, 0.35), rgba(13, 71, 161, 0.2));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.25);
+}
+
+/* Orange stats (right side) */
+.orange-stat {
+    background: linear-gradient(145deg, rgba(255, 152, 0, 0.25), rgba(255, 109, 0, 0.15));
+    border: 1px solid rgba(255, 152, 0, 0.4);
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.15);
+}
+
+.orange-stat .stat-label {
+    color: rgba(255, 183, 77, 0.9);
+}
+
+.orange-stat .stat-value {
+    color: rgba(255, 183, 77, 1);
+}
+
+.orange-stat:hover {
+    background: linear-gradient(145deg, rgba(255, 152, 0, 0.35), rgba(255, 109, 0, 0.2));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.25);
+}
+
+/* Bar 3: Action Bar - Buttons with split theme */
+.action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.4rem;
+    padding-top: 0.5rem;
+}
+
+.action-button {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    flex: 1;
+    justify-content: center;
+    text-decoration: none;
+    color: white;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.action-button svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* Blue action buttons (left side) */
+.blue-action {
+    background: linear-gradient(145deg, rgba(33, 150, 243, 0.3), rgba(13, 71, 161, 0.2));
+    border-color: rgba(121, 183, 255, 0.4);
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+    color: rgba(200, 230, 255, 1);
+}
+
+.blue-action:hover {
+    background: linear-gradient(145deg, rgba(33, 150, 243, 0.45), rgba(13, 71, 161, 0.3));
+    border-color: rgba(121, 183, 255, 0.6);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.35);
+}
+
+.blue-action:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(33, 150, 243, 0.3);
+}
+
+/* Center action button (neutral) */
+.center-action {
+    background: linear-gradient(145deg, rgba(140, 140, 140, 0.25), rgba(100, 100, 100, 0.15));
+    border-color: rgba(180, 180, 180, 0.4);
+    box-shadow: 0 2px 8px rgba(100, 100, 100, 0.2);
+    color: rgba(220, 220, 220, 1);
+}
+
+.center-action:hover {
+    background: linear-gradient(145deg, rgba(160, 160, 160, 0.35), rgba(120, 120, 120, 0.25));
+    border-color: rgba(200, 200, 200, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(120, 120, 120, 0.3);
+}
+
+.center-action:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(100, 100, 100, 0.25);
+}
+
+/* Orange action buttons (right side) */
+.orange-action {
+    background: linear-gradient(145deg, rgba(255, 152, 0, 0.3), rgba(255, 109, 0, 0.2));
+    border-color: rgba(255, 183, 77, 0.4);
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.2);
+    color: rgba(255, 230, 200, 1);
+}
+
+.orange-action:hover {
+    background: linear-gradient(145deg, rgba(255, 152, 0, 0.45), rgba(255, 109, 0, 0.3));
+    border-color: rgba(255, 183, 77, 0.6);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.35);
+}
+
+.orange-action:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(255, 152, 0, 0.3);
+}
+
+
+#crossword-container {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+}
+
+/* Remove old #menu styles - replaced by .menu-section */
+.menu-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    align-items: center;
+    width: 100%;
+}
+
+.menu-row.selection-row {
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+/* Remove unused styles - replaced by new bar system */
+
+/* Remove specific animation delays - not needed anymore */
+
+.menu-spacer {
+    flex: 1 1 auto;
+}
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1 1 170px;
+}
+
+.field-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.field-hint {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+}
+
+.select-wrapper {
+    position: relative;
+    display: flex;
+}
+
+.select-wrapper::after {
+    content: '\25BE';
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.9rem;
+}
+
+.select-wrapper select {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+    color: var(--cell-text);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(16px);
+}
+
+.select-wrapper select:hover {
+    border-color: rgba(255, 255, 255, 0.5);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08));
+}
+
+.select-wrapper select:focus {
+    outline: none;
+    border-color: #79b7ff;
+    box-shadow: 0 0 0 2px rgba(121, 183, 255, 0.2);
+}
+
+#get-puzzle-button {
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #79b7ff 0%, #9a7bff 100%);
+    border: none;
+    border-radius: 12px;
+    color: #151515;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(121, 183, 255, 0.25);
+}
+
+#get-puzzle-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+.date-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#date-input {
+    font-size: 0.9rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+    color: var(--cell-text);
+    font-family: var(--font-system);
+    width: 120px;
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(16px);
+}
+
+#date-input:focus {
+    outline: none;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
+    border-color: #79b7ff;
+    box-shadow: 0 0 0 3px rgba(121, 183, 255, 0.25);
+}
+
+#date-input::placeholder {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.menu-section button,
+#menu-top button,
+#menu-bottom button {
+    font-size: 0.8rem;
+    padding: 0.55rem 1.1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--cell-text);
+    cursor: pointer;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.menu-section button::after,
+#menu-top button::after,
+#menu-bottom button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    transform: translate(-50%, -50%);
+    transition: width 0.5s, height 0.5s;
+}
+
+.menu-section button:hover::after,
+#menu-top button:hover::after,
+#menu-bottom button:hover::after {
+    width: 280px;
+    height: 280px;
+}
+
+.menu-section button:hover,
+#menu-top button:hover,
+#menu-bottom button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.45);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+.menu-section button:active,
+#menu-top button:active,
+#menu-bottom button:active {
+    transform: translateY(0);
+}
+
+#load-date-button,
+#check-all,
+#overview-button,
+#complete-button {
+    border: none;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: none;
+}
+
+#load-date-button {
+    background: linear-gradient(135deg, #79b7ff 0%, #9a7bff 100%);
+}
+
+#check-all {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+#overview-button {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+#complete-button {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* Icon buttons for check and complete - DEPRECATED, using action-button class now */
+/* Keeping for backwards compatibility if needed elsewhere */
+.icon-button {
+    padding: 0.6rem !important;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+}
+
+.icon-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+
+.advanced-controls {
+    display: none;
+}
+
+
+.grid {
+    display: grid;
+    width: fit-content;
+    border: none;
+    padding-right: 1px;
+    padding-bottom: 1px;
+}
+
+.grid-row {
+    display: grid;
+}
+
+.grid-cell {
+    position: relative;
+    width: var(--cell-size);
+    height: var(--cell-size);
+    border: var(--border-width) solid var(--cell-border);
+    margin-right: -1px;
+    margin-bottom: -1px;
+    background-color: var(--cell-bg);
+}
+
+.grid-cell:last-child {
+    border-right: var(--border-width) solid var(--cell-border);
+}
+
+.grid-row:last-child .grid-cell {
+    border-bottom: var(--border-width) solid var(--cell-border);
+}
+
+.grid-cell input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: none;
+    text-align: center;
+    font-size: 1.2rem;
+    /* Reduced from 1.5rem for smaller cells */
+    font-weight: 500;
+    color: var(--cell-text);
+    text-transform: uppercase;
+    padding: 0;
+}
+
+.grid-cell input:focus {
+    outline: none;
+    background-color: var(--cell-focus-bg);
+}
+
+.black-cell {
+    background-color: var(--black-cell-bg);
+}
+
+.clue-index {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    font-size: 0.6rem;
+    /* Reduced from 0.75rem for smaller cells */
+    color: var(--cell-text);
+    opacity: 0.7;
+}
+
+/* Hint container styles */
+#hint-container {
+    flex: 1;
+    display: flex;
+    gap: 2rem;
+    height: 100%;
+}
+
+#across,
+#down {
+    flex: 1;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    overflow-y: visible;
+}
+
+.state {
+    font-family: var(--font-system);
+    width: 1rem;
+    height: 1rem;
+    border: var(--border-width) solid var(--cell-border);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    text-align: center;
+    line-height: 1;
+    padding: 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: white;
+    background-color: rgba(100, 100, 100, 0.75);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* Style for the clue list items - Card layout with clue on top, cells below */
+#across li,
+#down li {
+    display: flex;
+    gap: 0.2rem;
+    margin-bottom: 0.3rem;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    padding: 0.3rem 0.35rem;
+    border-radius: 3px;
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--cell-border);
+    transition: all 0.2s ease;
+    flex: 1 1 calc(50% - 0.4rem);
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* Both across and down items: horizontal layout with number in center spine */
+#across li,
+#down li {
+    flex-direction: row;
+    align-items: center;
+}
+
+.half-completed #across li,
+.half-completed #down li {
+    font-size: 1.1rem;
+}
+
+/* Both across and down clue content wrapper - takes up remaining space */
+#across li .clue-content,
+#down li .clue-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Left column (odd items) - content on left, number on right */
+#across li:nth-child(odd),
+#down li:nth-child(odd) {
+    flex-direction: row;
+}
+
+#across li:nth-child(odd) .clue-content,
+#down li:nth-child(odd) .clue-content {
+    order: 1;
+    align-items: flex-end;
+    text-align: right;
+}
+
+#across li:nth-child(odd) .clue-number,
+#down li:nth-child(odd) .clue-number {
+    order: 2;
+    margin-left: 0.5rem;
+}
+
+/* Right column (even items) - number on left, content on right */
+#across li:nth-child(even),
+#down li:nth-child(even) {
+    flex-direction: row;
+}
+
+#across li:nth-child(even) .clue-content,
+#down li:nth-child(even) .clue-content {
+    order: 2;
+    align-items: flex-start;
+    text-align: left;
+}
+
+#across li:nth-child(even) .clue-number,
+#down li:nth-child(even) .clue-number {
+    order: 1;
+    margin-right: 0.5rem;
+}
+
+/* Style for the clue text */
+.clue-text {
+    font-weight: 400;
+    cursor: pointer;
+    user-select: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Style for clue numbers - make them stand out */
+.clue-number {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: var(--cell-text);
+    opacity: 0.9;
+    flex-shrink: 0;
+    align-self: center;
+    line-height: 1;
+    padding: 0.2rem 0;
+}
+
+/* Add hover effect for clues */
+#across li:hover {
+    background-color: rgba(255, 152, 0, 0.15);
+    border-color: rgba(255, 152, 0, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(255, 152, 0, 0.15);
+}
+
+#down li:hover {
+    background-color: rgba(33, 150, 243, 0.15);
+    border-color: rgba(33, 150, 243, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(33, 150, 243, 0.15);
+}
+
+/* Style for clue headers */
+#hint-container h2,
+.clue-column h2 {
+    display: none;
+}
+
+/* Wrap each list in a container */
+.clue-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    margin: 0;
+    padding: 1rem 0.75rem;
+    /* Even tighter padding */
+    overflow-y: auto;
+    position: relative;
+    isolation: isolate;
+    scrollbar-width: none;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.clue-column::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbars for across and down lists */
+#across,
+#down {
+    scrollbar-width: none;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    align-content: flex-start;
+    width: 100%;
+}
+
+#across::-webkit-scrollbar,
+#down::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari, Opera */
+}
+
+/* Container for the state boxes */
+.state-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.1rem;
+    justify-content: flex-start;
+}
+
+/* Add styles for check states */
+.state.red {
+    color: #cc0000;
+    border-color: #ff4444;
+    background-color: rgba(255, 200, 200, 0.7);
+}
+
+.state.green {
+    color: #006600;
+    border-color: #00cc00;
+    background-color: rgba(200, 255, 200, 0.7);
+}
+
+/* Highlight cells in affected clues that intersect with active clue */
+/* When across is active, intersection cells in down clues are orange */
+.state.intersection-cell-across {
+    background-color: rgba(255, 152, 0, 0.45) !important;
+    border-color: rgba(255, 152, 0, 0.8) !important;
+    box-shadow: 0 0 4px rgba(255, 152, 0, 0.4);
+    font-weight: 700;
+}
+
+/* When down is active, intersection cells in across clues are blue */
+.state.intersection-cell-down {
+    background-color: rgba(33, 150, 243, 0.45) !important;
+    border-color: rgba(33, 150, 243, 0.8) !important;
+    box-shadow: 0 0 4px rgba(33, 150, 243, 0.4);
+    font-weight: 700;
+}
+
+/* Legacy fallback - orange */
+.state.intersection-cell {
+    background-color: rgba(255, 152, 0, 0.45) !important;
+    border-color: rgba(255, 152, 0, 0.8) !important;
+    box-shadow: 0 0 4px rgba(255, 152, 0, 0.4);
+    font-weight: 700;
+}
+
+/* Revise background labels */
+.clue-column::before {
+    content: attr(data-label);
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(8rem, 18vw, 15rem);
+    /* Larger for better visual impact */
+    font-weight: 900;
+    opacity: 0.06;
+    /* More subtle */
+    color: currentColor;
+    pointer-events: none;
+    white-space: nowrap;
+    letter-spacing: 0.2em;
+    font-family: var(--font-system);
+    z-index: 0;
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    text-shadow: 0 0 20px transparent;
+}
+
+/* Active state animations for background text - Orange (Across) */
+@keyframes glowPulseOrange {
+
+    0%,
+    100% {
+        opacity: 0.25;
+        text-shadow:
+            0 0 20px rgba(255, 152, 0, 0.6),
+            0 0 40px rgba(255, 152, 0, 0.4),
+            0 0 60px rgba(255, 152, 0, 0.2),
+            0 0 80px rgba(255, 152, 0, 0.1);
+    }
+
+    50% {
+        opacity: 0.35;
+        text-shadow:
+            0 0 30px rgba(255, 152, 0, 0.8),
+            0 0 50px rgba(255, 152, 0, 0.6),
+            0 0 70px rgba(255, 152, 0, 0.4),
+            0 0 90px rgba(255, 152, 0, 0.2);
+    }
+}
+
+@keyframes glowFadeInOrange {
+    0% {
+        opacity: 0.06;
+        text-shadow: 0 0 20px transparent;
+    }
+
+    100% {
+        opacity: 0.3;
+        text-shadow:
+            0 0 25px rgba(255, 152, 0, 0.7),
+            0 0 45px rgba(255, 152, 0, 0.5),
+            0 0 65px rgba(255, 152, 0, 0.3),
+            0 0 85px rgba(255, 152, 0, 0.15);
+    }
+}
+
+@keyframes glowFadeOutOrange {
+    0% {
+        opacity: 0.3;
+        text-shadow:
+            0 0 25px rgba(255, 152, 0, 0.7),
+            0 0 45px rgba(255, 152, 0, 0.5),
+            0 0 65px rgba(255, 152, 0, 0.3),
+            0 0 85px rgba(255, 152, 0, 0.15);
+    }
+
+    100% {
+        opacity: 0.06;
+        text-shadow: 0 0 20px transparent;
+    }
+}
+
+/* Active state animations for background text - Blue (Down) */
+@keyframes glowPulseBlue {
+
+    0%,
+    100% {
+        opacity: 0.25;
+        text-shadow:
+            0 0 20px rgba(33, 150, 243, 0.6),
+            0 0 40px rgba(33, 150, 243, 0.4),
+            0 0 60px rgba(33, 150, 243, 0.2),
+            0 0 80px rgba(33, 150, 243, 0.1);
+    }
+
+    50% {
+        opacity: 0.35;
+        text-shadow:
+            0 0 30px rgba(33, 150, 243, 0.8),
+            0 0 50px rgba(33, 150, 243, 0.6),
+            0 0 70px rgba(33, 150, 243, 0.4),
+            0 0 90px rgba(33, 150, 243, 0.2);
+    }
+}
+
+@keyframes glowFadeInBlue {
+    0% {
+        opacity: 0.06;
+        text-shadow: 0 0 20px transparent;
+    }
+
+    100% {
+        opacity: 0.3;
+        text-shadow:
+            0 0 25px rgba(33, 150, 243, 0.7),
+            0 0 45px rgba(33, 150, 243, 0.5),
+            0 0 65px rgba(33, 150, 243, 0.3),
+            0 0 85px rgba(33, 150, 243, 0.15);
+    }
+}
+
+@keyframes glowFadeOutBlue {
+    0% {
+        opacity: 0.3;
+        text-shadow:
+            0 0 25px rgba(33, 150, 243, 0.7),
+            0 0 45px rgba(33, 150, 243, 0.5),
+            0 0 65px rgba(33, 150, 243, 0.3),
+            0 0 85px rgba(33, 150, 243, 0.15);
+    }
+
+    100% {
+        opacity: 0.06;
+        text-shadow: 0 0 20px transparent;
+    }
+}
+
+/* Active across mode - Orange */
+.clue-column[data-label="ACROSS"].active::before {
+    opacity: 0.45;
+    color: rgba(255, 152, 0, 0.75);
+    text-shadow:
+        0 0 20px rgba(255, 152, 0, 0.4),
+        0 0 35px rgba(255, 152, 0, 0.25);
+}
+
+/* Active down mode - Blue */
+.clue-column[data-label="DOWN"].active::before {
+    opacity: 0.45;
+    color: rgba(33, 150, 243, 0.75);
+    text-shadow:
+        0 0 20px rgba(33, 150, 243, 0.4),
+        0 0 35px rgba(33, 150, 243, 0.25);
+}
+
+/* Inactive state - glassy gray, no color */
+.clue-column[data-label="ACROSS"].inactive::before,
+.clue-column[data-label="DOWN"].inactive::before {
+    opacity: 0.20;
+    color: rgba(255, 255, 255, 0.50);
+    text-shadow: 0 0 18px rgba(255, 255, 255, 0.15);
+    transition: opacity 0.4s ease, color 0.4s ease, text-shadow 0.4s ease;
+}
+
+/* Ensure content stays above the background */
+#across,
+#down {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+}
+
+/* Theme switch styles */
+.theme-switch {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.theme-switch:hover {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: relative;
+    display: inline-block;
+    width: 2.6rem;
+    height: 1.4rem;
+    background-color: var(--cell-border);
+    border-radius: 1.4rem;
+    transition: 0.4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 1rem;
+    width: 1rem;
+    left: 0.2rem;
+    bottom: 0.2rem;
+    background-color: var(--cell-bg);
+    border-radius: 50%;
+    transition: 0.4s;
+}
+
+input:checked+.slider {
+    background-color: var(--cell-text);
+}
+
+input:checked+.slider:before {
+    transform: translateX(1.2rem);
+    background-color: var(--cell-bg);
+}
+
+.switch-label {
+    font-size: 0.9rem;
+    user-select: none;
+    color: var(--cell-text);
+}
+
+/* Add these styles for the input cell states */
+.grid-cell input.red {
+    color: var(--incorrect-color);
+    background-color: var(--incorrect-bg);
+    font-weight: 600;
+    border-color: #ff4444;
+}
+
+.grid-cell input.green {
+    background-color: var(--correct-bg);
+    color: var(--correct-color);
+    border-color: var(--correct-color);
+}
+
+/* DEPRECATED: Old score and timer displays - now in indicator bar */
+.score-display,
+.timer-display {
+    display: none;
+    /* Hidden, replaced by stat-item components */
+}
+
+.status-indicators {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+    width: 100%;
+    align-items: stretch;
+}
+
+.offline-indicator {
+    background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
+    color: white;
+    padding: 0.6rem 1rem;
+    border-radius: 9px;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+    display: none;
+    /* Hidden for now */
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+    }
+
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6);
+    }
+}
+
+.status-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    width: 100%;
+}
+
+
+.cache-status {
+    color: #666;
+    font-style: italic;
+}
+
+.weekday-buttons {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    justify-content: center;
+    margin: 0;
+}
+
+.menu-section button,
+#menu-top button,
+#menu-bottom button {
+    position: relative;
+    padding: 8px 16px;
+}
+
+/* New Modal Styles */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    /* Ensure it's on top */
+}
+
+.modal-content {
+    background-color: var(--cell-bg);
+    color: var(--cell-text);
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 80%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--cell-border);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.modal-close-button {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--cell-text);
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.modal-close-button:hover {
+    opacity: 1;
+}
+
+.modal-body {
+    overflow-y: auto;
+    /* Scroll for long lists */
+    flex-grow: 1;
+}
+
+.solved-day-section h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.2rem;
+    color: var(--cell-text);
+    border-bottom: 2px solid var(--cell-border);
+    padding-bottom: 0.5rem;
+}
+
+.solved-puzzles-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.solved-puzzle-item {
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background: var(--cell-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.solved-puzzle-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.puzzle-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.puzzle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.puzzle-title {
+    font-size: 1.1rem;
+    color: var(--cell-text);
+}
+
+.puzzle-date {
+    font-size: 0.85rem;
+    color: var(--cell-text);
+    opacity: 0.7;
+    font-family: monospace;
+}
+
+.puzzle-authors {
+    font-size: 0.9rem;
+    color: var(--cell-text);
+    opacity: 0.8;
+}
+
+.puzzle-stats {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.puzzle-stats .stat {
+    color: var(--cell-text);
+    opacity: 0.9;
+}
+
+.puzzle-stats .stat strong {
+    color: var(--cell-text);
+    opacity: 1;
+}
+
+.modal-body p {
+    font-style: italic;
+    text-align: center;
+    padding: 2rem;
+    color: var(--cell-text);
+    opacity: 0.7;
+}
+
+/* Cache Status Modal */
+.cache-status-section h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    color: var(--cell-text);
+}
+
+.cache-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+}
+
+.cache-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: var(--cell-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 8px;
+}
+
+.cache-day {
+    font-weight: 600;
+    min-width: 100px;
+    color: var(--cell-text);
+}
+
+.cache-progress {
+    flex: 1;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--cell-border);
+}
+
+.cache-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(33, 150, 243, 0.8), rgba(33, 150, 243, 0.5));
+    transition: width 0.3s ease;
+    border-radius: 10px;
+}
+
+.cache-count {
+    font-weight: 600;
+    min-width: 60px;
+    text-align: right;
+    color: var(--cell-text);
+    font-family: monospace;
+}
+
+.cache-actions {
+    display: flex;
+    justify-content: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--cell-border);
+}
+
+.cache-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* New Theme Icon Styles */
+.theme-switch .switch {
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    cursor: pointer;
+}
+
+.theme-icon {
+    width: 2rem;
+    height: 2rem;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+    color: var(--cell-text);
+    opacity: 0.9;
+    transition: transform 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.theme-icon:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.theme-icon .sun-disc {
+    /* Updated class name */
+    fill: currentColor;
+    transition: transform 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+}
+
+.theme-icon .mask-circle {
+    /* New class for the mask's circle */
+    /* Initial position is cx=25 as per SVG. No transform needed for light mode. */
+    transition: transform 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+}
+
+.theme-icon .sun-beams {
+    transform-origin: center center;
+    transition: transform 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6), opacity 0.5s ease;
+    opacity: 1;
+    /* Ensure sun-beams are visible in light mode */
+}
+
+/* Dark Mode Styles (when checkbox is checked) */
+
+.switch input:checked+.theme-icon .mask-circle {
+    /* Sun disc is at cx=12, r=8. Mask circle starts at cx=25, r=8.
+       To make a crescent, move the mask circle from cx=25 to cx=6.
+       This is a change of -19px in X for the transform. */
+    transform: translateX(-19px);
+}
+
+.switch input:checked+.theme-icon .sun-beams {
+    transform: rotate(-90deg);
+    /* Keeps the spinning effect */
+    opacity: 0;
+    /* Fade out sun-beams in dark mode */
+}
+
+.switch input:checked+.theme-icon {
+    transform: rotate(360deg);
+    /* Overall icon rotation for effect */
+}
+
+/* Hide the actual checkbox */
+.switch input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Data Management Buttons */
+.data-management-buttons {
+    display: none;
+}
+
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    :root {
+        --cell-size: 2rem;
+        /* Even smaller on mobile */
+    }
+
+    .clue-column {
+        padding: 1rem;
+    }
+
+    #across li,
+    #down li {
+        font-size: 1.1rem;
+        padding: 0.4rem 0.5rem;
+    }
+
+    .data-management-buttons {
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+
+    .data-management-buttons button {
+        width: 100%;
+        max-width: 200px;
+    }
+
+    .menu-row.selection-row {
+        flex-direction: row;
+        align-items: flex-end;
+    }
+
+    .field-group {
+        flex: 1 1 100%;
+    }
+
+    .menu-row.primary-actions {
+        justify-content: center;
+    }
+
+    .menu-section {
+        width: 95vw;
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* Fireworks Canvas */
+#fireworks-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+    background: transparent;
+}
+
+/* Cell Formatting Styles for v2 */
+
+/* Shaded cells - subtle darker background */
+.grid-cell.shaded {
+    background-color: color-mix(in srgb, currentColor 8%, var(--cell-bg));
+}
+
+.grid-cell.shaded input {
+    background-color: transparent;
+}
+
+/* Circled cells - circle overlay */
+.grid-cell.circled::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    right: 3px;
+    bottom: 3px;
+    border: 2px solid currentColor;
+    opacity: 0.4;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Rebus cells - smaller font for multiple letters */
+.grid-cell.rebus {
+    background-color: color-mix(in srgb, #6b9bd1 15%, var(--cell-bg));
+    border: 2px solid #5a8dc4;
+    position: relative;
+}
+
+.grid-cell.rebus input {
+    font-size: 0.75rem;
+    letter-spacing: -0.08em;
+    font-weight: 600;
+    padding: 0 2px;
+}
+
+.grid-cell.rebus input:focus {
+    background-color: color-mix(in srgb, #6b9bd1 25%, var(--cell-focus-bg));
+}
+
+/* Rebus indicator - show letter count */
+.grid-cell .rebus-indicator {
+    position: absolute;
+    bottom: 1px;
+    right: 2px;
+    font-size: 0.55rem;
+    color: #5a8dc4;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 2;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 1px 3px;
+    border-radius: 2px;
+}
+
+/* Combination: shaded + circled */
+.grid-cell.shaded.circled {
+    background-color: #e8e8e8;
+}
+
+/* Combination: rebus + shaded */
+.grid-cell.rebus.shaded {
+    background-color: color-mix(in srgb, #6b9bd1 15%, #e8e8e8);
+}
+
+.grid-cell.rebus.shaded input {
+    background-color: transparent;
+}
+
+/* Combination: rebus + circled */
+.grid-cell.rebus.circled input {
+    font-size: 0.75rem;
+}
+
+/* Black cells remain unchanged */
+.grid-cell.black {
+    background-color: #000;
+}
+
+/* Dark mode adjustments for rebus cells */
+@media (prefers-color-scheme: dark) {
+    .grid-cell.rebus {
+        background-color: color-mix(in srgb, #7ba5d8 20%, var(--cell-bg));
+        border-color: #7ba5d8;
+    }
+
+    .grid-cell.rebus input:focus {
+        background-color: color-mix(in srgb, #7ba5d8 30%, var(--cell-focus-bg));
+    }
+
+    .grid-cell .rebus-indicator {
+        color: #9bc2ea;
+        background-color: rgba(0, 0, 0, 0.6);
+    }
+
+    .grid-cell.rebus.shaded {
+        background-color: color-mix(in srgb, #7ba5d8 20%, #3a3a3a);
+    }
+}
+
+/* Rebus context menu */
+.rebus-context-menu {
+    position: fixed;
+    background-color: var(--cell-bg);
+    border: 2px solid var(--cell-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    padding: 0.8rem;
+    z-index: 1000;
+    min-width: 200px;
+}
+
+.rebus-context-menu-header {
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: var(--cell-text);
+}
+
+.rebus-context-menu-input {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 2px solid #5a8dc4;
+    border-radius: 4px;
+    background-color: var(--cell-bg);
+    color: var(--cell-text);
+    text-transform: uppercase;
+    font-weight: 600;
+    text-align: center;
+}
+
+.rebus-context-menu-input:focus {
+    outline: none;
+    background-color: var(--cell-focus-bg);
+    border-color: #4a7db4;
+}
+
+.rebus-context-menu-hint {
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 0.3rem;
+    text-align: center;
+}
+
+.rebus-context-menu-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+}
+
+.rebus-context-menu-button {
+    flex: 1;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    border: 2px solid var(--cell-border);
+    background-color: #5a8dc4;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.rebus-context-menu-button:hover {
+    background-color: #4a7db4;
+    transform: translateY(-1px);
+}
+
+.rebus-context-menu-button.cancel {
+    background-color: #999;
+}
+
+.rebus-context-menu-button.cancel:hover {
+    background-color: #777;
+}
+
+/* Highlighting styles for active clues and intersecting cells */
+/* When across is active - orange highlight */
+.grid-cell.highlighted-cell {
+    background-color: rgba(255, 152, 0, 0.25) !important;
+    position: relative;
+    z-index: 10;
+}
+
+.grid-cell.highlighted-cell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid rgba(255, 152, 0, 0.7);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.grid-cell.highlighted-cell input {
+    background-color: transparent;
+    position: relative;
+    z-index: 2;
+}
+
+/* When down is active - blue highlight */
+body[data-active-direction="down"] .grid-cell.highlighted-cell {
+    background-color: rgba(33, 150, 243, 0.25) !important;
+}
+
+body[data-active-direction="down"] .grid-cell.highlighted-cell::before {
+    border-color: rgba(33, 150, 243, 0.7);
+}
+
+/* Highlight clue that is currently selected */
+/* Across clues (highlighted in orange) */
+#across li.highlighted-clue {
+    background-color: rgba(255, 152, 0, 0.35) !important;
+    border-color: rgba(255, 152, 0, 0.8);
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+    transform: translateY(-1px) scale(1.02);
+    font-weight: 600;
+}
+
+/* Make cells in highlighted across clue slightly darker */
+#across li.highlighted-clue .state {
+    opacity: 0.85;
+}
+
+/* Down clues (highlighted in blue) */
+#down li.highlighted-clue {
+    background-color: rgba(33, 150, 243, 0.35) !important;
+    border-color: rgba(33, 150, 243, 0.8);
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+    transform: translateY(-1px) scale(1.02);
+    font-weight: 600;
+}
+
+/* Make cells in highlighted down clue slightly darker */
+#down li.highlighted-clue .state {
+    opacity: 0.85;
+}
+
+/* Highlight affected clues (intersecting with active clue) */
+/* When active clue is in across, affected down clues get blue background */
+#down li.affected-clue {
+    background-color: rgba(33, 150, 243, 0.2) !important;
+    border-color: rgba(33, 150, 243, 0.5);
+    box-shadow: 0 2px 6px rgba(33, 150, 243, 0.2);
+}
+
+/* When active clue is in down, affected across clues get orange background */
+#across li.affected-clue {
+    background-color: rgba(255, 152, 0, 0.2) !important;
+    border-color: rgba(255, 152, 0, 0.5);
+    box-shadow: 0 2px 6px rgba(255, 152, 0, 0.2);
+}
+
+/* Add a subtle animation for highlighting */
+@keyframes highlight-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 2px 12px rgba(255, 152, 0, 0.5);
+    }
+}
+
+.highlighted-clue {
+    /* Removed infinite animation for performance */
+}
+
+/* Light mode overrides for control panel */
+:root[style*="color-scheme: light"] .menu-section {
+    background: linear-gradient(145deg, #ffffff, #f0f0f0);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    color: #333;
+}
+
+:root[style*="color-scheme: light"] .info-bar .puzzle-date,
+:root[style*="color-scheme: light"] .info-bar .puzzle-weekday,
+:root[style*="color-scheme: light"] .info-bar .puzzle-authors,
+:root[style*="color-scheme: light"] .info-bar .puzzle-separator {
+    color: #333;
+}
+
+:root[style*="color-scheme: light"] .info-bar .puzzle-notepad {
+    color: #444;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+:root[style*="color-scheme: light"] .stat-item {
+    background: linear-gradient(145deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.02));
+}
+
+/* Blue stat light mode */
+:root[style*="color-scheme: light"] .blue-stat {
+    background: linear-gradient(145deg, rgba(33, 150, 243, 0.15), rgba(13, 71, 161, 0.05));
+    border-color: rgba(33, 150, 243, 0.3);
+}
+
+:root[style*="color-scheme: light"] .blue-stat .stat-label {
+    color: #1565c0;
+}
+
+:root[style*="color-scheme: light"] .blue-stat .stat-value {
+    color: #0d47a1;
+}
+
+/* Orange stat light mode */
+:root[style*="color-scheme: light"] .orange-stat {
+    background: linear-gradient(145deg, rgba(255, 152, 0, 0.15), rgba(255, 109, 0, 0.05));
+    border-color: rgba(255, 152, 0, 0.3);
+}
+
+:root[style*="color-scheme: light"] .orange-stat .stat-label {
+    color: #e65100;
+}
+
+:root[style*="color-scheme: light"] .orange-stat .stat-value {
+    color: #bf360c;
+}
+
+/* Action buttons light mode */
+:root[style*="color-scheme: light"] .action-button {
+    background: linear-gradient(145deg, #ffffff, #f5f5f5);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #333;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* Blue action light mode */
+:root[style*="color-scheme: light"] .blue-action {
+    background: linear-gradient(145deg, #e3f2fd, #bbdefb);
+    border-color: #90caf9;
+    color: #1565c0;
+}
+
+:root[style*="color-scheme: light"] .blue-action:hover {
+    background: linear-gradient(145deg, #bbdefb, #90caf9);
+}
+
+/* Orange action light mode */
+:root[style*="color-scheme: light"] .orange-action {
+    background: linear-gradient(145deg, #fff3e0, #ffe0b2);
+    border-color: #ffcc80;
+    color: #e65100;
+}
+
+:root[style*="color-scheme: light"] .orange-action:hover {
+    background: linear-gradient(145deg, #ffe0b2, #ffcc80);
+}
+
+/* Center action (Solution) light mode */
+:root[style*="color-scheme: light"] .center-action {
+    background: linear-gradient(145deg, #f5f5f5, #e0e0e0);
+    border-color: #bdbdbd;
+    color: #424242;
+}
+
+:root[style*="color-scheme: light"] .center-action:hover {
+    background: linear-gradient(145deg, #e0e0e0, #d6d6d6);
+    color: #212121;
+}
+
+/* Inputs light mode */
+:root[style*="color-scheme: light"] .select-wrapper select,
+:root[style*="color-scheme: light"] #date-input {
+    background: linear-gradient(145deg, #ffffff, #f5f5f5);
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #333;
+}
+
+:root[style*="color-scheme: light"] .select-wrapper::after {
+    color: #666;
+}
+
+:root[style*="color-scheme: light"] #date-input::placeholder {
+    color: #999;
+}
+
+/* Menu buttons light mode */
+:root[style*="color-scheme: light"] .menu-section button {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #333;
+}
+
+:root[style*="color-scheme: light"] .menu-section button:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+/* ==========================================================================
+   Spine refinement (phase 2): de-boxed rows, same legacy identity.
+   The clue list loses its per-clue card boxes — borders, radii, hover lifts
+   — and reads as clean hairline-separated rows. Highlights become full-bleed
+   washes with a seam-side accent bar. Nothing else moves.
+   ========================================================================== */
+
+#across li,
+#down li {
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 12px 14px;
+  margin: 0;
+  transition: background-color 140ms ease;
+}
+
+#across li:last-child,
+#down li:last-child {
+  border-bottom: none;
+}
+
+#across li:hover,
+#down li:hover {
+  transform: none;
+  box-shadow: none;
+  background-color: rgba(0, 0, 0, 0.035);
+}
+
+.clue-text {
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.state-container {
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.state {
+  border-radius: 3px;
+}
+
+.clue-number {
+  font-size: 1.05rem;
+}
+
+/* highlight/affected keep their tints, drop their boxes; the accent bar
+   sits on the seam side (odd rows: number right; even rows: number left).
+   Selectors match the legacy ID strength (#across/#down) so they win the
+   cascade against the original card rules. */
+#across li.highlighted-clue,
+#down li.highlighted-clue,
+#across li.affected-clue,
+#down li.affected-clue {
+  border: none;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+}
+
+#across li.highlighted-clue:nth-child(odd),
+#across li.affected-clue:nth-child(odd) {
+  box-shadow: inset -3px 0 0 var(--orange-primary);
+}
+
+#across li.highlighted-clue:nth-child(even),
+#across li.affected-clue:nth-child(even) {
+  box-shadow: inset 3px 0 0 var(--orange-primary);
+}
+
+#down li.highlighted-clue:nth-child(odd),
+#down li.affected-clue:nth-child(odd) {
+  box-shadow: inset -3px 0 0 var(--blue-primary);
+}
+
+#down li.highlighted-clue:nth-child(even),
+#down li.affected-clue:nth-child(even) {
+  box-shadow: inset 3px 0 0 var(--blue-primary);
+}
+
+/* watermark: the legacy ::before values (0.06 idle / 0.45 active / 0.20
+   inactive, orange-white colors, glow shadows) are the owner's tuned
+   rendering — no overrides appended. Verified identical to the legacy app
+   by computed-style diff (ADR 0003 exact-look directive).
+
+/* ==========================================================================
+   Compact desktop composition (review P1: 1136px clue-width floor).
+   Between mobile and panorama the grid comes first and each clue column
+   gets a readable full-width lane instead of a squeezed three-column row.
+   ========================================================================== */
+
+@media (min-width: 769px) and (max-width: 1180px) {
+  #notmenu {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .center-column {
+    order: -1;
+    width: 100%;
+    max-width: 660px;
+    margin: 0 auto;
+  }
+
+  .clue-column {
+    width: 100%;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+}
+
+/* Mobile: fluid cells so the 15x15 grid fits narrow viewports instead of
+   clipping (review P1: 390px math). The mirrored two-lane layout below
+   768px is preserved from the legacy stylesheet. */
+@media (max-width: 768px) {
+  :root {
+    --cell-size: min(2rem, calc((100vw - 48px) / 15));
+  }
+}

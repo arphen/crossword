@@ -119,10 +119,25 @@ export const harnessFixtures: readonly HarnessFixture[] = [
     title: 'Circled and shaded cells',
     notes: [
       'Fixture cells 1A and 4D are circled; 3A column 2 is shaded.',
-      'Placeholder: rebus entry has no production input path yet, so the rebus state is documented here rather than faked.'
+      'Rebus entry is supported: right-click a rebus cell (see the rebus fixture) to enter a multi-letter token.'
     ],
     build: () => {
       const puzzle = createFixturePuzzle();
+      const index = indexPuzzle(puzzle);
+      return { puzzle, index, session: createSessionFor(puzzle, index), incorrectCellIds: [] };
+    }
+  },
+  {
+    id: 'rebus',
+    title: 'Rebus cell',
+    notes: [
+      'Cell 1A carries the rebus token AN: right-click (context menu) accepts a multi-letter entry.',
+      'The rebus indicator shows the token length in the cell corner.'
+    ],
+    build: () => {
+      const puzzle = JSON.parse(JSON.stringify(createFixturePuzzle())) as import('@crossword/domain').PuzzleDocument;
+      const target = puzzle.cells.find((cell) => cell.row === 0 && cell.column === 0);
+      if (target) (target as { rebus?: string }).rebus = 'AN';
       const index = indexPuzzle(puzzle);
       return { puzzle, index, session: createSessionFor(puzzle, index), incorrectCellIds: [] };
     }

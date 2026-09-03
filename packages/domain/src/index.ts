@@ -37,6 +37,7 @@ export {
   clearCell,
   createSession,
   enterLetter,
+  enterRebus,
   moveSelection,
   patternForEntry,
   revealCell,

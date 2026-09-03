@@ -1,0 +1,28 @@
+{
+  "id": "fill-lexicon-v1",
+  "schemaVersion": 1,
+  "source": {
+    "path": "/usr/share/dict/web2",
+    "title": "Webster's Second International word list (web2)",
+    "license": "Public domain",
+    "licenseNote": "Published 1934; distributed by macOS as /usr/share/dict/web2.",
+    "sha256": "be41ad97963bf8dabedd5871d5d691596175269d540956b0f9965a885c2bbab9"
+  },
+  "transformation": [
+    "trim lines",
+    "uppercase",
+    "keep /^[A-Z]+$/ only",
+    "keep lengths 3-15",
+    "deduplicate",
+    "sort ascending"
+  ],
+  "minLength": 3,
+  "maxLength": 15,
+  "wordCount": 227485,
+  "artifact": {
+    "file": "packages/construction/data/fill-lexicon-v1.txt",
+    "sha256": "a88577850afff64737f11cd757a520e3df1cb39ed7e7bc800fae0d08e1f6c760"
+  },
+  "emittedAt": "2026-09-02T22:17:59.982Z",
+  "status": "laboratory — production use still requires the M2.1 owner source review"
+}

@@ -8,3 +8,7 @@ export type {
 	OriginalConstructionRequest,
 	OriginalConstructionResult
 } from './constructionUseCases';
+export { constructPuzzle, numericSeed } from './constructPuzzle';
+export type { ConstructResult, ConstructFailure, ConstructionStage, PuzzleFillGrid } from './constructPuzzle';
+export type { DayRecipe, DayOfWeek } from './recipes';
+export { DAY_RECIPES, constructableDays, dayRecipe } from './recipes';

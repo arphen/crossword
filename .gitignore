@@ -87,8 +87,12 @@ src/crossword/static/lib/
 # Local dependency-audit output is intentionally kept out of source control.
 reports/npm-audit.json
 reports/mutation/
+
+# Stryker's working copy (left behind only when a mutation run is killed).
+.stryker-tmp/
 .npm-cache/
 .shots/
 .browsers/
 shoot.tmp.cjs
 verify.tmp.cjs
+apps/web/test-results/

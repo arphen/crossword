@@ -3,8 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { HarnessPage } from './harness/HarnessPage';
 import { resolveHarnessFixture, resolveHarnessMode } from './harness/fixtures';
-import type { CompletionPolicy } from './cluePlacement';
-import './styles.css';
+import './legacy.css';
 
 const root = document.getElementById('root');
 
@@ -22,17 +21,12 @@ createRoot(root).render(
       <HarnessPage
         fixtureId={harnessFixture ?? resolveHarnessFixture(null).id}
         mode={resolveHarnessMode(harnessQuery.get('mode'))}
-        policy={resolveHarnessPolicy(harnessQuery.get('policy'))}
       />
     ) : (
       <App />
     )}
   </StrictMode>
 );
-
-function resolveHarnessPolicy(value: string | null): CompletionPolicy {
-  return (['visible', 'collapsed', 'hidden'] as const).find((candidate) => candidate === value) ?? 'collapsed';
-}
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').then((registration) => {

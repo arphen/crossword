@@ -28,6 +28,23 @@ make test         # Run local Python and JavaScript tests
 make legacy-smoke # Mount check with a local synthetic puzzle (Chrome required)
 ```
 
+
+## v2 web app (React replica of the legacy solver)
+
+The next-generation client currently **replicates the legacy crossword
+exactly** (ADR 0003) on the new architecture: domain solve engine, IndexedDB
+persistence, in-browser model runtime, and a Playwright/e2e regression net.
+
+```bash
+make web-dev        # React replica on http://localhost:5173
+npm run e2e         # browser journeys, paint guards, visual baselines
+npm run e2e:install # once: Chromium into .browsers/
+npm run scan:content
+```
+
+Night mode is the moon/sun switch in the bottom menu; Export/Import live on
+the same row. Known gaps vs legacy are listed in
+[docs/adr/0003-legacy-replica-pivot.md](docs/adr/0003-legacy-replica-pivot.md).
 See [SETUP.md](SETUP.md) for the setup contract and troubleshooting.
 
 ## 📋 Manual Setup
@@ -47,6 +64,9 @@ See [SETUP.md](SETUP.md) for detailed documentation.
 make help        # Show all available commands
 make legacy-run  # Run development server on port 5001
 make test        # Run tests
+make test-js-cov  # Run V8 coverage for maintained TypeScript packages
+make e2e-ci       # Run CI-safe Playwright journeys and paint guards
+make mutation-test # Enforce the deterministic construction mutation floor
 make build       # Rebuild ignored legacy browser assets
 make test-cov    # Run tests with coverage
 make clean       # Clean cache files

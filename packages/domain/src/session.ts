@@ -327,6 +327,26 @@ export function enterLetter(
   ), puzzle);
 }
 
+export function enterRebus(
+  snapshot: SolveSessionSnapshot,
+  puzzle: PuzzleDocument,
+  index: PuzzleIndex,
+  value: string
+): SolveSessionSnapshot {
+  if (snapshot.paused) return snapshot;
+  const token = value.trim().toUpperCase();
+  if (!/^[A-Z]{1,10}$/.test(token)) return snapshot;
+  const entered = { ...snapshot.entered, [snapshot.selection.cellId]: token };
+  const entry = index.entriesById.get(snapshot.selection.entryId);
+  if (!entry) throw new Error(`Unknown entry ${snapshot.selection.entryId}`);
+  return withStatus(addEvent(
+    advanceWithinEntry({ ...snapshot, entered }, index, entry),
+    'cell-entered',
+    snapshot.lastInteractionAtMs,
+    { cellId: snapshot.selection.cellId, entryId: entry.id, value: token }
+  ), puzzle);
+}
+
 export function clearCell(
   snapshot: SolveSessionSnapshot,
   puzzle: PuzzleDocument,
