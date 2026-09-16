@@ -74,10 +74,8 @@ test: check-uv check-node ## Run local Python and JavaScript tests without live 
 	npm --workspace @crossword/persistence run test
 	$(MAKE) core-test
 
-core-test: check-node ## Run the new domain/application/construction/model suites
+core-test: check-node ## Run the new domain/application suites
 	npm --workspace @crossword/application run test
-	npm --workspace @crossword/construction run test
-	npm --workspace @crossword/model-runtime run test
 
 mutation-test: check-node ## Mutation-test the deterministic construction core
 	npm run test:mutation
@@ -93,7 +91,7 @@ legacy-test: test ## Named legacy test entrypoint used by the continuity gate
 legacy-test-live: test-live ## Named opt-in live-provider test entrypoint
 
 legacy-run: check-uv ## Run the private Flask/Socket.IO bridge on port 5001
-	uv run python run.py
+	uv run --no-sync python run.py
 
 web-dev: check-node ## Run the React solver; pair with legacy-run for NYT loading
 	npm run web:dev -- --host "$(SMOKE_HOST)"

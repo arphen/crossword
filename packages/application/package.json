@@ -11,9 +11,10 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "@crossword/construction": "0.1.0",
+    "@crossword/construction": "file:../../vendor/generator/crossword-construction-0.1.0.tgz",
     "@crossword/domain": "0.1.0",
-    "@crossword/model-runtime": "0.1.0",
+    "@crossword/generator": "file:../../vendor/generator/crossword-generator-0.1.0.tgz",
+    "@crossword/model-runtime": "file:../../vendor/generator/crossword-model-runtime-0.1.0.tgz",
     "@crossword/persistence": "0.1.0"
   },
   "devDependencies": {

@@ -30,6 +30,10 @@ make legacy-smoke # Mount check with a local synthetic puzzle (Chrome required)
 
 See [SETUP.md](SETUP.md) for the setup contract and troubleshooting.
 
+## Generator development
+
+Generation source is maintained separately in `../crossword-generator`; the app still ships as one in-browser experience. This repository consumes versioned archives under `vendor/generator/`, so normal installation, solving tests, and builds do not require the sibling checkout. See [the integration guide](docs/generator-integration.md) for ownership and update commands.
+
 ## 📋 Manual Setup
 
 If you prefer manual setup or already have uv installed:

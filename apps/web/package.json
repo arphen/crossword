@@ -10,11 +10,13 @@
   },
   "dependencies": {
     "@crossword/application": "0.1.0",
-    "@crossword/construction": "0.1.0",
+    "@crossword/construction": "file:../../vendor/generator/crossword-construction-0.1.0.tgz",
     "@crossword/domain": "0.1.0",
+    "@crossword/generator": "file:../../vendor/generator/crossword-generator-0.1.0.tgz",
     "@crossword/persistence": "0.1.0",
     "react": "19.1.1",
-    "react-dom": "19.1.1"
+    "react-dom": "19.1.1",
+    "@crossword/model-runtime": "file:../../vendor/generator/crossword-model-runtime-0.1.0.tgz"
   },
   "devDependencies": {
     "@types/react": "19.1.10",
