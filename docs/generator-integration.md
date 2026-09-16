@@ -5,7 +5,7 @@ Crossword remains one browser-delivered product. Generation is developed in the 
 ## Ownership
 
 - Generator repo: `@crossword/construction` (deterministic fill and protocol), `@crossword/model-runtime` (WebLLM broker, adapter, engine worker and protocol), and `@crossword/generator` (construction orchestration and browser worker clients/entry points).
-- Crossword repo: Vue and React UI, puzzle loading/parsing, solve state, persistence, and product-specific model configuration. Existing application and worker exports are compatibility shims into the generator packages.
+- Crossword repo: active Vue UI, puzzle loading/parsing, framework-independent solve state and persistence. The application export remains a compatibility shim into generator packages. React UI, worker shims and product-specific model configuration are preserved on `backup/react-generator-integration-ed519f5`.
 - Source history before extraction remains in the crossword repository, including the untouched stash. Extraction source: `9c964ab917b1ba42915cd034b53d2718179ebb0d`. The new repository starts with a snapshot; it does not pretend to contain filtered historical commits.
 
 ## Reproducible integration
@@ -21,21 +21,21 @@ npm run build
 npm run pack:packages
 ```
 
-Copy the three generated archives from its `artifacts/` directory into `vendor/generator/` here. Update file dependency paths/version references in the root, `apps/web`, and `packages/application` manifests when releasing a new version, then run `npm install --ignore-scripts` to regenerate the lockfile. Do not reuse a release version for changed package content.
+Copy the three generated archives from its `artifacts/` directory into `vendor/generator/` here. Update file dependency paths/version references in the root and `packages/application` manifests when releasing a new version, then run `npm install --ignore-scripts` to regenerate the lockfile. Do not reuse a release version for changed package content.
 
 Validate this repo:
 
 ```sh
 npm test -- --runInBand
-npm run web:test
-npm run web:build
+make build
+make legacy-smoke
 make core-test
 ```
 
 `npm run test:generator` and `npm run test:mutation` are opt-in extras that run in the sibling repository and require `../crossword-generator` to exist; the continuous local checks above never depend on it. Mutation configuration and tooling are owned by the generator repository, not this frontend.
 
-The generator packages export TypeScript source for bundling, matching the previous workspace contract. A consumer needs a TypeScript-aware browser bundler (currently Vite); they are not direct unbundled Node or Vue 2 script-tag imports. Web workers remain browser modules; Vite's `worker.format: 'es'` is required for the nested WebLLM worker. The frontend retains lightweight worker entry shims so the existing bundler worker URLs remain stable.
+The generator packages export TypeScript source for bundling, matching the previous workspace contract. A consumer needs a TypeScript-aware browser bundler; they are not direct unbundled Node or Vue 2 script-tag imports. The backup React branch demonstrates Vite integration, including `worker.format: 'es'` for the nested WebLLM worker.
 
-## Vue recovery is separate
+## Vue restoration
 
-This extraction does not switch the active frontend, implement missing generation features, change `make run`, or apply the preserved stash. Vue can later consume the same framework-independent packages through a bundling adapter. Existing tests and builds validate packaging and covered behavior, not full Vue/React parity or actual WebGPU model generation.
+Vue is now the sole active frontend and `make run` serves it on port 5001. The Vue JS/CSS/templates match the pre-React `origin/rebuild` baseline (`8523664`); the stash is untouched. React and its working package integration are preserved on `backup/react-generator-integration-ed519f5`. The generator repository, vendored archives and application compatibility exports remain here, but generation is not yet wired into the Vue UI. That requires a separate bundling adapter. Existing tests validate covered behavior, not complete UI correctness or real WebGPU generation.

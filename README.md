@@ -22,8 +22,7 @@ dependency graphs through `uv.lock` and `package-lock.json`. `uv sync
 Then verify and run:
 ```bash
 make doctor       # Check the pinned tools and project .venv
-make legacy-run   # Start the private bridge on http://127.0.0.1:5001
-make web-dev      # Start the React replacement solver (separate terminal)
+make run          # Start the Vue app on http://127.0.0.1:5001
 make test         # Run local Python and JavaScript tests
 make legacy-smoke # Mount check with a local synthetic puzzle (Chrome required)
 ```
@@ -32,7 +31,7 @@ See [SETUP.md](SETUP.md) for the setup contract and troubleshooting.
 
 ## Generator development
 
-Generation source is maintained separately in `../crossword-generator`; the app still ships as one in-browser experience. This repository consumes versioned archives under `vendor/generator/`, so normal installation, solving tests, and builds do not require the sibling checkout. See [the integration guide](docs/generator-integration.md) for ownership and update commands.
+Vue is the only active frontend. The React experiment is preserved on `backup/react-generator-integration-ed519f5`. Generation source is maintained separately in `../crossword-generator`; its previous React integration is on that backup branch. Connecting generation to Vue is a separate follow-up, not part of this restoration. This repository consumes versioned archives under `vendor/generator/`, so normal installation, solving tests, and builds do not require the sibling checkout. See [the integration guide](docs/generator-integration.md) for ownership and update commands.
 
 ## 📋 Manual Setup
 

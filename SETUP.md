@@ -54,22 +54,18 @@ That target sets `CROSSWORD_ALLOW_LIVE_PROVIDER=1` and selects only tests
 marked `live_provider`. It is a private, manually initiated diagnostic and is
 not part of CI or the default test suite.
 
-## React solver with NYT loading
+## Vue frontend
 
-The React solver is the replacement play surface. The previous Flask process
-remains a local-only API bridge while the migration is in progress. Run both
-processes in separate terminals:
+Run `make run` and open **http://127.0.0.1:5001**. It rebuilds the Vue,
+Axios and Socket.IO assets before starting Flask. `make web-dev` and
+`npm run web:dev` are aliases for the same Vue server; there is no active
+React/Vite server on this branch.
 
-```bash
-make legacy-run   # Flask API bridge on http://127.0.0.1:5001
-make web-dev      # React solver, normally on http://127.0.0.1:5173
-```
-
-In the React solver, enter a `YYMMDD` or `YYYY-MM-DD` date and choose `Load`,
-or select a weekday and choose `Random`. Vite proxies those requests to the
-local bridge; no provider credentials are committed to the repository. The
-same-origin `/crossword_by_date` and `/random_crossword` routes are available
-when the built app is hosted by the bridge.
+The Vue source matches `origin/rebuild` (`8523664`). React and its generator
+integration remain on `backup/react-generator-integration-ed519f5`.
+The generator repository and vendored packages are preserved; connecting
+them to the Vue UI is a separate task. Do not apply or drop the existing
+stash without reviewing it.
 
 ## Browser smoke prerequisites
 

@@ -4,7 +4,6 @@
   "description": "Private legacy continuity bridge for Crossword",
   "private": true,
   "workspaces": [
-    "apps/web",
     "packages/application",
     "packages/domain",
     "packages/persistence"
@@ -18,9 +17,9 @@
     "test": "jest",
     "build": "node scripts/build-legacy-assets.mjs",
     "legacy:assets": "node scripts/build-legacy-assets.mjs",
-    "web:dev": "npm --workspace @crossword/web run dev --",
-    "web:build": "npm --workspace @crossword/web run build",
-    "web:test": "npm --workspace @crossword/web run test",
+    "web:dev": "make run",
+    "web:build": "npm run build",
+    "web:test": "npm test -- --runInBand",
     "scan:content": "node scripts/scan-forbidden-content.mjs",
     "test:mutation": "npm --prefix ../crossword-generator run test:mutation",
     "test:generator": "npm --prefix ../crossword-generator test"
