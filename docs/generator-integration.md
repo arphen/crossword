@@ -36,6 +36,6 @@ make core-test
 
 The generator packages export TypeScript source for bundling, matching the previous workspace contract. A consumer needs a TypeScript-aware browser bundler; they are not direct unbundled Node or Vue 2 script-tag imports. The backup React branch demonstrates Vite integration, including `worker.format: 'es'` for the nested WebLLM worker.
 
-## Vue restoration
+## Frontend status
 
-Vue is now the sole active frontend and `make run` serves it on port 5001. The Vue JS/CSS/templates match the pre-React `origin/rebuild` baseline (`8523664`); the stash is untouched. React and its working package integration are preserved on `backup/react-generator-integration-ed519f5`. The generator repository, vendored archives and application compatibility exports remain here, but generation is not yet wired into the Vue UI. That requires a separate bundling adapter. Existing tests validate covered behavior, not complete UI correctness or real WebGPU generation.
+React is now the active daily-driver frontend and `make run` serves it on port 5001; Vue remains at `/legacy/` as the parity reference and fallback. The Vue JS/CSS/templates match the pre-React `origin/rebuild` baseline (`8523664`); the stash is untouched. The generator repository, vendored archives and application compatibility exports remain here, but generation is not yet wired into the React UI. That requires a separate bundling adapter. Existing tests validate covered behavior, not complete UI correctness or real WebGPU generation.

@@ -129,12 +129,12 @@ lint: ## Placeholder for the legacy lint gate
 format: ## Placeholder for the legacy formatter gate
 	@echo "$(YELLOW)No legacy formatter is configured yet; see the quality plan.$(NC)"
 
-clean: ## Remove generated caches and legacy browser assets
+clean: ## Remove generated caches and browser assets
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	@rm -rf .coverage htmlcov .uv_cache src/crossword/static/lib
+	@rm -rf .coverage htmlcov .uv_cache src/crossword/static/lib src/crossword/static/react
 	@echo "$(GREEN)Generated files cleaned; lockfiles and source are unchanged.$(NC)"
 
 run-prod: check-uv ## Run the WSGI app on the continuity port (5001)
