@@ -4,6 +4,7 @@
   "description": "Private legacy continuity bridge for Crossword",
   "private": true,
   "workspaces": [
+    "apps/react",
     "packages/application",
     "packages/domain",
     "packages/persistence"
