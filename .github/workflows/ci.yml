@@ -65,6 +65,7 @@ jobs:
         with:
           version: '0.12.7'
           enable-cache: true
+          cache-local-path: .uv_cache
           cache-dependency-glob: uv.lock
       - name: Install locked tools
         run: |
@@ -115,6 +116,7 @@ jobs:
         with:
           version: '0.12.7'
           enable-cache: true
+          cache-local-path: .uv_cache
           cache-dependency-glob: uv.lock
       - run: uv python install
       - run: uv sync --all-extras --frozen
@@ -152,6 +154,7 @@ jobs:
         with:
           version: '0.12.7'
           enable-cache: true
+          cache-local-path: .uv_cache
           cache-dependency-glob: uv.lock
       - run: uv python install
       - run: uv sync --all-extras --frozen
