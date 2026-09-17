@@ -2,39 +2,181 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, main, develop]
   pull_request:
-    branches: [master]
+    branches: [master, main, develop]
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CI: 'true'
+  UV_NO_PROGRESS: '1'
+  CROSSWORD_ALLOW_LIVE_PROVIDER: '0'
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  static:
+    name: Static analysis and formatting
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: "0.12.7"
-          enable-cache: true
-
-      - name: Install Python
-        run: uv python install $(cat .python-version)
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
           cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Activate pinned npm
+        run: npm install --global "$(node -p 'require("./package.json").packageManager')"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.7'
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Install locked tools
+        run: |
+          uv python install
+          uv sync --all-extras --frozen
+          npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: uv run --no-sync ruff check .
+      - name: Compile backend modules
+        run: uv run --no-sync python -m compileall -q src scripts tests
 
-      - name: Install locked dependencies and generate legacy assets
-        run: make setup
+  frontend-tests:
+    name: Frontend unit and component tests
+    needs: [static]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Activate pinned npm
+        run: npm install --global "$(node -p 'require("./package.json").packageManager')"
+      - run: npm ci --ignore-scripts
+      - run: npm run test:coverage
+      - name: Upload frontend coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: coverage/
+          if-no-files-found: warn
+          retention-days: 14
 
-      - name: Check toolchain contract
-        run: make doctor
+  backend-tests:
+    name: Backend unit and isolated integration tests
+    needs: [static]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.7'
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv python install
+      - run: uv sync --all-extras --frozen
+      - name: Test without live providers
+        run: >-
+          uv run --no-sync python -m pytest tests/ -m 'not live_provider'
+          --cov=src --cov-branch --cov-report=term-missing
+          --cov-report=xml:coverage/backend/coverage.xml
+          --cov-report=html:coverage/backend/html
+          --junitxml=coverage/backend/junit.xml
+      - name: Upload backend coverage and test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage/backend/
+          if-no-files-found: warn
+          retention-days: 14
 
-      - name: Run local tests
-        run: make test
+  e2e:
+    name: Playwright end-to-end tests
+    needs: [frontend-tests, backend-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Activate pinned npm
+        run: npm install --global "$(node -p 'require("./package.json").packageManager')"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.7'
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv python install
+      - run: uv sync --all-extras --frozen
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Build frontend and legacy assets
+        run: |
+          npm run build
+          npm --workspace @crossword/react-port run build
+      # Playwright owns both processes, waits for HTTP readiness, and cleans up.
+      # The backend uses an isolated SQLite database (no external DB required).
+      - run: npm run test:e2e
+      - name: Upload failure diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-diagnostics
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
 
-      - name: Build legacy assets
-        run: make build
+  mutation:
+    name: Mutation testing (nightly and main/develop pushes)
+    needs: [e2e]
+    if: >-
+      github.event_name == 'schedule' ||
+      (github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Activate pinned npm
+        run: npm install --global "$(node -p 'require("./package.json").packageManager')"
+      - run: npm ci --ignore-scripts
+      - run: npm run test:mutation
+      - name: Upload mutation reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          if-no-files-found: warn
+          retention-days: 30

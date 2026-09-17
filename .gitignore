@@ -92,3 +92,9 @@ reports/mutation/
 .browsers/
 shoot.tmp.cjs
 verify.tmp.cjs
+
+# CI pipeline outputs
+coverage/
+playwright-report/
+test-results/
+.stryker-tmp/

@@ -14,7 +14,7 @@ function App() {
   useEffect(() => {
     if (mobile) {
       document.title = 'Crossword Mobile';
-      document.querySelector('meta[name="viewport"]').content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+      /** @type {HTMLMetaElement} */ (document.querySelector('meta[name="viewport"]')).content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
     }
     controller.start();
     return () => controller.dispose();

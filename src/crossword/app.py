@@ -23,7 +23,7 @@ app = Flask(__name__,
            static_folder=os.path.join(current_dir, 'static'))
 
 # Configure SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///crossword.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('CROSSWORD_DATABASE_URI', 'sqlite:///crossword.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize database

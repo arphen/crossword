@@ -1,0 +1,19 @@
+# Formatting is an explicit adoption gate, not a legacy-source reformat.
+# These static-check configuration files are the initial checked surface.
+# Add files here only after formatting them in a focused, reviewed change.
+/*
+!/.prettierrc.json
+!/eslint.config.mjs
+!/tsconfig.ci.json
+!/apps
+/apps/*
+!/apps/react
+/apps/react/*
+!/apps/react/tsconfig.json
+!/apps/react/src
+/apps/react/src/*
+!/apps/react/src/controller.d.ts
+!/apps/react/src/behavior
+/apps/react/src/behavior/*
+!/apps/react/src/behavior/desktop.d.ts
+!/apps/react/src/behavior/mobile.d.ts

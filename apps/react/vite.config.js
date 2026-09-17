@@ -5,6 +5,12 @@ export default defineConfig({
     '/static': backend, '/random_crossword': backend, '/crossword_by_date': backend,
     '/api': backend, '/socket.io': { target: backend, ws: true }
   } },
+  // `vite preview` serves the built React app for Playwright E2E; proxy the
+  // same backend routes the dev server proxies so tests hit one origin.
+  preview: { host: '127.0.0.1', port: 4173, strictPort: true, proxy: {
+    '/static': backend, '/random_crossword': backend, '/crossword_by_date': backend,
+    '/api': backend, '/socket.io': { target: backend, ws: true }
+  } },
   esbuild: { jsx: 'automatic' },
   // Builds land in Flask's static tree; relative asset URLs let Flask serve
   // them under /static/react/ without extra Flask routes. The dev server

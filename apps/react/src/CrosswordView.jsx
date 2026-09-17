@@ -375,7 +375,7 @@ export default function CrosswordView({ app }) {
                     <div className="rebus-context-menu-header">Enter Rebus Answer</div>
                     <input type="text" className="rebus-context-menu-input" value={app.rebusInputValue}
                         onChange={event => { app.rebusInputValue = event.target.value; }}
-                        onKeyDown={event => app.handleRebusMenuKeydown(event)} placeholder="Type letters..." maxLength="10" />
+                        onKeyDown={event => app.handleRebusMenuKeydown(event)} placeholder="Type letters..." maxLength={10} />
                     <div className="rebus-context-menu-hint">Press Enter to save, Esc to cancel</div>
                     <div className="rebus-context-menu-buttons">
                         <button className="rebus-context-menu-button cancel" onClick={() => app.closeRebusMenu()}>Cancel</button>
