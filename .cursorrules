@@ -1,11 +1,18 @@
-# Crossword Puzzle App - GitHub Copilot Instructions
-Always use makefile to run tests and other operations like server running
+# Crossword Puzzle App - Agent Instructions
+
+## Mandatory startup and scope
+
+STARTUP PROTOCOL: Do NOT perform recursive directory listings (`ls -R`, `find .`) on launch. Read `AGENTS.md` and `docs/REPO_MAP.md` immediately for codebase structure. Locate relevant modules using exact symbol names via `grep` or `ast-grep` rather than browsing file trees.
+
+`AGENTS.md` is authoritative for stack versions, commands, and strict boundaries. Search only mapped source files or narrowly scoped modules; never scan dependencies, generated output, private state, or excluded directories. If the map is missing/stale, run `bash .scripts/generate-repo-map.sh`; do not replace it with a source dump. Refresh it after structural changes and use `--check` to verify freshness. Preserve unrelated working-tree changes.
+
+Prefer Makefile targets for tests and server operations; use the direct lint/typecheck/React commands in `AGENTS.md` where Make lacks an equivalent. The conventions below describe the legacy Flask/Vue code; the React port and TypeScript packages follow their local conventions.
 ## Project Overview
 This is a Flask-based web application for solving NYT-style crossword puzzles with offline support. The app fetches puzzles from the NYT syndication API, parses them into clean domain models using Pydantic, and provides an interactive Vue.js frontend.
 
 ## Tech Stack
 - **Backend**: Flask 3.x, Flask-SQLAlchemy
-- **Frontend**: Vue.js 2.6, Axios, vanilla JavaScript
+- **Frontend**: Vue.js 2.7.16, Axios, vanilla JavaScript
 - **Data Models**: Pydantic 2.x for domain models
 - **Database**: SQLite with SQLAlchemy ORM
 - **Testing**: pytest with factory-boy
@@ -36,10 +43,10 @@ This is a Flask-based web application for solving NYT-style crossword puzzles wi
 - Store JSON data as TEXT columns and serialize/deserialize with `json.dumps()`/`json.loads()`
 
 ### Frontend
-- Use Vue.js 2.6 options API (not composition API)
+- Use Vue.js 2.7.16 options API (not composition API)
 - Store all JavaScript in `src/crossword/static/main.js`
 - Use Axios for HTTP requests
-- All external libraries must be downloaded locally to `src/crossword/static/lib/` for offline support
+- Generate offline libraries with `make legacy-assets`; never search or hand-edit `src/crossword/static/lib/`.
 
 ## Domain Models
 
@@ -114,7 +121,7 @@ make clean         # Clean cache files
 ### Database Changes
 - Migrations are not used (yet)
 - Database schema is created automatically via `db.create_all()`
-- To reset database, delete `instance/crossword.db` and restart the app
+- `instance/` is private runtime state: never search it or delete/reset its database as part of routine agent work.
 
 ## Common Patterns
 
@@ -149,9 +156,9 @@ except Exception as e:
 ## Important Notes
 
 ### Offline Support
-- All external JavaScript libraries MUST be downloaded locally to `static/lib/`
+- Build local JavaScript libraries from the npm lockfile using `make legacy-assets`; never hand-vendor them.
 - No CDN links in production templates
-- See README.md for download instructions
+- See `docs/legacy-assets.md` for provenance.
 
 ### Date Handling
 - NYT API uses `YYMMDD` format
