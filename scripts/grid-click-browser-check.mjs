@@ -7,7 +7,7 @@ mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true });
 const report = {};
 try {
-  for (const [name, url] of Object.entries({ vue: 'http://127.0.0.1:5001/', react: 'http://127.0.0.1:5174/' })) {
+  for (const [name, url] of Object.entries({ vue: 'http://127.0.0.1:5001/', react: process.env.REACT_PARITY_URL ?? 'http://127.0.0.1:5174/' })) {
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, colorScheme: 'light' });
     await context.addInitScript(() => { localStorage.setItem('lastCachingTime', String(Date.now())); window.setInterval = () => 1; });
     await context.route('**/*', route => {
