@@ -1,4 +1,5 @@
 """Real Flask/SQLAlchemy integration, isolated from user DBs and live providers."""
+
 import importlib.util
 from pathlib import Path
 import socket
@@ -33,7 +34,12 @@ def api(tmp_path, monkeypatch, no_network):
     module.app.config.update(TESTING=True)
     with module.app.app_context():
         assert Path(module.db.engine.url.database) == database_path
-        assert module.db.session.execute(text("SELECT count(*) FROM completed_puzzles")).scalar_one() == 0
+        assert (
+            module.db.session.execute(
+                text("SELECT count(*) FROM completed_puzzles")
+            ).scalar_one()
+            == 0
+        )
     yield module
     with module.app.app_context():
         module.db.session.remove()
@@ -41,19 +47,33 @@ def api(tmp_path, monkeypatch, no_network):
 
 
 def original_puzzle_text(date="240101"):
-    return "\n\n".join([
-        "SYNTHETIC", date, "Original integration word square", "CI fixture author",
-        "3", "3", "3", "3", "CAT\nARE\nTEN",
-        "Synthetic feline\nSynthetic plural verb\nSynthetic number after nine",
-        "Synthetic down feline\nSynthetic down plural verb\nSynthetic down number",
-    ])
+    return "\n\n".join(
+        [
+            "SYNTHETIC",
+            date,
+            "Original integration word square",
+            "CI fixture author",
+            "3",
+            "3",
+            "3",
+            "3",
+            "CAT\nARE\nTEN",
+            "Synthetic feline\nSynthetic plural verb\nSynthetic number after nine",
+            "Synthetic down feline\nSynthetic down plural verb\nSynthetic down number",
+        ]
+    )
 
 
 def test_completion_crud_persists_across_clients(api):
     first = api.app.test_client()
-    payload = {"puzzle_date": "240101", "title": "Original CI square",
-               "authors": ["CI fixture author"], "weekday": "monday",
-               "time_taken": 42, "score": 700}
+    payload = {
+        "puzzle_date": "240101",
+        "title": "Original CI square",
+        "authors": ["CI fixture author"],
+        "weekday": "monday",
+        "time_taken": 42,
+        "score": 700,
+    }
     assert first.get("/api/completed_puzzles").json == []
     assert first.get("/api/completed_puzzles/240101").json == {"completed": False}
     created = first.post("/api/completed_puzzles", json=payload)
@@ -68,7 +88,10 @@ def test_completion_crud_persists_across_clients(api):
         api.db.session.remove()
         api.db.engine.dispose()
     second = api.app.test_client()
-    assert second.get("/api/completed_puzzles/240101").json == {"completed": True, "data": record}
+    assert second.get("/api/completed_puzzles/240101").json == {
+        "completed": True,
+        "data": record,
+    }
     assert second.get("/api/completed_puzzles").json == [record]
     duplicate = second.post("/api/completed_puzzles", json={**payload, "score": 999})
     assert duplicate.status_code == 200
@@ -101,8 +124,13 @@ def test_by_date_uses_mock_provider_but_real_parser(api, monkeypatch):
     assert (puzzle["metadata"]["width"], puzzle["metadata"]["height"]) == (3, 3)
     assert len(puzzle["entries"]) == 6
     for direction in ("across", "down"):
-        entries = [entry for entry in puzzle["entries"] if entry["direction"] == direction]
-        assert ["".join(char["letters"] for char in entry["characters"]) for entry in entries] == ["CAT", "ARE", "TEN"]
+        entries = [
+            entry for entry in puzzle["entries"] if entry["direction"] == direction
+        ]
+        assert [
+            "".join(char["letters"] for char in entry["characters"])
+            for entry in entries
+        ] == ["CAT", "ARE", "TEN"]
 
 
 def test_random_route_validates_weekday_and_parses_mock_provider(api, monkeypatch):
@@ -123,7 +151,11 @@ def test_random_route_validates_weekday_and_parses_mock_provider(api, monkeypatc
 
 
 def test_provider_failure_returns_error_without_completion(api, monkeypatch):
-    monkeypatch.setattr(api.DataReader, "_fetch_data", Mock(side_effect=RuntimeError("synthetic provider unavailable")))
+    monkeypatch.setattr(
+        api.DataReader,
+        "_fetch_data",
+        Mock(side_effect=RuntimeError("synthetic provider unavailable")),
+    )
     client = api.app.test_client()
     response = client.get("/crossword_by_date/240101")
     assert response.status_code == 400

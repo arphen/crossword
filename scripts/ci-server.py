@@ -3,6 +3,7 @@
 Never import the production app before setting CROSSWORD_DATABASE_URI: it creates
 its tables at import time. This harness is not a production entry point.
 """
+
 from __future__ import annotations
 
 import atexit
@@ -30,17 +31,26 @@ def synthetic_puzzle(date: str) -> dict:
     entries = []
     for index, word in enumerate(rows):
         for direction in ("across", "down"):
-            entries.append({
-                "clue_number": (1 if index == 0 else index + 3) if direction == "across" else index + 1,
-                "clue_text": f"Synthetic {direction} row {index + 1}: {word}",
-                "direction": direction,
-                "start_x": 0 if direction == "across" else index,
-                "start_y": index if direction == "across" else 0,
-                "characters": [{"letters": letter} for letter in word],
-            })
+            entries.append(
+                {
+                    "clue_number": (1 if index == 0 else index + 3)
+                    if direction == "across"
+                    else index + 1,
+                    "clue_text": f"Synthetic {direction} row {index + 1}: {word}",
+                    "direction": direction,
+                    "start_x": 0 if direction == "across" else index,
+                    "start_y": index if direction == "across" else 0,
+                    "characters": [{"letters": letter} for letter in word],
+                }
+            )
     return {
-        "metadata": {"date": date, "title": "Synthetic CI word square",
-                     "authors": ["CI fixture author"], "width": 3, "height": 3},
+        "metadata": {
+            "date": date,
+            "title": "Synthetic CI word square",
+            "authors": ["CI fixture author"],
+            "width": 3,
+            "height": 3,
+        },
         "entries": entries,
     }
 
@@ -76,13 +86,23 @@ def main() -> None:
         return jsonify(synthetic_puzzle(date))
 
     def random_puzzle(weekday):
-        days = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+        days = (
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
+        )
         if weekday.lower() not in days:
             return jsonify(error="Invalid weekday"), 400
         date = datetime(2024, 1, 1) + timedelta(days=days.index(weekday.lower()))
         # Stable initial puzzle, then next week after completion so the UI can
         # load a new unsolved puzzle without retries or random provider access.
-        while CompletedPuzzle.query.filter_by(puzzle_date=date.strftime("%y%m%d")).first():
+        while CompletedPuzzle.query.filter_by(
+            puzzle_date=date.strftime("%y%m%d")
+        ).first():
             date += timedelta(days=7)
         return jsonify(synthetic_puzzle(date.strftime("%y%m%d")))
 
@@ -95,9 +115,18 @@ def main() -> None:
 
     signal.signal(signal.SIGTERM, stop)
     try:
-        print("CI backend: temporary SQLite, synthetic puzzles, outbound network blocked", flush=True)
-        socketio.run(app, host="127.0.0.1", port=int(os.environ.get("CROSSWORD_E2E_BACKEND_PORT", "5002")), debug=False,
-                     use_reloader=False, allow_unsafe_werkzeug=True)
+        print(
+            "CI backend: temporary SQLite, synthetic puzzles, outbound network blocked",
+            flush=True,
+        )
+        socketio.run(
+            app,
+            host="127.0.0.1",
+            port=int(os.environ.get("CROSSWORD_E2E_BACKEND_PORT", "5002")),
+            debug=False,
+            use_reloader=False,
+            allow_unsafe_werkzeug=True,
+        )
     finally:
         with app.app_context():
             db.session.remove()

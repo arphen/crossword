@@ -62,7 +62,15 @@ setup: check-uv check-node ## Clean-clone setup using both pinned lockfiles
 	uv sync --all-extras --frozen
 	npm ci --ignore-scripts
 	$(MAKE) legacy-assets
+	$(MAKE) hooks-install
 	@echo "$(GREEN)Setup complete. Run make doctor, make run, or make test.$(NC)"
+
+.PHONY: hooks-install precommit
+hooks-install: check-uv ## Install the tracked commit hook (never overwrite another manager)
+	uv run --no-sync python scripts/install-hooks.py
+
+precommit: check-uv check-node ## Check staged changes without committing or auto-fixing
+	sh .githooks/pre-commit
 
 build: legacy-assets ## Build reproducible legacy browser assets
 

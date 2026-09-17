@@ -1,0 +1,18 @@
+#!/bin/sh
+# pre-commit temporarily hides unstaged tracked edits; never auto-fix or stage.
+set -eu
+cd "$(git rev-parse --show-toplevel)"
+if ! command -v uv >/dev/null 2>&1; then
+  echo 'COMMIT BLOCKED: uv is missing. Run make setup after installing uv.' >&2
+  echo 'Do not use --no-verify or disable core.hooksPath. Ask the human if blocked.' >&2
+  exit 1
+fi
+if [ -n "${SKIP:-}" ] || [ -n "${PRE_COMMIT_ALLOW_NO_CONFIG:-}" ]; then
+  echo 'COMMIT BLOCKED: SKIP/PRE_COMMIT_ALLOW_NO_CONFIG overrides are not permitted.' >&2
+  exit 1
+fi
+if ! uv run --no-sync pre-commit run --hook-stage pre-commit; then
+  echo 'COMMIT BLOCKED: fix the first failure, stage the fix, and run make precommit.' >&2
+  echo 'Do not bypass hooks, weaken checks, or change expected behavior to hide a failure.' >&2
+  exit 1
+fi

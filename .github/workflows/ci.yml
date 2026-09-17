@@ -75,6 +75,11 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: uv run --no-sync ruff check .
+      # Mirror the local commit policy on the committed diff (merge-base..HEAD),
+      # so bypassed hooks cannot land silent skips, suppressions, or secrets.
+      - name: Enforce commit policy on the PR diff
+        if: github.event_name == 'pull_request'
+        run: uv run --no-sync python scripts/commit_checks.py ci --base "${{ github.event.pull_request.base.sha }}"
       - name: Compile backend modules
         run: uv run --no-sync python -m compileall -q src scripts tests
 

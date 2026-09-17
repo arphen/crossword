@@ -1,0 +1,31 @@
+minimum_pre_commit_version: '4.3.0'
+fail_fast: true
+default_install_hook_types: [pre-commit]
+repos:
+  - repo: local
+    hooks:
+      - id: repository-policy
+        name: Staged repository policy (no bypasses, secrets or artifacts)
+        entry: uv run --no-sync python scripts/commit_checks.py policy
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: changed-format
+        name: Format changed source files (check only)
+        entry: uv run --no-sync python scripts/commit_checks.py format
+        language: system
+        types: [file]
+        files: '\.(py|js|jsx|mjs|cjs|ts|tsx|json|ya?ml)$'
+        exclude: '^(package-lock\.json|vendor/|reports/|src/crossword/static/(lib|react)/)'
+      - id: static-checks
+        name: Full typecheck and lint
+        entry: uv run --no-sync python scripts/commit_checks.py static
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: fast-tests
+        name: Offline Python, Jest, React and package tests
+        entry: uv run --no-sync python scripts/commit_checks.py tests
+        language: system
+        pass_filenames: false
+        always_run: true

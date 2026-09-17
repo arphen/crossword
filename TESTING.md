@@ -6,12 +6,12 @@ expensive ones run.
 
 ## Stages
 
-| Stage | Job(s) | What runs | Gate |
-| --- | --- | --- | --- |
-| 1 | `static` | `tsc --noEmit` (TS packages + React checkJs), ESLint, Prettier, Ruff, `compileall` | All later stages |
-| 2 | `frontend-tests`, `backend-tests` (parallel) | Vitest + coverage; pytest with `pytest-cov` (unit + isolated API) | Stage 3 |
-| 3 | `e2e` | Playwright against real backend + built React preview | Stage 4 |
-| 4 | `mutation` | Stryker mutation testing on the domain core | — |
+| Stage | Job(s)                                       | What runs                                                                          | Gate             |
+| ----- | -------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------- |
+| 1     | `static`                                     | `tsc --noEmit` (TS packages + React checkJs), ESLint, Prettier, Ruff, `compileall` | All later stages |
+| 2     | `frontend-tests`, `backend-tests` (parallel) | Vitest + coverage; pytest with `pytest-cov` (unit + isolated API)                  | Stage 3          |
+| 3     | `e2e`                                        | Playwright against real backend + built React preview                              | Stage 4          |
+| 4     | `mutation`                                   | Stryker mutation testing on the domain core                                        | —                |
 
 Stage 4 runs on **relevant pull requests into `master`** and **manual CI runs**.
 There are no nightly mutation runs and no mutation runs just because a PR merges.
@@ -80,7 +80,7 @@ For just mutation locally, use `npm run test:mutation`.
   `CROSSWORD_DATABASE_URI`), original synthetic puzzles, and outbound network
   blocked (`requests` + `socket.connect` raise). `/api/health` verifies the
   database actually answers before tests start.
-- `vite preview` serves the *built* React app on `127.0.0.1:4173` and proxies
+- `vite preview` serves the _built_ React app on `127.0.0.1:4173` and proxies
   `/api`, `/static`, puzzle and socket routes to the backend — one origin, real
   HTTP.
 - `playwright.config.ts` starts both via `webServer`, waits for the health
@@ -102,6 +102,59 @@ runners the E2E backend listens on 5002 (free there).
 - Current baseline: fail below 55% mutation score (measured approximately 60%).
   Improve surviving mutations with useful assertions; do not lower the threshold
   just to make a failing PR green.
+
+## Commit-time checks (pre-commit)
+
+Every commit runs strict, fast checks on the **staged** content. Install with
+`make setup` (or once per clone: `make hooks-install`). Check without committing:
+
+```bash
+make precommit
+```
+
+What the hook runs, in order (fail fast, first failure wins):
+
+1. **Staged repository policy** — `scripts/commit_policy.py` on the staged
+   snapshot. Blocks newly added test skips (`.skip`, `pytest.mark.skip`, `xit`, …),
+   new suppressions (`eslint-disable`, `ts-ignore`, `# noqa`, `type: ignore`, …),
+   conflict markers, private keys/known token formats (findings are redacted),
+   generated outputs (`coverage/`, `reports/`, built `static/`, DB files), and
+   changed blobs over 1 MiB. Deletions and pre-existing debt are allowed; only
+   *added* lines are judged.
+2. **Format changed files** — Prettier (JS/TS/JSON/YAML) and scoped `ruff format`
+   on the exact files you touched. Check-only; nothing is auto-written. Scoped
+   adoption: legacy mirrored sources (`src/crossword/static/*.js`,
+   `apps/react/src/behavior/*.js`) and legacy `tools/`/`tests` are exempt.
+3. **Full typecheck and lint** — same `typecheck`/`lint`/`format:check`/`ruff`
+   commands as CI.
+4. **Fast offline tests** — pytest (non-live), Jest, and the Vitest suites.
+   E2E and mutation testing stay in CI.
+
+The same policy runs in CI against the whole PR diff
+(`--base <merge-base>`), so a bypassed hook (`--no-verify`, `SKIP`, a different
+`core.hooksPath`) still fails the PR.
+
+### When your commit is blocked
+
+Fix the **cause the first failure names** — the message includes the file, line,
+and reason (for example, `- 'f.py':2: new suppression directive`). Then:
+
+1. Fix the code/test/config; do not delete assertions or add suppressions to pass.
+2. `git add` the fix and rerun `make precommit`.
+3. Formatting only: `node_modules/.bin/prettier --ignore-path /dev/null --write <file>`
+   or `uv run --no-sync ruff format <file>`, inspect the diff, stage it.
+4. Tooling or environment problem (missing uv, wrong Node): `make setup` after
+   activating the pinned toolchain, then retry.
+
+Do **not** use `--no-verify`, `SKIP=`, or another `core.hooksPath`. Do not weaken
+thresholds, disable checks, or edit the policy to make a change pass: enforcement
+changes (including `.pre-commit-config.yaml`, `scripts/commit_policy.py`, and lint
+exceptions) require explicit human review in the PR — the guard prints an advisory
+when you touch them, and a human must accept that change on purpose.
+
+These checks are heuristic hygiene, not a security boundary: obfuscated secrets
+or alias tricks can evade them. Human PR review and the CI mirror are the real
+backstop.
 
 ## Running locally
 
@@ -137,12 +190,12 @@ working; `test:coverage` is the aggregated Vitest coverage entry point.
 Artifacts appear on the workflow run page under "Artifacts"
 (`gh run view <id> --repo arphen/crossword --log-failed` shows the log):
 
-| Artifact | When | How to use |
-| --- | --- | --- |
-| `frontend-coverage` | always | `coverage/frontend/index.html` shows uncovered code |
-| `backend-coverage` | always | `junit.xml` per-test results; `html/index.html` for misses |
-| `playwright-failure-diagnostics` | on E2E failure | Open `playwright-report/index.html` (`npx playwright show-report playwright-report`); a failing test's folder in `test-results/e2e/` has `trace.zip` (`npx playwright show-trace trace.zip`), `browser.log`, and screenshots |
-| `mutation-report` | relevant PRs and manual runs | `reports/mutation/index.html` lists survived/killed mutants |
+| Artifact                         | When                         | How to use                                                                                                                                                                                                                   |
+| -------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `frontend-coverage`              | always                       | `coverage/frontend/index.html` shows uncovered code                                                                                                                                                                          |
+| `backend-coverage`               | always                       | `junit.xml` per-test results; `html/index.html` for misses                                                                                                                                                                   |
+| `playwright-failure-diagnostics` | on E2E failure               | Open `playwright-report/index.html` (`npx playwright show-report playwright-report`); a failing test's folder in `test-results/e2e/` has `trace.zip` (`npx playwright show-trace trace.zip`), `browser.log`, and screenshots |
+| `mutation-report`                | relevant PRs and manual runs | `reports/mutation/index.html` lists survived/killed mutants                                                                                                                                                                  |
 
 Retention: 14 days (30 for mutation reports).
 

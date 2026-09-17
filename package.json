@@ -62,7 +62,8 @@
     ],
     "testPathIgnorePatterns": [
       "/apps/",
-      "/packages/"
+      "/packages/",
+      "/tests/e2e/"
     ]
   },
   "dependencies": {
