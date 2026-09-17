@@ -9,8 +9,8 @@ export default {
   reporters: ['clear-text', 'progress', 'html', 'json'],
   htmlReporter: { fileName: 'reports/mutation/index.html' },
   jsonReporter: { fileName: 'reports/mutation/mutation.json' },
-  // Baseline from the measured run (59.64%): session.ts blocked-cell handling
-  // is untestable against the current fixture topology (see TESTING.md debt).
+  // Initial adoption floor: measured score ~60% after adding blocked-cell coverage.
+  // Raise this as tests improve; do not lower it merely to pass a failing PR.
   thresholds: { high: 80, low: 55, break: 55 },
   timeoutMS: 10000,
   timeoutFactor: 2,

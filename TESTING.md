@@ -13,8 +13,41 @@ expensive ones run.
 | 3 | `e2e` | Playwright against real backend + built React preview | Stage 4 |
 | 4 | `mutation` | Stryker mutation testing on the domain core | — |
 
-Stage 4 runs only on pushes to `main`/`develop` and on the nightly cron
-(`schedule`), never on pull requests, so PR feedback stays fast.
+Stage 4 runs on **relevant pull requests into `master`** and **manual CI runs**.
+There are no nightly mutation runs and no mutation runs just because a PR merges.
+Normal CI still runs on pushes to `master` as a post-merge check.
+
+### Everyday process
+
+1. Work on a feature branch and open a PR into `master` (no direct push needed).
+2. Static checks, unit/component tests, and E2E run on every PR.
+3. Mutation tests also run if the PR changes `packages/domain/**` (including tests),
+   `vendor/generator/**`, root `package.json`/`package-lock.json`, `.npmrc`,
+   `.node-version`, `stryker.config.*`, `vitest.mutation.config.*`, or this CI workflow.
+   The filter checks the whole PR, including deleted/renamed files, on every update.
+4. Unrelated PRs skip mutation testing. Merge when **CI quality gate** is green.
+
+The final `CI quality gate` succeeds only when all normal checks pass and mutation
+passes when required. It accepts an intentional mutation skip for unrelated changes,
+not a skip caused by an earlier failure.
+
+**One-time repository setting:** In Settings → Rules → Rulesets (or Branches →
+Branch protection), protect `master`, require pull requests, and require the status
+check **CI quality gate**. Workflow YAML reports checks; it does not itself prevent
+merging a failed PR. This setting must be enabled separately by a maintainer.
+
+### Run mutation tests manually
+
+In GitHub, open **Actions → CI → Run workflow**, choose the branch, and click
+**Run workflow**. A manual run always includes mutation after the normal gates pass.
+The button becomes available once this `workflow_dispatch` definition is on the
+repository's default branch (`master`). With GitHub CLI:
+
+```bash
+gh workflow run ci.yml --ref YOUR_BRANCH
+```
+
+For just mutation locally, use `npm run test:mutation`.
 
 ## What each stage does
 
@@ -66,7 +99,9 @@ runners the E2E backend listens on 5002 (free there).
 - `npm run test:mutation` runs Stryker with the Vitest runner over
   `packages/domain/src/{puzzle,session}.ts` (`stryker.config.mjs`).
 - HTML + JSON reports land in `reports/mutation/`; CI uploads them.
-- Thresholds: break at 60% mutation score.
+- Current baseline: fail below 55% mutation score (measured approximately 60%).
+  Improve surviving mutations with useful assertions; do not lower the threshold
+  just to make a failing PR green.
 
 ## Running locally
 
@@ -107,7 +142,7 @@ Artifacts appear on the workflow run page under "Artifacts"
 | `frontend-coverage` | always | `coverage/frontend/index.html` shows uncovered code |
 | `backend-coverage` | always | `junit.xml` per-test results; `html/index.html` for misses |
 | `playwright-failure-diagnostics` | on E2E failure | Open `playwright-report/index.html` (`npx playwright show-report playwright-report`); a failing test's folder in `test-results/e2e/` has `trace.zip` (`npx playwright show-trace trace.zip`), `browser.log`, and screenshots |
-| `mutation-report` | nightly/main runs | `reports/mutation/index.html` lists survived/killed mutants |
+| `mutation-report` | relevant PRs and manual runs | `reports/mutation/index.html` lists survived/killed mutants |
 
 Retention: 14 days (30 for mutation reports).
 

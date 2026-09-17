@@ -2,11 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [master, main, develop]
+    branches: [master]
   pull_request:
-    branches: [master, main, develop]
-  schedule:
-    - cron: '23 3 * * *'
+    branches: [master]
+  # A manual CI run always includes mutation testing after the other gates.
   workflow_dispatch:
 
 permissions:
@@ -30,8 +29,31 @@ jobs:
     name: Static analysis and formatting
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      mutation_required: ${{ github.event_name == 'workflow_dispatch' || steps.changes.outputs.mutation == 'true' }}
     steps:
       - uses: actions/checkout@v4
+      # Inspect the entire PR (including deletions/renames), not just its last commit.
+      # Keep filtering inside the workflow so unrelated PRs still get a CI check.
+      - name: Detect mutation-relevant PR changes
+        id: changes
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            mutation:
+              - 'packages/domain/**'
+              - 'vendor/generator/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.npmrc'
+              - '.node-version'
+              - 'stryker.config.*'
+              - 'vitest.mutation.config.*'
+              - '.github/workflows/ci.yml'
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
@@ -153,12 +175,9 @@ jobs:
           retention-days: 14
 
   mutation:
-    name: Mutation testing (nightly and main/develop pushes)
-    needs: [e2e]
-    if: >-
-      github.event_name == 'schedule' ||
-      (github.event_name == 'push' &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'))
+    name: Mutation testing
+    needs: [static, e2e]
+    if: needs.static.outputs.mutation_required == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -180,3 +199,32 @@ jobs:
           path: reports/mutation/
           if-no-files-found: warn
           retention-days: 30
+
+  quality-gate:
+    name: CI quality gate
+    needs: [static, frontend-tests, backend-tests, e2e, mutation]
+    # Always report a result, even when a dependency failed or was skipped.
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require all applicable stages to pass
+        env:
+          STATIC_RESULT: ${{ needs.static.result }}
+          FRONTEND_RESULT: ${{ needs.frontend-tests.result }}
+          BACKEND_RESULT: ${{ needs.backend-tests.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+          MUTATION_REQUIRED: ${{ needs.static.outputs.mutation_required }}
+          MUTATION_RESULT: ${{ needs.mutation.result }}
+        run: |
+          for result in "$STATIC_RESULT" "$FRONTEND_RESULT" "$BACKEND_RESULT" "$E2E_RESULT"; do
+            if [[ "$result" != success ]]; then
+              echo "::error::A required CI stage failed, was cancelled, or was skipped."
+              exit 1
+            fi
+          done
+          case "$MUTATION_REQUIRED:$MUTATION_RESULT" in
+            true:success) echo 'Mutation testing passed.' ;;
+            false:skipped) echo 'Mutation testing not needed for this change.' ;;
+            *) echo '::error::Mutation testing did not complete as required.'; exit 1 ;;
+          esac
