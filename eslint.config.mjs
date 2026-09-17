@@ -8,6 +8,7 @@ export default tseslint.config(
     ignores: [
       '**/node_modules/**',
       '.venv/**',
+      '.uv_cache/**',
       'vendor/**',
       'reports/**',
       'coverage/**',
