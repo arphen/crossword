@@ -54,22 +54,26 @@ That target sets `CROSSWORD_ALLOW_LIVE_PROVIDER=1` and selects only tests
 marked `live_provider`. It is a private, manually initiated diagnostic and is
 not part of CI or the default test suite.
 
-## React solver with NYT loading
+## Vue frontend
 
-The React solver is the replacement play surface. The previous Flask process
-remains a local-only API bridge while the migration is in progress. Run both
-processes in separate terminals:
+Run `make run` and open **http://127.0.0.1:5001**. It rebuilds the Vue,
+Axios and Socket.IO assets before starting Flask. `make web-dev` and
+`npm run web:dev` are aliases for the same Vue server.
 
-```bash
-make legacy-run   # Flask API bridge on http://127.0.0.1:5001
-make web-dev      # React solver, normally on http://127.0.0.1:5173
-```
+## React parity port (private, not deployed)
 
-In the React solver, enter a `YYMMDD` or `YYYY-MM-DD` date and choose `Load`,
-or select a weekday and choose `Random`. Vite proxies those requests to the
-local bridge; no provider credentials are committed to the repository. The
-same-origin `/crossword_by_date` and `/random_crossword` routes are available
-when the built app is hosted by the bridge.
+The React port under `apps/react` mirrors this private bridge for parity
+verification only. Start it with
+`npm run dev --workspace @crossword/react-port` (port 5174) and run the
+browser harnesses under `scripts/` against it. It proxies the local Flask
+backend and is never deployed or published; the scanner exemptions in
+`scripts/forbidden-content.json` cover exactly that private surface. The
+future standalone frontend is a separate, generator-backed app without any
+provider integration.
+
+The Vue source matches `origin/rebuild` (`8523664`). The generator repository
+and vendored packages are preserved; connecting them to the Vue UI is a
+separate task. Do not apply or drop the existing stash without reviewing it.
 
 ## Browser smoke prerequisites
 

@@ -870,10 +870,11 @@ body {
     height: 100vh;
     margin: 0;
     padding: 1rem 0.75rem;
-    /* Even tighter padding */
-    overflow-y: auto;
+    /* Keep the direction watermark stationary; only the list scrolls. */
+    overflow: hidden;
     position: relative;
     isolation: isolate;
+    container-type: inline-size;
     scrollbar-width: none;
     align-items: flex-start;
     justify-content: flex-start;
@@ -959,8 +960,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: clamp(8rem, 18vw, 15rem);
-    /* Larger for better visual impact */
+    /* Fit the entire vertical ACROSS label within the visible lane. */
+    font-size: min(18vw, 15rem, 17vh, 90cqw);
     font-weight: 900;
     opacity: 0.06;
     /* More subtle */
@@ -1105,21 +1106,24 @@ body {
         0 0 35px rgba(33, 150, 243, 0.25);
 }
 
-/* Inactive state - glassy gray, no color */
+/* Keep inactive labels readable in both themes, not white-on-white. */
 .clue-column[data-label="ACROSS"].inactive::before,
 .clue-column[data-label="DOWN"].inactive::before {
-    opacity: 0.20;
-    color: rgba(255, 255, 255, 0.50);
-    text-shadow: 0 0 18px rgba(255, 255, 255, 0.15);
+    opacity: 0.30;
+    color: currentColor;
+    text-shadow: none;
     transition: opacity 0.4s ease, color 0.4s ease, text-shadow 0.4s ease;
 }
 
-/* Ensure content stays above the background */
+/* Scroll the clues independently of their stationary direction watermark. */
 #across,
 #down {
     position: relative;
     z-index: 1;
     width: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 /* Theme switch styles */

@@ -62,22 +62,20 @@ setup: check-uv check-node ## Clean-clone setup using both pinned lockfiles
 	uv sync --all-extras --frozen
 	npm ci --ignore-scripts
 	$(MAKE) legacy-assets
-	@echo "$(GREEN)Setup complete. Run make doctor, make legacy:run, or make test.$(NC)"
+	@echo "$(GREEN)Setup complete. Run make doctor, make run, or make test.$(NC)"
 
 build: legacy-assets ## Build reproducible legacy browser assets
 
 test: check-uv check-node ## Run local Python and JavaScript tests without live provider calls
 	uv run python -m pytest tests/ -m "not live_provider" -v
 	npm test -- --runInBand
-	npm run web:test
 	npm --workspace @crossword/domain run test
 	npm --workspace @crossword/persistence run test
+	npm --workspace @crossword/react-port run test
 	$(MAKE) core-test
 
-core-test: check-node ## Run the new domain/application/construction/model suites
+core-test: check-node ## Run the new domain/application suites
 	npm --workspace @crossword/application run test
-	npm --workspace @crossword/construction run test
-	npm --workspace @crossword/model-runtime run test
 
 mutation-test: check-node ## Mutation-test the deterministic construction core
 	npm run test:mutation
@@ -92,13 +90,12 @@ legacy-test: test ## Named legacy test entrypoint used by the continuity gate
 
 legacy-test-live: test-live ## Named opt-in live-provider test entrypoint
 
-legacy-run: check-uv ## Run the private Flask/Socket.IO bridge on port 5001
-	uv run python run.py
+legacy-run: check-uv legacy-assets ## Run the Vue app on port 5001 (rebuild browser assets)
+	uv run --no-sync python run.py
 
-web-dev: check-node ## Run the React solver; pair with legacy-run for NYT loading
-	npm run web:dev -- --host "$(SMOKE_HOST)"
+web-dev: run ## Alias for the Vue development server
 
-run: legacy-run ## Backwards-compatible alias for the legacy bridge
+run: legacy-run ## Run the Vue crossword app at http://127.0.0.1:5001
 
 legacy-smoke: check-uv check-node legacy-assets ## Mount the legacy page on a local synthetic fixture
 	@set -eu; \

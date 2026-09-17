@@ -5,36 +5,227 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  # A manual CI run always includes mutation testing after the other gates.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CI: 'true'
+  UV_NO_PROGRESS: '1'
+  CROSSWORD_ALLOW_LIVE_PROVIDER: '0'
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  static:
+    name: Static analysis and formatting
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      mutation_required: ${{ github.event_name == 'workflow_dispatch' || steps.changes.outputs.mutation == 'true' }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
+      # Inspect the entire PR (including deletions/renames), not just its last commit.
+      # Keep filtering inside the workflow so unrelated PRs still get a CI check.
+      - name: Detect mutation-relevant PR changes
+        id: changes
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@v3
         with:
-          version: "0.12.7"
-          enable-cache: true
-
-      - name: Install Python
-        run: uv python install $(cat .python-version)
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+          filters: |
+            mutation:
+              - 'packages/domain/**'
+              - 'vendor/generator/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.npmrc'
+              - '.node-version'
+              - 'stryker.config.*'
+              - 'vitest.mutation.config.*'
+              - '.github/workflows/ci.yml'
+      - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
           cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Activate pinned npm
+        run: npm install --global "$(node -p 'require("./package.json").packageManager')"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.7'
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Install locked tools
+        run: |
+          uv python install
+          uv sync --all-extras --frozen
+          npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run scan:content
+      - run: uv run --no-sync ruff check .
+      - name: Compile backend modules
+        run: uv run --no-sync python -m compileall -q src scripts tests
 
-      - name: Install locked dependencies and generate legacy assets
-        run: make setup
+  frontend-tests:
+    name: Frontend unit and component tests
+    needs: [static]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Activate pinned npm
+        run: npm install --global "$(node -p 'require("./package.json").packageManager')"
+      - run: npm ci --ignore-scripts
+      - run: npm run test:coverage
+      - name: Upload frontend coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: coverage/
+          if-no-files-found: warn
+          retention-days: 14
 
-      - name: Check toolchain contract
-        run: make doctor
+  backend-tests:
+    name: Backend unit and isolated integration tests
+    needs: [static]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.7'
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv python install
+      - run: uv sync --all-extras --frozen
+      - name: Test without live providers
+        run: >-
+          uv run --no-sync python -m pytest tests/ -m 'not live_provider'
+          --cov=src --cov-branch --cov-report=term-missing
+          --cov-report=xml:coverage/backend/coverage.xml
+          --cov-report=html:coverage/backend/html
+          --junitxml=coverage/backend/junit.xml
+      - name: Upload backend coverage and test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage/backend/
+          if-no-files-found: warn
+          retention-days: 14
 
-      - name: Run local tests
-        run: make test
+  e2e:
+    name: Playwright end-to-end tests
+    needs: [frontend-tests, backend-tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Activate pinned npm
+        run: npm install --global "$(node -p 'require("./package.json").packageManager')"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.7'
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv python install
+      - run: uv sync --all-extras --frozen
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Build frontend and legacy assets
+        run: |
+          npm run build
+          npm --workspace @crossword/react-port run build
+      # Playwright owns both processes, waits for HTTP readiness, and cleans up.
+      # The backend uses an isolated SQLite database (no external DB required).
+      - run: npm run test:e2e
+      - name: Upload failure diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-diagnostics
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
 
-      - name: Build legacy assets
-        run: make build
+  mutation:
+    name: Mutation testing
+    needs: [static, e2e]
+    if: needs.static.outputs.mutation_required == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Activate pinned npm
+        run: npm install --global "$(node -p 'require("./package.json").packageManager')"
+      - run: npm ci --ignore-scripts
+      - run: npm run test:mutation
+      - name: Upload mutation reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          if-no-files-found: warn
+          retention-days: 30
+
+  quality-gate:
+    name: CI quality gate
+    needs: [static, frontend-tests, backend-tests, e2e, mutation]
+    # Always report a result, even when a dependency failed or was skipped.
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require all applicable stages to pass
+        env:
+          STATIC_RESULT: ${{ needs.static.result }}
+          FRONTEND_RESULT: ${{ needs.frontend-tests.result }}
+          BACKEND_RESULT: ${{ needs.backend-tests.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+          MUTATION_REQUIRED: ${{ needs.static.outputs.mutation_required }}
+          MUTATION_RESULT: ${{ needs.mutation.result }}
+        run: |
+          for result in "$STATIC_RESULT" "$FRONTEND_RESULT" "$BACKEND_RESULT" "$E2E_RESULT"; do
+            if [[ "$result" != success ]]; then
+              echo "::error::A required CI stage failed, was cancelled, or was skipped."
+              exit 1
+            fi
+          done
+          case "$MUTATION_REQUIRED:$MUTATION_RESULT" in
+            true:success) echo 'Mutation testing passed.' ;;
+            false:skipped) echo 'Mutation testing not needed for this change.' ;;
+            *) echo '::error::Mutation testing did not complete as required.'; exit 1 ;;
+          esac

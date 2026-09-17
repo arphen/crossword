@@ -146,6 +146,7 @@
                                     <input ref="inputCells" :ref="'input-' + rowIndex + '-' + cellIndex" type="text"
                                         :maxlength="isRebus(cellIndex, rowIndex) ? 10 : 1"
                                         v-model="grid[rowIndex][cellIndex]"
+                                        @click="handle_grid_cell_click(rowIndex, cellIndex)"
                                         @keydown="handle_crossword_cell_keydown($event, rowIndex, cellIndex)"
                                         @contextmenu="handle_crossword_cell_contextmenu($event, rowIndex, cellIndex)"
                                         :data-row="rowIndex" :data-cell="cellIndex"

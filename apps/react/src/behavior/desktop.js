@@ -1,8 +1,7 @@
-// Vue app configuration - V2 with Cell object support
-// This version handles cells with formatting: shaded (^), circled (%), rebus (,)
-const socket = io();
-
-const CrosswordApp = {
+// Mechanically ported from the curated Vue desktop behavior.
+// Regenerate with node scripts/snapshot-react-behavior.mjs; original files remain unchanged.
+export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout, clearTimeout, setInterval, clearInterval, requestAnimationFrame, cancelAnimationFrame }) {
+  return {
     delimiters: ['[[', ']]'],
     data() {
         // Check initial color scheme preference
@@ -137,7 +136,7 @@ const CrosswordApp = {
         socket.on('cell_updated', (data) => {
             if (this.grid && this.grid[data.row] && typeof this.grid[data.row][data.col] !== 'undefined') {
                 // Use Vue.set to ensure reactivity
-                Vue.set(this.grid[data.row], data.col, data.value);
+                this.$set(this.grid[data.row], data.col, data.value);
             }
         });
     },
@@ -1633,13 +1632,4 @@ const CrosswordApp = {
         }
     }
 };
-
-// Initialize Vue app when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new Vue(CrosswordApp).$mount('#app');
-});
-
-// Export for testing
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { CrosswordApp };
 }

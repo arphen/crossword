@@ -19,9 +19,73 @@ import {
 } from './index';
 import type { CellId } from './index';
 
+// Small fully valid 2x1 grid with one blocked cell (cell-0-1): the single open
+// cell keeps across+down membership because both entries cover it.
+function buildBlockedPuzzle() {
+  const puzzle = {
+    schemaVersion: 1,
+    id: 'fixture-blocked-001',
+    seed: 'fixture-blocked-seed',
+    title: 'Blocked Cell Fixture',
+    subtitle: 'A two-wide grid with a blocked cell',
+    width: 2,
+    height: 1,
+    cells: [
+      { id: 'cell-0-0', row: 0, column: 0, block: false, circled: false, shaded: false },
+      { id: 'cell-0-1', row: 0, column: 1, block: true, circled: false, shaded: false }
+    ],
+    entries: [
+      {
+        id: 'entry-across-0', number: 1, direction: 'across',
+        cellIds: ['cell-0-0'], answer: 'C', clue: 'First letter'
+      },
+      {
+        id: 'entry-down-0', number: 1, direction: 'down',
+        cellIds: ['cell-0-0'], answer: 'C', clue: 'First letter'
+      }
+    ],
+    clues: [
+      { entryId: 'entry-across-0', variants: [{ mechanism: 'direct', text: 'First letter', difficulty: 0.2 }] },
+      { entryId: 'entry-down-0', variants: [{ mechanism: 'direct', text: 'First letter', difficulty: 0.2 }] }
+    ],
+    provenance: {
+      source: 'synthetic-fixture',
+      recipeId: 'fixture-blocked',
+      records: [{ id: 'fixture-blocked-record', kind: 'fixture', source: 'crossword synthetic fixture pack', license: 'MIT', digest: 'fixture-blocked-v1' }]
+    },
+    generation: {
+      modelId: 'none-fixture',
+      promptVersion: 'fixture-v1',
+      lexiconVersion: 'fixture-v1',
+      solverVersion: 'fixture-v1',
+      generatedAt: '2026-01-01T00:00:00.000Z',
+      restartCount: 0
+    },
+    quality: {
+      score: 1,
+      thresholds: { crossings: 1, provenance: 1 },
+      validators: ['topology', 'crossings', 'fixture-provenance']
+    },
+    integrity: { algorithm: 'sha256', value: 'fixture-blocked-v1' },
+    topology: { width: 2, height: 1, blockedCellIds: ['cell-0-1'], minEntryLength: 1 },
+    createdBy: 'synthetic-fixture'
+  };
+  return puzzle;
+}
+
 describe('solve session', () => {
   const puzzle = createFixturePuzzle();
   const index = indexPuzzle(puzzle);
+
+  it('initializes letters only for open cells, excluding blocked cells', () => {
+    const blockedPuzzle = buildBlockedPuzzle() as unknown as Parameters<typeof createSession>[0];
+    const session = createSession(blockedPuzzle, indexPuzzle(blockedPuzzle), 1_000);
+
+    expect('cell-0-1' in session.entered).toBe(false);
+    expect(session.entered['cell-0-0']).toBe('');
+    expect(Object.keys(session.entered)).toHaveLength(1);
+    expect(Object.values(session.entered).every((value) => value === '')).toBe(true);
+  });
 
   it('keeps selection and direction in one state', () => {
     let session = createSession(puzzle, index);

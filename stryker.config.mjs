@@ -1,31 +1,17 @@
-/** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
+  $schema: './node_modules/@stryker-mutator/core/schema/stryker-schema.json',
+  // Mutate this repository, not the optional sibling generator checkout.
+  mutate: ['packages/domain/src/puzzle.ts', 'packages/domain/src/session.ts'],
   testRunner: 'vitest',
-  mutate: ['packages/construction/src/csp.ts'],
-  vitest: {
-    dir: 'packages/construction',
-    related: true
-  },
+  vitest: { configFile: 'vitest.mutation.config.mjs' },
+  coverageAnalysis: 'perTest',
+  concurrency: 2,
   reporters: ['clear-text', 'progress', 'html', 'json'],
-  disableTypeChecks: false,
-  ignorePatterns: [
-    '.venv',
-    'node_modules',
-    'apps/web/dist',
-    'reports',
-    'src/crossword/static/lib'
-  ],
-  htmlReporter: {
-    fileName: 'reports/mutation/index.html'
-  },
-  jsonReporter: {
-    fileName: 'reports/mutation/report.json'
-  },
-  thresholds: {
-    high: 80,
-    low: 70,
-    break: 0
-  },
-  tempDirName: '.stryker-tmp',
-  cleanTempDir: true
+  htmlReporter: { fileName: 'reports/mutation/index.html' },
+  jsonReporter: { fileName: 'reports/mutation/mutation.json' },
+  // Initial adoption floor: measured score ~60% after adding blocked-cell coverage.
+  // Raise this as tests improve; do not lower it merely to pass a failing PR.
+  thresholds: { high: 80, low: 55, break: 55 },
+  timeoutMS: 10000,
+  timeoutFactor: 2,
 };

@@ -9,6 +9,18 @@
   ],
   "exemptions": [
     {
+      "path": "apps/react/src",
+      "patterns": ["legacy-provider-route", "xwordinfo"],
+      "reason": "React port of the private continuity bridge: it mirrors the private Flask surface (provider fetch, XWord Info link) so the household can keep solving during migration. This is a private, non-deployed frontend; the public release artifact is a separate generator-backed app with no provider code, scanned without these exemptions.",
+      "until": "standalone public release"
+    },
+    {
+      "path": "apps/react/vite.config.js",
+      "patterns": ["legacy-provider-route"],
+      "reason": "Dev/preview proxy to the local Flask bridge only; the proxy never ships in any build artifact.",
+      "until": "standalone public release"
+    },
+    {
       "path": "apps/web/src/nytApi.ts",
       "patterns": ["legacy-provider-route"],
       "reason": "Continuity bridge loading for the household during migration; the deployable artifact must lose this file at Phase 4 (M4.1 allowlist).",
