@@ -137,6 +137,7 @@ export default function CrosswordView({ app }) {
                                                         maxLength={app.isRebus(cellIndex, rowIndex) ? 10 : 1}
                                                         value={app.grid[rowIndex][cellIndex]}
                                                         onChange={event => { app.grid[rowIndex][cellIndex] = event.target.value; }}
+                                                        onClick={() => app.handle_grid_cell_click(rowIndex, cellIndex)}
                                                         onKeyDown={event => app.handle_crossword_cell_keydown(event, rowIndex, cellIndex)}
                                                         onContextMenu={event => app.handle_crossword_cell_contextmenu(event, rowIndex, cellIndex)}
                                                         data-row={rowIndex} data-cell={cellIndex}

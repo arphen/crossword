@@ -857,6 +857,16 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             });
             console.log(`Placed ${this.crossword.length} entries in grid`);
         },
+        handle_grid_cell_click(rowIndex, cellIndex) {
+            this.selectWordAt(rowIndex, cellIndex);
+        },
+        selectWordAt(rowIndex, cellIndex) {
+            // Keep clue-list/grid highlights in sync with the focused cell.
+            const entry = this.findCurrentWord(rowIndex, cellIndex);
+            if (!entry) return;
+            this.activeClueNumber = entry.clue_number;
+            this.activeDirection = entry.direction;
+        },
         handle_clue_click(event, entry) {
             // Set the direction to match the entry
             this.direction = entry.direction;
@@ -983,6 +993,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                                 return;
                             }
                         });
+                        this.selectWordAt(nextWord.start_y, nextWord.start_x);
                         return;
                     }
                 }
@@ -1007,6 +1018,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                         nextInput[0].focus();
                     }
                 });
+                this.selectWordAt(targetY, targetX);
             } else {
                 // Target is a black square, skip over it recursively
                 this.move(targetY, targetX, direction);
@@ -1024,23 +1036,31 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             if (event.key === "ArrowRight") {
                 if (this.direction === 'across')
                     this.move(rowIndex, cellIndex, 'forward');
-                else
+                else {
                     this.direction = 'across';
+                    this.selectWordAt(rowIndex, cellIndex);
+                }
             } else if (event.key === "ArrowLeft") {
                 if (this.direction === 'across')
                     this.move(rowIndex, cellIndex, 'backward');
-                else
+                else {
                     this.direction = 'across';
+                    this.selectWordAt(rowIndex, cellIndex);
+                }
             } else if (event.key === "ArrowDown") {
                 if (this.direction === 'down')
                     this.move(rowIndex, cellIndex, 'forward');
-                else
+                else {
                     this.direction = 'down';
+                    this.selectWordAt(rowIndex, cellIndex);
+                }
             } else if (event.key === "ArrowUp") {
                 if (this.direction === 'down')
                     this.move(rowIndex, cellIndex, 'backward');
-                else
+                else {
                     this.direction = 'down';
+                    this.selectWordAt(rowIndex, cellIndex);
+                }
             } else if (event.key === "Backspace") {
                 this.grid[rowIndex][cellIndex] = '';
                 this.$forceUpdate();
