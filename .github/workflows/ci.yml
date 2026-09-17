@@ -36,6 +36,10 @@ jobs:
       mutation_required: ${{ github.event_name == 'workflow_dispatch' || steps.changes.outputs.mutation == 'true' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The commit-policy step reads base...HEAD (merge-base), so both sides
+          # of the PR diff must exist as full objects on the runner.
+          fetch-depth: 0
       # Inspect the entire PR (including deletions/renames), not just its last commit.
       # Keep filtering inside the workflow so unrelated PRs still get a CI check.
       - name: Detect mutation-relevant PR changes

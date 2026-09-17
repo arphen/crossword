@@ -14,8 +14,11 @@ export interface ControllerConfiguration {
 }
 
 export interface Controller {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic legacy app; replace with a domain-backed view model during migration.
-  app: Record<string, any>;
+  /**
+   * Legacy escape hatch, deliberately typed loosely. TODO(migration): replace
+   * with a domain-backed view model; tracked debt, not a suppression directive.
+   */
+  app: Record<string, unknown>;
   subscribe(listener: () => void): () => void;
   snapshot(): number;
   flush(): void;
