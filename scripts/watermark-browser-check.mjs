@@ -1,11 +1,14 @@
 import { chromium } from 'playwright';
-import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const base = process.env.WATERMARK_URL ?? 'http://127.0.0.1:5001/';
 const output = new URL('../reports/watermark/', import.meta.url);
 mkdirSync(output, { recursive: true });
 const fixture = JSON.parse(readFileSync(new URL('../reports/react-parity/fixture.json', import.meta.url), 'utf8'));
-const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true });
+// Playwright's bundled Chromium is the default; CHROME_BIN or a standard
+// Chrome/Chromium location wins, matching the other browser harnesses.
+const chromeBin = process.env.CHROME_BIN ?? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/chromium', '/usr/bin/google-chrome'].find(existsSync);
+const browser = await chromium.launch({ ...(chromeBin ? { executablePath: chromeBin } : {}), headless: true });
 const report = { url: base, viewport: { width: 846, height: 1722 }, errors: [] };
 try {
   const page = await browser.newPage({ viewport: report.viewport, colorScheme: 'dark' });

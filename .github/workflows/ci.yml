@@ -74,6 +74,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format:check
+      - run: npm run scan:content
       - run: uv run --no-sync ruff check .
       - name: Compile backend modules
         run: uv run --no-sync python -m compileall -q src scripts tests

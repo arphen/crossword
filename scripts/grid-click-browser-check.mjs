@@ -1,10 +1,13 @@
 import { chromium } from 'playwright';
-import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const fixture = JSON.parse(readFileSync(new URL('../reports/react-parity/fixture.json', import.meta.url), 'utf8'));
 const out = new URL('../reports/grid-click/', import.meta.url);
 mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true });
+// Playwright's bundled Chromium is the default; CHROME_BIN or a standard
+// Chrome/Chromium location wins, matching the other browser harnesses.
+const chromeBin = process.env.CHROME_BIN ?? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/chromium', '/usr/bin/google-chrome'].find(existsSync);
+const browser = await chromium.launch({ ...(chromeBin ? { executablePath: chromeBin } : {}), headless: true });
 const report = {};
 try {
   for (const [name, url] of Object.entries({ vue: 'http://127.0.0.1:5001/', react: process.env.REACT_PARITY_URL ?? 'http://127.0.0.1:5174/' })) {

@@ -71,6 +71,7 @@ test: check-uv check-node ## Run local Python and JavaScript tests without live 
 	npm test -- --runInBand
 	npm --workspace @crossword/domain run test
 	npm --workspace @crossword/persistence run test
+	npm --workspace @crossword/react-port run test
 	$(MAKE) core-test
 
 core-test: check-node ## Run the new domain/application suites
