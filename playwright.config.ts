@@ -14,31 +14,21 @@ export default defineConfig({
   outputDir: 'test-results/e2e',
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL: backendURL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     serviceWorkers: 'block',
   },
   projects: [{ name: 'desktop-chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 1000 } } }],
-  webServer: [
-    {
-      command: 'uv run --no-sync python scripts/ci-server.py',
-      url: `${backendURL}/api/health`,
-      reuseExistingServer: false,
-      timeout: 30_000,
-      stdout: 'pipe',
-      stderr: 'pipe',
-      env: { PYTHONUNBUFFERED: '1' },
-    },
-    {
-      // Build the actual React port first: preview never builds implicitly.
-      command: 'npm --workspace @crossword/react-port run build && npm --workspace @crossword/react-port exec -- vite preview --host 127.0.0.1 --port 4173 --strictPort',
-      url: 'http://127.0.0.1:4173',
-      reuseExistingServer: false,
-      timeout: 60_000,
-      stdout: 'pipe',
-      stderr: 'pipe',
-      env: { CROSSWORD_BACKEND: backendURL },
-    },
-  ],
+  webServer: {
+    // Exercise the same built React + Flask routes as make run, with an
+    // isolated database and synthetic puzzles instead of private providers.
+    command: 'npm run build && npm --workspace @crossword/react-port run build && uv run --no-sync python scripts/ci-server.py',
+    url: `${backendURL}/api/health`,
+    reuseExistingServer: false,
+    timeout: 60_000,
+    stdout: 'pipe',
+    stderr: 'pipe',
+    env: { PYTHONUNBUFFERED: '1', CROSSWORD_E2E_BACKEND_PORT: backendPort },
+  },
 });

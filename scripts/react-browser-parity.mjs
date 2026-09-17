@@ -1,5 +1,5 @@
 // Compare the real Vue/React pages with identical provider-neutral data.
-// Requires Flask at VUE_PARITY_URL and Vite at REACT_PARITY_URL.
+// Defaults to Flask's Vue /legacy/ reference and React / daily driver.
 import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
@@ -10,7 +10,7 @@ const movementTrace = process.env.PARITY_TRACE === 'movement';
 const expectedCheckpoints = movementTrace ? 11 : 15;
 const output = new URL(movementTrace ? '../reports/react-movement-parity/' : '../reports/react-parity/', import.meta.url);
 mkdirSync(output, { recursive: true });
-const urls = { vue: process.env.VUE_PARITY_URL ?? 'http://127.0.0.1:5001/', react: process.env.REACT_PARITY_URL ?? 'http://127.0.0.1:5174/' };
+const urls = { vue: process.env.VUE_PARITY_URL ?? 'http://127.0.0.1:5001/legacy/', react: process.env.REACT_PARITY_URL ?? 'http://127.0.0.1:5001/' };
 // Rotationally symmetric 15x15 synthetic grid; no published puzzle content.
 const rows = ['...#.......#...', '...#.......#...', '.......#.......', '##...#...#...##', '.....#...#.....', '...#.......#...', '.....#...#.....', '##...#...#...##', '.....#...#.....', '...#.......#...', '.....#...#.....', '##...#...#...##', '.......#.......', '...#.......#...', '...#.......#...'];
 const entries = [];
