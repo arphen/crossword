@@ -120,9 +120,15 @@ try {
     ];
     for (const [id, action, row, col] of steps) await checkpoint(id, action, async page => {
       await focusIs(page, row, col);
-      assert.equal(await page.locator('#across .highlighted-clue .clue-number').textContent(), '1.');
-      assert.equal(await page.evaluate(() => document.body.dataset.activeDirection), 'across');
-      assert.deepEqual(await page.locator('.grid-cell.highlighted-cell input').evaluateAll(inputs => inputs.map(el => [Number(el.dataset.row), Number(el.dataset.cell)])), [[0, 0], [0, 1], [0, 2]]);
+      const direction = id === 'm01-select-across' || Number(id.slice(1, 3)) >= 8 ? 'across' : 'down';
+      const selected = entries.find(e => e.direction === direction && (direction === 'across'
+        ? e.start_y === row && col >= e.start_x && col < e.start_x + e.characters.length
+        : e.start_x === col && row >= e.start_y && row < e.start_y + e.characters.length));
+      assert.ok(selected, `fixture word at ${row},${col} ${direction}`);
+      assert.equal(await page.locator(`#${direction} .highlighted-clue .clue-number`).textContent(), `${selected.clue_number}.`);
+      assert.equal(await page.evaluate(() => document.body.dataset.activeDirection), direction);
+      const coordinates = selected.characters.map((_, i) => [selected.start_y + (direction === 'down' ? i : 0), selected.start_x + (direction === 'across' ? i : 0)]);
+      assert.deepEqual(await page.locator('.grid-cell.highlighted-cell input').evaluateAll(inputs => inputs.map(el => [Number(el.dataset.row), Number(el.dataset.cell)])), coordinates);
       if (id === 'm07-clear-occupied-and-back') assert.equal(await cell(page, 4, 0).inputValue(), '');
     });
   } else {
@@ -171,16 +177,16 @@ try {
     await page.locator('#down .clue-text').first().click();
     await page.keyboard.press('ArrowRight');
   }, async page => {
-    // The first perpendicular arrow switches movement direction only. It must
-    // neither advance focus nor silently replace Vue's selected Down clue.
+    // Requested follow-up: perpendicular arrows select the new direction's
+    // word without advancing focus, in both Vue and React.
     assert.equal(await cell(page, 0, 0).evaluate(el => el === document.activeElement), true);
     assert.equal(await page.locator('.clue-column.active').getAttribute('data-label'), 'ACROSS');
-    assert.equal(await page.locator('#down .highlighted-clue .clue-number').textContent(), '1.');
-    assert.equal(await page.locator('#across .highlighted-clue').count(), 0);
-    assert.equal(await page.evaluate(() => document.body.dataset.activeDirection), 'down');
-    assert.deepEqual(await page.locator('.grid-cell.highlighted-cell input').evaluateAll(inputs => inputs.map(el => [Number(el.dataset.row), Number(el.dataset.cell)])), [[0, 0], [1, 0], [2, 0]]);
-    assert.deepEqual(await page.locator('#across .affected-clue .clue-number').allTextContents(), ['1.', '14.', '17.']);
-    assert.equal(await page.locator('#across .intersection-cell-down').count(), 3);
+    assert.equal(await page.locator('#across .highlighted-clue .clue-number').textContent(), '1.');
+    assert.equal(await page.locator('#down .highlighted-clue').count(), 0);
+    assert.equal(await page.evaluate(() => document.body.dataset.activeDirection), 'across');
+    assert.deepEqual(await page.locator('.grid-cell.highlighted-cell input').evaluateAll(inputs => inputs.map(el => [Number(el.dataset.row), Number(el.dataset.cell)])), [[0, 0], [0, 1], [0, 2]]);
+    assert.deepEqual(await page.locator('#down .affected-clue .clue-number').allTextContents(), ['1.', '2.', '3.']);
+    assert.equal(await page.locator('#down .intersection-cell-across').count(), 3);
   });
   }
 } catch (error) {
