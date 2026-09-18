@@ -13,6 +13,7 @@
     --react-green: #8fe4b1;
     --react-red: #ff9c9c;
     --react-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --clue-number-ladder-offset: 25px;
     --cell-size: min(3.25rem, calc((42.4vw - 2rem) / 15));
     display: block;
     width: 100vw;
@@ -228,6 +229,16 @@
     margin: 0 8px 0 0;
 }
 
+.react-desktop-app #across li:nth-child(odd) .clue-number,
+.react-desktop-app #down li:nth-child(odd) .clue-number {
+    transform: translateY(calc(var(--clue-number-ladder-offset) * -1));
+}
+
+.react-desktop-app #across li:nth-child(even) .clue-number,
+.react-desktop-app #down li:nth-child(even) .clue-number {
+    transform: translateY(var(--clue-number-ladder-offset));
+}
+
 .react-desktop-app .clue-content {
     display: flex;
     flex: 1 1 auto;
@@ -423,7 +434,7 @@
 
 .react-desktop-app .state.cursor-cell {
     border-color: var(--react-orange) !important;
-    background: var(--react-orange) !important;
+    background: rgba(255, 173, 50, 0.72) !important;
     color: var(--react-bg) !important;
     box-shadow: 0 0 0 1px rgba(255, 173, 50, 0.55), 0 0 8px rgba(255, 173, 50, 0.35);
     font-weight: 700;
@@ -431,7 +442,7 @@
 
 body[data-active-direction="down"] .react-desktop-app .state.cursor-cell {
     border-color: var(--react-blue) !important;
-    background: var(--react-blue) !important;
+    background: rgba(141, 199, 255, 0.72) !important;
     box-shadow: 0 0 0 1px rgba(141, 199, 255, 0.55), 0 0 8px rgba(141, 199, 255, 0.35);
 }
 
