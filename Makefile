@@ -2,7 +2,7 @@
 .SHELL := /bin/sh
 
 .PHONY: help check-uv check-node doctor install dev sync venv setup \
-	test test-js test-live core-test legacy-test legacy-test-live build legacy-assets \
+	test test-js test-live core-test legacy-test legacy-test-live build legacy-assets react-assets \
 	mutation-test \
 	legacy-run web-dev run legacy-smoke test-cov test-watch lint format clean \
 	run-prod shell docker-build docker-run deps-update deps-list deps-tree \
@@ -55,16 +55,19 @@ sync: dev ## Alias for the canonical all-extras uv sync
 venv: check-uv ## Ensure the project uv environment exists
 	@if [ -d .venv ]; then echo "$(YELLOW).venv already exists; uv sync owns it.$(NC)"; else uv venv --python "$$(sed -e 's/[[:space:]]*#.*//' .python-version | sed '/^[[:space:]]*$$/d' | head -n 1); fi
 
-legacy-assets: check-node ## Generate ignored legacy browser assets from package-lock.json
+legacy-assets: check-node ## Generate ignored legacy/shared browser assets from package-lock.json
 	npm run build
+
+react-assets: check-node ## Build the React frontend served by Flask
+	npm run build --workspace @crossword/react-port
 
 setup: check-uv check-node ## Clean-clone setup using both pinned lockfiles
 	uv sync --all-extras --frozen
 	npm ci --ignore-scripts
-	$(MAKE) legacy-assets
+	$(MAKE) build
 	@echo "$(GREEN)Setup complete. Run make doctor, make run, or make test.$(NC)"
 
-build: legacy-assets ## Build reproducible legacy browser assets
+build: legacy-assets react-assets ## Build shared legacy assets and the React frontend
 
 test: check-uv check-node ## Run local Python and JavaScript tests without live provider calls
 	uv run python -m pytest tests/ -m "not live_provider" -v
@@ -90,12 +93,12 @@ legacy-test: test ## Named legacy test entrypoint used by the continuity gate
 
 legacy-test-live: test-live ## Named opt-in live-provider test entrypoint
 
-legacy-run: check-uv legacy-assets ## Run the Vue app on port 5001 (rebuild browser assets)
+legacy-run: run ## Start the same server; Vue fallback at http://127.0.0.1:5001/legacy/
+
+web-dev: run ## Alias for the React/Flask development server
+
+run: check-uv build ## Build both frontends; run React at http://127.0.0.1:5001/
 	uv run --no-sync python run.py
-
-web-dev: run ## Alias for the Vue development server
-
-run: legacy-run ## Run the Vue crossword app at http://127.0.0.1:5001
 
 legacy-smoke: check-uv check-node legacy-assets ## Mount the legacy page on a local synthetic fixture
 	@set -eu; \
@@ -106,11 +109,11 @@ legacy-smoke: check-uv check-node legacy-assets ## Mount the legacy page on a lo
 	trap cleanup EXIT INT TERM; \
 	ready=0; \
 	for attempt in $$(seq 1 50); do \
-		if node -e 'fetch(process.argv[1]).then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))' "http://$(SMOKE_HOST):$(SMOKE_PORT)/"; then ready=1; break; fi; \
+		if node -e 'fetch(process.argv[1]).then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))' "http://$(SMOKE_HOST):$(SMOKE_PORT)/legacy/"; then ready=1; break; fi; \
 		sleep 0.2; \
 	done; \
 	if [ "$$ready" -ne 1 ]; then cat "$$log_file"; echo "$(RED)Smoke server did not become ready.$(NC)"; exit 1; fi; \
-	set +e; node scripts/legacy-browser-smoke.mjs "http://$(SMOKE_HOST):$(SMOKE_PORT)/"; smoke_status=$$?; set -e; \
+	set +e; node scripts/legacy-browser-smoke.mjs "http://$(SMOKE_HOST):$(SMOKE_PORT)/legacy/"; smoke_status=$$?; set -e; \
 	if [ "$$smoke_status" -eq 77 ]; then echo "$(YELLOW)Browser smoke skipped; set CHROME_BIN to a Chrome/Chromium executable.$(NC)"; \
 	elif [ "$$smoke_status" -ne 0 ]; then cat "$$log_file"; exit "$$smoke_status"; fi
 
@@ -126,12 +129,12 @@ lint: ## Placeholder for the legacy lint gate
 format: ## Placeholder for the legacy formatter gate
 	@echo "$(YELLOW)No legacy formatter is configured yet; see the quality plan.$(NC)"
 
-clean: ## Remove generated caches and legacy browser assets
+clean: ## Remove generated caches and browser assets
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	@rm -rf .coverage htmlcov .uv_cache src/crossword/static/lib
+	@rm -rf .coverage htmlcov .uv_cache src/crossword/static/lib src/crossword/static/react
 	@echo "$(GREEN)Generated files cleaned; lockfiles and source are unchanged.$(NC)"
 
 run-prod: check-uv ## Run the WSGI app on the continuity port (5001)

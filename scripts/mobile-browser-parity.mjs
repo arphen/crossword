@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const out = new URL('../reports/react-mobile-parity/', import.meta.url);
 mkdirSync(out, { recursive: true });
-const urls = { vue: process.env.VUE_PARITY_URL ?? 'http://127.0.0.1:5001', react: process.env.REACT_PARITY_URL ?? 'http://127.0.0.1:5174' };
+const urls = { vue: process.env.VUE_PARITY_URL ?? 'http://127.0.0.1:5001/legacy/', react: process.env.REACT_PARITY_URL ?? 'http://127.0.0.1:5001/' };
 const fixture = { entries: [
   { clue_number: 1, clue_text: 'Feline', direction: 'across', start_x: 0, start_y: 0, characters: [...'CAT'].map(letters => ({ letters })) },
   { clue_number: 1, clue_text: 'Rogue', direction: 'down', start_x: 0, start_y: 0, characters: [...'CAD'].map(letters => ({ letters })) },
@@ -20,18 +20,20 @@ const pages = {};
 try {
   for (const [engine, base] of Object.entries(urls)) {
     const context = await browser.newContext({ viewport: report.viewport, deviceScaleFactor: 1, colorScheme: 'light' });
-    const response = await context.request.post(`${base}/api/multiplayer/create`, { data: { date: '260829' } });
+    const origin = new URL(base).origin;
+    const response = await context.request.post(`${origin}/api/multiplayer/create`, { data: { date: '260829' } });
     assert.equal(response.status(), 200);
     const { room_id } = await response.json();
     await context.route('**/*', route => {
       const u = new URL(route.request().url());
-      if (u.origin !== new URL(base).origin) return route.abort();
+      if (u.origin !== origin) return route.abort();
       if (u.pathname.startsWith('/crossword_by_date/')) return route.fulfill({ json: fixture });
       return route.continue();
     });
     const page = await context.newPage();
     page.on('pageerror', e => report.errors.push({ engine, error: e.message }));
-    await page.goto(`${base}/mobile/${room_id}/across`);
+    const mobilePath = engine === 'vue' ? '/legacy/mobile' : '/mobile';
+    await page.goto(`${origin}${mobilePath}/${room_id}/across`);
     await page.locator('.clue-item').first().waitFor();
     pages[engine] = page;
   }

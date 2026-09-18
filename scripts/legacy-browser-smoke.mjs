@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-const url = process.env.LEGACY_SMOKE_URL ?? process.argv[2] ?? 'http://127.0.0.1:5001/';
+const url = process.env.LEGACY_SMOKE_URL ?? process.argv[2] ?? 'http://127.0.0.1:5001/legacy/';
 const candidates = [
   process.env.CHROME_BIN,
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',

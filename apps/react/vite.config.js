@@ -12,9 +12,8 @@ export default defineConfig({
     '/api': backend, '/socket.io': { target: backend, ws: true }
   } },
   esbuild: { jsx: 'automatic' },
-  // Builds land in Flask's static tree; relative asset URLs let Flask serve
-  // them under /static/react/ without extra Flask routes. The dev server
-  // keeps root-absolute URLs because base only applies to builds.
-  base: './',
+  // Flask serves this shell at both '/' and '/mobile/<room>/<role>'.
+  // Absolute asset URLs keep nested mobile routes on the same built bundle.
+  base: '/',
   build: { outDir: '../../src/crossword/static/react', emptyOutDir: true },
 });

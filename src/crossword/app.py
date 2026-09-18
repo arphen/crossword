@@ -6,7 +6,7 @@ import subprocess
 from io import BytesIO
 import base64
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_from_directory
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import requests
 import qrcode
@@ -57,11 +57,40 @@ class GameSession:
             'players': self.players
         }
 
+# Built React frontend (apps/react, built by `make run` / `make react-assets`).
+REACT_DIST = os.path.join(current_dir, 'static', 'react')
+
+def _react_index():
+    """Serve React explicitly; a missing build must not silently select Vue."""
+    if not os.path.exists(os.path.join(REACT_DIST, 'index.html')):
+        return 'React build missing. Run make react-assets, then reload.', 503
+    response = send_from_directory(REACT_DIST, 'index.html')
+    response.headers['Cache-Control'] = 'no-cache'
+    return response
+
 @app.route('/')
 def index():
-    """Main crossword interface."""
-    html = render_template('newapp.html')
-    return html
+    """Daily crossword interface: the React port served by Flask."""
+    return _react_index()
+
+@app.route('/legacy')
+@app.route('/legacy/')
+def legacy_index():
+    """Legacy Vue frontend: parity reference and fallback, not the default."""
+    return render_template('newapp.html')
+
+@app.route('/legacy/mobile/<room_id>/<role>')
+def legacy_mobile_client(room_id, role):
+    return render_template('mobile.html', room_id=room_id, role=role)
+
+@app.route('/assets/<path:filename>')
+def react_assets(filename):
+    """Hashed Vite bundle assets; content-addressed, so cache indefinitely."""
+    response = send_from_directory(os.path.join(REACT_DIST, 'assets'), filename,
+                                   max_age=31536000)
+    response.cache_control.immutable = True
+    return response
+
 @app.route('/crossword/<date>')
 def get_crossword(date):
     content = requests.get(f'https://nytsyn.pzzl.com/nytsyn-crossword-mh/nytsyncrossword?date={date}').text
@@ -282,7 +311,8 @@ def get_qr(room_id, role):
 
 @app.route('/mobile/<room_id>/<role>')
 def mobile_client(room_id, role):
-    return render_template('mobile.html', room_id=room_id, role=role)
+    """Mobile solve view: the React port (same build, mobile route)."""
+    return _react_index()
 
 @app.route('/api/system/wifi', methods=['POST'])
 def open_wifi_settings():

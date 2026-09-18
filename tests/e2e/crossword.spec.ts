@@ -50,7 +50,20 @@ test('desktop keyboard, clue highlighting, checks and completion persist through
   await expect(page.locator('.modal-content')).toContainText('CI fixture author');
 });
 
-test('completion API validates, deduplicates, persists and deletes through the preview proxy', async ({ request, playwright }) => {
+test('nested mobile routes mount React and join the existing room', async ({ page, request }) => {
+  const created = await request.post('/api/multiplayer/create', { data: { date: '240101' } });
+  expect(created.ok()).toBeTruthy();
+  const { room_id } = await created.json();
+  for (const role of ['across', 'down']) {
+    await page.goto(`/mobile/${room_id}/${role}`);
+    await expect(page.locator('#react-root .clue-item')).toHaveCount(3);
+    await expect(page).toHaveTitle('Crossword Mobile');
+    await page.reload();
+    await expect(page.locator('#react-root .clue-item')).toHaveCount(3);
+  }
+});
+
+test('completion API validates, deduplicates, persists and deletes through Flask', async ({ request, playwright, baseURL }) => {
   const invalid = await request.post('/api/completed_puzzles', { data: {} });
   expect(invalid.status()).toBe(400);
   expect(await invalid.json()).toEqual({ error: 'puzzle_date is required' });
@@ -61,7 +74,7 @@ test('completion API validates, deduplicates, persists and deletes through the p
   expect(record).toMatchObject(payload);
 
   // A completely separate HTTP client proves persistence is server-side.
-  const second = await playwright.request.newContext({ baseURL: 'http://127.0.0.1:4173' });
+  const second = await playwright.request.newContext({ baseURL });
   try {
     expect(await (await second.get('/api/completed_puzzles/240209')).json()).toEqual({ completed: true, data: record });
     const duplicate = await second.post('/api/completed_puzzles', { data: { ...payload, score: 1 } });

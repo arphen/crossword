@@ -80,11 +80,11 @@ For just mutation locally, use `npm run test:mutation`.
   `CROSSWORD_DATABASE_URI`), original synthetic puzzles, and outbound network
   blocked (`requests` + `socket.connect` raise). `/api/health` verifies the
   database actually answers before tests start.
-- `vite preview` serves the *built* React app on `127.0.0.1:4173` and proxies
-  `/api`, `/static`, puzzle and socket routes to the backend — one origin, real
-  HTTP.
-- `playwright.config.ts` starts both via `webServer`, waits for the health
-  endpoint and the preview URL, then runs `tests/e2e`.
+- `playwright.config.ts` starts one web server: `npm run build` plus the React
+  build, then `scripts/ci-server.py` — the same Flask app that serves the
+  daily frontend in development. Tests hit real Flask routes directly, so the
+  suite covers the actual `make run` serving path (`/`, `/mobile/...`,
+  `/assets/...`), not a Vite preview proxy.
 - The fixture in `tests/e2e/fixtures.ts` aborts any request outside the local
   origin and fails the test if the page throws, so the suite cannot silently
   depend on third-party hosts.

@@ -7,9 +7,9 @@ export const test = base.extend<{ offlineHarness: void }>({
     const pageErrors: string[] = [];
     const local = (url: string) => {
       const parsed = new URL(url);
-      return parsed.hostname === '127.0.0.1' && parsed.port === '4173';
+      return parsed.hostname === '127.0.0.1' && parsed.port === (process.env.CROSSWORD_E2E_BACKEND_PORT ?? '5002');
     };
-    // No mocked application responses: allow only the real preview + its proxy.
+    // No mocked application responses: allow only the isolated Flask app.
     await context.route('**/*', async route => {
       if (local(route.request().url())) await route.continue();
       else {

@@ -131,6 +131,44 @@ def test_provider_failure_returns_error_without_completion(api, monkeypatch):
     assert client.get("/api/completed_puzzles").json == []
 
 
+@pytest.mark.parametrize("route", ["/", "/mobile/test/across", "/mobile/test/down"])
+def test_react_shell_and_assets(api, tmp_path, monkeypatch, route):
+    dist = tmp_path / "react"
+    (dist / "assets").mkdir(parents=True)
+    shell = '<div id="react-root"></div><script src="/assets/test.js"></script>'
+    (dist / "index.html").write_text(shell)
+    (dist / "assets/test.js").write_text('console.log("test");')
+    monkeypatch.setattr(api, "REACT_DIST", str(dist))
+    client = api.app.test_client()
+    response = client.get(route)
+    assert response.status_code == 200
+    assert response.get_data(as_text=True) == shell
+    assert response.cache_control.no_cache
+    bundle = client.get("/assets/test.js")
+    assert bundle.status_code == 200
+    assert bundle.cache_control.immutable
+    assert bundle.cache_control.max_age == 31536000
+    assert client.get("/assets/missing.js").status_code == 404
+    assert client.get("/assets/../index.html").status_code == 404
+
+
+@pytest.mark.parametrize("route", ["/", "/mobile/test/across"])
+def test_missing_react_build_is_explicit(api, tmp_path, monkeypatch, route):
+    monkeypatch.setattr(api, "REACT_DIST", str(tmp_path / "missing"))
+    response = api.app.test_client().get(route)
+    assert response.status_code == 503
+    assert b"make react-assets" in response.data
+
+
+def test_explicit_vue_fallbacks(api):
+    client = api.app.test_client()
+    for route in ("/legacy/", "/legacy/mobile/test/across"):
+        response = client.get(route)
+        assert response.status_code == 200
+        assert b"react-root" not in response.data
+        assert b"vue.js" in response.data
+
+
 def test_harness_rejects_live_http():
     with pytest.raises(AssertionError, match="Live outbound network"):
         requests.get("https://example.invalid/never-contacted")

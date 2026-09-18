@@ -1,11 +1,15 @@
-# Build legacy browser assets from the npm lockfile; no generated vendor files
-# are required in the source checkout.
-FROM node:24.20.0-bookworm-slim AS legacy-assets
+# Build the browser assets from the npm lockfile; no generated vendor files
+# are required in the source checkout. The React bundle must ship because the
+# Flask app serves it as the default frontend at '/' and '/mobile/...'.
+FROM node:24.20.0-bookworm-slim AS frontend-assets
 
 WORKDIR /build
 COPY package.json package-lock.json ./
 COPY scripts/build-legacy-assets.mjs scripts/build-legacy-assets.mjs
-RUN npm ci --ignore-scripts && npm run build
+COPY apps/react ./apps/react
+COPY vendor ./vendor
+RUN npm ci --ignore-scripts && npm run build \
+    && npm run build --workspace @crossword/react-port
 
 FROM python:3.13-slim-bookworm
 
@@ -26,7 +30,8 @@ COPY run.py ./run.py
 
 # uv creates and manages the project environment from the pinned lockfile.
 RUN uv sync --frozen --no-dev
-COPY --from=legacy-assets /build/src/crossword/static/lib/ ./src/crossword/static/lib/
+COPY --from=frontend-assets /build/src/crossword/static/lib/ ./src/crossword/static/lib/
+COPY --from=frontend-assets /build/src/crossword/static/react/ ./src/crossword/static/react/
 
 EXPOSE 5001
 CMD [".venv/bin/python", "run.py"]

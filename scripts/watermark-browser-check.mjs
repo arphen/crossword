@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import assert from 'node:assert/strict';
-const base = process.env.WATERMARK_URL ?? 'http://127.0.0.1:5001/';
+const base = process.env.WATERMARK_URL ?? 'http://127.0.0.1:5001/legacy/';
 const output = new URL('../reports/watermark/', import.meta.url);
 mkdirSync(output, { recursive: true });
 const fixture = JSON.parse(readFileSync(new URL('../reports/react-parity/fixture.json', import.meta.url), 'utf8'));

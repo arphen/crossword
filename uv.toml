@@ -1,0 +1,5 @@
+# Keep uv's cache inside the repository workspace. The default (`~/.cache/uv`)
+# can be unwritable for sandboxed agent sessions and CI caches are configured
+# separately, so the project pins a repo-local cache instead. The directory is
+# git-ignored and removed by `make clean`; uv manages its contents itself.
+cache-dir = ".uv_cache"
