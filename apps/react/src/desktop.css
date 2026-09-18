@@ -13,7 +13,6 @@
     --react-green: #8fe4b1;
     --react-red: #ff9c9c;
     --react-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    --clue-zig-zag-offset: 24px;
     --cell-size: min(3.25rem, calc((42.4vw - 2rem) / 15));
     display: block;
     width: 100vw;
@@ -152,14 +151,10 @@
 }
 
 .react-desktop-app #across li:nth-child(odd),
-.react-desktop-app #down li:nth-child(odd),
-.react-desktop-app #down li:nth-child(odd) {
-    transform: none;
-}
-
 .react-desktop-app #across li:nth-child(even),
+.react-desktop-app #down li:nth-child(odd),
 .react-desktop-app #down li:nth-child(even) {
-    transform: translateY(var(--clue-zig-zag-offset));
+    transform: none;
 }
 
 .react-desktop-app #across li:hover,
@@ -172,14 +167,9 @@
     box-shadow: none !important;
 }
 
-.react-desktop-app #across li:nth-child(odd):hover,
-.react-desktop-app #down li:nth-child(odd):hover {
+.react-desktop-app #across li:hover,
+.react-desktop-app #down li:hover {
     transform: translateY(-1px);
-}
-
-.react-desktop-app #across li:nth-child(even):hover,
-.react-desktop-app #down li:nth-child(even):hover {
-    transform: translateY(calc(var(--clue-zig-zag-offset) - 1px));
 }
 
 .react-desktop-app #across li.highlighted-clue::before,
