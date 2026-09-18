@@ -13,8 +13,8 @@ future new packages, not for these.
 ## Ground rules for every prompt (prepend to any paste)
 
 > You are working in the repo at `/Users/arphen/projectc/crossword`.
-> Read `AGENTS.md`, `docs/plans/README.md`, and the sections of
-> `docs/plans/06_DESIGN_LANGUAGE_REFRESH.md` named below before editing.
+> Read `AGENTS.md`, `docs/plans/README.md`, and the relevant quiet-glass
+> reference assets under `design/quiet-glass/` before editing.
 > You own ONLY the files listed; do not edit anything else. Do not run
 > `npm install`, do not change lockfiles, do not `git commit` — the
 > coordinator reviews and commits. Run the acceptance commands and include
@@ -28,8 +28,8 @@ Ownership: `apps/web/src/harness/**` (new) and `apps/web/src/main.tsx` only.
 1. Add a harness route selectable by URL (for example `/harness?fixture=…`),
    rendering the existing solver components against deterministic fixture
    puzzles and sessions. No network, no model, no randomness at render time.
-2. Build the fixture set from `docs/plans/06_DESIGN_LANGUAGE_REFRESH.md` §16
-   ("Required visual fixtures"): empty 15×15; active Across with affected Down;
+2. Build the fixture set from the quiet-glass references under
+   `design/quiet-glass/` and the current solver state matrix: empty 15×15; active Across with affected Down;
    active Down with typed crossings; check error; half complete with collapsed
    clues; long clue + 15-letter answer; rebus + circled + shaded; dark mode;
    forced colors; 200% zoom. States the current components cannot yet express
@@ -98,8 +98,8 @@ timer-isolation test passes; full web suite and `npm run web:build` pass.
 
 Ownership: `apps/web/src/styles.css` and token definitions only.
 
-1. Implement `docs/plans/06_DESIGN_LANGUAGE_REFRESH.md` §10–§13 against the
-   Luna 1 harness: bilateral seam-facing alignment, semantic states from the
+1. Implement the quiet-glass design language against the Luna 1 harness:
+   bilateral seam-facing alignment, semantic states from the
    §7.3 matrix, panorama/standard/compact modes (container queries preferred),
    light/dark, forced colors, reduced motion, reduced transparency.
 2. Forbidden: `transition: all`, infinite animation, animated filters or

@@ -78,10 +78,9 @@ Non-negotiable keeps:
    popping. When the puzzle completes, a fluid, elegant moment is welcome.
 
 5. **Grid & selection.** Active cell gets a crisp 2px outline/glow in the
-   active direction color; the shared word path gets a subtle tinted glass
-   overlay; cell typography uses crisp monospace / tabular numerals and stays
-   legible at every supported scale (15×15 desktop, 21×21 at ~854px, down to
-   ~390px mobile width, with no horizontal overflow).
+  active direction color; the shared word path gets a subtle tinted glass
+  overlay; cell typography uses crisp monospace / tabular numerals and stays
+  legible on the wide desktop solver at 1440×1000.
 
 6. **Motion contract (hard constraint).** No infinite or looping animations.
    No canvas effects. All transitions on `transform`, `opacity`, or `filter`
@@ -124,11 +123,11 @@ Run from the repo root:
 
 Visual verification: serve the app (`make run` for the Flask backend on :5001,
 plus `npm --workspace @crossword/react-port run dev` for the React dev server
-on :5174, which proxies to it). **Before your first edit**, capture a full-page
-Playwright screenshot at 854×1750 (dark scheme) as your baseline. After each
-change, capture the same screenshot and compare — the spine layout, watermark
-orientation, and overall language must remain recognizably the same app, only
-better. Do not consider any slice done until tests and screenshots agree.
+on :5174, which proxies to it). Capture a full-page Playwright screenshot at
+1440×1000 (dark scheme) as the desktop baseline and after each change. Compare
+the wide composition — the spine layout, watermark orientation, and overall
+language must remain recognizably the same app, only better. Do not consider
+any slice done until tests and screenshots agree.
 
 ## Working discipline
 

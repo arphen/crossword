@@ -32,6 +32,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `AGENTS.md`
 - `CELL_MODEL.md`
 - `Dockerfile`
+- `LIQUID_GLASS_PROMPT.md`
 - `Makefile`
 - `README.md`
 - `SETUP.md`
@@ -46,6 +47,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `start.sh`
 - `stryker.config.mjs`
 - `tsconfig.ci.json`
+- `uv.toml`
 - `vitest.ci.config.mjs`
 - `vitest.mutation.config.mjs`
 
@@ -64,7 +66,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 - `apps/react/index.html`
 - `apps/react/package.json`
-- `apps/react/src/CrosswordView.jsx` — `classes:4`, `CrosswordView:14`, `clueClasses:15`, `answer:19`, `selfClick:27`
+- `apps/react/src/CrosswordView.jsx` — `classes:5`, `CrosswordView:15`, `clueClasses:16`, `answer:20`, `selfClick:28`
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
 - `apps/react/src/behavior-parity.test.js`
 - `apps/react/src/behavior/desktop.d.ts` — `createOptions:2`
@@ -73,6 +75,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/behavior/mobile.js` — `createOptions:3`, `myEntries:19`, `sortedEntries:23`, `checkButtonLabel:33`, `toggleCheck:38`, `clearIncorrectAndMarkSolved:48`, `isPerfect:57`, `isEntryFilled:91`, `isCellCorrect:96`, `loadPuzzle:102`, `getCellValue:111`, `getCoordinates:115`, `selectEntry:125`, `focusInput:134`, `handleInput:143`, `handleKeydown:167` (+3 more)
 - `apps/react/src/controller.d.ts` — `ControllerConfiguration:9`, `Controller:16`, `createController:26`
 - `apps/react/src/controller.js` — `createController:6`, `notify:19`, `unwrap:20`, `observe:21`, `get:28`, `set:45`, `deleteProperty:54`, `setTimeout:61`, `clearTimeout:62`, `setInterval:63`, `clearInterval:64`, `requestAnimationFrame:65`, `cancelAnimationFrame:66`, `subscribe:82`, `flush:84`, `start:85` (+1 more)
+- `apps/react/src/desktop.css`
 - `apps/react/src/main.jsx` — `App:10`
 - `apps/react/src/mobile-render-parity.test.jsx`
 - `apps/react/src/mobile.css`
@@ -95,7 +98,6 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/plans/03_ARCHITECTURE_MIGRATION.md`
 - `docs/plans/04_QUALITY_DELIVERY.md`
 - `docs/plans/05_EXECUTION_BACKLOG.md`
-- `docs/plans/06_DESIGN_LANGUAGE_REFRESH.md`
 - `docs/plans/LUNA_PROMPTS.md`
 - `docs/plans/README.md`
 - `docs/react-port-parity.md`
