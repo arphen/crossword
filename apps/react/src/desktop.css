@@ -1,11 +1,36 @@
 /* Quiet-glass desktop composition: wide clue spines, a compact board panel,
    and no framed containers around the lanes. */
-.react-desktop-app {
+#app.react-desktop-app {
     --react-bg: #0c1015;
     --react-panel: #1a2027;
+    --panel-light: #303741;
+    --slot-fill: #23262d;
+    --slot-edge: #525760;
+    --surface-glint: #ffffff13;
+    --cell-glint: #ffffff05;
+    --panel-lowlight: #00000030;
+    --panel-shadow: #00000038;
+    --board-shadow: #00000030;
+    --board-bezel: #151b21;
+    --board-edge: #4d5661;
+    --board-black: #0d1218;
+    --cell-shaded: #3c4650;
+    --control-top: #333b45;
+    --control-fill: #282f38;
+    --control-edge: #4a545f;
+    --control-shadow: #00000020;
+    --error-fill: #492c32;
+    --success-fill: #253f34;
+    --entry-first: #ffc36e;
+    --entry-last: #e6a14a;
+    --entry-fill-first: #594329;
+    --entry-fill-last: #423322;
+    --cursor-fill: #805923;
+    --cursor-edge: #ffd38c;
+    --selection-shadow: #ffad322e;
     --react-panel-edge: #3a414b;
-    --react-cell: #252830;
-    --react-cell-edge: #4b505b;
+    --react-cell: #2b3039;
+    --react-cell-edge: #454c56;
     --react-ink: #f2f2f6;
     --react-muted: #aeb6c2;
     --react-orange: #ffad32;
@@ -14,7 +39,7 @@
     --react-red: #ff9c9c;
     --react-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --clue-number-ladder-offset: 25px;
-    --cell-size: min(3.25rem, calc((42.4vw - 2rem) / 15));
+    --cell-size: min(3.25rem, calc((min(42.4vw, 814px) - 52px) / var(--grid-columns)), calc((100dvh - 310px) / var(--grid-rows)));
     display: block;
     width: 100vw;
     min-height: 100vh;
@@ -24,7 +49,7 @@
     font-family: Arial, Helvetica, sans-serif;
 }
 
-.react-desktop-app #notmenu {
+#app.react-desktop-app #notmenu {
     display: grid;
     grid-template-columns: minmax(0, 1fr) min(42.4vw, 814px) minmax(0, 1fr);
     gap: 0;
@@ -35,13 +60,13 @@
     overflow: hidden;
 }
 
-.react-desktop-app .clue-column,
-.react-desktop-app .center-column {
+#app.react-desktop-app .clue-column,
+#app.react-desktop-app .center-column {
     box-sizing: border-box;
     min-width: 0;
 }
 
-.react-desktop-app .clue-column {
+#app.react-desktop-app .clue-column {
     position: relative;
     height: 100vh;
     min-width: 0;
@@ -55,36 +80,36 @@
     backdrop-filter: none;
 }
 
-.react-desktop-app .clue-column::before {
+#app.react-desktop-app .clue-column::before {
     z-index: 0;
     top: 0;
     bottom: 0;
     font-size: min(9.9vw, 190px);
     opacity: 0.06;
     text-shadow: none;
-    transition: opacity 220ms ease, color 220ms ease;
+    transition: opacity 220ms ease;
 }
 
-.react-desktop-app .clue-column[data-label="ACROSS"].active::before {
+#app.react-desktop-app .clue-column[data-label="ACROSS"].active::before {
     opacity: 0.45;
     color: rgba(255, 152, 0, 0.75);
     text-shadow: none;
 }
 
-.react-desktop-app .clue-column[data-label="DOWN"].active::before {
+#app.react-desktop-app .clue-column[data-label="DOWN"].active::before {
     opacity: 0.45;
     color: rgba(33, 150, 243, 0.75);
     text-shadow: none;
 }
 
-.react-desktop-app .clue-column[data-label="ACROSS"].inactive::before,
-.react-desktop-app .clue-column[data-label="DOWN"].inactive::before {
+#app.react-desktop-app .clue-column[data-label="ACROSS"].inactive::before,
+#app.react-desktop-app .clue-column[data-label="DOWN"].inactive::before {
     opacity: 0.3;
     color: #000;
     text-shadow: none;
 }
 
-.react-desktop-app .clue-column::after {
+#app.react-desktop-app .clue-column::after {
     content: "";
     position: absolute;
     z-index: 0;
@@ -96,12 +121,12 @@
     background: rgba(255, 173, 50, 0.24);
 }
 
-.react-desktop-app .clue-column[data-label="DOWN"]::after {
+#app.react-desktop-app .clue-column[data-label="DOWN"]::after {
     background: rgba(33, 150, 243, 0.36);
 }
 
-.react-desktop-app #across,
-.react-desktop-app #down {
+#app.react-desktop-app #across,
+#app.react-desktop-app #down {
     position: relative;
     z-index: 1;
     display: grid;
@@ -117,18 +142,19 @@
     scrollbar-width: none;
 }
 
-.react-desktop-app #across::-webkit-scrollbar,
-.react-desktop-app #down::-webkit-scrollbar {
+#app.react-desktop-app #across::-webkit-scrollbar,
+#app.react-desktop-app #down::-webkit-scrollbar {
     display: none;
 }
 
-.react-desktop-app #across li,
-.react-desktop-app #down li {
+#app.react-desktop-app #across li,
+#app.react-desktop-app #down li {
     position: relative;
     display: flex;
     align-items: center;
     min-width: 0;
     min-height: 100px;
+    height: max-content;
     margin: 0;
     padding: 10px;
     border: 0;
@@ -141,40 +167,40 @@
     transition: opacity 220ms ease, transform 220ms ease;
 }
 
-.react-desktop-app #across li:nth-child(odd),
-.react-desktop-app #down li:nth-child(odd) {
+#app.react-desktop-app #across li:nth-child(odd),
+#app.react-desktop-app #down li:nth-child(odd) {
     flex-direction: row;
 }
 
-.react-desktop-app #across li:nth-child(even),
-.react-desktop-app #down li:nth-child(even) {
+#app.react-desktop-app #across li:nth-child(even),
+#app.react-desktop-app #down li:nth-child(even) {
     flex-direction: row;
 }
 
-.react-desktop-app #across li:nth-child(odd),
-.react-desktop-app #across li:nth-child(even),
-.react-desktop-app #down li:nth-child(odd),
-.react-desktop-app #down li:nth-child(even) {
+#app.react-desktop-app #across li:nth-child(odd),
+#app.react-desktop-app #across li:nth-child(even),
+#app.react-desktop-app #down li:nth-child(odd),
+#app.react-desktop-app #down li:nth-child(even) {
     transform: none;
 }
 
-.react-desktop-app #across li:hover,
-.react-desktop-app #down li:hover,
-.react-desktop-app #across li.highlighted-clue,
-.react-desktop-app #down li.highlighted-clue,
-.react-desktop-app #down li.affected-clue,
-.react-desktop-app #across li.affected-clue {
+#app.react-desktop-app #across li:hover,
+#app.react-desktop-app #down li:hover,
+#app.react-desktop-app #across li.highlighted-clue,
+#app.react-desktop-app #down li.highlighted-clue,
+#app.react-desktop-app #down li.affected-clue,
+#app.react-desktop-app #across li.affected-clue {
     background: transparent !important;
     box-shadow: none !important;
 }
 
-.react-desktop-app #across li:hover,
-.react-desktop-app #down li:hover {
+#app.react-desktop-app #across li:hover,
+#app.react-desktop-app #down li:hover {
     transform: translateY(-1px);
 }
 
-.react-desktop-app #across li.highlighted-clue::before,
-.react-desktop-app #down li.highlighted-clue::before {
+#app.react-desktop-app #across li.highlighted-clue::before,
+#app.react-desktop-app #down li.highlighted-clue::before {
     content: "";
     position: absolute;
     z-index: 2;
@@ -185,61 +211,61 @@
     pointer-events: none;
 }
 
-.react-desktop-app #across li.highlighted-clue::before {
+#app.react-desktop-app #across li.highlighted-clue::before {
     background: var(--react-orange);
 }
 
-.react-desktop-app #down li.highlighted-clue::before {
+#app.react-desktop-app #down li.highlighted-clue::before {
     background: var(--react-blue);
 }
 
-.react-desktop-app #across li:nth-child(odd).highlighted-clue::before,
-.react-desktop-app #down li:nth-child(odd).highlighted-clue::before {
+#app.react-desktop-app #across li:nth-child(odd).highlighted-clue::before,
+#app.react-desktop-app #down li:nth-child(odd).highlighted-clue::before {
     right: 3px;
 }
 
-.react-desktop-app #across li:nth-child(even).highlighted-clue::before,
-.react-desktop-app #down li:nth-child(even).highlighted-clue::before {
+#app.react-desktop-app #across li:nth-child(even).highlighted-clue::before,
+#app.react-desktop-app #down li:nth-child(even).highlighted-clue::before {
     left: 3px;
 }
 
-.react-desktop-app #across li:nth-child(odd) .clue-content,
-.react-desktop-app #down li:nth-child(odd) .clue-content {
+#app.react-desktop-app #across li:nth-child(odd) .clue-content,
+#app.react-desktop-app #down li:nth-child(odd) .clue-content {
     order: 1;
     align-items: flex-end;
     text-align: right;
 }
 
-.react-desktop-app #across li:nth-child(odd) .clue-number,
-.react-desktop-app #down li:nth-child(odd) .clue-number {
+#app.react-desktop-app #across li:nth-child(odd) .clue-number,
+#app.react-desktop-app #down li:nth-child(odd) .clue-number {
     order: 2;
     margin: 0 0 0 8px;
 }
 
-.react-desktop-app #across li:nth-child(even) .clue-content,
-.react-desktop-app #down li:nth-child(even) .clue-content {
+#app.react-desktop-app #across li:nth-child(even) .clue-content,
+#app.react-desktop-app #down li:nth-child(even) .clue-content {
     order: 2;
     align-items: flex-start;
     text-align: left;
 }
 
-.react-desktop-app #across li:nth-child(even) .clue-number,
-.react-desktop-app #down li:nth-child(even) .clue-number {
+#app.react-desktop-app #across li:nth-child(even) .clue-number,
+#app.react-desktop-app #down li:nth-child(even) .clue-number {
     order: 1;
     margin: 0 8px 0 0;
 }
 
-.react-desktop-app #across li:nth-child(odd) .clue-number,
-.react-desktop-app #down li:nth-child(odd) .clue-number {
+#app.react-desktop-app #across li:nth-child(odd) .clue-number,
+#app.react-desktop-app #down li:nth-child(odd) .clue-number {
     transform: translateY(calc(var(--clue-number-ladder-offset) * -1));
 }
 
-.react-desktop-app #across li:nth-child(even) .clue-number,
-.react-desktop-app #down li:nth-child(even) .clue-number {
+#app.react-desktop-app #across li:nth-child(even) .clue-number,
+#app.react-desktop-app #down li:nth-child(even) .clue-number {
     transform: translateY(var(--clue-number-ladder-offset));
 }
 
-.react-desktop-app .clue-content {
+#app.react-desktop-app .clue-content {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
@@ -248,7 +274,7 @@
     min-width: 0;
 }
 
-.react-desktop-app .clue-text {
+#app.react-desktop-app .clue-text {
     max-width: 100%;
     color: var(--react-ink);
     font-size: clamp(15px, 1.04vw, 20px);
@@ -259,7 +285,7 @@
     text-align: inherit;
 }
 
-.react-desktop-app .clue-number {
+#app.react-desktop-app .clue-number {
     display: inline-flex;
     flex: 0 0 42px;
     align-self: center;
@@ -284,48 +310,48 @@
     box-shadow: none;
 }
 
-.react-desktop-app #down .clue-number {
+#app.react-desktop-app #down .clue-number {
     color: var(--react-blue);
 }
 
-.react-desktop-app .highlighted-clue .clue-number {
+#app.react-desktop-app .highlighted-clue .clue-number {
     color: var(--react-bg) !important;
     border-width: 2px;
 }
 
-.react-desktop-app #across li.highlighted-clue .clue-number {
+#app.react-desktop-app #across li.highlighted-clue .clue-number {
     background: var(--react-orange);
     border-color: var(--react-orange);
 }
 
-.react-desktop-app #down li.highlighted-clue .clue-number {
+#app.react-desktop-app #down li.highlighted-clue .clue-number {
     background: var(--react-blue);
     border-color: var(--react-blue);
 }
 
-.react-desktop-app #across li.affected-clue .clue-number {
+#app.react-desktop-app #across li.affected-clue .clue-number {
     background: var(--react-orange);
     border-color: var(--react-orange);
     border-width: 2px;
     color: var(--react-bg) !important;
 }
 
-.react-desktop-app #down li.affected-clue .clue-number {
+#app.react-desktop-app #down li.affected-clue .clue-number {
     background: var(--react-blue);
     border-color: var(--react-blue);
     border-width: 2px;
     color: var(--react-bg) !important;
 }
 
-.react-desktop-app .highlighted-clue .clue-text {
+#app.react-desktop-app .highlighted-clue .clue-text {
     font-weight: 700;
 }
 
-.react-desktop-app .affected-clue .clue-text {
+#app.react-desktop-app .affected-clue .clue-text {
     font-weight: 700;
 }
 
-.react-desktop-app .state-container {
+#app.react-desktop-app .state-container {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -334,16 +360,23 @@
     min-height: 25px;
 }
 
-.react-desktop-app .state-group-end {
+#app.react-desktop-app .state-group-end {
     margin-inline-end: 2px;
 }
 
-.react-desktop-app #across li:nth-child(odd) .state-container,
-.react-desktop-app #down li:nth-child(odd) .state-container {
+#app.react-desktop-app #across li:nth-child(odd) .state-container,
+#app.react-desktop-app #down li:nth-child(odd) .state-container {
     justify-content: flex-end;
 }
 
-.react-desktop-app .state {
+/* One selection palette, shared by the grid and all of its crossing boxes.
+   Position is a coordinate-derived value, never the crossing clue's index. */
+#app.react-desktop-app [data-entry-index] {
+    --entry-tone: color-mix(in oklab, var(--entry-first), var(--entry-last) var(--entry-position));
+    --entry-fill: color-mix(in oklab, var(--entry-fill-first), var(--entry-fill-last) var(--entry-position));
+}
+
+#app.react-desktop-app .state {
     position: relative;
     z-index: 0;
     display: inline-flex;
@@ -354,175 +387,111 @@
     height: 25px;
     box-sizing: border-box;
     padding: 0;
-    border: 1px solid #525760;
+    border: 1px solid var(--slot-edge);
     border-radius: 4px;
-    background: #23262d;
+    background: var(--slot-fill);
     color: var(--react-ink);
     font-family: var(--react-mono);
     font-size: 0.85rem;
     font-weight: 500;
     line-height: 1;
     opacity: 1;
-    transition: opacity 220ms ease, transform 220ms ease, filter 220ms ease;
+    box-shadow: inset 0 1px 0 var(--surface-glint);
+    transition: opacity 180ms ease, transform 180ms ease;
 }
 
-.react-desktop-app .state::after {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    inset: -1px;
-    border-radius: inherit;
-    background: rgba(255, 255, 255, 0.02);
-    opacity: 0;
-    transition: opacity 220ms ease;
-}
-
-.react-desktop-app .state.red,
-.react-desktop-app .state.green {
-    animation: react-state-ack 220ms ease-out both;
-}
-
-.react-desktop-app .state.red {
-    border-color: var(--react-red);
-    background: rgba(255, 96, 96, 0.18);
-    color: var(--react-red);
-}
-
-.react-desktop-app .state.green {
-    border-color: var(--react-green);
-    background: rgba(79, 184, 117, 0.18);
-    color: var(--react-green);
-}
-
-.react-desktop-app .state.red::after {
-    background: rgba(255, 96, 96, 0.22);
-    opacity: 1;
-}
-
-.react-desktop-app .state.green::after {
-    background: rgba(79, 184, 117, 0.22);
-    opacity: 1;
-}
-
-.react-desktop-app .state.intersection-cell-across {
-    border-color: var(--react-orange) !important;
-    background: #4b361c !important;
-    color: var(--react-orange);
-    border-width: 2px;
+#app.react-desktop-app .state[data-entry-index] {
+    border: 2px solid var(--entry-tone) !important;
+    background: var(--entry-fill) !important;
+    color: var(--react-ink);
     font-weight: 700;
 }
 
-.react-desktop-app .state.intersection-cell-down {
-    border-color: var(--react-blue) !important;
-    background: #23415c !important;
-    color: var(--react-blue);
-    border-width: 2px;
+#app.react-desktop-app .state.rebus-state { font-size: 0.6rem; letter-spacing: -0.08em; }
+
+#app.react-desktop-app .state.cursor-cell {
+    border-color: var(--cursor-edge) !important;
+    background: var(--cursor-fill) !important;
+    color: #fff !important;
+    box-shadow: 0 0 0 1px var(--cursor-edge), 0 2px 8px var(--selection-shadow);
     font-weight: 700;
 }
 
-.react-desktop-app #across li.highlighted-clue .state {
-    border-color: var(--react-orange);
-    background: #4b361c;
-    border-width: 2px;
-}
-
-.react-desktop-app #down li.highlighted-clue .state {
-    border-color: var(--react-blue);
-    background: #23415c;
-    border-width: 2px;
-}
-
-.react-desktop-app .state.cursor-cell {
-    border-color: var(--react-orange) !important;
-    background: rgba(255, 173, 50, 0.72) !important;
-    color: var(--react-bg) !important;
-    box-shadow: 0 0 0 1px rgba(255, 173, 50, 0.55), 0 0 8px rgba(255, 173, 50, 0.35);
-    font-weight: 700;
-}
-
-body[data-active-direction="down"] .react-desktop-app .state.cursor-cell {
-    border-color: var(--react-blue) !important;
-    background: rgba(141, 199, 255, 0.72) !important;
-    box-shadow: 0 0 0 1px rgba(141, 199, 255, 0.55), 0 0 8px rgba(141, 199, 255, 0.35);
-}
-
-.react-desktop-app .center-column {
+/* A bevel and a recessed board give depth without live blur or moving light. */
+#app.react-desktop-app .center-column {
     display: flex;
     flex: none;
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
-    gap: 16px;
+    gap: 14px;
     width: auto;
-    height: calc(100vh - 40px);
+    height: fit-content;
     min-height: 0;
-    margin: 20px 0;
-    padding: 16px;
+    max-height: calc(100dvh - 32px);
+    margin: 16px 0;
+    padding: 18px;
     overflow: hidden;
     border: 1px solid var(--react-panel-edge);
-    border-radius: 20px;
-    background: linear-gradient(155deg, #242a32 0%, var(--react-panel) 72%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 28px rgba(0, 0, 0, 0.2);
-    -webkit-backdrop-filter: blur(16px) saturate(115%);
-    backdrop-filter: blur(16px) saturate(115%);
+    border-radius: 22px;
+    background: linear-gradient(150deg, var(--panel-light), var(--react-panel) 65%);
+    box-shadow: inset 0 1px 0 var(--surface-glint), inset 0 -1px 0 var(--panel-lowlight), 0 16px 40px var(--panel-shadow);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }
 
-.react-desktop-app .menu-section {
+#app.react-desktop-app .menu-section {
     width: 100%;
     padding: 0;
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }
 
-.react-desktop-app #menu-top {
+#app.react-desktop-app #menu-top {
     position: relative;
     box-sizing: border-box;
     flex: 0 0 auto;
-    padding: 0 58px 12px 6px;
-    border-bottom: 1px solid rgba(174, 182, 194, 0.25);
+    padding: 0 56px 14px 2px;
+    border-bottom: 1px solid var(--react-panel-edge);
 }
 
-.react-desktop-app #menu-top > .theme-switch {
+#app.react-desktop-app #menu-top > .theme-switch {
     position: absolute;
     z-index: 2;
     top: 0;
-    right: 6px;
-    box-sizing: border-box;
-    width: 46px;
-    height: 46px;
-    min-height: 46px;
+    right: 0;
 }
 
-.react-desktop-app .info-bar {
+#app.react-desktop-app .info-bar {
     display: flex;
+    align-items: center;
     justify-content: flex-start;
-    min-height: 31px;
-    padding: 0 0 10px;
-    border-bottom: 0;
-    gap: 10px;
+    min-height: 26px;
+    padding: 0 0 8px;
+    border: 0;
+    gap: 8px;
     flex-wrap: nowrap;
     overflow: hidden;
 }
 
-.react-desktop-app .info-bar .puzzle-date,
-.react-desktop-app .info-bar .puzzle-weekday,
-.react-desktop-app .info-bar .puzzle-authors,
-.react-desktop-app .info-bar .puzzle-separator {
+#app.react-desktop-app .info-bar :is(.puzzle-date, .puzzle-weekday, .puzzle-authors, .puzzle-separator) {
     color: var(--react-muted);
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     font-style: normal;
-    line-height: 1;
+    line-height: 1.2;
 }
 
-.react-desktop-app .info-bar .puzzle-weekday {
+#app.react-desktop-app .info-bar .puzzle-weekday {
     color: var(--react-ink);
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
 }
 
-.react-desktop-app .info-bar .puzzle-authors {
+#app.react-desktop-app .info-bar .puzzle-authors {
     margin-left: auto;
     max-width: 48%;
     overflow: hidden;
@@ -530,28 +499,24 @@ body[data-active-direction="down"] .react-desktop-app .state.cursor-cell {
     white-space: nowrap;
 }
 
-.react-desktop-app .indicator-bar {
+#app.react-desktop-app .indicator-bar {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    gap: 16px;
+    gap: 12px;
     padding: 4px 0 0;
     border: 0;
     flex-wrap: nowrap;
 }
 
-.react-desktop-app .puzzle-loader-header {
-    display: none;
-}
+#app.react-desktop-app .puzzle-loader-header { display: none; }
 
-.react-desktop-app .stat-item,
-.react-desktop-app .blue-stat,
-.react-desktop-app .orange-stat {
+#app.react-desktop-app :is(.stat-item, .blue-stat, .orange-stat) {
     display: flex;
     flex: 0 1 auto;
     flex-direction: row;
     align-items: baseline;
-    gap: 8px;
+    gap: 6px;
     min-width: 0;
     padding: 0;
     border: 0;
@@ -560,37 +525,30 @@ body[data-active-direction="down"] .react-desktop-app .state.cursor-cell {
     box-shadow: none;
 }
 
-.react-desktop-app .stat-value {
+#app.react-desktop-app .stat-value {
     order: 1;
     color: var(--react-ink);
     font-family: var(--react-mono);
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
 
-.react-desktop-app .stat-label {
+#app.react-desktop-app .stat-label {
     order: 2;
     color: var(--react-muted);
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-weight: 400;
     letter-spacing: 0;
     text-transform: lowercase;
     white-space: nowrap;
 }
 
-.react-desktop-app .blue-stat .stat-value,
-.react-desktop-app .blue-stat .stat-label {
-    color: var(--react-blue);
-}
+#app.react-desktop-app .blue-stat .stat-value { color: var(--react-blue); }
+#app.react-desktop-app .orange-stat .stat-value { color: var(--react-orange); }
 
-.react-desktop-app .orange-stat .stat-value,
-.react-desktop-app .orange-stat .stat-label {
-    color: var(--react-orange);
-}
-
-.react-desktop-app #crossword-container {
+#app.react-desktop-app #crossword-container {
     display: flex;
     flex: 0 0 auto;
     align-items: center;
@@ -600,389 +558,244 @@ body[data-active-direction="down"] .react-desktop-app .state.cursor-cell {
     padding: 0;
 }
 
-.react-desktop-app .grid {
+#app.react-desktop-app .grid {
     width: fit-content;
-    padding: 1px;
-    border: 1px solid rgba(174, 182, 194, 0.26);
+    padding: 5px;
+    border: 1px solid var(--board-edge);
     border-radius: 12px;
-    background: #11161c;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 12px 22px rgba(0, 0, 0, 0.2);
+    background: var(--board-bezel);
+    box-shadow: inset 0 2px 4px var(--panel-shadow), 0 1px 0 var(--surface-glint), 0 8px 18px var(--board-shadow);
     overflow: hidden;
 }
 
-.react-desktop-app .grid-cell {
-    border: 1px solid var(--react-cell-edge);
+#app.react-desktop-app .grid-cell {
+    box-sizing: border-box;
+    width: var(--cell-size);
+    height: var(--cell-size);
+    border: 0;
+    border-right: 1px solid var(--react-cell-edge);
+    border-bottom: 1px solid var(--react-cell-edge);
     margin: 0;
     background: var(--react-cell);
+    color: var(--react-ink);
+    box-shadow: inset 0 1px 0 var(--cell-glint);
 }
 
-.react-desktop-app .grid-cell input {
+#app.react-desktop-app .grid-row:last-child .grid-cell { border-bottom: 0; }
+#app.react-desktop-app .grid-cell:last-child { border-right: 0; }
+
+#app.react-desktop-app .grid-cell input {
+    box-sizing: border-box;
     color: var(--react-ink);
+    background: transparent;
     font-family: var(--react-mono);
-    font-size: 1.45rem;
+    font-size: calc(var(--cell-size) * 0.47);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.03em;
-    transition: opacity 220ms ease, transform 220ms ease, filter 220ms ease;
+    letter-spacing: 0;
+    caret-color: currentColor;
+    transition: none;
 }
 
-.react-desktop-app .grid-cell input:focus {
-    background: transparent;
-}
+#app.react-desktop-app .grid-cell input:focus { background: transparent; }
+#app.react-desktop-app .black-cell { background: var(--board-black); box-shadow: inset 0 1px 3px var(--panel-shadow); border-color: var(--board-black); }
+#app.react-desktop-app .grid-cell.shaded { background: var(--cell-shaded); }
+#app.react-desktop-app .grid-cell.circled::after { border-color: currentColor; opacity: 0.42; }
+#app.react-desktop-app .grid-cell.rebus input { font-size: calc(var(--cell-size) * 0.26); letter-spacing: -0.06em; padding: 0 2px; }
 
-.react-desktop-app .black-cell {
-    background: #05070a;
-}
-
-.react-desktop-app .clue-index {
-    color: rgba(242, 242, 246, 0.7);
+#app.react-desktop-app .clue-index {
+    top: 3px;
+    left: 3px;
+    color: var(--react-muted);
     font-family: var(--react-mono);
-    font-size: 0.6rem;
+    font-size: clamp(8px, calc(var(--cell-size) * 0.21), 11px);
     font-variant-numeric: tabular-nums;
 }
 
-.react-desktop-app .grid-cell.highlighted-cell {
-    z-index: 10;
-    background: #4b361c !important;
-    border-color: #8c622c !important;
+#app.react-desktop-app .grid-cell[data-entry-index] {
+    z-index: 2;
+    background: var(--entry-fill) !important;
+    border-color: color-mix(in oklab, var(--entry-tone) 40%, var(--entry-fill)) !important;
 }
 
-.react-desktop-app .grid-cell.highlighted-cell::before {
-    content: none;
+#app.react-desktop-app .grid-cell.highlighted-cell::before { content: none; }
+#app.react-desktop-app .grid-cell[data-entry-index] .clue-index { color: var(--react-ink); }
+#app.react-desktop-app .active-entry-across { --entry-top: 2px; --entry-bottom: 2px; --entry-left: 0px; --entry-right: 0px; }
+#app.react-desktop-app .active-entry-down { --entry-top: 0px; --entry-bottom: 0px; --entry-left: 2px; --entry-right: 2px; }
+#app.react-desktop-app .active-entry-across.active-entry-start { --entry-left: 2px; }
+#app.react-desktop-app .active-entry-across.active-entry-end { --entry-right: 2px; }
+#app.react-desktop-app .active-entry-down.active-entry-start { --entry-top: 2px; }
+#app.react-desktop-app .active-entry-down.active-entry-end { --entry-bottom: 2px; }
+#app.react-desktop-app .grid-cell[data-entry-index] {
+    box-shadow: inset var(--entry-left) 0 0 var(--entry-tone), inset calc(-1 * var(--entry-right)) 0 0 var(--entry-tone), inset 0 var(--entry-top) 0 var(--entry-tone), inset 0 calc(-1 * var(--entry-bottom)) 0 var(--entry-tone);
 }
 
-.react-desktop-app .grid-cell.highlighted-cell.active-entry-across {
-    box-shadow: inset 0 2px 0 var(--react-orange), inset 0 -2px 0 var(--react-orange);
-}
-
-.react-desktop-app .grid-cell.highlighted-cell.active-entry-across.active-entry-start {
-    box-shadow: inset 2px 0 0 var(--react-orange), inset 0 2px 0 var(--react-orange), inset 0 -2px 0 var(--react-orange);
-}
-
-.react-desktop-app .grid-cell.highlighted-cell.active-entry-across.active-entry-end {
-    box-shadow: inset -2px 0 0 var(--react-orange), inset 0 2px 0 var(--react-orange), inset 0 -2px 0 var(--react-orange);
-}
-
-body[data-active-direction="down"] .react-desktop-app .grid-cell.highlighted-cell {
-    background: #23415c !important;
-    border-color: #386488 !important;
-}
-
-body[data-active-direction="down"] .react-desktop-app .grid-cell.highlighted-cell::before {
-    content: none;
-}
-
-.react-desktop-app .grid-cell.highlighted-cell.active-entry-down {
-    box-shadow: inset 2px 0 0 var(--react-blue), inset -2px 0 0 var(--react-blue);
-}
-
-.react-desktop-app .grid-cell.highlighted-cell.active-entry-down.active-entry-start {
-    box-shadow: inset 2px 0 0 var(--react-blue), inset -2px 0 0 var(--react-blue), inset 0 2px 0 var(--react-blue);
-}
-
-.react-desktop-app .grid-cell.highlighted-cell.active-entry-down.active-entry-end {
-    box-shadow: inset 2px 0 0 var(--react-blue), inset -2px 0 0 var(--react-blue), inset 0 -2px 0 var(--react-blue);
-}
-
-.react-desktop-app .grid-cell.highlighted-cell:focus-within {
-    outline: 3px solid var(--react-orange);
+#app.react-desktop-app .grid-cell:focus-within {
+    z-index: 3;
+    outline: 2px solid var(--cursor-edge);
     outline-offset: -2px;
-    z-index: 12;
+    background: var(--cursor-fill) !important;
+    color: #fff;
+}
+#app.react-desktop-app .grid-cell:focus-within :is(input, .clue-index) { color: #fff; }
+
+/* Motion only runs after interaction; nothing animates while solving is idle. */
+#app.react-desktop-app .grid-cell.has-letter input { animation: react-letter-in 160ms ease-out; }
+#app.react-desktop-app .grid-cell:focus-within::before {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    inset: 2px;
+    border: 1px solid var(--cursor-edge);
+    pointer-events: none;
+    animation: react-focus-in 180ms ease-out both;
 }
 
-body[data-active-direction="down"] .react-desktop-app .grid-cell.highlighted-cell:focus-within {
-    outline-color: var(--react-blue);
-}
-
-.react-desktop-app .grid-cell input.green {
-    color: var(--react-green);
-    background: rgba(79, 184, 117, 0.17);
-    animation: react-cell-ack 220ms ease-out both;
-}
-
-.react-desktop-app .grid-cell input.red {
-    color: var(--react-red);
-    background: rgba(255, 93, 93, 0.17);
-    animation: react-cell-ack 220ms ease-out both;
-}
-
-.react-desktop-app .action-bar {
+#app.react-desktop-app .action-bar {
     display: flex;
     flex: 0 0 auto;
     gap: 8px;
     padding: 0;
 }
 
-.react-desktop-app .action-button,
-.react-desktop-app .menu-section button,
-.react-desktop-app #menu-top button,
-.react-desktop-app #menu-bottom button {
+#app.react-desktop-app :is(.action-button, .menu-section button, .theme-switch, .select-wrapper select) {
     position: relative;
+    box-sizing: border-box;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 46px;
-    padding: 8px 16px;
-    border: 1px solid #4a505a;
-    border-radius: 12px;
-    background: rgba(37, 40, 48, 0.78);
+    min-height: 44px;
+    padding: 8px 14px;
+    border: 1px solid var(--control-edge);
+    border-radius: 11px;
+    background: linear-gradient(var(--control-top), var(--control-fill));
     color: var(--react-ink);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-    font-size: 0.9rem;
+    box-shadow: inset 0 1px 0 var(--surface-glint), 0 2px 3px var(--control-shadow);
+    font-family: inherit;
+    font-size: 0.85rem;
     font-weight: 500;
     letter-spacing: 0;
     text-transform: none;
     text-decoration: none;
-    transition: opacity 180ms ease, transform 180ms ease, filter 180ms ease;
-}
-
-.react-desktop-app .action-button {
-    flex: 1 1 0;
-    gap: 8px;
-}
-
-.react-desktop-app .action-button::after,
-.react-desktop-app .menu-section button::after,
-.react-desktop-app #menu-top button::after,
-.react-desktop-app #menu-bottom button::after {
-    content: none;
-}
-
-.react-desktop-app .action-button:hover,
-.react-desktop-app .menu-section button:hover,
-.react-desktop-app #menu-top button:hover,
-.react-desktop-app #menu-bottom button:hover {
-    border-color: #737b87;
-    background: rgba(61, 67, 77, 0.82);
-    transform: translateY(-1px);
-}
-
-.react-desktop-app .action-button:active,
-.react-desktop-app .menu-section button:active,
-.react-desktop-app #menu-top button:active,
-.react-desktop-app #menu-bottom button:active {
-    transform: translateY(0);
-    opacity: 0.8;
-}
-
-.react-desktop-app .blue-action,
-.react-desktop-app .orange-action,
-.react-desktop-app .center-action {
-    border-color: #4a505a;
-    background: rgba(37, 40, 48, 0.78);
-    color: var(--react-ink);
-}
-
-.react-desktop-app .selection-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
-    padding: 0;
-}
-
-.react-desktop-app #menu-bottom {
-    flex: 0 0 auto;
-    padding: 0;
-}
-
-.react-desktop-app .field-group {
-    flex: 1 1 auto;
-    gap: 7px;
-}
-
-.react-desktop-app .field-label {
-    color: var(--react-muted);
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-}
-
-.react-desktop-app .select-wrapper select {
-    min-height: 46px;
-    padding: 8px 14px;
-    border: 1px solid #4a505a;
-    border-radius: 12px;
-    background: rgba(37, 40, 48, 0.78);
-    color: var(--react-ink);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-    font-size: 0.95rem;
+    transition: transform 160ms ease, opacity 160ms ease;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
 }
 
-.react-desktop-app #get-puzzle-button {
-    flex: 0 0 52px;
-    width: 52px;
-    min-height: 46px;
-    padding: 8px;
+#app.react-desktop-app .action-button { flex: 1 1 0; gap: 8px; }
+#app.react-desktop-app :is(.action-button, .menu-section button)::after { content: none; }
+#app.react-desktop-app :is(.action-button, .menu-section button, .theme-switch):hover {
+    border-color: var(--react-muted);
+    transform: translateY(-1px);
+}
+#app.react-desktop-app :is(.action-button, .menu-section button, .theme-switch):active { transform: translateY(1px); opacity: 0.8; }
+#app.react-desktop-app :is(button, select):focus-visible, #app.react-desktop-app .theme-switch:focus-within {
+    outline: 2px solid var(--react-blue);
+    outline-offset: 3px;
 }
 
-.react-desktop-app #menu-bottom button:hover,
-.react-desktop-app #menu-bottom button:active {
-    transform: none;
+#app.react-desktop-app #menu-bottom { flex: 0 0 auto; padding: 0; }
+#app.react-desktop-app .selection-row { display: flex; align-items: flex-end; gap: 8px; padding: 0; }
+#app.react-desktop-app .field-group { flex: 1 1 auto; gap: 7px; }
+#app.react-desktop-app .field-label { color: var(--react-muted); font-size: 0.65rem; letter-spacing: 0.12em; }
+#app.react-desktop-app .select-wrapper select { width: 100%; min-width: 0; padding-right: 30px; font-weight: 600; }
+#app.react-desktop-app .select-wrapper::after { color: var(--react-muted); }
+#app.react-desktop-app #get-puzzle-button { flex: 0 0 44px; width: 44px; padding: 8px; }
+#app.react-desktop-app :is(.icon-button, .theme-switch) { flex: 0 0 44px; width: 44px; height: 44px; padding: 8px; }
+#app.react-desktop-app .theme-switch { display: flex; align-items: center; justify-content: center; }
+#app.react-desktop-app .theme-switch .switch { width: 100%; height: 100%; justify-content: center; }
+#app.react-desktop-app .theme-icon { width: 23px; height: 23px; color: var(--react-ink); filter: none; }
+
+/* Validation wins over selection, including the cursor at an intersection. */
+#app.react-desktop-app .state.red { border-color: var(--react-red) !important; background: var(--error-fill) !important; color: var(--react-red) !important; box-shadow: none; }
+#app.react-desktop-app .state.green { border-color: var(--react-green) !important; background: var(--success-fill) !important; color: var(--react-green) !important; box-shadow: none; }
+#app.react-desktop-app .grid-cell input.red { color: var(--react-red) !important; background: var(--error-fill); }
+#app.react-desktop-app .grid-cell input.green { color: var(--react-green) !important; background: var(--success-fill); }
+#app.react-desktop-app :is(.state.red, .state.green, .grid-cell input.red, .grid-cell input.green) { animation: react-letter-in 220ms ease-out; }
+
+@keyframes react-letter-in {
+    from { opacity: 0.35; transform: translateY(2px) scale(0.94); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes react-focus-in {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
 }
 
-.react-desktop-app .icon-button,
-.react-desktop-app .theme-switch {
-    flex: 0 0 46px;
-    width: 46px;
-    min-height: 46px;
-    padding: 8px !important;
-    border: 1px solid #4a505a !important;
-    border-radius: 12px !important;
-    background: rgba(37, 40, 48, 0.78) !important;
+:root[style*="color-scheme: light"] #app.react-desktop-app {
+    --react-bg: #f3f3ef;
+    --react-panel: #e5e8e6;
+    --panel-light: #f9faf8;
+    --react-panel-edge: #cbd1ce;
+    --react-cell: #fdfdf9;
+    --react-cell-edge: #c8cfcd;
+    --react-ink: #263430;
+    --react-muted: #64716b;
+    --react-orange: #995c10;
+    --react-blue: #306b9e;
+    --react-green: #246a43;
+    --react-red: #ad313d;
+    --slot-fill: #e8ece8;
+    --slot-edge: #b6c0b9;
+    --surface-glint: #ffffffd9;
+    --cell-glint: #fff;
+    --panel-lowlight: #80918620;
+    --panel-shadow: #233b3020;
+    --board-shadow: #233b301c;
+    --board-bezel: #d7ded8;
+    --board-edge: #b7c2b9;
+    --board-black: #34433e;
+    --cell-shaded: #dce5dd;
+    --control-top: #ffffff;
+    --control-fill: #f0f3ef;
+    --control-edge: #c2ccc4;
+    --control-shadow: #233b300a;
+    --error-fill: #f8e2e2;
+    --success-fill: #daeddf;
+    --entry-first: #ba751c;
+    --entry-last: #9f6318;
+    --entry-fill-first: #ffe5b7;
+    --entry-fill-last: #efd6af;
+    --cursor-edge: #a56110;
+    --cursor-fill: #795121;
 }
 
-.react-desktop-app .theme-switch {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+#app.react-desktop-app[data-direction="down"] {
+    --entry-first: #a0d4ff;
+    --entry-last: #73afe2;
+    --entry-fill-first: #304e68;
+    --entry-fill-last: #243a4e;
+    --cursor-fill: #38658b;
+    --cursor-edge: #b5dfff;
+    --selection-shadow: #459fff30;
 }
 
-.react-desktop-app .theme-icon {
-    width: 25px;
-    height: 25px;
-    filter: none;
+:root[style*="color-scheme: light"] #app.react-desktop-app[data-direction="down"] {
+    --entry-first: #367cae;
+    --entry-last: #30658d;
+    --entry-fill-first: #d9eefe;
+    --entry-fill-last: #c7deee;
+    --cursor-fill: #365f81;
+    --cursor-edge: #255d87;
 }
 
-@keyframes react-cell-ack {
-    0% {
-        opacity: 0.58;
-        transform: scale(0.96);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
+:root[style*="color-scheme: light"] #app.react-desktop-app .clue-column.inactive::before { color: #52655a; opacity: 0.1; }
+:root[style*="color-scheme: light"] #app.react-desktop-app .clue-column.active::before { opacity: 0.24; }
 
-@keyframes react-state-ack {
-    0% {
-        opacity: 0.35;
-        transform: translateY(2px) scale(0.9);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .react-desktop-app *,
-    .react-desktop-app *::before,
-    .react-desktop-app *::after {
-        animation-duration: 1ms !important;
-        transition-duration: 1ms !important;
-    }
-}
-
-:root[style*="color-scheme: light"] .react-desktop-app {
-    --react-bg: #f1f3f5;
-    --react-panel: #e3e7eb;
-    --react-panel-edge: #b4bcc5;
-    --react-cell: #ffffff;
-    --react-cell-edge: #a8afb8;
-    --react-ink: #1c252d;
-    --react-muted: #5c6670;
-    background: #f1f3f5;
-}
-
-:root[style*="color-scheme: light"] .react-desktop-app .center-column {
-    background: linear-gradient(155deg, #f1f3f5 0%, #e3e7eb 72%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 12px 28px rgba(48, 68, 82, 0.12);
-}
-
-:root[style*="color-scheme: light"] .react-desktop-app .clue-number {
-    background: var(--react-bg);
-}
-
-:root[style*="color-scheme: light"] .react-desktop-app .grid {
-    background: #d6dfe5;
-}
-
-:root[style*="color-scheme: light"] .react-desktop-app .black-cell {
-    background: #26313a;
-}
-
-@media (max-height: 850px) and (min-width: 1181px) {
-    .react-desktop-app {
-        --cell-size: min(3.25rem, calc((42.4vw - 2rem) / 15), calc((100vh - 330px) / 15));
-    }
-
-    .react-desktop-app .center-column {
-        gap: 8px;
-    }
-
-    .react-desktop-app .puzzle-loader-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        height: 46px;
-        margin-top: 8px;
-    }
-
-    .react-desktop-app .puzzle-loader-header .field-label {
-        flex: 0 0 auto;
-    }
-
-    .react-desktop-app .puzzle-loader-header select {
-        flex: 1 1 auto;
-        min-width: 0;
-        height: 46px;
-        padding: 8px 14px;
-        border: 1px solid #4a505a;
-        border-radius: 12px;
-        background: rgba(37, 40, 48, 0.78);
-        color: var(--react-ink);
-        font-size: 0.95rem;
-    }
-
-    .react-desktop-app #header-get-puzzle-button {
-        flex: 0 0 52px;
-        width: 52px;
-        height: 46px;
-        padding: 8px;
-    }
-
-    .react-desktop-app #header-get-puzzle-button:hover,
-    .react-desktop-app #header-get-puzzle-button:active {
-        transform: none;
-    }
-
-    .react-desktop-app #menu-bottom .weekday-group,
-    .react-desktop-app #menu-bottom #get-puzzle-button {
-        display: none;
-    }
-
-    .react-desktop-app .action-button,
-    .react-desktop-app #menu-bottom button,
-    .react-desktop-app #menu-bottom select {
-        box-sizing: border-box;
-    }
-
-    .react-desktop-app #menu-bottom .field-label {
-        display: none;
-    }
-
-    .react-desktop-app #menu-bottom .field-group {
-        gap: 0;
-    }
-
-    .react-desktop-app #menu-bottom .selection-row {
-        align-items: center;
-    }
-
-    .react-desktop-app #menu-bottom {
-        position: fixed;
-        z-index: 50;
-        left: 50%;
-        bottom: 8px;
-        width: min(calc(42.4vw - 34px), 780px);
-        transform: translateX(-50%);
-    }
+@media (max-width: 1500px) {
+    #app.react-desktop-app .indicator-bar { gap: 6px; }
+    #app.react-desktop-app .stat-item { gap: 4px; }
+    #app.react-desktop-app .stat-label { font-size: 0.65rem; }
+    #app.react-desktop-app .stat-value { font-size: 0.82rem; }
 }
 
 @media (max-width: 1180px) {
-    .react-desktop-app #notmenu {
-        min-width: 1180px;
+    #app.react-desktop-app #notmenu { min-width: 1180px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #app.react-desktop-app *, #app.react-desktop-app *::before, #app.react-desktop-app *::after {
+        animation: none !important;
+        transition: none !important;
     }
 }
