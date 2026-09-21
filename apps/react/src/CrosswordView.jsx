@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './desktop.css';
+import { createSelectionPresentation } from './selectionPresentation';
 
 // Vue-style class bindings, without a Vue runtime or additional DOM wrappers.
 function classes(...values) {
@@ -21,11 +22,15 @@ export default function CrosswordView({ app }) {
     const activeEntry = app.activeClueNumber && app.activeDirection
         ? app.getEntryByClueNumber(app.activeClueNumber, app.activeDirection)
         : null;
+    const selection = createSelectionPresentation(activeEntry);
+    const cellPresentation = (rowIndex, cellIndex) => {
+        const cell = selection.get(`${rowIndex},${cellIndex}`);
+        return cell ? { style: cell.style, 'data-entry-index': cell.index, title: cell.title } : {};
+    };
     const activeEntryCellClasses = (rowIndex, cellIndex) => {
-        if (!activeEntry || !app.isCellInActiveEntry(rowIndex, cellIndex)) return {};
-        const entryIndex = activeEntry.direction === 'across'
-            ? cellIndex - activeEntry.start_x
-            : rowIndex - activeEntry.start_y;
+        const cell = selection.get(`${rowIndex},${cellIndex}`);
+        if (!cell) return {};
+        const entryIndex = cell.index;
         return {
             'active-entry-across': activeEntry.direction === 'across',
             'active-entry-down': activeEntry.direction === 'down',
@@ -40,24 +45,29 @@ export default function CrosswordView({ app }) {
         return cursorCell.rowIndex === rowIndex && cursorCell.cellIndex === cellIndex;
     };
     const answer = entry => {
-        const currentAnswer = Array.from(app.getCurrentAnswer(entry));
-        return currentAnswer.map((char, index) => (
-            <span key={index} className={classes('state', {
-                red: app.isChecking && char.toLowerCase() !== entry.characters[index].letters.toLowerCase() && char !== ' ',
-                green: app.isChecking && char.toLowerCase() === entry.characters[index].letters.toLowerCase() && char !== ' ',
+        return entry.characters.map((character, index) => {
+            const row = entry.start_y + (entry.direction === 'down' ? index : 0);
+            const col = entry.start_x + (entry.direction === 'across' ? index : 0);
+            const char = app.grid[row]?.[col] || ' ';
+            return <span key={index} {...cellPresentation(row, col)} className={classes('state', {
+                red: app.isChecking && char.toLowerCase() !== character.letters.toLowerCase() && char !== ' ',
+                green: app.isChecking && char.toLowerCase() === character.letters.toLowerCase() && char !== ' ',
                 'intersection-cell-across': app.activeDirection === 'across' && app.isCellInAffectedClue(entry, index),
                 'intersection-cell-down': app.activeDirection === 'down' && app.isCellInAffectedClue(entry, index),
                 'cursor-cell': isCursorCell(entry, index),
-                'state-group-end': (index + 1) % 5 === 0 && index + 1 < currentAnswer.length
-            })} onClick={event => app.handle_cell_click(event, entry, index)}>{char}</span>
-        ));
+                'rebus-state': char.length > 1,
+                'state-group-end': (index + 1) % 5 === 0 && index + 1 < entry.characters.length
+            })} onClick={event => app.handle_cell_click(event, entry, index)}>{char}</span>;
+        });
     };
     const selfClick = handler => event => {
         if (event.target === event.currentTarget) handler(event);
     };
 
     return (
-        <div id="app" className={classes({ 'half-completed': app.isHalfCompleted, 'react-desktop-app': true })}>
+        <div id="app" className={classes({ 'half-completed': app.isHalfCompleted, 'react-desktop-app': true })}
+            data-direction={app.activeDirection || 'across'}
+            style={/** @type {React.CSSProperties} */ ({ '--grid-columns': app.grid[0]?.length || 15, '--grid-rows': app.grid.length || 15 })}>
             <div id="notmenu">
                 <div className={classes('clue-column', { active: app.direction === 'across', inactive: app.direction !== 'across' })} data-label="ACROSS">
                     <ul id="across">
@@ -160,8 +170,9 @@ export default function CrosswordView({ app }) {
                             {app.grid.map((row, rowIndex) => (
                                 <div className="grid-row" key={rowIndex} style={{ gridTemplateColumns: `repeat(${row.length}, var(--cell-size))` }}>
                                     {row.map((cell, cellIndex) => (
-                                        <div key={cellIndex} className={classes('grid-cell', app.getCellClasses(rowIndex, cellIndex), {
+                                        <div key={cellIndex} {...cellPresentation(rowIndex, cellIndex)} className={classes('grid-cell', app.getCellClasses(rowIndex, cellIndex), {
                                             'black-cell': cell === null,
+                                            'has-letter': Boolean(cell),
                                             'highlighted-cell': app.isCellInActiveEntry(rowIndex, cellIndex),
                                             ...activeEntryCellClasses(rowIndex, cellIndex)
                                         })}>

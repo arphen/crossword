@@ -66,7 +66,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 - `apps/react/index.html`
 - `apps/react/package.json`
-- `apps/react/src/CrosswordView.jsx` — `classes:5`, `CrosswordView:15`, `clueClasses:16`, `answer:20`, `selfClick:28`
+- `apps/react/src/CrosswordView.jsx` — `classes:6`, `CrosswordView:16`, `clueClasses:18`, `cellPresentation:26`, `activeEntryCellClasses:30`, `isCursorCell:41`, `answer:47`, `selfClick:63`
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
 - `apps/react/src/behavior-parity.test.js`
 - `apps/react/src/behavior/desktop.d.ts` — `createOptions:2`
@@ -80,6 +80,8 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/mobile-render-parity.test.jsx`
 - `apps/react/src/mobile.css`
 - `apps/react/src/parity.test.js`
+- `apps/react/src/selection-presentation.test.js`
+- `apps/react/src/selectionPresentation.js` — `createSelectionPresentation:3`
 - `apps/react/tsconfig.json`
 - `apps/react/vite.config.js`
 
