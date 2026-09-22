@@ -6,7 +6,7 @@
 	mutation-test \
 	legacy-run web-dev run legacy-smoke test-cov test-watch lint format clean \
 	run-prod shell docker-build docker-run deps-update deps-list deps-tree \
-	npm-audit check bootstrap all
+	npm-audit hooks-install map-update map-check check bootstrap all
 
 BLUE := \033[0;34m
 GREEN := \033[0;32m
@@ -61,7 +61,19 @@ legacy-assets: check-node ## Generate ignored legacy/shared browser assets from 
 react-assets: check-node ## Build the React frontend served by Flask
 	npm run build --workspace @crossword/react-port
 
-setup: check-uv check-node ## Clean-clone setup using both pinned lockfiles
+hooks-install: ## Install the tracked local Git hooks
+	@git config core.hooksPath .githooks
+	@chmod +x .githooks/pre-commit .githooks/pre-push
+	@echo "Git hooks installed from .githooks."
+
+map-update: ## Regenerate and stage the repository map
+	bash .scripts/generate-repo-map.sh
+	git add docs/REPO_MAP.md
+
+map-check: ## Verify the generated repository map is current
+	bash .scripts/generate-repo-map.sh --check
+
+setup: check-uv check-node hooks-install ## Clean-clone setup using both pinned lockfiles
 	uv sync --all-extras --frozen
 	npm ci --ignore-scripts
 	$(MAKE) build

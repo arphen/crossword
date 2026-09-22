@@ -40,7 +40,7 @@ def allowed(path):
         and "lock" not in name.lower()
         and not any(part in name for part in (".min.", ".bundle.", ".generated.", ".snap"))
         and path != OUTPUT
-        and (name in ROOT_FILES or path.suffix in EXTENSIONS)
+        and (name in ROOT_FILES or path.suffix in EXTENSIONS or ".githooks" in rel.parts)
     )
 
 
@@ -95,6 +95,7 @@ def render():
         "- `packages/domain/`, `packages/application/`, `packages/persistence/`: typed core and storage.",
         "- `tests/`: Python, legacy JavaScript, and browser tests; fixtures are omitted.",
         "- `scripts/`, `.scripts/`, `tools/`: build/quality/index helpers and offline tooling.",
+        "- `.githooks/`: map-maintenance and freshness hooks.",
         "- `docs/plans/README.md`: architecture/product roadmap; `docs/adr/`: decisions.", "",
         "## Index contract", "",
         "Offline lightweight symbol dump: Python AST (top-level definitions and class methods);",

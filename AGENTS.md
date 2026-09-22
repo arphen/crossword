@@ -35,6 +35,7 @@ Run from the repository root. Prefer existing Make targets; use direct commands 
 | --- | --- |
 | Install and build | `make setup` (uv frozen all-extras sync, npm ci, legacy assets, commit hook installation) |
 | Check tools | `make doctor` |
+| Git hooks | `make hooks-install` |
 | Local tests, no live provider | `make test` |
 | Python targeted tests | `uv run --no-sync python -m pytest tests/test_NAME.py -m 'not live_provider'` |
 | React port tests | `npm --workspace @crossword/react-port test` |
@@ -43,9 +44,9 @@ Run from the repository root. Prefer existing Make targets; use direct commands 
 | Legacy development server | `make run` (port 5001; rebuilds legacy assets) |
 | Legacy build | `make build` |
 | React development / build | `npm --workspace @crossword/react-port run dev` / `npm --workspace @crossword/react-port run build` |
-| Update / check map | `bash .scripts/generate-repo-map.sh` / `bash .scripts/generate-repo-map.sh --check` |
+| Update / check map | `make map-update` / `make map-check` |
 
-Do not run live-provider tests without explicit opt-in. Generator source belongs to the separate `../crossword-generator` checkout; normal builds consume versioned archives, not that sibling's sources.
+Do not run live-provider tests without explicit opt-in. Generator source belongs to the separate `../crossword-generator` checkout; normal builds consume versioned archives, not that sibling's sources. `make setup` installs the tracked `.githooks` path; its pre-commit hook regenerates and stages `docs/REPO_MAP.md`, and its pre-push hook verifies that the committed map is current.
 
 ## Strict Boundaries
 

@@ -75,6 +75,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format:check
+      - run: bash .scripts/generate-repo-map.sh --check
       - run: npm run scan:content
       - run: uv run --no-sync ruff check .
       - name: Compile backend modules
