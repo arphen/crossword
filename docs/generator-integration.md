@@ -1,5 +1,7 @@
 # Generator repository boundary
 
+> **Runtime direction update, 25 September 2026:** [ADR 0003](adr/0003-local-ollama-native-runtime.md) and the [active implementation plan](plans/06_PERSONAL_EPISTEME.md) now target native construction and Ollama behind the current Flask app. The existing three-package archive integration described below remains current implementation evidence; the planned Node-only runtime package/worker is not implemented yet.
+
 Crossword remains one browser-delivered product. Generation is developed in the separate local repository `../crossword-generator`; it is not a network service and does not depend on React or Vue.
 
 ## Ownership

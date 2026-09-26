@@ -82,7 +82,15 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/controller.d.ts` — `ControllerConfiguration:9`, `Controller:16`, `createController:26`
 - `apps/react/src/controller.js` — `createController:6`, `notify:19`, `unwrap:20`, `observe:21`, `get:28`, `set:45`, `deleteProperty:54`, `setTimeout:61`, `clearTimeout:62`, `setInterval:63`, `clearInterval:64`, `requestAnimationFrame:65`, `cancelAnimationFrame:66`, `subscribe:82`, `flush:84`, `start:85` (+1 more)
 - `apps/react/src/desktop.css`
-- `apps/react/src/main.jsx` — `App:10`
+- `apps/react/src/future/FutureApp.jsx` — `Arrow:33`, `Mark:48`, `ObjectChoice:59`, `ProfileField:77`, `FutureApp:140`, `selectedDay:156`, `update:157`, `persist:195`, `timeout:201`, `enter:211`, `reflect:218`, `timeout:223`, `advance:237`, `skip:244`
+- `apps/react/src/future/FutureApp.test.jsx`
+- `apps/react/src/future/FutureSolver.jsx` — `futureOptions:12`, `FutureSolver:40`
+- `apps/react/src/future/FutureSolver.test.js`
+- `apps/react/src/future/Signifier.jsx` — `Signifier:4`, `paint:6`
+- `apps/react/src/future/episteme.js` — `STORAGE_KEY:4`, `createProfileId:5`, `freshDraft:17`, `validateDraft:31`, `object:43`, `readDraft:72`, `writeDraft:83`, `seedProfile:97`, `object:98`, `changeObject:129`, `saveProfile:139`, `expandAssociations:151`
+- `apps/react/src/future/episteme.test.js`
+- `apps/react/src/future/future.css`
+- `apps/react/src/main.jsx` — `FutureApp:14`, `App:17`
 - `apps/react/src/mobile-render-parity.test.jsx`
 - `apps/react/src/mobile.css`
 - `apps/react/src/parity.test.js`
@@ -95,7 +103,9 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 - `docs/adr/0001-static-react-solver-boundary.md`
 - `docs/adr/0002-in-browser-model-runtime.md`
+- `docs/adr/0003-local-ollama-native-runtime.md`
 - `docs/content-scan.md`
+- `docs/future-onboarding.md`
 - `docs/generator-integration.md`
 - `docs/legacy-assets.md`
 - `docs/mutation-testing.md`
@@ -106,6 +116,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/plans/03_ARCHITECTURE_MIGRATION.md`
 - `docs/plans/04_QUALITY_DELIVERY.md`
 - `docs/plans/05_EXECUTION_BACKLOG.md`
+- `docs/plans/06_PERSONAL_EPISTEME.md`
 - `docs/plans/LUNA_PROMPTS.md`
 - `docs/plans/README.md`
 - `docs/react-port-parity.md`
@@ -155,10 +166,12 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 - `src/cell.py` — `Cell:10`, `Cell.validate_letter:29`, `Cell.display_letter:38`, `Cell.full_content:46`, `Cell.answer_value:58`, `Cell.__str__:66`, `Cell.from_char:84`, `Cell.from_formatted_string:101`, `Cell.to_api_format:156`
 - `src/crossword/__init__.py`
-- `src/crossword/app.py` — `GameSession:39`, `GameSession.__init__:40`, `GameSession.update_cell:49`, `GameSession.to_dict:52`, `_react_index:63`, `index:72`, `legacy_index:78`, `legacy_mobile_client:83`, `react_assets:87`, `get_crossword:95`, `get_crossword_by_date:101`, `daterange:125`, `get_random_crossword:136`, `grid:177`, `get_completed_puzzles:184`, `check_puzzle_completed:195` (+10 more)
+- `src/crossword/app.py` — `GameSession:41`, `GameSession.__init__:42`, `GameSession.update_cell:51`, `GameSession.to_dict:54`, `_react_index:65`, `index:74`, `future_index:80`, `legacy_index:86`, `legacy_mobile_client:91`, `react_assets:95`, `get_crossword:103`, `get_crossword_by_date:109`, `daterange:133`, `get_random_crossword:144`, `grid:185`, `get_completed_puzzles:192` (+11 more)
 - `src/crossword/continuity_export.py` — `ContinuityError:48`, `ContinuityFormatError:52`, `ContinuitySchemaError:56`, `ContinuityIntegrityError:60`, `ContinuitySizeError:68`, `ContinuityContentError:72`, `UnsupportedContinuityVersion:76`, `ContinuityLimits:215`, `ContinuityLimits.__post_init__:224`, `ContinuityPreview:232`, `ContinuityPreview.to_dict:243`, `_normalise_key:254`, `_is_forbidden_key:258`, `_contains_forbidden_value:263`, `_canonical_bytes:267`, `_sha256:283` (+23 more)
 - `src/crossword/data_reader.py` — `already_fetched:11`, `DataReader:15`, `DataReader.__init__:16`, `DataReader.fetch_data:21`, `DataReader.daterange:27`, `DataReader._fetch_data:31`
 - `src/crossword/database.py` — `Base:9`, `CompletedPuzzle:16`, `CompletedPuzzle.__repr__:29`, `CompletedPuzzle.to_dict:32`, `init_db:47`
+- `src/crossword/future.py` — `StartingProfile:22`, `validate_draft:31`, `derive_profile:73`, `starting_profile:101`, `expand_associations:139`
+- `src/crossword/future_catalog.json`
 - `src/crossword/models.py` — `Character:23`, `Character.is_rebus:37`, `Character.display_value:43`, `Character.__str__:47`, `Entry:61`, `Entry.length:81`, `Entry.answer_text:87`, `Entry.__str__:91`, `CrosswordMetadata:95`, `CrosswordMetadata.__str__:104`, `Crossword:109`, `Crossword.across_entries:121`, `Crossword.down_entries:127`, `Crossword.get_entry:131`, `Crossword.__str__:138`
 - `src/crossword/parser.py` — `NYTFormatParser:12`, `NYTFormatParser.parse:25`, `NYTFormatParser._normalize_grid_line:103`, `NYTFormatParser._calculate_actual_dimensions:151`, `NYTFormatParser._parse_entries:209`, `NYTFormatParser._find_starting_positions:266`, `NYTFormatParser._find_across_starts:306`, `NYTFormatParser._find_down_starts:326`, `NYTFormatParser._extract_across_word:346`, `NYTFormatParser._extract_down_word:369`, `NYTFormatParser._extract_character_at_position:392`
 - `src/crossword/scraper.py` — `main:11`, `usecase:19`, `CSVWriter:29`, `CSVWriter.__init__:30`, `CSVWriter.save:37`
@@ -180,6 +193,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `tests/test_api_isolated.py`
 - `tests/test_clue_numbering.py`
 - `tests/test_continuity_export.py`
+- `tests/test_future_api.py`
 - `tests/test_integration.py`
 - `tests/test_notepad_parsing.py`
 - `tests/test_parser.py`

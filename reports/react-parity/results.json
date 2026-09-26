@@ -1,0 +1,56 @@
+{
+  "browser": "153.0.8010.48",
+  "urls": {
+    "vue": "http://127.0.0.1:5001/legacy/",
+    "react": "http://127.0.0.1:5174/"
+  },
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "fixture": "fixture.json",
+  "normalization": "Fresh contexts, en-US/UTC, fixed Date and paused interval timers; screenshots disable CSS animations and hide caret. HTTP fixture routes intercepted; sockets blocked. DOM normalizes whitespace/class order, omits Vue comments and React wrapper. Pass criterion: DOM equality plus <0.1% differing pixels; Residual pixel differences remain unresolved; measured text boxes include small x-position/width deltas (see main-board-geometry.json). This tolerance is a bounded visual check, not proof of exact parity or of the residual cause.",
+  "states": [
+    {
+      "id": "01-main-board",
+      "domEqual": false,
+      "differentPixels": 316838,
+      "totalPixels": 1440000,
+      "ratio": 0.2200263888888889
+    },
+    {
+      "id": "02-clue-focus",
+      "domEqual": false,
+      "differentPixels": 336465,
+      "totalPixels": 1440000,
+      "ratio": 0.23365625
+    },
+    {
+      "id": "03-input",
+      "domEqual": false,
+      "differentPixels": 336491,
+      "totalPixels": 1440000,
+      "ratio": 0.23367430555555554
+    },
+    {
+      "id": "04-check",
+      "domEqual": false,
+      "differentPixels": 337669,
+      "totalPixels": 1440000,
+      "ratio": 0.2344923611111111
+    },
+    {
+      "id": "05-clear-checks",
+      "domEqual": false,
+      "differentPixels": 337312,
+      "totalPixels": 1440000,
+      "ratio": 0.23424444444444445
+    }
+  ],
+  "errors": [
+    {
+      "harness": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#down .state').nth(1)\u001b[22m\n\u001b[2m    - locator resolved to <span class=\"state\"> </span>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <span class=\"clue-text\">Synthetic down clue 3: a longer clue to exercise …</span> from <li class=\"affected-clue\">…</li> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <span class=\"clue-text\">Synthetic down clue 3: a longer clue to exercise …</span> from <li class=\"affected-clue\">…</li> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    58 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <span class=\"clue-text\">Synthetic down clue 3: a longer clue to exercise …</span> from <li class=\"affected-clue\">…</li> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at /Users/arphen/projectc/crossword/scripts/react-browser-parity.mjs:156:80\n    at checkpoint (/Users/arphen/projectc/crossword/scripts/react-browser-parity.mjs:81:25)\n    at async file:///Users/arphen/projectc/crossword/scripts/react-browser-parity.mjs:156:3"
+    }
+  ],
+  "passed": false
+}

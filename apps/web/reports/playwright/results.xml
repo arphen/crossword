@@ -1,0 +1,6 @@
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="11.341334">
+<testsuite name="completion.spec.ts" timestamp="2026-09-03T08:36:46.780Z" hostname="chromium" tests="1" failures="0" skipped="0" time="10.968" errors="0">
+<testcase name="completing the grid opens the solved modal and records the solve" classname="completion.spec.ts" time="10.968">
+</testcase>
+</testsuite>
+</testsuites>

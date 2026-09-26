@@ -1,0 +1,281 @@
+{
+  "vue": {
+    "across": {
+      "active": [
+        "across:17."
+      ],
+      "affected": [
+        "down:1.",
+        "down:2.",
+        "down:3.",
+        "down:4.",
+        "down:5.",
+        "down:6.",
+        "down:18."
+      ],
+      "cells": [
+        "2,0",
+        "2,1",
+        "2,2",
+        "2,3",
+        "2,4",
+        "2,5",
+        "2,6"
+      ],
+      "focus": "grid cell 2-1",
+      "direction": "across"
+    },
+    "down": {
+      "active": [
+        "down:2."
+      ],
+      "affected": [
+        "across:1.",
+        "across:14.",
+        "across:17."
+      ],
+      "cells": [
+        "0,1",
+        "1,1",
+        "2,1"
+      ],
+      "focus": "grid cell 2-1",
+      "direction": "down"
+    },
+    "arrowSteps": [
+      {
+        "label": "after perpendicular ArrowRight",
+        "active": [
+          "across:17."
+        ],
+        "cells": [
+          "2,0",
+          "2,1",
+          "2,2",
+          "2,3",
+          "2,4",
+          "2,5",
+          "2,6"
+        ],
+        "focus": "grid cell 2-1",
+        "direction": "across",
+        "watermarkColors": {
+          "ACROSS": {
+            "color": "rgba(255, 152, 0, 0.75)",
+            "opacity": "0.45"
+          },
+          "DOWN": {
+            "color": "rgb(0, 0, 0)",
+            "opacity": "0.3"
+          }
+        },
+        "helperCellColor": "rgba(255, 152, 0, 0.7)"
+      },
+      {
+        "label": "after perpendicular ArrowDown",
+        "active": [
+          "down:2."
+        ],
+        "cells": [
+          "0,1",
+          "1,1",
+          "2,1"
+        ],
+        "focus": "grid cell 2-1",
+        "direction": "down",
+        "watermarkColors": {
+          "ACROSS": {
+            "color": "rgb(0, 0, 0)",
+            "opacity": "0.3"
+          },
+          "DOWN": {
+            "color": "rgba(33, 150, 243, 0.75)",
+            "opacity": "0.45"
+          }
+        },
+        "helperCellColor": "rgba(33, 150, 243, 0.7)"
+      },
+      {
+        "label": "after ArrowUp within down",
+        "active": [
+          "down:2."
+        ],
+        "cells": [
+          "0,1",
+          "1,1",
+          "2,1"
+        ],
+        "focus": "grid cell 1-1",
+        "direction": "down",
+        "watermarkColors": {
+          "ACROSS": {
+            "color": "rgb(0, 0, 0)",
+            "opacity": "0.3"
+          },
+          "DOWN": {
+            "color": "rgba(33, 150, 243, 0.75)",
+            "opacity": "0.45"
+          }
+        },
+        "helperCellColor": "rgba(33, 150, 243, 0.7)"
+      }
+    ],
+    "boundary": {
+      "active": [
+        "down:25."
+      ],
+      "affected": [
+        "across:25.",
+        "across:31.",
+        "across:36."
+      ],
+      "cells": [
+        "4,0",
+        "5,0",
+        "6,0"
+      ],
+      "focus": "grid cell 4-0",
+      "direction": "down"
+    }
+  },
+  "react": {
+    "across": {
+      "active": [
+        "across:17."
+      ],
+      "affected": [
+        "down:1.",
+        "down:2.",
+        "down:3.",
+        "down:4.",
+        "down:5.",
+        "down:6.",
+        "down:18."
+      ],
+      "cells": [
+        "2,0",
+        "2,1",
+        "2,2",
+        "2,3",
+        "2,4",
+        "2,5",
+        "2,6"
+      ],
+      "focus": "grid cell 2-1",
+      "direction": "across"
+    },
+    "down": {
+      "active": [
+        "down:2."
+      ],
+      "affected": [
+        "across:1.",
+        "across:14.",
+        "across:17."
+      ],
+      "cells": [
+        "0,1",
+        "1,1",
+        "2,1"
+      ],
+      "focus": "grid cell 2-1",
+      "direction": "down"
+    },
+    "arrowSteps": [
+      {
+        "label": "after perpendicular ArrowRight",
+        "active": [
+          "across:17."
+        ],
+        "cells": [
+          "2,0",
+          "2,1",
+          "2,2",
+          "2,3",
+          "2,4",
+          "2,5",
+          "2,6"
+        ],
+        "focus": "grid cell 2-1",
+        "direction": "across",
+        "watermarkColors": {
+          "ACROSS": {
+            "color": "rgba(255, 152, 0, 0.75)",
+            "opacity": "0.45"
+          },
+          "DOWN": {
+            "color": "rgb(0, 0, 0)",
+            "opacity": "0.3"
+          }
+        },
+        "helperCellColor": "rgba(255, 152, 0, 0.7)"
+      },
+      {
+        "label": "after perpendicular ArrowDown",
+        "active": [
+          "down:2."
+        ],
+        "cells": [
+          "0,1",
+          "1,1",
+          "2,1"
+        ],
+        "focus": "grid cell 2-1",
+        "direction": "down",
+        "watermarkColors": {
+          "ACROSS": {
+            "color": "rgb(0, 0, 0)",
+            "opacity": "0.3"
+          },
+          "DOWN": {
+            "color": "rgba(33, 150, 243, 0.75)",
+            "opacity": "0.45"
+          }
+        },
+        "helperCellColor": "rgba(33, 150, 243, 0.7)"
+      },
+      {
+        "label": "after ArrowUp within down",
+        "active": [
+          "down:2."
+        ],
+        "cells": [
+          "0,1",
+          "1,1",
+          "2,1"
+        ],
+        "focus": "grid cell 1-1",
+        "direction": "down",
+        "watermarkColors": {
+          "ACROSS": {
+            "color": "rgb(0, 0, 0)",
+            "opacity": "0.3"
+          },
+          "DOWN": {
+            "color": "rgba(33, 150, 243, 0.75)",
+            "opacity": "0.45"
+          }
+        },
+        "helperCellColor": "rgba(33, 150, 243, 0.7)"
+      }
+    ],
+    "boundary": {
+      "active": [
+        "down:25."
+      ],
+      "affected": [
+        "across:25.",
+        "across:31.",
+        "across:36."
+      ],
+      "cells": [
+        "4,0",
+        "5,0",
+        "6,0"
+      ],
+      "focus": "grid cell 4-0",
+      "direction": "down"
+    }
+  },
+  "passed": true
+}

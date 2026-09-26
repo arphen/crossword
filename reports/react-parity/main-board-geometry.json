@@ -1,0 +1,1224 @@
+{
+  "vue": [
+    {
+      "text": "Synthetic across clue 1: a short test entry",
+      "x": 18.59375,
+      "y": 21.796875,
+      "width": 148.71875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 4: a short test entry",
+      "x": 234.4375,
+      "y": 21.796875,
+      "width": 145.96875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 11: a short test entry",
+      "x": 18.59375,
+      "y": 96.796875,
+      "width": 141.296875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 14: a short test entry",
+      "x": 241.859375,
+      "y": 96.796875,
+      "width": 138.546875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 15: a longer clue to exercise wrapping and alignment",
+      "x": 18.59375,
+      "y": 171.796875,
+      "width": 139.203125,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 16: a short test entry",
+      "x": 241.484375,
+      "y": 188.109375,
+      "width": 138.921875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 17: a short test entry",
+      "x": 18.59375,
+      "y": 279.421875,
+      "width": 141.1875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 19: a short test entry",
+      "x": 241.296875,
+      "y": 279.421875,
+      "width": 139.109375,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 21: a longer clue to exercise wrapping and alignment",
+      "x": 18.59375,
+      "y": 354.421875,
+      "width": 139.328125,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 22: a short test entry",
+      "x": 243.3125,
+      "y": 370.734375,
+      "width": 137.09375,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 24: a longer clue to exercise wrapping and alignment",
+      "x": 18.59375,
+      "y": 462.046875,
+      "width": 136.671875,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 25: a short test entry",
+      "x": 243.15625,
+      "y": 478.359375,
+      "width": 137.25,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 27: a longer clue to exercise wrapping and alignment",
+      "x": 18.59375,
+      "y": 569.671875,
+      "width": 139.21875,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 28: a short test entry",
+      "x": 243.609375,
+      "y": 585.984375,
+      "width": 136.796875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 31: a short test entry",
+      "x": 18.59375,
+      "y": 677.296875,
+      "width": 138.9375,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 32: a short test entry",
+      "x": 243.703125,
+      "y": 677.296875,
+      "width": 136.703125,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 35: a short test entry",
+      "x": 18.59375,
+      "y": 768.609375,
+      "width": 136.859375,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 36: a longer clue to exercise wrapping and alignment",
+      "x": 243.765625,
+      "y": 752.296875,
+      "width": 136.640625,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 38: a short test entry",
+      "x": 18.59375,
+      "y": 876.234375,
+      "width": 136.40625,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 39: a longer clue to exercise wrapping and alignment",
+      "x": 243.625,
+      "y": 859.921875,
+      "width": 136.78125,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 41: a short test entry",
+      "x": 18.59375,
+      "y": 983.859375,
+      "width": 138.859375,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 42: a longer clue to exercise wrapping and alignment",
+      "x": 243.96875,
+      "y": 967.546875,
+      "width": 136.4375,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 43: a short test entry",
+      "x": 18.59375,
+      "y": 1075.171875,
+      "width": 136.5,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 44: a short test entry",
+      "x": 244.484375,
+      "y": 1075.171875,
+      "width": 135.921875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 46: a short test entry",
+      "x": 18.59375,
+      "y": 1150.171875,
+      "width": 136.28125,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 47: a short test entry",
+      "x": 241.828125,
+      "y": 1150.171875,
+      "width": 138.578125,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 50: a short test entry",
+      "x": 18.59375,
+      "y": 1241.484375,
+      "width": 136.796875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 51: a longer clue to exercise wrapping and alignment",
+      "x": 241.21875,
+      "y": 1225.171875,
+      "width": 139.1875,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 54: a longer clue to exercise wrapping and alignment",
+      "x": 18.59375,
+      "y": 1332.796875,
+      "width": 136.25,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 55: a short test entry",
+      "x": 243.453125,
+      "y": 1349.109375,
+      "width": 136.953125,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 57: a longer clue to exercise wrapping and alignment",
+      "x": 18.59375,
+      "y": 1440.421875,
+      "width": 138.90625,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 58: a short test entry",
+      "x": 243.90625,
+      "y": 1456.734375,
+      "width": 136.5,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 60: a longer clue to exercise wrapping and alignment",
+      "x": 18.59375,
+      "y": 1548.046875,
+      "width": 136.5,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 61: a short test entry",
+      "x": 241.671875,
+      "y": 1564.359375,
+      "width": 138.734375,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 62: a short test entry",
+      "x": 18.59375,
+      "y": 1671.984375,
+      "width": 136.46875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 63: a longer clue to exercise wrapping and alignment",
+      "x": 243.734375,
+      "y": 1655.671875,
+      "width": 136.671875,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 66: a longer clue to exercise wrapping and alignment",
+      "x": 18.59375,
+      "y": 1763.296875,
+      "width": 136.328125,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 70: a short test entry",
+      "x": 242.515625,
+      "y": 1779.609375,
+      "width": 137.890625,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 71: a short test entry",
+      "x": 18.59375,
+      "y": 1870.921875,
+      "width": 139.90625,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 73: a short test entry",
+      "x": 242.515625,
+      "y": 1870.921875,
+      "width": 137.890625,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 74: a short test entry",
+      "x": 18.59375,
+      "y": 1962.234375,
+      "width": 137.875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic across clue 75: a longer clue to exercise wrapping and alignment",
+      "x": 242.421875,
+      "y": 1945.921875,
+      "width": 137.984375,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic across clue 76: a short test entry",
+      "x": 76.046875,
+      "y": 2053.546875,
+      "width": 270.15625,
+      "height": 16.3125
+    },
+    {
+      "text": "Aug 29, 2026",
+      "x": 566.5,
+      "y": 29,
+      "width": 95.25,
+      "height": 12.796875
+    },
+    {
+      "text": "•",
+      "x": 672.140625,
+      "y": 29.796875,
+      "width": 5.34375,
+      "height": 11.203125
+    },
+    {
+      "text": "Saturday",
+      "x": 687.875,
+      "y": 29.796875,
+      "width": 50,
+      "height": 11.203125
+    },
+    {
+      "text": "•",
+      "x": 748.265625,
+      "y": 29.796875,
+      "width": 5.34375,
+      "height": 11.203125
+    },
+    {
+      "text": "Parity Fixture Author",
+      "x": 764,
+      "y": 29.796875,
+      "width": 109.484375,
+      "height": 11.203125
+    },
+    {
+      "text": "Synthetic down clue 1: a short test entry",
+      "x": 1059.59375,
+      "y": 21.796875,
+      "width": 148.71875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 2: a short test entry",
+      "x": 1274.921875,
+      "y": 21.796875,
+      "width": 146.484375,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 3: a longer clue to exercise wrapping and alignment",
+      "x": 1059.59375,
+      "y": 96.796875,
+      "width": 146.546875,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic down clue 4: a short test entry",
+      "x": 1275.4375,
+      "y": 113.109375,
+      "width": 145.96875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 5: a short test entry",
+      "x": 1059.59375,
+      "y": 279.515625,
+      "width": 146.625,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 6: a longer clue to exercise wrapping and alignment",
+      "x": 1275.0625,
+      "y": 243.609375,
+      "width": 146.34375,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic down clue 7: a short test entry",
+      "x": 1059.59375,
+      "y": 410.015625,
+      "width": 148.609375,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 8: a short test entry",
+      "x": 1275.21875,
+      "y": 390.421875,
+      "width": 146.1875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 9: a longer clue to exercise wrapping and alignment",
+      "x": 1059.59375,
+      "y": 507.890625,
+      "width": 146.515625,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic down clue 10: a short test entry",
+      "x": 1282.3125,
+      "y": 504.609375,
+      "width": 139.09375,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 11: a short test entry",
+      "x": 1059.59375,
+      "y": 618.796875,
+      "width": 141.296875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 12: a longer clue to exercise wrapping and alignment",
+      "x": 1282.359375,
+      "y": 622.078125,
+      "width": 139.046875,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic down clue 13: a short test entry",
+      "x": 1059.59375,
+      "y": 749.296875,
+      "width": 139.125,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 18: a longer clue to exercise wrapping and alignment",
+      "x": 1282.640625,
+      "y": 732.984375,
+      "width": 138.765625,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic down clue 20: a short test entry",
+      "x": 1059.59375,
+      "y": 850.40625,
+      "width": 137.109375,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 23: a short test entry",
+      "x": 1284.234375,
+      "y": 840.609375,
+      "width": 137.171875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 25: a short test entry",
+      "x": 1059.59375,
+      "y": 935.203125,
+      "width": 137.234375,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 26: a short test entry",
+      "x": 1284.453125,
+      "y": 935.203125,
+      "width": 136.953125,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 29: a short test entry",
+      "x": 1059.59375,
+      "y": 1026.515625,
+      "width": 137.125,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 30: a longer clue to exercise wrapping and alignment",
+      "x": 1284.59375,
+      "y": 1010.203125,
+      "width": 136.8125,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic down clue 33: a longer clue to exercise wrapping and alignment",
+      "x": 1059.59375,
+      "y": 1117.828125,
+      "width": 136.765625,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic down clue 34: a short test entry",
+      "x": 1285.21875,
+      "y": 1134.140625,
+      "width": 136.1875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 37: a short test entry",
+      "x": 1059.59375,
+      "y": 1225.453125,
+      "width": 138.828125,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 40: a short test entry",
+      "x": 1284.9375,
+      "y": 1225.453125,
+      "width": 136.46875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 44: a short test entry",
+      "x": 1059.59375,
+      "y": 1316.765625,
+      "width": 135.90625,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 45: a longer clue to exercise wrapping and alignment",
+      "x": 1284.8125,
+      "y": 1300.453125,
+      "width": 136.59375,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic down clue 48: a longer clue to exercise wrapping and alignment",
+      "x": 1059.59375,
+      "y": 1408.078125,
+      "width": 136.125,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic down clue 49: a short test entry",
+      "x": 1284.921875,
+      "y": 1424.390625,
+      "width": 136.484375,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 52: a short test entry",
+      "x": 1059.59375,
+      "y": 1515.703125,
+      "width": 136.765625,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 53: a short test entry",
+      "x": 1284.53125,
+      "y": 1515.703125,
+      "width": 136.875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 56: a short test entry",
+      "x": 1059.59375,
+      "y": 1590.703125,
+      "width": 136.640625,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 59: a short test entry",
+      "x": 1284.578125,
+      "y": 1590.703125,
+      "width": 136.828125,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 63: a longer clue to exercise wrapping and alignment",
+      "x": 1059.59375,
+      "y": 1665.703125,
+      "width": 136.65625,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic down clue 64: a short test entry",
+      "x": 1285.4375,
+      "y": 1682.015625,
+      "width": 135.96875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 65: a short test entry",
+      "x": 1059.59375,
+      "y": 1773.328125,
+      "width": 136.640625,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 67: a short test entry",
+      "x": 1282.78125,
+      "y": 1773.328125,
+      "width": 138.625,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 68: a short test entry",
+      "x": 1059.59375,
+      "y": 1864.640625,
+      "width": 136.1875,
+      "height": 32.625
+    },
+    {
+      "text": "Synthetic down clue 69: a longer clue to exercise wrapping and alignment",
+      "x": 1284.875,
+      "y": 1848.328125,
+      "width": 136.53125,
+      "height": 65.25
+    },
+    {
+      "text": "Synthetic down clue 72: a longer clue to exercise wrapping and alignment",
+      "x": 1059.59375,
+      "y": 1955.953125,
+      "width": 327.5625,
+      "height": 32.625
+    }
+  ],
+  "react": [
+    {
+      "text": "Synthetic across clue 1: a short test entry",
+      "x": 36.494998931884766,
+      "y": 33.125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 4: a short test entry",
+      "x": 252.6300048828125,
+      "y": 33.125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 11: a short test entry",
+      "x": 36.494998931884766,
+      "y": 98.71875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 14: a short test entry",
+      "x": 252.6300048828125,
+      "y": 98.71875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 15: a longer clue to exercise wrapping and alignment",
+      "x": 36.494998931884766,
+      "y": 148.71875,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 16: a short test entry",
+      "x": 252.6300048828125,
+      "y": 164.3125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 17: a short test entry",
+      "x": 36.494998931884766,
+      "y": 229.90625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 19: a short test entry",
+      "x": 252.6300048828125,
+      "y": 229.90625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 21: a longer clue to exercise wrapping and alignment",
+      "x": 36.494998931884766,
+      "y": 279.90625,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 22: a short test entry",
+      "x": 252.6300048828125,
+      "y": 295.5,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 24: a longer clue to exercise wrapping and alignment",
+      "x": 36.494998931884766,
+      "y": 345.5,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 25: a short test entry",
+      "x": 252.6300048828125,
+      "y": 361.09375,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 27: a longer clue to exercise wrapping and alignment",
+      "x": 36.494998931884766,
+      "y": 411.09375,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 28: a short test entry",
+      "x": 252.6300048828125,
+      "y": 426.6875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 31: a short test entry",
+      "x": 36.494998931884766,
+      "y": 492.28125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 32: a short test entry",
+      "x": 252.6300048828125,
+      "y": 492.28125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 35: a short test entry",
+      "x": 36.494998931884766,
+      "y": 557.875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 36: a longer clue to exercise wrapping and alignment",
+      "x": 252.6300048828125,
+      "y": 542.28125,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 38: a short test entry",
+      "x": 36.494998931884766,
+      "y": 623.46875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 39: a longer clue to exercise wrapping and alignment",
+      "x": 252.6300048828125,
+      "y": 607.875,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 41: a short test entry",
+      "x": 36.494998931884766,
+      "y": 689.0625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 42: a longer clue to exercise wrapping and alignment",
+      "x": 252.6300048828125,
+      "y": 673.46875,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 43: a short test entry",
+      "x": 36.494998931884766,
+      "y": 754.65625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 44: a short test entry",
+      "x": 252.6300048828125,
+      "y": 754.65625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 46: a short test entry",
+      "x": 36.494998931884766,
+      "y": 820.25,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 47: a short test entry",
+      "x": 252.6300048828125,
+      "y": 820.25,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 50: a short test entry",
+      "x": 36.494998931884766,
+      "y": 885.84375,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 51: a longer clue to exercise wrapping and alignment",
+      "x": 252.6300048828125,
+      "y": 870.25,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 54: a longer clue to exercise wrapping and alignment",
+      "x": 36.494998931884766,
+      "y": 935.84375,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 55: a short test entry",
+      "x": 252.6300048828125,
+      "y": 951.4375,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 57: a longer clue to exercise wrapping and alignment",
+      "x": 36.494998931884766,
+      "y": 1001.4375,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 58: a short test entry",
+      "x": 252.6300048828125,
+      "y": 1017.03125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 60: a longer clue to exercise wrapping and alignment",
+      "x": 36.494998931884766,
+      "y": 1067.03125,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 61: a short test entry",
+      "x": 252.6300048828125,
+      "y": 1082.625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 62: a short test entry",
+      "x": 36.494998931884766,
+      "y": 1148.21875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 63: a longer clue to exercise wrapping and alignment",
+      "x": 252.6300048828125,
+      "y": 1132.625,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 66: a longer clue to exercise wrapping and alignment",
+      "x": 36.494998931884766,
+      "y": 1198.21875,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 70: a short test entry",
+      "x": 252.6300048828125,
+      "y": 1213.8125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 71: a short test entry",
+      "x": 36.494998931884766,
+      "y": 1279.40625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 73: a short test entry",
+      "x": 252.6300048828125,
+      "y": 1279.40625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 74: a short test entry",
+      "x": 36.494998931884766,
+      "y": 1345,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic across clue 75: a longer clue to exercise wrapping and alignment",
+      "x": 252.6300048828125,
+      "y": 1329.40625,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic across clue 76: a short test entry",
+      "x": 36.494998931884766,
+      "y": 1410.59375,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Aug 29, 2026",
+      "x": 577.984375,
+      "y": 38,
+      "width": 86,
+      "height": 11.515625
+    },
+    {
+      "text": "•",
+      "x": 674.375,
+      "y": 38.15625,
+      "width": 5.609375,
+      "height": 11.203125
+    },
+    {
+      "text": "Saturday",
+      "x": 690.375,
+      "y": 38.15625,
+      "width": 45.6875,
+      "height": 11.203125
+    },
+    {
+      "text": "•",
+      "x": 746.453125,
+      "y": 38.15625,
+      "width": 5.609375,
+      "height": 11.203125
+    },
+    {
+      "text": "Parity Fixture Author",
+      "x": 762.453125,
+      "y": 38.15625,
+      "width": 101.5625,
+      "height": 11.203125
+    },
+    {
+      "text": "Synthetic down clue 1: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 33.125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 2: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 33.125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 3: a longer clue to exercise wrapping and alignment",
+      "x": 1086.4949951171875,
+      "y": 61.1875,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic down clue 4: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 76.78125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 5: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 164.3125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 6: a longer clue to exercise wrapping and alignment",
+      "x": 1302.6300048828125,
+      "y": 126.78125,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic down clue 7: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 229.90625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 8: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 207.96875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 9: a longer clue to exercise wrapping and alignment",
+      "x": 1086.4949951171875,
+      "y": 279.90625,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic down clue 10: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 273.5625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 11: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 339.15625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 12: a longer clue to exercise wrapping and alignment",
+      "x": 1302.6300048828125,
+      "y": 345.5,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic down clue 13: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 426.6875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 18: a longer clue to exercise wrapping and alignment",
+      "x": 1302.6300048828125,
+      "y": 411.09375,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic down clue 20: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 492.28125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 23: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 481.3125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 25: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 557.875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 26: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 557.875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 29: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 623.46875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 30: a longer clue to exercise wrapping and alignment",
+      "x": 1302.6300048828125,
+      "y": 607.875,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic down clue 33: a longer clue to exercise wrapping and alignment",
+      "x": 1086.4949951171875,
+      "y": 673.46875,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic down clue 34: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 689.0625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 37: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 754.65625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 40: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 754.65625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 44: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 820.25,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 45: a longer clue to exercise wrapping and alignment",
+      "x": 1302.6300048828125,
+      "y": 804.65625,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic down clue 48: a longer clue to exercise wrapping and alignment",
+      "x": 1086.4949951171875,
+      "y": 870.25,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic down clue 49: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 885.84375,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 52: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 951.4375,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 53: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 951.4375,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 56: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 1017.03125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 59: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 1017.03125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 63: a longer clue to exercise wrapping and alignment",
+      "x": 1086.4949951171875,
+      "y": 1067.03125,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic down clue 64: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 1082.625,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 65: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 1148.21875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 67: a short test entry",
+      "x": 1302.6300048828125,
+      "y": 1148.21875,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 68: a short test entry",
+      "x": 1086.4949951171875,
+      "y": 1213.8125,
+      "width": 100.875,
+      "height": 46.78125
+    },
+    {
+      "text": "Synthetic down clue 69: a longer clue to exercise wrapping and alignment",
+      "x": 1302.6300048828125,
+      "y": 1198.21875,
+      "width": 100.875,
+      "height": 77.96875
+    },
+    {
+      "text": "Synthetic down clue 72: a longer clue to exercise wrapping and alignment",
+      "x": 1086.4949951171875,
+      "y": 1263.8125,
+      "width": 100.875,
+      "height": 77.96875
+    }
+  ]
+}

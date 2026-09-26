@@ -1,0 +1,154 @@
+{
+  "version": 1,
+  "objects": [
+    {
+      "id": "thread",
+      "label": "A red thread",
+      "words": ["tension", "weaving", "connection", "labyrinth"],
+      "companions": ["fork", "map", "dots", "seed"]
+    },
+    {
+      "id": "stone",
+      "label": "A river stone",
+      "words": ["river", "time", "erosion", "stillness"],
+      "companions": ["shell", "orbit", "map", "fork"]
+    },
+    {
+      "id": "cube",
+      "label": "A blue glass cube",
+      "words": ["light", "geometry", "reflection", "architecture"],
+      "companions": ["orbit", "seed", "dots", "shell"]
+    },
+    {
+      "id": "key",
+      "label": "A brass key",
+      "words": ["threshold", "chamber", "discovery", "lock"],
+      "companions": ["map", "shell", "fork", "orbit"]
+    },
+    {
+      "id": "circle",
+      "label": "An unfinished circle",
+      "words": ["orbit", "opening", "cycle", "continuation"],
+      "companions": ["seed", "dots", "fork", "map"]
+    },
+    {
+      "id": "zero",
+      "label": "The number zero",
+      "words": ["origin", "infinity", "nothing", "possibility"],
+      "companions": ["dots", "orbit", "shell", "seed"]
+    }
+  ],
+  "companions": [
+    {
+      "id": "fork",
+      "label": "A tuning fork",
+      "words": ["resonance", "music", "frequency"]
+    },
+    {
+      "id": "map",
+      "label": "A folded map",
+      "words": ["wandering", "landscape", "cartography"]
+    },
+    {
+      "id": "dots",
+      "label": "Two offset dots",
+      "words": ["interval", "dialogue", "counterpoint"]
+    },
+    {
+      "id": "seed",
+      "label": "A pale seed",
+      "words": ["germination", "botany", "becoming"]
+    },
+    {
+      "id": "shell",
+      "label": "A spiral shell",
+      "words": ["sea", "spiral", "echo"]
+    },
+    {
+      "id": "orbit",
+      "label": "An orbit",
+      "words": ["astronomy", "motion", "return"]
+    }
+  ],
+  "traces": [
+    "echo",
+    "elsewhere",
+    "moss",
+    "03:17",
+    "almost",
+    "∴",
+    "afterglow",
+    "threshold",
+    "salt",
+    "between",
+    "again",
+    "?"
+  ],
+  "days": [
+    {
+      "id": "monday",
+      "short": "Mon",
+      "label": "Monday",
+      "title": "A soft landing.",
+      "description": "Clear clues, familiar words, and plenty of places to begin.",
+      "level": 1
+    },
+    {
+      "id": "tuesday",
+      "short": "Tue",
+      "label": "Tuesday",
+      "title": "A little room to wander.",
+      "description": "An inviting theme, with a few more turns along the way.",
+      "level": 2
+    },
+    {
+      "id": "wednesday",
+      "short": "Wed",
+      "label": "Wednesday",
+      "title": "Just enough to get lost.",
+      "description": "Playful clues, satisfying connections, and a little resistance.",
+      "level": 3
+    },
+    {
+      "id": "thursday",
+      "short": "Thu",
+      "label": "Thursday",
+      "title": "Expect a change of rules.",
+      "description": "An inventive theme. Perhaps a rebus, a twist, or a different way to read the grid.",
+      "level": 4
+    },
+    {
+      "id": "friday",
+      "short": "Fri",
+      "label": "Friday",
+      "title": "Follow the long way round.",
+      "description": "A themeless puzzle, expressive long answers, and more oblique clues.",
+      "level": 5
+    },
+    {
+      "id": "saturday",
+      "short": "Sat",
+      "label": "Saturday",
+      "title": "Something to sit with.",
+      "description": "The most demanding clues. Give the connections time to arrive.",
+      "level": 6
+    },
+    {
+      "id": "sunday",
+      "short": "Sun",
+      "label": "Sunday",
+      "title": "Make an afternoon of it.",
+      "description": "A larger themed grid with a midweek feel. More room, rather than the hardest clues.",
+      "level": 3
+    }
+  ],
+  "languages": [
+    "None for now",
+    "French",
+    "German",
+    "Spanish",
+    "Italian",
+    "Portuguese",
+    "Japanese"
+  ]
+}

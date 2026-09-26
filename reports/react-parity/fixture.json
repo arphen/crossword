@@ -1,0 +1,2602 @@
+{
+  "metadata": {
+    "date": "260829",
+    "title": "Synthetic parity board",
+    "authors": [
+      "Parity Fixture Author"
+    ],
+    "width": 15,
+    "height": 15,
+    "notepad": "Synthetic fixture: circled, shaded and rebus cells."
+  },
+  "entries": [
+    {
+      "clue_number": 1,
+      "clue_text": "Synthetic across clue 1: a short test entry",
+      "direction": "across",
+      "start_x": 0,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": true,
+          "is_shaded": false
+        },
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": true
+        }
+      ]
+    },
+    {
+      "clue_number": 1,
+      "clue_text": "Synthetic down clue 1: a short test entry",
+      "direction": "down",
+      "start_x": 0,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 2,
+      "clue_text": "Synthetic down clue 2: a short test entry",
+      "direction": "down",
+      "start_x": 1,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "B",
+          "is_circled": true,
+          "is_shaded": false
+        },
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 3,
+      "clue_text": "Synthetic down clue 3: a longer clue to exercise wrapping and alignment",
+      "direction": "down",
+      "start_x": 2,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": true
+        },
+        {
+          "letters": "R",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "V",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Z",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "S",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 4,
+      "clue_text": "Synthetic across clue 4: a short test entry",
+      "direction": "across",
+      "start_x": 4,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "QU",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 4,
+      "clue_text": "Synthetic down clue 4: a short test entry",
+      "direction": "down",
+      "start_x": 4,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "QU",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Y",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "R",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 5,
+      "clue_text": "Synthetic down clue 5: a short test entry",
+      "direction": "down",
+      "start_x": 5,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 6,
+      "clue_text": "Synthetic down clue 6: a longer clue to exercise wrapping and alignment",
+      "direction": "down",
+      "start_x": 6,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "V",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Z",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "S",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 7,
+      "clue_text": "Synthetic down clue 7: a short test entry",
+      "direction": "down",
+      "start_x": 7,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 8,
+      "clue_text": "Synthetic down clue 8: a short test entry",
+      "direction": "down",
+      "start_x": 8,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Y",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "R",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "V",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 9,
+      "clue_text": "Synthetic down clue 9: a longer clue to exercise wrapping and alignment",
+      "direction": "down",
+      "start_x": 9,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Y",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 10,
+      "clue_text": "Synthetic down clue 10: a short test entry",
+      "direction": "down",
+      "start_x": 10,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Z",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "S",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 11,
+      "clue_text": "Synthetic across clue 11: a short test entry",
+      "direction": "across",
+      "start_x": 12,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 11,
+      "clue_text": "Synthetic down clue 11: a short test entry",
+      "direction": "down",
+      "start_x": 12,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Y",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "R",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "V",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Z",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 12,
+      "clue_text": "Synthetic down clue 12: a longer clue to exercise wrapping and alignment",
+      "direction": "down",
+      "start_x": 13,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "R",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 13,
+      "clue_text": "Synthetic down clue 13: a short test entry",
+      "direction": "down",
+      "start_x": 14,
+      "start_y": 0,
+      "characters": [
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "S",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 14,
+      "clue_text": "Synthetic across clue 14: a short test entry",
+      "direction": "across",
+      "start_x": 0,
+      "start_y": 1,
+      "characters": [
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "R",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 15,
+      "clue_text": "Synthetic across clue 15: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 4,
+      "start_y": 1,
+      "characters": [
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "V",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Y",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Z",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 16,
+      "clue_text": "Synthetic across clue 16: a short test entry",
+      "direction": "across",
+      "start_x": 12,
+      "start_y": 1,
+      "characters": [
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 17,
+      "clue_text": "Synthetic across clue 17: a short test entry",
+      "direction": "across",
+      "start_x": 0,
+      "start_y": 2,
+      "characters": [
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 18,
+      "clue_text": "Synthetic down clue 18: a longer clue to exercise wrapping and alignment",
+      "direction": "down",
+      "start_x": 3,
+      "start_y": 2,
+      "characters": [
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 19,
+      "clue_text": "Synthetic across clue 19: a short test entry",
+      "direction": "across",
+      "start_x": 8,
+      "start_y": 2,
+      "characters": [
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "R",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "S",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 20,
+      "clue_text": "Synthetic down clue 20: a short test entry",
+      "direction": "down",
+      "start_x": 11,
+      "start_y": 2,
+      "characters": [
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 21,
+      "clue_text": "Synthetic across clue 21: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 2,
+      "start_y": 3,
+      "characters": [
+        {
+          "letters": "V",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 22,
+      "clue_text": "Synthetic across clue 22: a short test entry",
+      "direction": "across",
+      "start_x": 6,
+      "start_y": 3,
+      "characters": [
+        {
+          "letters": "Z",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 23,
+      "clue_text": "Synthetic down clue 23: a short test entry",
+      "direction": "down",
+      "start_x": 7,
+      "start_y": 3,
+      "characters": [
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 24,
+      "clue_text": "Synthetic across clue 24: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 10,
+      "start_y": 3,
+      "characters": [
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 25,
+      "clue_text": "Synthetic across clue 25: a short test entry",
+      "direction": "across",
+      "start_x": 0,
+      "start_y": 4,
+      "characters": [
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 25,
+      "clue_text": "Synthetic down clue 25: a short test entry",
+      "direction": "down",
+      "start_x": 0,
+      "start_y": 4,
+      "characters": [
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 26,
+      "clue_text": "Synthetic down clue 26: a short test entry",
+      "direction": "down",
+      "start_x": 1,
+      "start_y": 4,
+      "characters": [
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Y",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 27,
+      "clue_text": "Synthetic across clue 27: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 6,
+      "start_y": 4,
+      "characters": [
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 28,
+      "clue_text": "Synthetic across clue 28: a short test entry",
+      "direction": "across",
+      "start_x": 10,
+      "start_y": 4,
+      "characters": [
+        {
+          "letters": "S",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "V",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 29,
+      "clue_text": "Synthetic down clue 29: a short test entry",
+      "direction": "down",
+      "start_x": 13,
+      "start_y": 4,
+      "characters": [
+        {
+          "letters": "V",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Z",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 30,
+      "clue_text": "Synthetic down clue 30: a longer clue to exercise wrapping and alignment",
+      "direction": "down",
+      "start_x": 14,
+      "start_y": 4,
+      "characters": [
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 31,
+      "clue_text": "Synthetic across clue 31: a short test entry",
+      "direction": "across",
+      "start_x": 0,
+      "start_y": 5,
+      "characters": [
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Y",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Z",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 32,
+      "clue_text": "Synthetic across clue 32: a short test entry",
+      "direction": "across",
+      "start_x": 4,
+      "start_y": 5,
+      "characters": [
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 33,
+      "clue_text": "Synthetic down clue 33: a longer clue to exercise wrapping and alignment",
+      "direction": "down",
+      "start_x": 5,
+      "start_y": 5,
+      "characters": [
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 34,
+      "clue_text": "Synthetic down clue 34: a short test entry",
+      "direction": "down",
+      "start_x": 9,
+      "start_y": 5,
+      "characters": [
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 35,
+      "clue_text": "Synthetic across clue 35: a short test entry",
+      "direction": "across",
+      "start_x": 12,
+      "start_y": 5,
+      "characters": [
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 36,
+      "clue_text": "Synthetic across clue 36: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 0,
+      "start_y": 6,
+      "characters": [
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 37,
+      "clue_text": "Synthetic down clue 37: a short test entry",
+      "direction": "down",
+      "start_x": 3,
+      "start_y": 6,
+      "characters": [
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 38,
+      "clue_text": "Synthetic across clue 38: a short test entry",
+      "direction": "across",
+      "start_x": 6,
+      "start_y": 6,
+      "characters": [
+        {
+          "letters": "S",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 39,
+      "clue_text": "Synthetic across clue 39: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 10,
+      "start_y": 6,
+      "characters": [
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Y",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Z",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 40,
+      "clue_text": "Synthetic down clue 40: a short test entry",
+      "direction": "down",
+      "start_x": 11,
+      "start_y": 6,
+      "characters": [
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 41,
+      "clue_text": "Synthetic across clue 41: a short test entry",
+      "direction": "across",
+      "start_x": 2,
+      "start_y": 7,
+      "characters": [
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 42,
+      "clue_text": "Synthetic across clue 42: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 6,
+      "start_y": 7,
+      "characters": [
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 43,
+      "clue_text": "Synthetic across clue 43: a short test entry",
+      "direction": "across",
+      "start_x": 10,
+      "start_y": 7,
+      "characters": [
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 44,
+      "clue_text": "Synthetic across clue 44: a short test entry",
+      "direction": "across",
+      "start_x": 0,
+      "start_y": 8,
+      "characters": [
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "R",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "S",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 44,
+      "clue_text": "Synthetic down clue 44: a short test entry",
+      "direction": "down",
+      "start_x": 0,
+      "start_y": 8,
+      "characters": [
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 45,
+      "clue_text": "Synthetic down clue 45: a longer clue to exercise wrapping and alignment",
+      "direction": "down",
+      "start_x": 1,
+      "start_y": 8,
+      "characters": [
+        {
+          "letters": "R",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "V",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 46,
+      "clue_text": "Synthetic across clue 46: a short test entry",
+      "direction": "across",
+      "start_x": 6,
+      "start_y": 8,
+      "characters": [
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Y",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 47,
+      "clue_text": "Synthetic across clue 47: a short test entry",
+      "direction": "across",
+      "start_x": 10,
+      "start_y": 8,
+      "characters": [
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 48,
+      "clue_text": "Synthetic down clue 48: a longer clue to exercise wrapping and alignment",
+      "direction": "down",
+      "start_x": 13,
+      "start_y": 8,
+      "characters": [
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "S",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 49,
+      "clue_text": "Synthetic down clue 49: a short test entry",
+      "direction": "down",
+      "start_x": 14,
+      "start_y": 8,
+      "characters": [
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 50,
+      "clue_text": "Synthetic across clue 50: a short test entry",
+      "direction": "across",
+      "start_x": 0,
+      "start_y": 9,
+      "characters": [
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 51,
+      "clue_text": "Synthetic across clue 51: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 4,
+      "start_y": 9,
+      "characters": [
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 52,
+      "clue_text": "Synthetic down clue 52: a short test entry",
+      "direction": "down",
+      "start_x": 5,
+      "start_y": 9,
+      "characters": [
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 53,
+      "clue_text": "Synthetic down clue 53: a short test entry",
+      "direction": "down",
+      "start_x": 9,
+      "start_y": 9,
+      "characters": [
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 54,
+      "clue_text": "Synthetic across clue 54: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 12,
+      "start_y": 9,
+      "characters": [
+        {
+          "letters": "R",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "S",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 55,
+      "clue_text": "Synthetic across clue 55: a short test entry",
+      "direction": "across",
+      "start_x": 0,
+      "start_y": 10,
+      "characters": [
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "V",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Y",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 56,
+      "clue_text": "Synthetic down clue 56: a short test entry",
+      "direction": "down",
+      "start_x": 3,
+      "start_y": 10,
+      "characters": [
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 57,
+      "clue_text": "Synthetic across clue 57: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 6,
+      "start_y": 10,
+      "characters": [
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 58,
+      "clue_text": "Synthetic across clue 58: a short test entry",
+      "direction": "across",
+      "start_x": 10,
+      "start_y": 10,
+      "characters": [
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 59,
+      "clue_text": "Synthetic down clue 59: a short test entry",
+      "direction": "down",
+      "start_x": 11,
+      "start_y": 10,
+      "characters": [
+        {
+          "letters": "F",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 60,
+      "clue_text": "Synthetic across clue 60: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 2,
+      "start_y": 11,
+      "characters": [
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 61,
+      "clue_text": "Synthetic across clue 61: a short test entry",
+      "direction": "across",
+      "start_x": 6,
+      "start_y": 11,
+      "characters": [
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "R",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 62,
+      "clue_text": "Synthetic across clue 62: a short test entry",
+      "direction": "across",
+      "start_x": 10,
+      "start_y": 11,
+      "characters": [
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "V",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 63,
+      "clue_text": "Synthetic across clue 63: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 0,
+      "start_y": 12,
+      "characters": [
+        {
+          "letters": "Y",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Z",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 63,
+      "clue_text": "Synthetic down clue 63: a longer clue to exercise wrapping and alignment",
+      "direction": "down",
+      "start_x": 0,
+      "start_y": 12,
+      "characters": [
+        {
+          "letters": "Y",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 64,
+      "clue_text": "Synthetic down clue 64: a short test entry",
+      "direction": "down",
+      "start_x": 1,
+      "start_y": 12,
+      "characters": [
+        {
+          "letters": "Z",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 65,
+      "clue_text": "Synthetic down clue 65: a short test entry",
+      "direction": "down",
+      "start_x": 5,
+      "start_y": 12,
+      "characters": [
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "S",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 66,
+      "clue_text": "Synthetic across clue 66: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 8,
+      "start_y": 12,
+      "characters": [
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 67,
+      "clue_text": "Synthetic down clue 67: a short test entry",
+      "direction": "down",
+      "start_x": 9,
+      "start_y": 12,
+      "characters": [
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 68,
+      "clue_text": "Synthetic down clue 68: a short test entry",
+      "direction": "down",
+      "start_x": 13,
+      "start_y": 12,
+      "characters": [
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 69,
+      "clue_text": "Synthetic down clue 69: a longer clue to exercise wrapping and alignment",
+      "direction": "down",
+      "start_x": 14,
+      "start_y": 12,
+      "characters": [
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 70,
+      "clue_text": "Synthetic across clue 70: a short test entry",
+      "direction": "across",
+      "start_x": 0,
+      "start_y": 13,
+      "characters": [
+        {
+          "letters": "N",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 71,
+      "clue_text": "Synthetic across clue 71: a short test entry",
+      "direction": "across",
+      "start_x": 4,
+      "start_y": 13,
+      "characters": [
+        {
+          "letters": "R",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "S",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "T",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "V",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "W",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "X",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 72,
+      "clue_text": "Synthetic down clue 72: a longer clue to exercise wrapping and alignment",
+      "direction": "down",
+      "start_x": 7,
+      "start_y": 13,
+      "characters": [
+        {
+          "letters": "U",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 73,
+      "clue_text": "Synthetic across clue 73: a short test entry",
+      "direction": "across",
+      "start_x": 12,
+      "start_y": 13,
+      "characters": [
+        {
+          "letters": "Z",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "A",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "B",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 74,
+      "clue_text": "Synthetic across clue 74: a short test entry",
+      "direction": "across",
+      "start_x": 0,
+      "start_y": 14,
+      "characters": [
+        {
+          "letters": "C",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "D",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "E",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 75,
+      "clue_text": "Synthetic across clue 75: a longer clue to exercise wrapping and alignment",
+      "direction": "across",
+      "start_x": 4,
+      "start_y": 14,
+      "characters": [
+        {
+          "letters": "G",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "H",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "I",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "J",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "K",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "L",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "M",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    },
+    {
+      "clue_number": 76,
+      "clue_text": "Synthetic across clue 76: a short test entry",
+      "direction": "across",
+      "start_x": 12,
+      "start_y": 14,
+      "characters": [
+        {
+          "letters": "O",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "P",
+          "is_circled": false,
+          "is_shaded": false
+        },
+        {
+          "letters": "Q",
+          "is_circled": false,
+          "is_shaded": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+/Users/arphen/projectc/crossword/target/wasm32-unknown-unknown/release/deps/serde-550e793f0d185f97.d: /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/lib.rs /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/integer128.rs /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/mod.rs /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/de.rs /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/ser.rs /Users/arphen/projectc/crossword/target/wasm32-unknown-unknown/release/build/serde-7113c8a094a743d2/out/private.rs
+
+/Users/arphen/projectc/crossword/target/wasm32-unknown-unknown/release/deps/libserde-550e793f0d185f97.rlib: /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/lib.rs /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/integer128.rs /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/mod.rs /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/de.rs /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/ser.rs /Users/arphen/projectc/crossword/target/wasm32-unknown-unknown/release/build/serde-7113c8a094a743d2/out/private.rs
+
+/Users/arphen/projectc/crossword/target/wasm32-unknown-unknown/release/deps/libserde-550e793f0d185f97.rmeta: /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/lib.rs /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/integer128.rs /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/mod.rs /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/de.rs /Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/ser.rs /Users/arphen/projectc/crossword/target/wasm32-unknown-unknown/release/build/serde-7113c8a094a743d2/out/private.rs
+
+/Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/lib.rs:
+/Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/integer128.rs:
+/Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/mod.rs:
+/Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/de.rs:
+/Users/arphen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/ser.rs:
+/Users/arphen/projectc/crossword/target/wasm32-unknown-unknown/release/build/serde-7113c8a094a743d2/out/private.rs:
+
+# env-dep:OUT_DIR=/Users/arphen/projectc/crossword/target/wasm32-unknown-unknown/release/build/serde-7113c8a094a743d2/out

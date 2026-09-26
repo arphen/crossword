@@ -14,6 +14,7 @@ import qrcode
 from .data_reader import DataReader
 from .parser import NYTFormatParser
 from .database import db, init_db, CompletedPuzzle
+from .future import future_api
 
 # Get the directory containing this file
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,6 +26,7 @@ app = Flask(__name__,
 # Configure SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('CROSSWORD_DATABASE_URI', 'sqlite:///crossword.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.register_blueprint(future_api)
 
 # Initialize database
 db.init_app(app)
@@ -71,6 +73,12 @@ def _react_index():
 @app.route('/')
 def index():
     """Daily crossword interface: the React port served by Flask."""
+    return _react_index()
+
+@app.route('/future')
+@app.route('/future/')
+def future_index():
+    """Personal onboarding, followed by the existing React solver."""
     return _react_index()
 
 @app.route('/legacy')

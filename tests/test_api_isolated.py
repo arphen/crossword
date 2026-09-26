@@ -131,7 +131,7 @@ def test_provider_failure_returns_error_without_completion(api, monkeypatch):
     assert client.get("/api/completed_puzzles").json == []
 
 
-@pytest.mark.parametrize("route", ["/", "/mobile/test/across", "/mobile/test/down"])
+@pytest.mark.parametrize("route", ["/", "/future", "/future/", "/mobile/test/across", "/mobile/test/down"])
 def test_react_shell_and_assets(api, tmp_path, monkeypatch, route):
     dist = tmp_path / "react"
     (dist / "assets").mkdir(parents=True)
@@ -152,7 +152,7 @@ def test_react_shell_and_assets(api, tmp_path, monkeypatch, route):
     assert client.get("/assets/../index.html").status_code == 404
 
 
-@pytest.mark.parametrize("route", ["/", "/mobile/test/across"])
+@pytest.mark.parametrize("route", ["/", "/future", "/mobile/test/across"])
 def test_missing_react_build_is_explicit(api, tmp_path, monkeypatch, route):
     monkeypatch.setattr(api, "REACT_DIST", str(tmp_path / "missing"))
     response = api.app.test_client().get(route)

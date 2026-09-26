@@ -1,5 +1,7 @@
 # Luna delegation prompts
 
+> **25 September 2026 supersession notice:** Read the [active personal crossword plan](06_PERSONAL_EPISTEME.md) and [ADR 0003](../adr/0003-local-ollama-native-runtime.md) first. The owner has selected the current React/Flask application, Ollama and native construction. Browser-only, backend-free, new-static-workspace and conflicting delivery instructions below are historical. The active plan also governs initial visual calibration, weekday recipes and clue grammar.
+
 Paste-ready work packages for implementation agents (Copilot in VS Code or any
 equivalent). One agent per package; never two agents on the same files.
 
