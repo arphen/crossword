@@ -1,6 +1,6 @@
 # Crossword implementation planning index
 
-Status: updated 26 September 2026. The local Ollama/native runtime direction is accepted by owner instruction; the detailed implementation plan remains available for review.
+Status: updated 27 September 2026. The local Ollama/native runtime direction is accepted, and private profile-seeded play now works end to end. The next run improves clue/theme quality and generation time.
 
 ## Active specification
 
@@ -17,14 +17,37 @@ Read [The personal crossword: implementation plan](06_PERSONAL_EPISTEME.md) firs
 - Offer selectable Monday–Saturday editorial recipes; Sunday is a larger midweek-level format after its size/mechanic gate. Wednesday and a genuine Thursday are early quality proof points.
 - Preserve reliable clue grammar: number/tense agreement, spoken quotations, nonverbal brackets, wordplay signals, abbreviation/language cues, cross-references and coherent special mechanics.
 - Keep user memory evidence-backed, open-ended, inspectable, editable, exportable and resettable.
-- Keep source eligibility, accurate grounding, immutable started puzzles, fair crossings and independent validators authoritative.
+- Keep started puzzle grids immutable and structurally valid. Source admission, factual grounding and editorial receipts govern later sharing/publication; they do not block private local experimental play.
 - Preserve current solving behavior and original-content boundaries. Private provider routes/data are not a source for released puzzles or benchmark fixtures.
 
 ## Execution entry point
 
-The first onboarding slice is implemented under `/future`: illustrated signifier choices, companion branching, word traces, explicit weekday difficulty, editable initial associations, optional local Ollama expansion, and local/SQLite persistence. See [implementation and verification notes](../future-onboarding.md). It reuses the daily solver; personalized grid generation and play-event learning remain subsequent work.
+The `/future` path begins without requesting a daily crossword. The player
+chooses a weekday and explicitly makes a local puzzle from the saved profile;
+Ollama writes theme answers and clues, native xfill makes the 15×15 grid, and
+the existing solver records the play. A real Gemma 4 26B browser run took 58
+seconds and returned a 78-entry Wednesday puzzle. The private board, typed
+letter and solve journal restored after reload. The six Playwright checks pass
+using an isolated synthetic creation fixture and cover the complete solve and
+reflection flow. `/` keeps its daily feed. See
+[implementation notes](../future-onboarding.md) and the
+[current Luna handoff](LUNA_PROMPTS.md#current-prompt--improve-the-private-generated-crossword).
 
-Use sections 21–23 of the active plan: 22 bounded work packages, dependencies, acceptance evidence and review decisions. Start with evidence contracts, the authored calibration slice in the current UI, canonical storage/outbox and native runtime integration. Then prove excellent full-size Monday, Wednesday and Thursday experiences before expanding breadth.
+The next implementation work improves actual theme/clue play and shortens the
+generation wait. The separate admitted-content worker, V2 candidate storage,
+diagnostics and publication packet belong to later sharing work; they are not
+requirements for making or playing a private puzzle.
+
+## Conceptual correspondence
+
+The following notes develop the product's underlying ideas from the 27 September conversation. They are conceptual arguments and editorial hypotheses, not a new execution backlog or a replacement for the active specification. Read them in order, or start with the subject closest to the current question.
+
+1. [Expertise as a way into the world](07_EXPERTISE_AND_THE_GENERAL_CROSSWORD.md): the studium generale, personal footholds, and how crossings carry knowledge beyond its home discipline.
+2. [An international crossword needs a situated audience](08_AN_INTERNATIONAL_AUDIENCE.md): cultural specificity, language competence, and fairness across different starting points.
+3. [Association, constraint, and the retrospective “of course”](09_SIGNIFICATION_AND_THE_AHA.md): the signifying chain, Lacanian and Hegelian analogies, clue grammar, and long-answer recognition.
+4. [The episteme as an evolving relation](10_EPISTEME_AS_AN_EVOLVING_RELATION.md): calibration, contextual knowledge, personal resonance, and the feedback loop created by adaptation.
+5. [Domain lexicons: acquiring material with ways into it](11_DOMAIN_LEXICONS_AND_SOURCES.md): what additional lists should contain, concrete source options, and why names, facts, associations, and fill are different resources.
+6. [Editorial intelligence beyond a valid grid](12_EDITORIAL_INTELLIGENCE_AND_LLMs.md): what LLMs contribute, what a theme must earn, and what quality means in the actual solve.
 
 ## Historical/contextual plans
 
@@ -36,6 +59,6 @@ The following documents retain useful reasoning and earlier audits. Browser-only
 4. [Earlier architecture migration](03_ARCHITECTURE_MIGRATION.md).
 5. [Earlier quality/delivery plan](04_QUALITY_DELIVERY.md).
 6. [Earlier execution backlog](05_EXECUTION_BACKLOG.md).
-7. [Earlier implementation prompts](LUNA_PROMPTS.md).
+7. [Luna launch prompt and archived assignments](LUNA_PROMPTS.md).
 
-No agent should re-request approval for the already authorized move to Ollama/native construction. Detailed editorial defaults are proposals to test and review; claims of runtime readiness, puzzle quality and learning require the evidence in the active plan.
+No agent should re-request approval for the already authorized move to Ollama/native construction. Detailed editorial defaults are proposals to test during play; claims of runtime readiness, puzzle quality and learning require the evidence in the active plan.
