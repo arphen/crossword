@@ -753,6 +753,13 @@ def _playtest_calibration(evidence):
         parts = evidence_id.split(":")
         if len(parts) != 3:
             continue
+        expected_measure = {
+            "playtest-worth": "worth",
+            "playtest-return": "return",
+            "playtest-rough-edge": "rough-edge",
+        }
+        if parts[2] != expected_measure[measure]:
+            continue
         session_id = item.get("sessionId")
         if not isinstance(session_id, str) or not session_id:
             continue

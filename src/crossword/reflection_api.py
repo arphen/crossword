@@ -614,6 +614,13 @@ def _playtest_pulse_from_profile(profile_id, session_id):
         parts = evidence_id.split(":")
         if len(parts) != 3 or parts[2] not in {"worth", "return", "rough-edge"}:
             continue
+        expected_measure = {
+            "worth": "playtest-worth",
+            "return": "playtest-return",
+            "rough-edge": "playtest-rough-edge",
+        }[parts[2]]
+        if item.get("measure") != expected_measure:
+            continue
         pulse_id = parts[1]
         if not _valid_uuid(pulse_id):
             continue
