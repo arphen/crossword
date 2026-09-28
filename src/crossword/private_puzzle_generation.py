@@ -4568,6 +4568,62 @@ def _crossing_support_summary(grid, entries):
     }
 
 
+def _fallback_support_receipt(fallback_reasons, crossing_support):
+    """Bind answer-free clue fallbacks to structural crossing metadata.
+
+    This receipt gives the client a useful route into an ungrounded clue
+    without exposing its answer or pretending that topology predicts a solve.
+    Entry IDs and crossing counts are structural only; semantic meaning and
+    player support remain explicitly unknown.
+    """
+    if not isinstance(fallback_reasons, Mapping):
+        return {
+            "version": "private-clue-fallback-support-v1",
+            "status": "empty",
+            "entryCount": 0,
+            "withCrossingCount": 0,
+            "entries": [],
+            "uncertainty": "player-support-unmeasured",
+        }
+    edges = {
+        edge.get("entryId"): edge
+        for edge in (crossing_support.get("edges", []) if isinstance(crossing_support, Mapping) else [])
+        if isinstance(edge, Mapping) and isinstance(edge.get("entryId"), str)
+    }
+    receipt_entries = []
+    for entry_id in sorted(fallback_reasons):
+        if not isinstance(entry_id, str):
+            continue
+        edge = edges.get(entry_id, {})
+        support_ids = edge.get("supportEntryIds", [])
+        receipt_entries.append(
+            {
+                "entryId": entry_id,
+                "reasonCodes": sorted(
+                    {
+                        reason
+                        for reason in (fallback_reasons.get(entry_id, []) or [])
+                        if isinstance(reason, str)
+                    }
+                ),
+                "crossingCellCount": edge.get("crossingCellCount", 0),
+                "supportEntryIds": sorted(
+                    item for item in support_ids if isinstance(item, str)
+                ),
+            }
+        )
+    return {
+        "version": "private-clue-fallback-support-v1",
+        "status": "measured" if isinstance(crossing_support, Mapping) and crossing_support.get("status") == "measured" else "structural-only",
+        "entryCount": len(receipt_entries),
+        "withCrossingCount": sum(
+            1 for entry in receipt_entries if entry["crossingCellCount"] > 0
+        ),
+        "entries": receipt_entries[:64],
+        "uncertainty": "player-support-unmeasured",
+    }
+
+
 def _generate(
     seed,
     weekday,
@@ -4883,6 +4939,9 @@ def _generate(
     )
     clue_quality["diversity"] = clue_diversity
     crossing_support = _crossing_support_summary(grid, clue_entries)
+    clue_quality["fallbackSupport"] = _fallback_support_receipt(
+        clue_context.get("_clue_safety_fallbacks"), crossing_support
+    )
     construction_evidence = evaluate_private_board(
         grid,
         clue_entries,

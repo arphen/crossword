@@ -1140,6 +1140,48 @@ def test_crossing_support_summary_reports_structural_access_and_uncertainty():
     assert first["supportEntryIds"] == ["1D"]
 
 
+def test_fallback_support_receipt_is_answer_free_and_binds_structural_crossings():
+    crossing = {
+        "status": "measured",
+        "edges": [
+            {
+                "entryId": "1A",
+                "crossingCellCount": 2,
+                "supportEntryIds": ["1D", "2D"],
+            },
+            {"entryId": "2A", "crossingCellCount": 0, "supportEntryIds": []},
+        ],
+    }
+
+    receipt = private_generation._fallback_support_receipt(
+        {
+            "2A": ["generic-clue"],
+            "1A": ["unsupported-factual-surface", "generic-clue"],
+        },
+        crossing,
+    )
+
+    assert receipt["version"] == "private-clue-fallback-support-v1"
+    assert receipt["status"] == "measured"
+    assert receipt["entryCount"] == 2
+    assert receipt["withCrossingCount"] == 1
+    assert receipt["entries"] == [
+        {
+            "entryId": "1A",
+            "reasonCodes": ["generic-clue", "unsupported-factual-surface"],
+            "crossingCellCount": 2,
+            "supportEntryIds": ["1D", "2D"],
+        },
+        {
+            "entryId": "2A",
+            "reasonCodes": ["generic-clue"],
+            "crossingCellCount": 0,
+            "supportEntryIds": [],
+        },
+    ]
+    assert "answer" not in repr(receipt).lower()
+
+
 def test_clue_wordplay_guard_catches_false_reversals_anagrams_and_translations():
     assert (
         private_generation._clue_wordplay_issue(

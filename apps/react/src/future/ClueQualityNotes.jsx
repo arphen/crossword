@@ -128,6 +128,7 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
   const fallbackCount = Number.isFinite(Number(quality.fallbackCount))
     ? Number(quality.fallbackCount)
     : Number(grounding.fallbackCount) || 0;
+  const fallbackSupport = quality.fallbackSupport;
   const label = quality.issueCount
     ? `${quality.issueCount} local clue note${quality.issueCount === 1 ? '' : 's'}`
     : 'Local clue notes';
@@ -210,6 +211,15 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
             answer-free crossing scaffold because no reviewed source supported
             the original surface. The puzzle remains playable through crossings
             and assistance.
+          </p>
+        )}
+        {fallbackSupport?.entryCount > 0 && (
+          <p className="future-clue-quality-crossings">
+            Structural crossings are available for {fallbackSupport.withCrossingCount || 0}{' '}
+            of {fallbackSupport.entryCount} scaffolded clue
+            {fallbackSupport.entryCount === 1 ? '' : 's'}. Use a crossing or the
+            assistance ladder as the next route; this metadata does not predict
+            solve difficulty.
           </p>
         )}
         {familySummary && (

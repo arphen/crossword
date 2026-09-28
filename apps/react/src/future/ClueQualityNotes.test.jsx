@@ -212,6 +212,12 @@ it('explains answer-free scaffolds created for ungrounded factual surfaces', asy
           clueQuality: {
             ...provenance.clueQuality,
             fallbackCount: 2,
+            fallbackSupport: {
+              version: 'private-clue-fallback-support-v1',
+              entryCount: 2,
+              withCrossingCount: 1,
+              entries: [],
+            },
           },
         }}
       />,
@@ -223,6 +229,9 @@ it('explains answer-free scaffolds created for ungrounded factual surfaces', asy
     '2 clue surfaces use an answer-free crossing scaffold',
   );
   expect(host.textContent).toContain('no reviewed source supported the original surface');
+  expect(host.textContent).toContain(
+    'Structural crossings are available for 1 of 2 scaffolded clues',
+  );
 });
 
 it('distinguishes exact reviewed joins from the broader pack match count', async () => {

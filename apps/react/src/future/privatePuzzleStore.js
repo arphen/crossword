@@ -104,6 +104,7 @@ function compactClueQuality(quality) {
     issueCounts: quality.issueCounts,
     diversity: quality.diversity,
     semanticChallenge: quality.semanticChallenge,
+    fallbackSupport: quality.fallbackSupport,
     grounding: compactGrounding(quality.grounding),
   };
   return compact;
