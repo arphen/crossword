@@ -1104,6 +1104,18 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
         )
         == "generic-clue"
     )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NASH"}, "Famous writer's name"
+        )
+        == "generic-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "TONI"}, "Italian singer's name, perhaps"
+        )
+        == "generic-clue"
+    )
 
 
 def test_tuesday_recipe_has_a_real_step_up_from_monday():
@@ -1113,7 +1125,7 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     assert tuesday["id"] == "tuesday-private-v1"
     assert tuesday["themeAnswerCount"] > monday["themeAnswerCount"]
     assert "second reading" in tuesday["clueDirection"]
-    assert tuesday["minimumNonDefinitionFamilies"] == 3
+    assert tuesday["minimumNonDefinitionFamilies"] == 5
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] > private_generation._DIFFICULTY["monday"]["candidates"]
     assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
 
@@ -1670,7 +1682,10 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
         }
         return {
             "title": "A Tuesday board",
-            "clues": [{"id": clue_id, "text": surfaces[clue_id]} for clue_id in ids],
+            "clues": [
+                {"id": clue_id, "text": text}
+                for clue_id, text in surfaces.items()
+            ],
         }
 
     monkeypatch.setattr(private_generation, "_chat", fake_chat)
@@ -1687,6 +1702,7 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
 
     assert len(calls) == 2
     assert context["_clue_diversity_repair"]["reason"] == "weekday-surface-floor"
+    assert context["_clue_diversity_repair"]["selectedCount"] == 6
     assert len(private_generation._clue_diversity_report(entries, clues)["nonDefinitionFamilies"]) >= 3
 
 

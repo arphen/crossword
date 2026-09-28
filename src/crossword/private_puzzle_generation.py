@@ -152,6 +152,21 @@ _GENERIC_CLUE_RE = re.compile(
     r"(?:\s+(?:for|of))?\s*[?.]?\s*$",
     re.IGNORECASE,
 )
+# A role plus an unspecified person's name is the same dead-end clue in a
+# slightly more flattering costume.  It gives no route into the entry and is
+# especially harmful for the obscure-name cases the foothold policy is meant
+# to soften.  Keep this anchored so a specific clue such as "Writer's name in
+# a quoted title" remains available.
+_GENERIC_NAME_CLUE_RE = re.compile(
+    r"^\s*(?:(?:a|an|the)\s+)?"
+    r"(?:(?:famous|well[- ]known|notable|popular|renowned|celebrated|"
+    r"italian|french|german|spanish|japanese|portuguese|dutch)\s+)?"
+    r"(?:actor|actress|author|band|character|director|king|queen|singer|"
+    r"surname|writer|person|president|saint|celebrity)"
+    r"(?:'s|’s)?\s+name"
+    r"(?:\s*,?\s*perhaps)?\s*[?.]?\s*$",
+    re.IGNORECASE,
+)
 _LANGUAGE_YES = {
     "dutch": {"JA"},
     "french": {"OUI"},
@@ -466,12 +481,12 @@ _WEEKDAY_RECIPES = {
     },
     "tuesday": {
         "id": "tuesday-private-v1",
-        "intent": "Familiar material with a little more indirection makes Tuesday feel like a real step beyond Monday without withholding footholds.",
+        "intent": "Familiar material with several fair second readings makes Tuesday feel like a real step beyond Monday without withholding footholds.",
         "themeAnswerCount": 4,
         "themeDirection": "Choose a small, coherent cluster whose connection is discoverable after one or two answers; keep the material broadly approachable and let the pattern add the lift.",
-        "clueDirection": "Use alternate senses, conversational surfaces, and a few fair second readings. Keep at least some direct footholds, but do not make Tuesday a Monday repeat or rely on obscure trivia.",
+        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but make a visible portion of the board use puns, fill-ins, bracketed cues, quotations, or spoken equivalents so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
         "themeMode": "approachable-cluster-with-a-turn",
-        "minimumNonDefinitionFamilies": 3,
+        "minimumNonDefinitionFamilies": 5,
     },
     "wednesday": {
         "id": "wednesday-private-v1",
@@ -2218,7 +2233,7 @@ def _clue_wordplay_issue(entry, clue):
         return "answer-giveaway"
     if overlap is not None:
         return "answer-form-in-clue"
-    if _GENERIC_CLUE_RE.fullmatch(text):
+    if _GENERIC_CLUE_RE.fullmatch(text) or _GENERIC_NAME_CLUE_RE.fullmatch(text):
         return "generic-clue"
 
     anagram = _ANAGRAM_RE.search(text)
@@ -3015,10 +3030,21 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
             continue
         candidates.append(entry)
     candidates.sort(key=lambda item: (len(str(item.get("answer", ""))), item.get("id", "")))
-    candidates = candidates[:4]
+    # Tuesday needs a visibly broader clue language than Monday. Keep the
+    # rewrite bounded, but give the local writer enough slots to reach its
+    # five-family floor instead of stopping after four cosmetic variants.
+    repair_limit = 6 if weekday == "tuesday" else 4
+    candidates = candidates[:repair_limit]
     if not candidates:
         return clues, {**base, "status": "not-needed", "reason": "no-eligible-entries"}
-    desired_families = ["pun", "fill-blank", "nonverbal-expression", "spoken-equivalent"]
+    desired_families = [
+        "pun",
+        "fill-blank",
+        "nonverbal-expression",
+        "spoken-equivalent",
+        "factual-relation",
+        "metalinguistic",
+    ]
     selected = [
         {
             "id": entry["id"],

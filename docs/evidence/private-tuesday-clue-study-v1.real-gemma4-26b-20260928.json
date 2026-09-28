@@ -1,0 +1,71 @@
+{
+  "version": "private-tuesday-clue-study-v1",
+  "generatedAt": "2026-09-28",
+  "transport": "loopback-http",
+  "model": "gemma4:26b",
+  "weekday": "tuesday",
+  "seed": 20260929,
+  "recipe": {
+    "gridMechanic": "ordinary-letter-grid",
+    "id": "tuesday-private-v1",
+    "intent": "Familiar material with several fair second readings makes Tuesday feel like a real step beyond Monday without withholding footholds.",
+    "themeAnswerTarget": 4,
+    "themeEntriesUsed": 4,
+    "themeLocksUsed": 4,
+    "themeMode": "approachable-cluster-with-a-turn"
+  },
+  "fillQuality": {
+    "meanScore": 77.81,
+    "minimumScore": 55,
+    "weakCount": 18,
+    "entryCount": 72
+  },
+  "clueQuality": {
+    "checkedCount": 72,
+    "issueCount": 0,
+    "fallbackCount": null,
+    "fallbackReasons": null
+  },
+  "clueDiversity": {
+    "entryCount": 72,
+    "familyCounts": {
+      "definition": 64,
+      "factual-relation": 2,
+      "fill-blank": 1,
+      "metalinguistic": 3,
+      "pun": 1,
+      "spoken-equivalent": 1
+    },
+    "nonDefinitionFamilies": [
+      "factual-relation",
+      "fill-blank",
+      "metalinguistic",
+      "pun",
+      "spoken-equivalent"
+    ],
+    "status": "varied",
+    "repair": {
+      "attempted": true,
+      "reason": "weekday-surface-floor",
+      "rewrittenCount": 2,
+      "selectedCount": 6,
+      "status": "repaired",
+      "version": "private-clue-diversity-repair-v1"
+    }
+  },
+  "crossingSupport": {
+    "entryCount": 72,
+    "weakCount": null,
+    "weakWithoutCrossing": [],
+    "meanScore": 1.0,
+    "minimumScore": 1.0,
+    "uncertainty": "player-support-unmeasured",
+    "status": "measured"
+  },
+  "uncertainty": [
+    "local-model-output",
+    "xfill-heuristic-not-human-quality",
+    "clue-semantics-unreviewed",
+    "player-support-unmeasured"
+  ]
+}

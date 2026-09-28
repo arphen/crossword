@@ -6,7 +6,8 @@
 
 The clue gate now rejects answer lexical leakage, including obvious roots and
 inflections (`REDS` cannot receive “shades of red”), and rejects short generic
-templates such as “common name” or “common term.” Unresolved cases fall back to
+templates such as “common name,” “common term,” or an unspecified “famous
+writer's name.” Unresolved cases fall back to
 an answer-free crossing scaffold and remain visible in clue-quality provenance.
 Tuesday has an explicit recipe between Monday and Wednesday: a bounded increase
 in fill search/time plus alternate senses and fair second readings, while still
@@ -16,10 +17,16 @@ slice; this change deliberately improves the private clue contract without
 pretending an unreviewed corpus is production content.
 
 The Tuesday recipe now retains four theme locks and asks the bounded diversity
-repair pass for at least three distinct non-definition clue families. That floor
-is a visible generation requirement, not a claim that clue semantics are
-reviewed; model failure still leaves the board playable and records the repair
-status.
+repair pass for at least five distinct non-definition clue families, with six
+rewrite slots available. A real Gemma 4 26B loopback Tuesday run on 28
+September 2026 produced 72 entries, zero mechanical clue issues, and five
+visible non-definition families; the receipt recorded 64 definitions plus
+factual-relation, fill-blank, metalinguistic, pun, and spoken-equivalent
+surfaces. That floor is a visible generation requirement, not a claim that
+clue semantics are reviewed; model failure still leaves the board playable and
+records the repair status.
+The aggregate, answer-free receipt for that run is preserved at
+`docs/evidence/private-tuesday-clue-study-v1.real-gemma4-26b-20260928.json`.
 
 The private safety pass now treats an unsupported factual relation as unsafe for
 an ordinary non-theme entry even when its fill score is strong. It keeps exact
