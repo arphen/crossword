@@ -104,6 +104,8 @@ describe('clue grammar v1', () => {
 
   it('rejects dead-end generic name and term templates', () => {
     expect(codes(definition({ clueText: 'common name' }), { enforceAnswerSafety: true })).toContain('generic-clue');
+    expect(codes(definition({ clueText: 'A common name for a bird' }), { enforceAnswerSafety: true })).toContain('generic-clue');
+    expect(codes(definition({ clueText: 'Usually a common term' }), { enforceAnswerSafety: true })).toContain('generic-clue');
     expect(codes(definition({ clueText: "singer's name" }), { enforceAnswerSafety: true })).toContain('generic-clue');
   });
 

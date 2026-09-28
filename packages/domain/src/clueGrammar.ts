@@ -601,7 +601,7 @@ function validateAnswerSafety(
 
   const normalized = clue.clueText.trim().replace(/\s+/gu, ' ');
   if (
-    /^(?:(?:a|an|the)\s+)?(?:common|usual|ordinary|generic|standard)\s+(?:name|term|word|designation|label)(?:\s+(?:for|of))?[?.]?$/iu.test(
+    /\b(?:common|usual|ordinary|generic|standard)\s+(?:name|term|word|designation|label)\b/iu.test(
       normalized,
     ) ||
     /^(?:(?:a|an|the)\s+)?(?:(?:famous|well[- ]known|notable|popular|renowned|celebrated|italian|french|german|spanish|japanese|portuguese|dutch)\s+)?(?:actor|actress|author|band|character|director|king|queen|singer|surname|writer|person|president|saint|celebrity)(?:'s|’s)?\s+name(?:\s*,?\s*perhaps)?[?.]?$/iu.test(

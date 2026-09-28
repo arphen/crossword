@@ -9,6 +9,9 @@ inflections (`REDS` cannot receive “shades of red”), and rejects short gener
 templates such as “common name,” “common term,” or an unspecified “famous
 writer's name.” Unresolved cases fall back to
 an answer-free crossing scaffold and remain visible in clue-quality provenance.
+The generic-template guard also rejects those phrases when they appear inside a
+longer surface (for example, “a common name for a gas”), so padding the template
+with a weak qualifier cannot bypass the same rule.
 Explicit `(pl.)` markers still receive the narrow plural-shape check, and
 explicit past-tense markers now accept common irregular past forms (such as
 `RAN` and `SLEPT`) or regular `-ED` answers while replacing an obvious

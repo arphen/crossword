@@ -158,6 +158,11 @@ _GENERIC_CLUE_RE = re.compile(
     r"(?:\s+(?:for|of))?\s*[?.]?\s*$",
     re.IGNORECASE,
 )
+_GENERIC_TEMPLATE_PHRASE_RE = re.compile(
+    r"\b(?:common|usual|ordinary|generic|standard)\s+"
+    r"(?:name|term|word|designation|label)\b",
+    re.IGNORECASE,
+)
 # A role plus an unspecified person's name is the same dead-end clue in a
 # slightly more flattering costume.  It gives no route into the entry and is
 # especially harmful for the obscure-name cases the foothold policy is meant
@@ -2310,7 +2315,11 @@ def _clue_wordplay_issue(entry, clue):
         return "answer-giveaway"
     if overlap is not None:
         return "answer-form-in-clue"
-    if _GENERIC_CLUE_RE.fullmatch(text) or _GENERIC_NAME_CLUE_RE.fullmatch(text):
+    if (
+        _GENERIC_TEMPLATE_PHRASE_RE.search(text)
+        or _GENERIC_CLUE_RE.fullmatch(text)
+        or _GENERIC_NAME_CLUE_RE.fullmatch(text)
+    ):
         return "generic-clue"
 
     anagram = _ANAGRAM_RE.search(text)
