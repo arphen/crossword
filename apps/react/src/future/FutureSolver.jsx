@@ -139,6 +139,7 @@ export default function FutureSolver({
   );
   useSyncExternalStore(controller.subscribe, controller.snapshot);
   const recorderRef = useRef(null);
+  const forceNewSessionRef = useRef(false);
   const profileReadyRef = useRef(profileReady);
   const [journalStatus, setJournalStatus] = useState('opening');
   const [finishedSessionId, setFinishedSessionId] = useState(null);
@@ -184,6 +185,7 @@ export default function FutureSolver({
 
   function handlePuzzleRestored() {
     controller.flush();
+    forceNewSessionRef.current = true;
     // A newly restored board starts a new solve identity.  Remove the old
     // finished-session binding before the next journal opens so its
     // reflections, receipt, and optional association paths cannot briefly
@@ -278,6 +280,7 @@ export default function FutureSolver({
       recorder = new FutureSessionRecorder({
         profileId,
         puzzle,
+        forceNewSession: forceNewSessionRef.current,
         // Host session creation requires the starting profile to exist first.
         // Keep this recorder local until FutureApp confirms that save, then
         // enable the outbox transport in enableHostSync below.
@@ -304,6 +307,9 @@ export default function FutureSolver({
           }
         },
       });
+      // A replacement consumes this marker once. Reloads continue to resume
+      // an active journal for the same puzzle identity.
+      forceNewSessionRef.current = false;
       recorderRef.current = recorder;
       try {
         await recorder.start(app);

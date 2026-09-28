@@ -1225,6 +1225,47 @@ describe('future event journal', () => {
     restored.dispose();
   });
 
+  it('starts a fresh journal for an explicit replacement with the same puzzle hash', async () => {
+    const repo = repository();
+    const app = puzzleApp();
+    app.currentPuzzleManifest = manifestFor(app, 'ab'.repeat(32));
+    const puzzle = describeLegacyPuzzle(app);
+    const first = new FutureSessionRecorder({
+      profileId: 'profile-1',
+      puzzle,
+      repository: repo,
+      fetchImpl: async () => {
+        throw new Error('offline');
+      },
+      cryptoApi: webcrypto,
+    });
+    first.scheduleFlush = vi.fn();
+    await first.start(app);
+    await first.finish('complete');
+    const finishedId = first.session.sessionId;
+    first.dispose();
+
+    const replacementApp = puzzleApp();
+    replacementApp.currentPuzzleManifest = manifestFor(replacementApp, 'ab'.repeat(32));
+    const replacement = new FutureSessionRecorder({
+      profileId: 'profile-1',
+      puzzle: describeLegacyPuzzle(replacementApp),
+      repository: repo,
+      forceNewSession: true,
+      fetchImpl: async () => {
+        throw new Error('offline');
+      },
+      cryptoApi: webcrypto,
+    });
+    replacement.scheduleFlush = vi.fn();
+    await replacement.start();
+
+    expect(replacement.session.sessionId).not.toBe(finishedId);
+    expect(replacement.session.status).toBe('active');
+    expect(replacement.session.events.at(-1).type).toBe('session-started');
+    replacement.dispose();
+  });
+
   it('splits large offline backlogs into host-sized event batches', async () => {
     const app = puzzleApp();
     app.currentPuzzleManifest = manifestFor(app);

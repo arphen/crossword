@@ -303,7 +303,7 @@ function eventCellChanges(event) {
 }
 
 export class FutureSessionRecorder {
-  /** @param {{profileId:string,puzzle:{edition:object,cells:Array<object>,entries:Array<object>,puzzleHash?:string,syncSupported?:boolean,cellIdByGeometry?:Map<string,string>,geometryByCellId?:Map<string,[number,number]>},repository?:ReturnType<typeof createFutureJournalStore>,fetchImpl?:typeof fetch,cryptoApi?:Crypto,now?:()=>Date,performanceApi?:Performance,onStatus?:(state:string)=>void}} options */
+  /** @param {{profileId:string,puzzle:{edition:object,cells:Array<object>,entries:Array<object>,puzzleHash?:string,syncSupported?:boolean,cellIdByGeometry?:Map<string,string>,geometryByCellId?:Map<string,[number,number]>},repository?:ReturnType<typeof createFutureJournalStore>,fetchImpl?:typeof fetch,cryptoApi?:Crypto,now?:()=>Date,performanceApi?:Performance,onStatus?:(state:string)=>void,forceNewSession?:boolean}} options */
   constructor({
     profileId,
     puzzle,
@@ -313,6 +313,7 @@ export class FutureSessionRecorder {
     now = () => new Date(),
     performanceApi = globalThis.performance,
     onStatus = () => {},
+    forceNewSession = false,
   }) {
     this.profileId = profileId;
     this.puzzle = puzzle;
@@ -329,6 +330,7 @@ export class FutureSessionRecorder {
     this.now = now;
     this.performanceApi = performanceApi;
     this.onStatus = onStatus;
+    this.forceNewSession = forceNewSession === true;
     this.session = null;
     this.ready = false;
     this.startPromise = null;
@@ -391,9 +393,11 @@ export class FutureSessionRecorder {
           item.puzzleHash === puzzleHash,
       );
       if (!this.isCurrentStart(generation)) return this;
-      const active = records.filter((item) => item.status === 'active');
+      const resumableRecords = this.forceNewSession ? [] : records;
+      const active = resumableRecords.filter((item) => item.status === 'active');
       const unfinishedUploads = records.filter(
         (item) =>
+          !this.forceNewSession &&
           item.status === 'finished' &&
           item.acknowledgedSeq < item.events.length,
       );
