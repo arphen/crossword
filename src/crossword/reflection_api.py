@@ -702,7 +702,7 @@ def _history_personalization(provenance):
     if isinstance(clue_diversity, dict):
         diversity_projection = {}
         status = clue_diversity.get("status")
-        if status in {"empty", "definition-heavy", "varied"}:
+        if status in {"empty", "definition-heavy", "varied", "varied-below-recipe-floor"}:
             diversity_projection["status"] = status
         families = clue_diversity.get("nonDefinitionFamilies")
         if isinstance(families, list):
@@ -712,8 +712,13 @@ def _history_personalization(provenance):
         repair = clue_diversity.get("repair")
         if isinstance(repair, dict):
             rewritten = repair.get("rewrittenCount")
-            if isinstance(rewritten, int) and not isinstance(rewritten, bool) and 0 <= rewritten <= 4:
+            if isinstance(rewritten, int) and not isinstance(rewritten, bool) and 0 <= rewritten <= 64:
                 diversity_projection["repairRewrittenCount"] = rewritten
+        missing = clue_diversity.get("missingNonDefinitionFamilies")
+        if isinstance(missing, list):
+            missing_count = sum(1 for item in missing if isinstance(item, str))
+            if missing_count <= 8:
+                diversity_projection["missingNonDefinitionFamilyCount"] = missing_count
         if diversity_projection:
             bounded_counts["clueDiversity"] = diversity_projection
     return {

@@ -885,6 +885,7 @@ def test_model_runtime_policy_bounds_slow_qwen_advisory_passes():
     assert qwen["qwenClueBatchTokensPerEntry"] == 40
     assert qwen["qwenClueBatchMaxTokens"] == 1400
     assert qwen["qwenSkipOptionalRepairsAfterBatch"] is True
+    assert qwen["tuesdayDiversityRequiredAfterBatch"] is True
     assert qwen["qualityClaim"] == "none"
 
 
@@ -941,7 +942,7 @@ def test_qwen_batch_receipt_skips_extra_model_repairs(monkeypatch):
         "qwen3.8:27b", entries, clues, context, "tuesday"
     ) is clues
     _, diversity = private_generation._repair_clue_diversity(
-        "qwen3.8:27b", entries, clues, context, "tuesday", {}
+        "qwen3.8:27b", entries, clues, context, "wednesday", {}
     )
     assert diversity["status"] == "skipped-model-batch"
 
@@ -1580,6 +1581,13 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     assert tuesday["themeAnswerCount"] == 5
     assert tuesday["minimumNonDefinitionFamilies"] == 5
     assert tuesday["minimumNonDefinitionCount"] == 28
+    assert tuesday["requiredNonDefinitionFamilySet"] == (
+        "pun",
+        "fill-blank",
+        "nonverbal-expression",
+        "spoken-equivalent",
+        "metalinguistic",
+    )
     assert tuesday["targetNonDefinitionRate"] == 0.56
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] == 75
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] > private_generation._DIFFICULTY["monday"]["candidates"]
@@ -2271,6 +2279,41 @@ def test_tuesday_surface_floor_scales_to_full_board_target(monkeypatch):
     assert repair["minimumClueCount"] == 28
     assert repair["targetNonDefinitionRate"] == 0.56
     assert repair["targetNonDefinitionClues"] == 44
+
+
+def test_tuesday_floor_reports_missing_required_surface_family():
+    entries = [
+        {"id": f"{index}A", "answer": "BARK", "length": 4, "theme": False}
+        for index in range(1, 31)
+    ]
+    surfaces = [
+        "Branch, perhaps?",
+        "Safe and ___",
+        "[Sound heard nearby]",
+        "Estimated arrival, briefly",
+    ]
+    clues = {
+        entry["id"]: surfaces[index % len(surfaces)]
+        for index, entry in enumerate(entries)
+    }
+    report = private_generation._clue_diversity_report(
+        entries,
+        clues,
+        repair={
+            "minimumFamilies": 5,
+            "minimumClueCount": 28,
+            "requiredNonDefinitionFamilySet": [
+                "pun",
+                "fill-blank",
+                "nonverbal-expression",
+                "spoken-equivalent",
+                "metalinguistic",
+            ],
+        },
+    )
+    assert report["missingNonDefinitionFamilies"] == ["spoken-equivalent"]
+    assert report["floorMet"] is False
+    assert report["status"] == "varied-below-recipe-floor"
 
 
 def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):

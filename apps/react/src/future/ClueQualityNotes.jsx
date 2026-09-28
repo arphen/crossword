@@ -193,6 +193,9 @@ export default function ClueQualityNotes({
   const surfaceEntryCount = Number(clueDiversity?.entryCount);
   const surfaceCount = Number(clueDiversity?.nonDefinitionCount);
   const targetSurfaceCount = Number(clueDiversity?.targetNonDefinitionClues);
+  const missingSurfaceFamilies = Array.isArray(clueDiversity?.missingNonDefinitionFamilies)
+    ? clueDiversity.missingNonDefinitionFamilies.filter((family) => typeof family === 'string')
+    : [];
   async function toggleFlag(entry, flag) {
     if (!profileId) return;
     const flagKey = `${entry.id}:${flag}`;
@@ -370,6 +373,9 @@ export default function ClueQualityNotes({
             {clueDiversity.requiredNonDefinitionClues || 0} requested signalled
             clues. The board stays playable, but this recipe&apos;s visible variety
             target was not met.
+            {missingSurfaceFamilies.length > 0 && (
+              <> Missing surface families: {missingSurfaceFamilies.join(', ')}.</>
+            )}
           </p>
         )}
         {modelChallenge?.status === 'completed' && (

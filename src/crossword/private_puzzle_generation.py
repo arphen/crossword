@@ -79,6 +79,16 @@ _ANSWER = re.compile(r"^[A-Z]{3,15}$")
 _CLUE_ID = re.compile(r"^[1-9][0-9]{0,2}[AD]$")
 _WEEKDAYS = {day["id"] for day in catalog["days"]}
 
+# Visible clue conventions promised by the private Tuesday recipe. These are
+# surface observations only; they do not establish semantic truth or fairness.
+_DIVERSITY_FAMILY_ORDER = (
+    "pun",
+    "fill-blank",
+    "nonverbal-expression",
+    "spoken-equivalent",
+    "metalinguistic",
+)
+
 # A private crossword can be strange, slangy, or occasionally adult when the
 # player asks for that register. These are construction artefacts that should
 # never be surfaced accidentally: one misspelled slang variant and one model
@@ -687,6 +697,7 @@ _WEEKDAY_RECIPES = {
         "themeMode": "approachable-cluster-with-a-turn",
         "minimumNonDefinitionFamilies": 5,
         "minimumNonDefinitionCount": 28,
+        "requiredNonDefinitionFamilySet": _DIVERSITY_FAMILY_ORDER,
         # The count floor protects small fixture boards.  On a full 15x15,
         # the editorial contract asks for slightly more than half of the
         # visible surfaces to carry a fair convention or second reading so
@@ -818,7 +829,9 @@ _EXPLICIT_MODEL_TAGS = (
 # Large local models do not have the same useful latency envelope.  Keep the
 # default Gemma path unchanged, but make Qwen's optional repair passes bounded
 # enough that a slow decode cannot turn a playable private board into a
-# multi-minute request.  These are execution budgets, never quality scores.
+# multi-minute request. Tuesday's required surface-family pass remains an
+# exception even after batching. These are execution budgets, never quality
+# scores.
 _MODEL_GENERATION_POLICIES = {
     "default": {
         "themeTimeout": 90,
@@ -884,6 +897,7 @@ def _model_runtime_policy_receipt(model):
         "qwenSkipOptionalRepairsAfterBatch": policy[
             "qwenSkipOptionalRepairsAfterBatch"
         ],
+        "tuesdayDiversityRequiredAfterBatch": True,
         "interpretation": "execution-budget-only",
         "qualityClaim": "none",
     }
@@ -3580,6 +3594,20 @@ def _clue_diversity_report(entries, clues, *, repair=None):
     if isinstance(repair, Mapping):
         result["repair"] = dict(repair)
         required = repair.get("minimumFamilies")
+        required_family_set = repair.get("requiredNonDefinitionFamilySet")
+        if isinstance(required_family_set, (list, tuple)):
+            required_family_set = list(dict.fromkeys(
+                family
+                for family in required_family_set
+                if isinstance(family, str) and family
+            ))
+            if required_family_set:
+                result["requiredNonDefinitionFamilySet"] = required_family_set
+                result["missingNonDefinitionFamilies"] = [
+                    family
+                    for family in required_family_set
+                    if family not in non_definition
+                ]
         if isinstance(required, int) and required >= 0:
             result["requiredNonDefinitionFamilies"] = required
             required_count = repair.get("minimumClueCount")
@@ -3595,20 +3623,12 @@ def _clue_diversity_report(entries, clues, *, repair=None):
             count_met = not isinstance(required_count, int) or non_definition_count >= required_count
             if isinstance(required_count, int):
                 result["requiredNonDefinitionClues"] = required_count
-            floor_met = len(non_definition) >= required and count_met
+            family_set_met = not result.get("missingNonDefinitionFamilies")
+            floor_met = len(non_definition) >= required and family_set_met and count_met
             result["floorMet"] = floor_met
-            if not floor_met and result["status"] == "varied":
+            if not floor_met and result["status"] in {"varied", "definition-heavy"} and non_definition_count:
                 result["status"] = "varied-below-recipe-floor"
     return result
-
-
-_DIVERSITY_FAMILY_ORDER = (
-    "pun",
-    "fill-blank",
-    "nonverbal-expression",
-    "spoken-equivalent",
-    "metalinguistic",
-)
 
 
 def _desired_clue_family_matches(clue, desired_family):
@@ -3634,6 +3654,16 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
     initial = _clue_diversity_report(entries, clues)
     recipe = _effective_weekday_recipe(weekday, context)
     minimum_families = recipe.get("minimumNonDefinitionFamilies", 2)
+    required_family_set = recipe.get("requiredNonDefinitionFamilySet")
+    if isinstance(required_family_set, (list, tuple)):
+        required_family_set = list(dict.fromkeys(
+            family
+            for family in required_family_set
+            if isinstance(family, str) and family
+        ))
+        minimum_families = max(minimum_families, len(required_family_set))
+    else:
+        required_family_set = []
     base = {
         "version": CLUE_DIVERSITY_REPAIR_VERSION,
         "status": "not-needed",
@@ -3641,6 +3671,11 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         "selectedCount": 0,
         "rewrittenCount": 0,
         "minimumFamilies": minimum_families,
+        **(
+            {"requiredNonDefinitionFamilySet": required_family_set}
+            if required_family_set
+            else {}
+        ),
         **(
             {"targetNonDefinitionRate": recipe["targetNonDefinitionRate"]}
             if isinstance(recipe.get("targetNonDefinitionRate"), (int, float))
@@ -3666,8 +3701,10 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         )
     if isinstance(target_clue_count, int):
         base["targetNonDefinitionClues"] = target_clue_count
-    if isinstance(context, Mapping) and isinstance(
-        context.get("_clue_generation_batches"), Mapping
+    if (
+        weekday != "tuesday"
+        and isinstance(context, Mapping)
+        and isinstance(context.get("_clue_generation_batches"), Mapping)
     ):
         return clues, {
             **base,
@@ -3675,8 +3712,14 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
             "reason": "qwen-batched-clue-writer",
             "playPolicy": "deterministic-safety-still-runs",
         }
+    missing_required_families = [
+        family
+        for family in required_family_set
+        if family not in initial.get("nonDefinitionFamilies", [])
+    ]
     if (
         len(initial["nonDefinitionFamilies"]) >= minimum_families
+        and not missing_required_families
         and (
             not isinstance(target_clue_count, int)
             or initial.get("nonDefinitionCount", 0) >= target_clue_count
@@ -3729,8 +3772,9 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         for clue in clues.values()
         if isinstance(clue, str)
     }
+    target_families = required_family_set or list(_DIVERSITY_FAMILY_ORDER)
     missing_families = [
-        family for family in _DIVERSITY_FAMILY_ORDER if family not in existing_families
+        family for family in target_families if family not in existing_families
     ]
     desired_families = (
         missing_families
@@ -5693,6 +5737,9 @@ def _generate(
                 {
                     "minimumNonDefinitionFamilies": recipe["minimumNonDefinitionFamilies"],
                     "minimumNonDefinitionCount": recipe["minimumNonDefinitionCount"],
+                    "requiredNonDefinitionFamilySet": list(
+                        recipe.get("requiredNonDefinitionFamilySet", ())
+                    ),
                 }
                 if isinstance(recipe.get("minimumNonDefinitionFamilies"), int)
                 and isinstance(recipe.get("minimumNonDefinitionCount"), int)

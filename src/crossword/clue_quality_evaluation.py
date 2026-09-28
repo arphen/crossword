@@ -127,6 +127,20 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
         raise ValueError("nonDefinitionFamilies must be a list of names")
     if len(set(families)) != len(families):
         raise ValueError("nonDefinitionFamilies must not repeat names")
+    required_family_set = diversity.get("requiredNonDefinitionFamilySet", [])
+    if not isinstance(required_family_set, list) or not all(
+        isinstance(item, str) and item for item in required_family_set
+    ):
+        raise ValueError("requiredNonDefinitionFamilySet must be a list of names")
+    if len(set(required_family_set)) != len(required_family_set):
+        raise ValueError("requiredNonDefinitionFamilySet must not repeat names")
+    missing_families = diversity.get("missingNonDefinitionFamilies", [])
+    if not isinstance(missing_families, list) or not all(
+        isinstance(item, str) and item for item in missing_families
+    ):
+        raise ValueError("missingNonDefinitionFamilies must be a list of names")
+    if len(set(missing_families)) != len(missing_families):
+        raise ValueError("missingNonDefinitionFamilies must not repeat names")
     timings = source.get("timingsSeconds", {})
     timing_projection: dict[str, float] = {}
     if isinstance(timings, Mapping):
@@ -160,6 +174,8 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
         "nonDefinitionFamilies": sorted(set(families)),
         "floorMet": diversity.get("floorMet") is True,
         "requiredNonDefinitionFamilies": _count(diversity.get("requiredNonDefinitionFamilies", 0), "diversity.requiredNonDefinitionFamilies"),
+        "requiredNonDefinitionFamilySet": sorted(set(required_family_set)),
+        "missingNonDefinitionFamilies": sorted(set(missing_families)),
         "requiredNonDefinitionClues": _count(diversity.get("requiredNonDefinitionClues", 0), "diversity.requiredNonDefinitionClues"),
         "targetNonDefinitionRate": (
             _number(
@@ -236,9 +252,13 @@ def evaluate_clue_quality_study(
         if int(item.get("grammarIssueCount", 0)) == 0:
             grammar_clean_cases += 1
         required_families = item.get("requiredNonDefinitionFamilies")
+        required_family_set = item.get("requiredNonDefinitionFamilySet", [])
         observed_families = item.get("nonDefinitionFamilies", [])
-        if isinstance(required_families, int) and isinstance(observed_families, list):
-            if len(observed_families) >= required_families:
+        if isinstance(observed_families, list):
+            if isinstance(required_family_set, list) and required_family_set:
+                if set(required_family_set).issubset(set(observed_families)):
+                    family_floor_met_cases += 1
+            elif isinstance(required_families, int) and len(observed_families) >= required_families:
                 family_floor_met_cases += 1
         target_rate = item.get("targetNonDefinitionRate")
         if isinstance(target_rate, (int, float)) and not isinstance(target_rate, bool):

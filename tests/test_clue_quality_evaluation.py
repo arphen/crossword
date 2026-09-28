@@ -26,6 +26,8 @@ def _provenance():
                 "nonDefinitionFamilies": ["fill-blank", "pun"],
                 "floorMet": True,
                 "requiredNonDefinitionFamilies": 2,
+                "requiredNonDefinitionFamilySet": ["fill-blank", "pun"],
+                "missingNonDefinitionFamilies": [],
                 "requiredNonDefinitionClues": 2,
                 "targetNonDefinitionRate": 0.5,
                 "targetNonDefinitionClues": 2,
@@ -50,6 +52,8 @@ def test_case_projection_is_answer_free_and_preserves_surface_receipts():
     assert case["entryCount"] == 4
     assert case["familyCounts"] == {"definition": 2, "fill-blank": 1, "pun": 1}
     assert case["nonDefinitionRate"] == 0.5
+    assert case["requiredNonDefinitionFamilySet"] == ["fill-blank", "pun"]
+    assert case["missingNonDefinitionFamilies"] == []
     assert case["issueCounts"] == {"answer-form-in-clue": 1}
     assert case["semanticChallenge"] == {"needs-review": 3, "safe-fallback": 1}
     assert case["timingsSeconds"]["total"] == 12.5
