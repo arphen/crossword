@@ -1475,6 +1475,45 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
     )
 
 
+def test_clue_guard_rejects_other_noun_only_generic_templates_but_keeps_specific_routes():
+    for clue in (
+        "Common abbreviation",
+        "A common acronym",
+        "Usual synonym",
+        "The generic response",
+        "Standard answer",
+        "Some ordinary phrase?",
+        "Any common title",
+    ):
+        assert (
+            private_generation._clue_wordplay_issue(
+                {"answer": "XENON"}, clue
+            )
+            == "generic-clue"
+        ), clue
+
+    # A referent gives a solver an actual route; the noun-only guard is
+    # deliberately anchored so it does not erase useful authored surfaces.
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NY"}, "Common abbreviation for New York"
+        )
+        is None
+    )
+
+
+def test_generic_template_repair_records_the_reason_in_private_safety_receipt():
+    fallback_reasons = {}
+    safe = private_generation._enforce_private_clue_safety(
+        [{"id": "1A", "answer": "XENON", "length": 5, "needsFoothold": False}],
+        {"1A": "Common abbreviation"},
+        fallback_reasons=fallback_reasons,
+    )
+
+    assert safe["1A"] == "Entry supported by its crossings (5 letters)"
+    assert fallback_reasons == {"1A": ["generic-clue"]}
+
+
 def test_clue_morphology_guard_reads_plain_language_plural_and_tense_markers():
     assert (
         private_generation._clue_morphology_issue(

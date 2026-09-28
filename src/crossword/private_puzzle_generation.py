@@ -214,6 +214,21 @@ _GENERIC_NAME_CONTEXT_RE = re.compile(
     r"(?:follow|precede|come\s+(?:after|before))\b.*[?.]?\s*$",
     re.IGNORECASE,
 )
+# A few other noun-only templates have the same failure mode as ``common
+# name``: they describe the *kind* of answer without giving the solver a
+# referent, sense, or signalled mechanism.  Keep this detector anchored to the
+# whole clue so useful authored surfaces such as ``Common abbreviation for
+# New York`` remain available.  The existing phrase detector intentionally
+# remains broader for the especially common ``common name/term/word`` family.
+_GENERIC_NO_ROUTE_CLUE_RE = re.compile(
+    r"^\s*(?:(?:a|an|the|one|some|any)\s+)?"
+    r"(?:common|usual|ordinary|generic|standard)\s+"
+    r"(?:abbreviations?|acronyms?|initialisms?|synonyms?|nicknames?|"
+    r"responses?|replies?|answers?|entries?|examples?|expressions?|"
+    r"phrases?|symbols?|titles?|slogans?|spellings?|forms?)"
+    r"\s*[?.]?\s*$",
+    re.IGNORECASE,
+)
 # These surfaces contain grammatical words but give the solver no usable
 # route into the fill.  Keep the list deliberately narrow and apply it only to
 # Tuesday's stricter recipe; a later reviewed clue pack can still provide an
@@ -2899,6 +2914,7 @@ def _clue_wordplay_issue(entry, clue):
         or _GENERIC_NAME_CLUE_RE.fullmatch(text)
         or _GENERIC_NAME_OF_CLUE_RE.fullmatch(text)
         or _GENERIC_NAME_CONTEXT_RE.fullmatch(text)
+        or _GENERIC_NO_ROUTE_CLUE_RE.fullmatch(text)
     ):
         return "generic-clue"
 
