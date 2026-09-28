@@ -878,8 +878,10 @@ def test_model_runtime_policy_bounds_slow_qwen_advisory_passes():
 
     assert gemma["interpretation"] == "execution-budget-only"
     assert gemma["clueTokensPerEntry"] == 48
+    assert gemma["riskRepairMaxEntries"] == 12
     assert gemma["tuesdayDiversityAttempts"] == 4
     assert qwen["primaryClueTimeoutSeconds"] == 120
+    assert qwen["riskRepairMaxEntries"] == 20
     assert qwen["diversityTimeoutSeconds"] == 60
     assert qwen["tuesdayDiversityAttempts"] == 2
     assert qwen["qwenClueBatchSize"] == 24

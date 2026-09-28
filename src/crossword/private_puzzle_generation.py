@@ -842,6 +842,7 @@ _MODEL_GENERATION_POLICIES = {
         "themeTimeout": 90,
         "primaryClueTimeout": 180,
         "clueTokensPerEntry": 56,
+        "riskRepairMaxEntries": 20,
         "repairTimeout": 90,
         "diversityTimeout": 90,
         "challengeTimeout": 90,
@@ -863,6 +864,7 @@ _MODEL_GENERATION_POLICIES = {
         # validators and bounded Tuesday repair still decide what reaches
         # the player.
         "clueTokensPerEntry": 48,
+        "riskRepairMaxEntries": 12,
         "repairTimeout": 90,
         "diversityTimeout": 90,
         "challengeTimeout": 90,
@@ -879,6 +881,7 @@ _MODEL_GENERATION_POLICIES = {
         "themeTimeout": 75,
         "primaryClueTimeout": 120,
         "clueTokensPerEntry": 56,
+        "riskRepairMaxEntries": 20,
         "repairTimeout": 60,
         "diversityTimeout": 60,
         "challengeTimeout": 60,
@@ -917,6 +920,7 @@ def _model_runtime_policy_receipt(model):
         "themeTimeoutSeconds": policy["themeTimeout"],
         "primaryClueTimeoutSeconds": policy["primaryClueTimeout"],
         "clueTokensPerEntry": policy["clueTokensPerEntry"],
+        "riskRepairMaxEntries": policy["riskRepairMaxEntries"],
         "repairTimeoutSeconds": policy["repairTimeout"],
         "diversityTimeoutSeconds": policy["diversityTimeout"],
         "challengeTimeoutSeconds": policy["challengeTimeout"],
@@ -2697,7 +2701,7 @@ def _clue_fact_risk(entry, clue):
     }
 
 
-def _risky_clue_entries(entries, clues):
+def _risky_clue_entries(entries, clues, *, limit=20):
     """Select clues that deserve a second, conservative model pass."""
     risky = []
     for entry in entries:
@@ -2736,7 +2740,11 @@ def _risky_clue_entries(entries, clues):
             len(entry["answer"]),
         )
     )
-    return risky[:20]
+    try:
+        limit = max(0, min(20, int(limit)))
+    except (TypeError, ValueError):
+        limit = 20
+    return risky[:limit]
 
 
 def _letters_only(value):
@@ -3507,7 +3515,11 @@ def _repair_risky_clues(model, entries, clues, context, weekday):
         context.get("_clue_generation_batches"), Mapping
     ):
         return clues
-    risky = _risky_clue_entries(entries, clues)
+    risky = _risky_clue_entries(
+        entries,
+        clues,
+        limit=_model_generation_policy(model)["riskRepairMaxEntries"],
+    )
     if not risky:
         return clues
     entry_ids = [entry["id"] for entry in risky]
