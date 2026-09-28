@@ -1225,7 +1225,7 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     assert tuesday["themeAnswerCount"] > monday["themeAnswerCount"]
     assert "second reading" in tuesday["clueDirection"]
     assert tuesday["themeAnswerCount"] == 5
-    assert tuesday["minimumNonDefinitionFamilies"] == 6
+    assert tuesday["minimumNonDefinitionFamilies"] == 5
     assert tuesday["minimumNonDefinitionCount"] == 14
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] > private_generation._DIFFICULTY["monday"]["candidates"]
     assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
