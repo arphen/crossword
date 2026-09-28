@@ -1801,6 +1801,8 @@ The current full local gate also passes: `make test` selected 872 Python tests (
 
 The private clue morphology guard now also preserves valid invariant plural answers (`SHEEP`, `DEER`, `FISH`, `MOOSE`, `SALMON`) when a clue explicitly marks a plural, while continuing to replace singular-shaped answers such as `CAT` under the same marker.
 
+That guard also covers explicit comparative and superlative markers, including irregular forms such as `BETTER` and `BEST`; mismatched forms are surfaced in the same reversible clue-quality notes and fall back to an answer-free crossing scaffold.
+
 ### Existing foundations and archived implementation notes
 
 The following 26 September assessment describes the system before private generation was connected. Its statements that `/future` still loads a daily puzzle or that no playable path exists are historical and superseded by the current status above. The opening records offers and reversible choices; the host replays solve events against frozen manifests; profile controls, reflection responses, and calibration hypotheses enter a revisioned ledger. Continue to preserve these working foundations and `/` parity.

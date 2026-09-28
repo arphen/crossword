@@ -12,6 +12,8 @@ const FLAG_COPY = {
   'past-tense-marker-with-nonpast-shape': 'past-tense marker does not match answer shape',
   'present-tense-marker-with-past-shape': 'present-tense marker does not match answer shape',
   'future-tense-marker-with-past-shape': 'future-tense marker does not match answer shape',
+  'comparative-marker-with-noncomparative-shape': 'comparative marker does not match answer shape',
+  'superlative-marker-with-nonsuperlative-shape': 'superlative marker does not match answer shape',
   'plural-marker-with-singular-shape': 'plural marker does not match answer shape',
   'plural-marker-mismatch': 'plural marker does not match answer shape',
   'past-tense-marker-mismatch': 'past-tense marker does not match answer shape',

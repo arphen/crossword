@@ -369,6 +369,12 @@ _FUTURE_TENSE_MARKER_RE = re.compile(
     r"\bfuture(?:\s+tense)?\b|[\[(]\s*future(?:\s+tense)?\s*[\])]",
     re.IGNORECASE,
 )
+_COMPARATIVE_MARKER_RE = re.compile(
+    r"\bcomparative\b|[\[(]\s*comp\.?\s*[\])]", re.IGNORECASE
+)
+_SUPERLATIVE_MARKER_RE = re.compile(
+    r"\bsuperlative\b|[\[(]\s*superl\.?\s*[\])]", re.IGNORECASE
+)
 _COMMON_IRREGULAR_PLURALS = frozenset(
     {
         "CHILDREN",
@@ -453,6 +459,12 @@ _COMMON_PAST_FORMS = frozenset(
         "WORE",
         "WROTE",
     }
+)
+_COMMON_COMPARATIVE_FORMS = frozenset(
+    {"BETTER", "FARTHER", "FURTHER", "LESS", "MORE", "WORSE"}
+)
+_COMMON_SUPERLATIVE_FORMS = frozenset(
+    {"BEST", "FARTHEST", "FURTHEST", "LEAST", "MOST", "WORST"}
 )
 
 
@@ -2558,11 +2570,15 @@ def _clue_morphology_issue(entry, clue):
     has_past_marker = _PAST_TENSE_MARKER_RE.search(clue) is not None
     has_present_marker = _PRESENT_TENSE_MARKER_RE.search(clue) is not None
     has_future_marker = _FUTURE_TENSE_MARKER_RE.search(clue) is not None
+    has_comparative_marker = _COMPARATIVE_MARKER_RE.search(clue) is not None
+    has_superlative_marker = _SUPERLATIVE_MARKER_RE.search(clue) is not None
     if (
         not has_plural_marker
         and not has_past_marker
         and not has_present_marker
         and not has_future_marker
+        and not has_comparative_marker
+        and not has_superlative_marker
     ):
         return None
     if has_plural_marker and answer not in (
@@ -2581,6 +2597,12 @@ def _clue_morphology_issue(entry, clue):
         return "present-tense-marker-with-past-shape"
     if has_future_marker and looks_past:
         return "future-tense-marker-with-past-shape"
+    if has_comparative_marker:
+        if answer not in _COMMON_COMPARATIVE_FORMS and not answer.endswith("ER"):
+            return "comparative-marker-with-noncomparative-shape"
+    if has_superlative_marker:
+        if answer not in _COMMON_SUPERLATIVE_FORMS and not answer.endswith("EST"):
+            return "superlative-marker-with-nonsuperlative-shape"
     return None
 
 
@@ -3640,6 +3662,8 @@ def _enforce_private_clue_safety(
             "past-tense-marker-with-nonpast-shape",
             "present-tense-marker-with-past-shape",
             "future-tense-marker-with-past-shape",
+            "comparative-marker-with-noncomparative-shape",
+            "superlative-marker-with-nonsuperlative-shape",
         }:
             reason_codes.append(morphology_issue)
         if (

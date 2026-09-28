@@ -1405,9 +1405,36 @@ def test_clue_morphology_guard_accepts_common_invariant_plural_answers():
         assert (
             private_generation._clue_morphology_issue(
                 {"answer": answer}, "Animals (plural)"
-            )
-            is None
         )
+        is None
+    )
+
+
+def test_clue_morphology_guard_checks_comparative_and_superlative_markers():
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "BRIGHTER"}, "Comparative of bright"
+        )
+        is None
+    )
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "BEST"}, "Superlative of good"
+        )
+        is None
+    )
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "BRIGHT"}, "Comparative of bright"
+        )
+        == "comparative-marker-with-noncomparative-shape"
+    )
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "BRIGHTER"}, "Superlative of bright"
+        )
+        == "superlative-marker-with-nonsuperlative-shape"
+    )
 
 
 def test_clue_guard_rejects_exact_multiword_answer_surfaces():
