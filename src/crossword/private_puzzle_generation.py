@@ -534,7 +534,11 @@ def _clue_family_observation(clue):
 _DIFFICULTY = {
     "monday": {"candidates": 40, "time": 1, "voice": "welcoming, direct, familiar"},
     "tuesday": {
-        "candidates": 90,
+        # Keep the weekday budget inside the native xfill build's practical
+        # candidate ceiling.  The visible Tuesday step comes from its longer
+        # time budget and clue-language floor; sending 90 here makes the
+        # native runner reject every themed attempt before it can be measured.
+        "candidates": 75,
         "time": 2.5,
         "voice": "playful, with alternate senses, fair second readings, and a little more lift",
     },
