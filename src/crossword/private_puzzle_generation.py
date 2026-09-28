@@ -2364,6 +2364,20 @@ def _answer_lexical_forms(answer):
     if not answer:
         return set()
     forms = {answer}
+    irregular_counterparts = {
+        "CHILDREN": "CHILD",
+        "FEET": "FOOT",
+        "GEESE": "GOOSE",
+        "MEN": "MAN",
+        "MICE": "MOUSE",
+        "PEOPLE": "PERSON",
+        "TEETH": "TOOTH",
+        "WOMEN": "WOMAN",
+        "OXEN": "OX",
+    }
+    irregular = irregular_counterparts.get(answer)
+    if irregular:
+        forms.add(irregular)
     if len(answer) < 3:
         return forms
 

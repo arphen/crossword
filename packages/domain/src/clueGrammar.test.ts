@@ -111,6 +111,21 @@ describe('clue grammar v1', () => {
     ).toContain('answer-giveaway');
   });
 
+  it('rejects common irregular singular counterparts in the clue', () => {
+    expect(
+      codes(
+        definition({ clueText: 'Mouse, in a group', answer: 'MICE' }),
+        { enforceAnswerSafety: true },
+      ),
+    ).toContain('answer-form-in-clue');
+    expect(
+      codes(
+        definition({ clueText: 'Child, in a group', answer: 'CHILDREN' }),
+        { enforceAnswerSafety: true },
+      ),
+    ).toContain('answer-form-in-clue');
+  });
+
   it('rejects dead-end generic name and term templates', () => {
     expect(codes(definition({ clueText: 'common name' }), { enforceAnswerSafety: true })).toContain('generic-clue');
     expect(codes(definition({ clueText: 'Common male name' }), { enforceAnswerSafety: true })).toContain('generic-clue');

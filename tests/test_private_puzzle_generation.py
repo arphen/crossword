@@ -1304,6 +1304,18 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
     )
     assert (
         private_generation._clue_wordplay_issue(
+            {"answer": "MICE"}, "Mouse, in a group"
+        )
+        == "answer-form-in-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "CHILDREN"}, "Child, in a group"
+        )
+        == "answer-form-in-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
             {"answer": "XENON"}, "Common name"
         )
         == "generic-clue"

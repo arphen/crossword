@@ -556,6 +556,19 @@ function answerLexicalForms(answer: string): readonly string[] {
   const normalized = normalizedAnswerSurface(answer);
   if (!normalized) return [];
   const forms = new Set([normalized]);
+  const irregularCounterparts: Readonly<Record<string, string>> = {
+    CHILDREN: 'CHILD',
+    FEET: 'FOOT',
+    GEESE: 'GOOSE',
+    MEN: 'MAN',
+    MICE: 'MOUSE',
+    PEOPLE: 'PERSON',
+    TEETH: 'TOOTH',
+    WOMEN: 'WOMAN',
+    OXEN: 'OX',
+  };
+  const irregular = irregularCounterparts[normalized];
+  if (irregular) forms.add(irregular);
   if (normalized.length < 3) return [...forms];
   if (normalized.endsWith('IES') && normalized.length > 3) {
     forms.add(`${normalized.slice(0, -3)}Y`);

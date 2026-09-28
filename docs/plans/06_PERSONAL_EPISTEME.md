@@ -20,6 +20,11 @@ red”; `NO WAY` cannot receive “No way!”), and rejects short generic
 templates such as “common name,” “common term,” or an unspecified “famous
 writer's name.” Unresolved cases fall back to
 an answer-free crossing scaffold and remain visible in clue-quality provenance.
+The same answer-safety rule now covers the common irregular counterparts that
+ordinary suffix rules miss (`MICE`/“mouse”, `CHILDREN`/“child”, and the other
+small reviewed list shared by the Python private route and the TypeScript
+admission validator), so a clue cannot reveal an answer through a singular
+root while avoiding an exact or regular inflection match.
 The generic-template guard also rejects those phrases when they appear inside a
 longer surface (for example, “a common name for a gas”), so padding the template
 with a weak qualifier cannot bypass the same rule.
