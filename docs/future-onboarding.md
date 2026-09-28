@@ -423,6 +423,14 @@ Runtime doctor (read-only; no model pulls)
 Runtime doctor: ready for make run-personal (or make run).
 ```
 
+If `CROSSWORD_PRIVATE_DOMAIN_HINTS` is set, the same check also parses that
+bounded local file and reports its domain label, total term count, and number
+of terms present in the configured xfill vocabulary. It never prints the
+terms. A missing file is an optional `not-configured` result; a malformed or
+unreadable configured file is surfaced as `unavailable` and blocks
+`make run-personal` until the path is corrected. This keeps private subject
+invites discoverable without silently accepting a broken hint list.
+
 If the check is not ready, start Ollama and install one of the preferred model
 tags (`gemma4:26b` or `qwen3.8:27b`) yourself, or set
 `CROSSWORD_PUZZLE_MODEL`/`CROSSWORD_PROFILE_MODEL` to an already installed local

@@ -123,3 +123,65 @@ def test_ollama_probe_rejects_non_loopback_without_network(monkeypatch):
     assert result["ready"] is False
     assert result["status"] == "loopback-only-url-required"
     assert called is False
+
+
+def test_private_domain_hints_are_optional_when_unconfigured():
+    result = runtime_doctor._check_private_domain_hints({})
+
+    assert result == {
+        "ready": True,
+        "status": "not-configured",
+        "optional": True,
+        "termCount": 0,
+        "placeableCount": 0,
+    }
+
+
+def test_private_domain_hints_report_loaded_metadata_without_terms(tmp_path):
+    hints = tmp_path / "physics.json"
+    hints.write_text(
+        json.dumps(
+            {
+                "version": "private-domain-hints-v1",
+                "domainId": "physics",
+                "label": "Physics",
+                "terms": ["BOHR", "ENTROPY", "QUARK"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    xfill = tmp_path / "xfill"
+    (xfill / "data").mkdir(parents=True)
+    (xfill / "data" / "xwordlist.dict").write_text(
+        "BOHR;90\nENTROPY;90\nOTHER;90\n", encoding="utf-8"
+    )
+
+    result = runtime_doctor._check_private_domain_hints(
+        {
+            "CROSSWORD_PRIVATE_DOMAIN_HINTS": str(hints),
+            "CROSSWORD_XFILL_ROOT": str(xfill),
+        }
+    )
+
+    assert result["ready"] is True
+    assert result["status"] == "loaded"
+    assert result["domainId"] == "physics"
+    assert result["label"] == "Physics"
+    assert result["termCount"] == 3
+    assert result["placeableCount"] == 2
+    assert "terms" not in result
+
+
+def test_private_domain_hints_make_malformed_configuration_visible(tmp_path):
+    hints = tmp_path / "broken.json"
+    hints.write_text("{\"version\":\"wrong\"}", encoding="utf-8")
+
+    result = runtime_doctor._check_private_domain_hints(
+        {"CROSSWORD_PRIVATE_DOMAIN_HINTS": str(hints)}
+    )
+
+    assert result["ready"] is False
+    assert result["status"] == "unavailable"
+    assert result["reason"] == "document-version-unsupported"
+    assert result["termCount"] == 0
+    assert result["placeableCount"] == 0

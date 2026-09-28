@@ -284,7 +284,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/private-weekday-mechanic-study.py` — `_canonical:34`, `_digest:44`, `_validate_loopback:48`, `_request:59`, `_evaluate:88`, `main:140`
 - `scripts/react-browser-parity.mjs` — `character:18`, `snapshot:71`, `normalize:73`, `walk:74`, `checkpoint:78`, `cell:105`, `focusIs:107`, `selected:124`, `coordinates:130`
 - `scripts/reflection-bridge.cjs`
-- `scripts/runtime_doctor.py` — `_preferred_model_tags:45`, `_sha512_integrity:66`, `_load_json:74`, `_check_runtime_archive:82`, `_check_runtime_cli:118`, `_configured_xfill_root:153`, `_check_xfill_engine:163`, `_ollama_url:187`, `_check_ollama:203`, `collect_report:241`, `_print_report:257`, `main:278`
+- `scripts/runtime_doctor.py` — `_preferred_model_tags:51`, `_sha512_integrity:72`, `_load_json:80`, `_check_runtime_archive:88`, `_check_runtime_cli:124`, `_configured_xfill_root:159`, `_check_xfill_engine:169`, `_ollama_url:193`, `_check_ollama:209`, `_private_hint_fill_words:247`, `_check_private_domain_hints:266`, `collect_report:299`, `_print_report:316`, `main:340`
 - `scripts/scan-forbidden-content.mjs` — `patterns:24`, `walk:35`, `isExempt:47`, `violations:82`, `exemptHits:83`
 - `scripts/sibling-construction-simulation.cjs` — `loadSimulator:15`
 - `scripts/snapshot-react-behavior.mjs`

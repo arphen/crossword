@@ -27,6 +27,12 @@ from urllib.request import Request, urlopen
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.crossword.private_domain_hints import load_private_domain_hints
+
+
 RUNTIME_PACKAGE = ROOT / "node_modules" / "@crossword" / "local-runtime"
 RUNTIME_CLI = RUNTIME_PACKAGE / "bin" / "local-runtime.mjs"
 RUNTIME_ARCHIVE = ROOT / "vendor" / "generator" / "crossword-local-runtime-0.1.2.tgz"
@@ -238,12 +244,65 @@ def _check_ollama(environ: dict[str, str] | None = None) -> dict[str, Any]:
     }
 
 
+def _private_hint_fill_words(environ: dict[str, str] | None = None) -> set[str]:
+    """Read the same bounded answer shapes the native runtime can place."""
+
+    root = _configured_xfill_root(environ)
+    words: set[str] = set()
+    for filename in ("data/xwordlist.dict", "data/supplemental.txt"):
+        try:
+            raw = (root / filename).read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            continue
+        for line in raw.splitlines():
+            if not line or line.startswith("#"):
+                continue
+            word = line.split(";", 1)[0].strip().upper()
+            if word.isalpha() and 3 <= len(word) <= 15 and len(word) != 12:
+                words.add(word)
+    return words
+
+
+def _check_private_domain_hints(
+    environ: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Report the optional private hint bridge without exposing its terms."""
+
+    source = os.environ if environ is None else environ
+    configured = source.get("CROSSWORD_PRIVATE_DOMAIN_HINTS")
+    if not isinstance(configured, str) or not configured.strip():
+        return {
+            "ready": True,
+            "status": "not-configured",
+            "optional": True,
+            "termCount": 0,
+            "placeableCount": 0,
+        }
+
+    loaded = load_private_domain_hints(
+        path=configured,
+        fill_words=_private_hint_fill_words(environ),
+    )
+    result: dict[str, Any] = {
+        "ready": loaded.get("status") == "loaded",
+        "status": loaded.get("status", "unavailable"),
+        "optional": True,
+        "termCount": len(loaded.get("terms", [])),
+        "placeableCount": len(loaded.get("placeableTerms", [])),
+    }
+    for key in ("domainId", "label", "reason", "artifactSha256"):
+        if isinstance(loaded.get(key), str):
+            result[key] = loaded[key]
+    return result
+
+
 def collect_report(environ: dict[str, str] | None = None) -> dict[str, Any]:
     components = {
         "localRuntimeArchive": _check_runtime_archive(),
         "localRuntimeCli": _check_runtime_cli(),
         "xfillEngine": _check_xfill_engine(environ),
         "ollama": _check_ollama(environ),
+        "privateDomainHints": _check_private_domain_hints(environ),
     }
     return {
         "version": "runtime-doctor-v1",
@@ -262,12 +321,15 @@ def _print_report(report: dict[str, Any]) -> None:
         ("localRuntimeCli", "xfill runtime CLI"),
         ("xfillEngine", "native xfill engine"),
         ("ollama", "Ollama model"),
+        ("privateDomainHints", "private domain hints"),
     )
     for key, label in labels:
         component = components[key]
         suffix = component.get("status", "unknown")
         if key == "ollama" and component.get("installedPreferredModels"):
             suffix += ": " + ", ".join(component["installedPreferredModels"])
+        if key == "privateDomainHints" and component.get("status") == "loaded":
+            suffix += ": " + str(component.get("placeableCount", 0)) + " placeable"
         print(f"[{label}] {'ready' if component['ready'] else 'not ready'} ({suffix})")
     if report["ready"]:
         print("Runtime doctor: ready for make run-personal (or make run).")

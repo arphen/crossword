@@ -15,6 +15,14 @@ the file is a player-owned invitation, not a source ledger, fact collection,
 license decision, or publication pack. Missing, malformed, or unplaceable
 configuration remains an honest no-op.
 
+`make runtime-doctor` now discovers this bridge before launch. An absent path
+is reported as optional `not-configured`; a configured file is parsed with the
+same bounded validator and the doctor reports only its label/counts and the
+number of terms found in the configured xfill vocabulary. Terms are never
+printed. A malformed configured file is an explicit `unavailable` readiness
+failure, so a private run cannot appear healthy while silently ignoring a
+player's subject invitation.
+
 The minimal file shape is:
 
 ```json
