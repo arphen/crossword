@@ -172,6 +172,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/private-fill-quality-study-v1.real-gemma4-26b-wednesday-recovery-20260928.json`
 - `docs/evidence/private-fill-quality-study-v1.synthetic.json`
 - `docs/evidence/private-foothold-seed-plan-smoke-v1.20260928.json`
+- `docs/evidence/private-tuesday-clue-quality-study-v1.real-gemma4-26b-20260928.json`
 - `docs/evidence/private-tuesday-clue-study-v1.real-gemma4-26b-20260928.json`
 - `docs/evidence/private-tuesday-clue-study-v2.real-gemma4-26b-20260928.json`
 - `docs/evidence/private-tuesday-clue-study-v3.real-gemma4-26b-20260928.json`
@@ -273,6 +274,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/live-model-holdout.py` — `_Response:33`, `_Response.__init__:34`, `_Response.raise_for_status:38`, `_Response.json:42`, `_Session:46`, `_Session.request:47`, `_Session.get:62`, `_Session.post:65`, `_canonical:69`, `_sha256:79`, `_text:83`, `_shape_gate:87`, `_tags:142`, `_observation:156`, `main:229`
 - `scripts/mobile-browser-parity.mjs` — `capture:40`, `walk:48`, `activeCell:66`
 - `scripts/model-evaluation-report.py` — `main:18`
+- `scripts/private-clue-study.py` — `_base_url:30`, `_request:41`, `main:68`
 - `scripts/private-fill-study.py` — `_request_puzzle:31`, `_validate_local_base_url:62`, `_case_from_response:73`, `main:93`
 - `scripts/private-weekday-mechanic-study.py` — `_canonical:34`, `_digest:44`, `_validate_loopback:48`, `_request:59`, `_evaluate:88`, `main:140`
 - `scripts/react-browser-parity.mjs` — `character:18`, `snapshot:71`, `normalize:73`, `walk:74`, `checkpoint:78`, `cell:105`, `focusIs:107`, `selected:124`, `coordinates:130`
@@ -297,6 +299,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `src/crossword/calibration_hypothesis_api.py` — `CalibrationHypothesisDeckRecord:62`, `CalibrationHypothesisResponseRecord:79`, `CalibrationHypothesisActionRecord:96`, `HypothesisRuntimeUnavailable:114`, `_canonical:118`, `_hash:122`, `_valid_uuid:126`, `_local_origin:135`, `_error:140`, `_read_json:147`, `_catalog:168`, `_calibration_and_profile:183`, `_active_chosen_source:216`, `_text:303`, `_reject_player_inference:316`, `_validate_model_paths:322` (+32 more)
 - `src/crossword/clue_grammar_bridge.py` — `_issue:67`, `_signals:74`, `_surface_signal_present:81`, `_signal_matches_literal:100`, `validate_surface_clue_family:119`, `summarize_surface_clue_families:223`
 - `src/crossword/clue_grounding_validators.py` — `_letters_only:57`, `_span:61`, `_validator_base:84`, `_mechanical_validator:100`, `validate_private_clue_witnesses:153`
+- `src/crossword/clue_quality_evaluation.py` — `canonical_clue_quality_json:29`, `_digest:39`, `_seed:45`, `_count:51`, `_text:57`, `_mapping:63`, `_counts:69`, `_number:81`, `clue_case_from_provenance:87`, `evaluate_clue_quality_study:162`
 - `src/crossword/clue_semantic_challenger.py` — `_codes:41`, `_mechanical_statuses:47`, `_model_projection:60`, `challenge_private_clue_pair:109`, `summarize_challenge_classifications:208`
 - `src/crossword/construction_evidence.py` — `_canonical:24`, `_digest:28`, `_entry_id:32`, `_entry_cells:40`, `_board_projection:58`, `_round:74`, `_foothold_seed_plan:78`, `evaluate_private_board:211`
 - `src/crossword/construction_runtime.py` — `FullSizeRuntimeUnavailable:45`, `FullSizeDraftRejected:49`, `FullSizeDraftCancelled:53`, `_validated_options:57`, `_validate_result:97`, `_validate_admitted_wordlist:137`, `_stop_process:190`, `_run_cancellable:223`, `generate_full_size_draft:264`
@@ -367,6 +370,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `tests/test_clue_grammar_bridge.py`
 - `tests/test_clue_grounding_validators.py`
 - `tests/test_clue_numbering.py`
+- `tests/test_clue_quality_evaluation.py`
 - `tests/test_clue_semantic_challenger.py`
 - `tests/test_construction_evidence.py`
 - `tests/test_construction_runtime.py`
