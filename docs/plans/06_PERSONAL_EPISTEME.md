@@ -5,14 +5,18 @@
 **Prepared and revised:** 28 September 2026. Continue from the player-focused implementation handoff in [§22](#22-private-game-implementation-handoff-for-luna).
 
 **Latest live checkpoint:** the current source tree and installed `gemma4:26b`
-completed a fresh loopback Tuesday job on seed `20470391` through
-`theme-proposal → native-xfill → clue-generation → ready` in 231.738 seconds.
-It returned a playable 78-entry board; the selected local-anchor fill retained
-two themed entries with zero iffy and zero weak entries, and the final clue
-receipt met the stronger five-family/24-surface recipe with 36 signalled
-surfaces (46.2%), one answer-free fallback, and zero deterministic grammar
-issues. The answer-free receipt is
-[`private-tuesday-clue-quality-study-v2.real-gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-v2.real-gemma4-26b-20260928.json).
+completed a fresh loopback Tuesday job on seed `20470408` through
+`theme-proposal → native-xfill → clue-generation → finalizing` in 302.972 seconds.
+It returned a playable 76-entry board with zero deterministic grammar issues and
+two answer-free fallbacks. The receipt reached 54 signalled surfaces (71.1%),
+including every required house family: pun (10), fill-in (12), bracketed
+nonverbal cue (13), spoken equivalent (7), and metalinguistic marker (12).
+The required family set and the 43-surface proportional target both reported
+`floorMet=true`; the answer-free receipt is
+[`private-tuesday-clue-quality-study-v7.real-gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-v7.real-gemma4-26b-20260928.json),
+digest `sha256:3756e4cf818797b297ad464b4dce04f5eb0a003004cc1f6342b854c6a4e7ee17`.
+This validates the explicit family-set contract on one real run; it remains a
+surface receipt, not semantic or player-difficulty evidence.
 
 The clue gate now rejects answer lexical leakage, including exact multiword
 surfaces and obvious roots and inflections (`REDS` cannot receive “shades of

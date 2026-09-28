@@ -1,0 +1,130 @@
+{
+  "version": "private-clue-quality-study-v1",
+  "scope": "answer-free-clue-surface-study",
+  "studyId": "private-tuesday-required-family-v1",
+  "recipeId": "private-tuesday-v1",
+  "requestedSeeds": [
+    20470408
+  ],
+  "observedSeeds": [
+    20470408
+  ],
+  "missingSeeds": [],
+  "cases": [
+    {
+      "seed": 20470408,
+      "entryCount": 76,
+      "grammarCheckedCount": 76,
+      "grammarIssueCount": 0,
+      "fallbackCount": 2,
+      "semanticStatus": "not-established",
+      "familyCounts": {
+        "definition": 22,
+        "fill-blank": 12,
+        "metalinguistic": 12,
+        "nonverbal-expression": 13,
+        "pun": 10,
+        "spoken-equivalent": 7
+      },
+      "nonDefinitionCount": 54,
+      "nonDefinitionRate": 0.711,
+      "nonDefinitionFamilies": [
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun",
+        "spoken-equivalent"
+      ],
+      "floorMet": true,
+      "requiredNonDefinitionFamilies": 5,
+      "requiredNonDefinitionFamilySet": [
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun",
+        "spoken-equivalent"
+      ],
+      "missingNonDefinitionFamilies": [],
+      "requiredNonDefinitionClues": 43,
+      "targetNonDefinitionRate": 0.56,
+      "targetNonDefinitionClues": 43,
+      "signalCounts": {
+        "abbreviation-indicator": 12,
+        "brackets": 13,
+        "fill-blank": 12,
+        "question-mark": 10,
+        "quote": 7,
+        "spoken-equivalent-marker": 7
+      },
+      "issueCounts": {},
+      "semanticChallenge": {
+        "mechanically-supported": 0,
+        "needs-review": 74,
+        "safe-fallback": 2
+      },
+      "repair": {
+        "attempted": true,
+        "attemptCount": 4,
+        "selectedCount": 36,
+        "rewrittenCount": 32,
+        "minimumFamilies": 5,
+        "minimumClueCount": 28
+      },
+      "timingsSeconds": {
+        "themeProposal": 10.751,
+        "nativeXfill": 52.985,
+        "clueGeneration": 223.98,
+        "clueChallenge": 15.06,
+        "total": 302.972
+      }
+    }
+  ],
+  "summary": {
+    "entryCount": 76,
+    "grammarCheckedCount": 76,
+    "grammarIssueCount": 0,
+    "fallbackCount": 2,
+    "nonDefinitionCount": 54,
+    "caseCount": 1,
+    "floorMetCases": 1,
+    "floorMetRate": 1.0,
+    "grammarCleanCases": 1,
+    "grammarCleanRate": 1.0,
+    "familyFloorMetCases": 1,
+    "targetRateCases": 1,
+    "targetRateMetCases": 1,
+    "observedNonDefinitionRate": 0.711,
+    "familyCounts": {
+      "definition": 22,
+      "fill-blank": 12,
+      "metalinguistic": 12,
+      "nonverbal-expression": 13,
+      "pun": 10,
+      "spoken-equivalent": 7
+    },
+    "signalCounts": {
+      "abbreviation-indicator": 12,
+      "brackets": 13,
+      "fill-blank": 12,
+      "question-mark": 10,
+      "quote": 7,
+      "spoken-equivalent-marker": 7
+    },
+    "issueCounts": {},
+    "totalTimingSeconds": 302.972,
+    "meanTimingSeconds": 302.972
+  },
+  "metadata": {
+    "transport": "loopback-http",
+    "weekday": "tuesday",
+    "model": "gemma4:26b",
+    "seedCount": 1
+  },
+  "interpretation": "surface-and-mechanical-receipts-only; no semantic-or-player-quality-claim",
+  "uncertainty": [
+    "clue-semantics-unreviewed",
+    "player-support-unmeasured",
+    "local-model-output"
+  ],
+  "studyDigest": "sha256:3756e4cf818797b297ad464b4dce04f5eb0a003004cc1f6342b854c6a4e7ee17"
+}
