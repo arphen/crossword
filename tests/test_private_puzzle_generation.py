@@ -1935,6 +1935,8 @@ def test_make_clues_passes_bounded_reviewed_context(monkeypatch):
         },
     )
 
+    assert "plural form" in captured["messages"][0]["content"]
+    assert "domain_hints are private, unadmitted subject invitations" in captured["messages"][0]["content"]
     payload = json.loads(captured["messages"][1]["content"])
     assert payload["reviewedClues"] == []
     assert payload["reviewedContent"] == [
