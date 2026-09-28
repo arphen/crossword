@@ -22,12 +22,12 @@ slice; this change deliberately improves the private clue contract without
 pretending an unreviewed corpus is production content.
 
 The Tuesday recipe now retains four theme locks and asks the bounded diversity
-repair pass for at least five distinct non-definition clue families, with six
-rewrite slots available. A real Gemma 4 26B loopback Tuesday run on 28
-September 2026 produced 72 entries, zero mechanical clue issues, and five
-visible non-definition families; the receipt recorded 64 definitions plus
-factual-relation, fill-blank, metalinguistic, pun, and spoken-equivalent
-surfaces. That floor is a visible generation requirement, not a claim that
+repair pass for at least four safe non-definition clue families and eight
+signalled clue surfaces, with six rewrite slots per pass. A real Gemma 4 26B
+loopback Tuesday run on 28 September 2026 produced 74 entries, zero
+mechanical clue issues, 12 signalled surfaces, and four safe non-definition
+families after one source-free factual surface was replaced. That floor is a
+visible generation requirement, not a claim that
 clue semantics are reviewed; model failure still leaves the board playable and
 records the repair status.
 The aggregate, answer-free receipt for that run is preserved at

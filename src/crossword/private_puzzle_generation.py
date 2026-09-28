@@ -559,7 +559,8 @@ _WEEKDAY_RECIPES = {
         "themeDirection": "Choose a small, coherent cluster whose connection is discoverable after one or two answers; keep the material broadly approachable and let the pattern add the lift.",
         "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but make a visible portion of the board use puns, fill-ins, bracketed cues, quotations, or spoken equivalents so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
         "themeMode": "approachable-cluster-with-a-turn",
-        "minimumNonDefinitionFamilies": 5,
+        "minimumNonDefinitionFamilies": 4,
+        "minimumNonDefinitionCount": 8,
     },
     "wednesday": {
         "id": "wednesday-private-v1",
@@ -3051,11 +3052,15 @@ def _clue_diversity_report(entries, clues, *, repair=None):
     non_definition = sorted(
         family for family in family_counts if family != "definition"
     )
+    non_definition_count = sum(
+        count for family, count in family_counts.items() if family != "definition"
+    )
     result = {
         "version": CLUE_DIVERSITY_REPAIR_VERSION,
         "entryCount": sum(family_counts.values()),
         "familyCounts": dict(sorted(family_counts.items())),
         "nonDefinitionFamilies": non_definition,
+        "nonDefinitionCount": non_definition_count,
         "status": (
             "varied"
             if len(non_definition) >= 2
@@ -3072,7 +3077,11 @@ def _clue_diversity_report(entries, clues, *, repair=None):
         required = repair.get("minimumFamilies")
         if isinstance(required, int) and required >= 0:
             result["requiredNonDefinitionFamilies"] = required
-            floor_met = len(non_definition) >= required
+            required_count = repair.get("minimumClueCount")
+            count_met = not isinstance(required_count, int) or non_definition_count >= required_count
+            if isinstance(required_count, int):
+                result["requiredNonDefinitionClues"] = required_count
+            floor_met = len(non_definition) >= required and count_met
             result["floorMet"] = floor_met
             if not floor_met and result["status"] == "varied":
                 result["status"] = "varied-below-recipe-floor"
@@ -3097,11 +3106,23 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         "selectedCount": 0,
         "rewrittenCount": 0,
         "minimumFamilies": minimum_families,
+        **(
+            {"minimumClueCount": recipe["minimumNonDefinitionCount"]}
+            if isinstance(recipe.get("minimumNonDefinitionCount"), int)
+            else {}
+        ),
         "reason": "sufficient-surface-variety",
     }
     if len(entries) < 24:
         return clues, {**base, "reason": "small-board"}
-    if len(initial["nonDefinitionFamilies"]) >= minimum_families:
+    minimum_clue_count = recipe.get("minimumNonDefinitionCount")
+    if (
+        len(initial["nonDefinitionFamilies"]) >= minimum_families
+        and (
+            not isinstance(minimum_clue_count, int)
+            or initial.get("nonDefinitionCount", 0) >= minimum_clue_count
+        )
+    ):
         return clues, base
     enabled = os.environ.get(CLUE_DIVERSITY_REPAIR_ENV, "1").strip().casefold()
     if enabled in {"0", "false", "no", "off"}:

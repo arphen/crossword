@@ -236,8 +236,10 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
           <p className="future-clue-quality-reviewed">
             The writer reached {clueDiversity.nonDefinitionFamilies?.length || 0}{' '}
             of {clueDiversity.requiredNonDefinitionFamilies || 0} requested clue
-            families. The board stays playable, but this recipe&apos;s visible
-            variety target was not met.
+            families and {clueDiversity.nonDefinitionCount || 0} of{' '}
+            {clueDiversity.requiredNonDefinitionClues || 0} requested signalled
+            clues. The board stays playable, but this recipe&apos;s visible variety
+            target was not met.
           </p>
         )}
         {modelChallenge?.status === 'completed' && (

@@ -119,7 +119,9 @@ it('reports when a weekday surface floor was attempted but not met', async () =>
           clueDiversity: {
             status: 'varied-below-recipe-floor',
             nonDefinitionFamilies: ['pun', 'fill-blank'],
+            nonDefinitionCount: 4,
             requiredNonDefinitionFamilies: 5,
+            requiredNonDefinitionClues: 8,
             repair: { status: 'repaired', rewrittenCount: 2 },
           },
         }}
@@ -128,7 +130,7 @@ it('reports when a weekday surface floor was attempted but not met', async () =>
   );
 
   await act(async () => host.querySelector('summary').click());
-  expect(host.textContent).toContain('The writer reached 2 of 5 requested clue families');
+  expect(host.textContent).toContain('The writer reached 2 of 5 requested clue families and 4 of 8 requested signalled clues');
   expect(host.textContent).toContain("recipe's visible variety target was not met");
 });
 

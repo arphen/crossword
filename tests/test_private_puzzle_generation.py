@@ -1125,7 +1125,8 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     assert tuesday["id"] == "tuesday-private-v1"
     assert tuesday["themeAnswerCount"] > monday["themeAnswerCount"]
     assert "second reading" in tuesday["clueDirection"]
-    assert tuesday["minimumNonDefinitionFamilies"] == 5
+    assert tuesday["minimumNonDefinitionFamilies"] == 4
+    assert tuesday["minimumNonDefinitionCount"] == 8
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] > private_generation._DIFFICULTY["monday"]["candidates"]
     assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
 
@@ -1728,8 +1729,9 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
         entries, clues, repair=context["_clue_diversity_repair"]
     )
     assert len(report["nonDefinitionFamilies"]) >= 3
-    assert report["status"] == "varied-below-recipe-floor"
-    assert report["floorMet"] is False
+    assert report["status"] == "varied"
+    assert report["nonDefinitionCount"] == 8
+    assert report["floorMet"] is True
 
 
 def test_clue_surface_checks_and_normalization_preserve_the_answer_free_surface():
