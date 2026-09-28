@@ -214,6 +214,30 @@ _GENERIC_NAME_CONTEXT_RE = re.compile(
     r"(?:follow|precede|come\s+(?:after|before))\b.*[?.]?\s*$",
     re.IGNORECASE,
 )
+# These surfaces contain grammatical words but give the solver no usable
+# route into the fill.  Keep the list deliberately narrow and apply it only to
+# Tuesday's stricter recipe; a later reviewed clue pack can still provide an
+# exact authored surface when it is intentional.
+_LOW_INFORMATION_CLUE_TEXTS = frozenset(
+    {
+        "a thing",
+        "an item",
+        "an object",
+        "a word",
+        "a term",
+        "a name",
+        "a person",
+        "a place",
+        "a sound",
+        "a noise",
+        "an answer",
+        "an entry",
+        "something",
+        "someone",
+        "somebody",
+        "one thing",
+    }
+)
 _LANGUAGE_YES = {
     "dutch": {"JA"},
     "french": {"OUI"},
@@ -2701,7 +2725,7 @@ def _clue_fact_risk(entry, clue):
     }
 
 
-def _risky_clue_entries(entries, clues, *, limit=20):
+def _risky_clue_entries(entries, clues, *, limit=20, weekday=None):
     """Select clues that deserve a second, conservative model pass."""
     risky = []
     for entry in entries:
@@ -2718,12 +2742,16 @@ def _risky_clue_entries(entries, clues, *, limit=20):
         wordplay_issue = _clue_wordplay_issue(entry, clues.get(clue_id, ""))
         morphology_issue = _clue_morphology_issue(entry, clues.get(clue_id, ""))
         surface_issues = _clue_surface_issues(clues.get(clue_id, ""))
+        information_issue = _clue_information_issue(
+            entry, clues.get(clue_id, ""), weekday=weekday
+        )
         if (
             factual_surface
             or short_or_iffy
             or wordplay_issue
             or morphology_issue
             or surface_issues
+            or information_issue
         ):
             risky.append(entry)
     # Keep the repair pass bounded. Factual surfaces take priority, followed
@@ -2823,6 +2851,25 @@ def _clue_answer_overlap(entry, clue):
     for form in sorted(_answer_lexical_forms(answer), key=len, reverse=True):
         if re.search(rf"(?<![A-Z]){re.escape(form)}(?![A-Z])", text):
             return form
+    return None
+
+
+def _clue_information_issue(entry, clue, *, weekday=None):
+    """Reject a tiny set of answer-free surfaces with no solving route.
+
+    This is a recipe-specific quality guard, not a semantic judge.  Tuesday
+    asks for a visible step beyond Monday, so surfaces such as ``A thing`` or
+    ``A word`` should be repaired or replaced instead of counting as fair
+    direct clues.  Keep the vocabulary closed and conservative: longer
+    definitions, theme surfaces, and all other weekdays retain their existing
+    behavior.
+    """
+    if weekday != "tuesday" or not isinstance(clue, str):
+        return None
+    text = re.sub(r"[.!?,:;]+$", "", clue.strip().casefold())
+    text = " ".join(text.split())
+    if text in _LOW_INFORMATION_CLUE_TEXTS:
+        return "low-information-surface"
     return None
 
 
@@ -3387,6 +3434,7 @@ def _clue_quality_summary(
     entries,
     clues,
     *,
+    weekday=None,
     model_challenges=None,
     reviewed_pack=None,
     safety_fallbacks=None,
@@ -3414,6 +3462,11 @@ def _clue_quality_summary(
         morphology_issue = _clue_morphology_issue(entry, clue)
         if morphology_issue:
             issue_counts[morphology_issue] = issue_counts.get(morphology_issue, 0) + 1
+        information_issue = _clue_information_issue(
+            entry, clue, weekday=weekday
+        )
+        if information_issue:
+            issue_counts[information_issue] = issue_counts.get(information_issue, 0) + 1
         for flag in _clue_risk_flags(entry, clue):
             if flag == "foothold-required":
                 continue
@@ -3519,6 +3572,7 @@ def _repair_risky_clues(model, entries, clues, context, weekday):
         entries,
         clues,
         limit=_model_generation_policy(model)["riskRepairMaxEntries"],
+        weekday=weekday,
     )
     if not risky:
         return clues
@@ -3548,6 +3602,7 @@ def _repair_risky_clues(model, entries, clues, context, weekday):
                         "never keep a mechanically false wordplay clue. Do not put the answer, its obvious stem, or an "
                         "inflected form in the clue. Do not use vague template clues such as 'common name', 'common term', "
                         "'usual name', or 'generic word'; add a real definition, relation, or signalled mechanism instead. "
+                        "For Tuesday, also replace answer-free surfaces such as 'A thing', 'A word', or 'Something' with a concise, usable route into the fill. "
                         "Return exactly one clue for every supplied id and no extra keys."
                     ),
                 },
@@ -3600,7 +3655,9 @@ def _repair_risky_clues(model, entries, clues, context, weekday):
                 # false anagram/reversal or an answer giveaway of its own.
                 if _clue_wordplay_issue(
                     entries_by_id[clue_id], text
-                ) is None and not _clue_surface_issues(text):
+                ) is None and not _clue_surface_issues(text) and _clue_information_issue(
+                    entries_by_id[clue_id], text, weekday=weekday
+                ) is None:
                     repaired[clue_id] = text
                 else:
                     repaired[clue_id] = clues[clue_id]
@@ -4007,6 +4064,7 @@ def _enforce_private_clue_safety(
     entries,
     clues,
     *,
+    weekday=None,
     reviewed_by_id=None,
     fallback_reasons=None,
 ):
@@ -4039,6 +4097,9 @@ def _enforce_private_clue_safety(
         flags = _clue_risk_flags(entry, clue)
         mechanical_issue = _clue_wordplay_issue(entry, clue)
         morphology_issue = _clue_morphology_issue(entry, clue)
+        information_issue = _clue_information_issue(
+            entry, clue, weekday=weekday
+        )
         exact_reviewed_text = reviewed_text_by_id.get(clue_id)
         reviewed_surface = (
             isinstance(exact_reviewed_text, str)
@@ -4070,6 +4131,8 @@ def _enforce_private_clue_safety(
             "superlative-marker-with-nonsuperlative-shape",
         }:
             reason_codes.append(morphology_issue)
+        if information_issue == "low-information-surface" and not reviewed_surface:
+            reason_codes.append(information_issue)
         if (
             reason_codes
         ):
@@ -4639,6 +4702,7 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
     safe_clues = _enforce_private_clue_safety(
         entries,
         repaired,
+        weekday=weekday,
         reviewed_by_id=reviewed_by_id,
         fallback_reasons=safety_fallbacks,
     )
@@ -4680,6 +4744,7 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
             safe_clues = _enforce_private_clue_safety(
                 entries,
                 post_repaired,
+                weekday=weekday,
                 reviewed_by_id=reviewed_by_id,
                 fallback_reasons=post_fallbacks,
             )
@@ -5717,6 +5782,7 @@ def _generate(
     clue_quality = _clue_quality_summary(
         clue_entries,
         clues,
+        weekday=weekday,
         model_challenges=clue_challenge.get("byId", {}),
         reviewed_pack=reviewed_clue_pack,
         safety_fallbacks=clue_context.get("_clue_safety_fallbacks"),

@@ -2561,6 +2561,52 @@ def test_clue_risk_flags_source_free_identity_surfaces(clue):
     ) == ["unsupported-factual-surface"]
 
 
+def test_low_information_surface_guard_is_narrow_and_tuesday_only():
+    entry = {"id": "1A", "answer": "BARK"}
+
+    assert (
+        private_generation._clue_information_issue(
+            entry, "A thing?", weekday="tuesday"
+        )
+        == "low-information-surface"
+    )
+    assert (
+        private_generation._clue_information_issue(
+            entry, "A thing", weekday="wednesday"
+        )
+        is None
+    )
+    assert (
+        private_generation._clue_information_issue(
+            entry, "A sound that bounces back", weekday="tuesday"
+        )
+        is None
+    )
+
+
+def test_tuesday_safety_replaces_low_information_surface_with_answer_free_scaffold():
+    fallback_reasons = {}
+    safe = private_generation._enforce_private_clue_safety(
+        [{"id": "1A", "answer": "BARK", "length": 4}],
+        {"1A": "A thing?"},
+        weekday="tuesday",
+        fallback_reasons=fallback_reasons,
+    )
+
+    assert safe["1A"] == "Entry supported by its crossings (4 letters)"
+    assert fallback_reasons == {"1A": ["low-information-surface"]}
+
+
+def test_low_information_surface_does_not_change_other_weekday_safety():
+    safe = private_generation._enforce_private_clue_safety(
+        [{"id": "1A", "answer": "BARK", "length": 4}],
+        {"1A": "A thing"},
+        weekday="wednesday",
+    )
+
+    assert safe == {"1A": "A thing"}
+
+
 def test_private_clue_safety_replaces_unresolved_trivia_for_ordinary_entries():
     entries = [
         {"id": "1A", "answer": "EVAN", "length": 4, "needsFoothold": True},

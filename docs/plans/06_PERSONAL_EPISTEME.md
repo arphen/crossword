@@ -113,6 +113,13 @@ visible-convention guard, not a general part-of-speech or semantic parser. The
 collapsed `/future` clue-quality panel now projects those deterministic
 morphology and mechanical failures into the same reversible note/flag surface,
 so an issue count cannot be hidden behind an empty “no issue” state.
+The Tuesday path also rejects a narrow, answer-free set of low-information
+surfaces such as “A thing,” “A word,” and “Something,” after punctuation
+normalization. These entries receive the same conservative repair pass and,
+if they survive it, an answer-free crossing scaffold; the guard is explicitly
+Tuesday-only so other weekday voices and exact reviewed clue text keep their
+existing behavior. Its `low-information-surface` reason is retained in the
+quality summary and fallback receipt.
 Tuesday has an explicit recipe between Monday and Wednesday: a bounded increase
 in fill search/time plus alternate senses and fair second readings, while still
 requiring approachable footholds. The domain-wordlist direction in
