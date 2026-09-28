@@ -29,14 +29,11 @@ diversity repair pass for at least four safe non-definition clue families and
 fourteen signalled clue surfaces, with six rewrite slots per pass and up to three
 repair batches when the model returns fewer safe rewrites. A real Gemma 4 26B
 loopback Tuesday run on 28 September 2026 produced 74 entries, zero
-mechanical clue issues, 12 signalled surfaces, and four safe non-definition
-families after one source-free factual surface was replaced. That floor is a
-visible generation requirement, not a claim that
-clue semantics are reviewed; model failure still leaves the board playable and
-records the repair status.
-That checked receipt was captured before the floor was raised and remains a
-historical baseline; a fresh run must verify the four-family/fourteen-surface
-contract. If the local clue response is malformed or incomplete, the private
+mechanical clue issues, 18 signalled surfaces, and four safe non-definition
+families after source-free factual surfaces were replaced. That floor is a
+visible generation requirement, not a claim that clue semantics are reviewed;
+model failure still leaves the board playable and records the repair status.
+The measured receipt satisfies the four-family/fourteen-surface contract. If the local clue response is malformed or incomplete, the private
 path now preserves the generated grid with answer-free crossing scaffolds and
 records the fallback reason instead of failing the playable job.
 The aggregate, answer-free receipt for that run is preserved at
@@ -46,8 +43,9 @@ and the clue-notes panel distinguishes a varied board from one that remained
 playable but fell below its weekday surface floor.
 When Tuesday remains below that floor after safety cleanup, the local writer
 gets up to two additional bounded passes over fresh ordinary entries; all
-attempts
-are retained in the receipt and neither pass gates private play.
+attempts are retained in the receipt and neither pass gates private play. Fill
+retries also try the shortest model-proposed theme answer already present in
+the local xfill dictionary before releasing the theme and using an open grid.
 
 The private safety pass now treats an unsupported factual relation as unsafe for
 an ordinary non-theme entry even when its fill score is strong. It keeps exact
