@@ -60,7 +60,7 @@ afterEach(() => {
 const plain = value => JSON.parse(JSON.stringify(value));
 const event = (key, target = document.body) => ({ key, target, preventDefault: vi.fn(), stopPropagation: vi.fn() });
 
-async function run(kind, engine, scenario) {
+async function run(kind, engine, scenario, { puzzleData = puzzle() } = {}) {
   document.body.replaceChildren();
   document.body.removeAttribute('data-active-direction');
   document.documentElement.style.removeProperty('color-scheme');
@@ -76,7 +76,7 @@ async function run(kind, engine, scenario) {
     connect: vi.fn(), disconnect: vi.fn(), removeAllListeners: vi.fn(() => handlers.clear())
   };
   const axios = {
-    get: vi.fn(async url => ({ data: url.includes('/api/completed_puzzles/') ? { completed: false } : puzzle() })),
+    get: vi.fn(async url => ({ data: url.includes('/api/completed_puzzles/') ? { completed: false } : puzzleData })),
     post: vi.fn(async () => ({ data: {} }))
   };
   let app, controller, options;
@@ -158,6 +158,7 @@ describe('original Vue runtime versus React controller differential behavior', (
       return {
         grid: app.grid, cells: [...app.cellMap.entries()], requests: axios.get.mock.calls,
         cached: JSON.parse(storage.get('crosswords_monday')), count: app.cachedCrosswordsCount.monday,
+        manifest: app.currentPuzzleManifest ?? null,
         selection: storage.get('selectedWeekday'), direction, clearedDirection: document.body.hasAttribute('data-active-direction')
       };
     });
@@ -168,6 +169,26 @@ describe('original Vue runtime versus React controller differential behavior', (
       [`${window.location.origin}/api/completed_puzzles/260829`]
     ]);
     expect([result.count, result.selection, result.direction, result.clearedDirection]).toEqual([1, 'tuesday', 'down', false]);
+    expect(result.manifest).toBeNull();
+  });
+
+  it('preserves an optional server manifest across online and cached solver loads', async () => {
+    const manifest = { schemaVersion: 1, id: 'puzzle:manifest-fixture', integrity: { algorithm: 'sha256', value: 'ab'.repeat(32) } };
+    const payload = { ...puzzle(), puzzleManifest: manifest };
+    const result = await run('main', 'react', async ({ app, storage }) => {
+      expect(app.currentPuzzleManifest).toEqual(manifest);
+      const cached = JSON.parse(storage.get('crosswords_monday'));
+      expect(cached).toHaveLength(1);
+      expect(cached[0].puzzleManifest).toEqual(manifest);
+
+      app.isOffline = true;
+      app.loadCachedCrossword('monday');
+      expect(app.currentPuzzleManifest).toEqual(manifest);
+      return { manifest: app.currentPuzzleManifest, cache: JSON.parse(storage.get('crosswords_monday')) };
+    }, { puzzleData: payload });
+
+    expect(result.manifest).toEqual(manifest);
+    expect(result.cache).toEqual([]);
   });
 
   it('matches actual focus transitions, stale clue selection, typing, arrows and backspace', async () => {

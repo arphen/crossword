@@ -1,0 +1,261 @@
+{
+  "version": "private-foothold-seed-plan-smoke-v1",
+  "generatedAt": "2026-09-28T05:03:01+00:00",
+  "sourceArtifact": "private-current-source-live-smoke-v1.20260928.json",
+  "runtime": {
+    "model": "gemma4:26b",
+    "weekday": "wednesday",
+    "seed": 137,
+    "width": 15,
+    "height": 15
+  },
+  "boardDigest": "sha256:52f341f4dd0399cabd9b7f8450f4eaf8535be54cda4fea8d114fd34e994b7c96",
+  "constructionSourceDigest": "sha256:0d003853979c22a4b6a363b231a135c0b23dab5bc99272ebfe841612924a71eb",
+  "entryCount": 78,
+  "footholdSeedPlan": {
+    "version": "private-foothold-seed-plan-v1",
+    "status": "measured",
+    "targetCount": 15,
+    "seededTargetCount": 15,
+    "unseededTargetCount": 0,
+    "entries": [
+      {
+        "targetEntryId": "17D",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "23A",
+        "crossingCells": [
+          {
+            "row": 4,
+            "col": 5
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "1A",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "1D",
+        "crossingCells": [
+          {
+            "row": 0,
+            "col": 0
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "22A",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "19D",
+        "crossingCells": [
+          {
+            "row": 3,
+            "col": 14
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "28D",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "36A",
+        "crossingCells": [
+          {
+            "row": 7,
+            "col": 1
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "29A",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "19D",
+        "crossingCells": [
+          {
+            "row": 5,
+            "col": 14
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "33A",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "27D",
+        "crossingCells": [
+          {
+            "row": 6,
+            "col": 0
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "47D",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "52A",
+        "crossingCells": [
+          {
+            "row": 10,
+            "col": 0
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "54A",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "48D",
+        "crossingCells": [
+          {
+            "row": 11,
+            "col": 1
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "57D",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "70A",
+        "crossingCells": [
+          {
+            "row": 14,
+            "col": 6
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "5D",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "12A",
+        "crossingCells": [
+          {
+            "row": 1,
+            "col": 4
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "60A",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "61D",
+        "crossingCells": [
+          {
+            "row": 11,
+            "col": 13
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "63D",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "66A",
+        "crossingCells": [
+          {
+            "row": 13,
+            "col": 3
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "65D",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "68A",
+        "crossingCells": [
+          {
+            "row": 13,
+            "col": 14
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "69A",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "48D",
+        "crossingCells": [
+          {
+            "row": 14,
+            "col": 1
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      },
+      {
+        "targetEntryId": "6A",
+        "status": "candidate-nonweak-neighbor",
+        "supportEntryId": "6D",
+        "crossingCells": [
+          {
+            "row": 0,
+            "col": 6
+          }
+        ],
+        "supportNeedsFoothold": false,
+        "supportCrossingScore": 1.0,
+        "supportSurfaceRisk": "unflagged-or-unavailable",
+        "uncertainty": "structural-neighbor-only"
+      }
+    ],
+    "uncertainty": [
+      "structural-neighbor-only",
+      "clue-ease-unverified",
+      "player-support-unmeasured"
+    ],
+    "interpretation": "Candidate crossing seeds for weak entries; a neighbor is not an easy clue and this receipt is not a solve-probability estimate."
+  },
+  "limitations": [
+    "derived from a completed local experimental board; does not rerun model or native fill",
+    "structural/risk-aware neighbor selection is not a clue-ease or solve-probability estimate",
+    "player support and human fairness remain unmeasured"
+  ],
+  "artifactDigest": "sha256:db80be8c7712cebdd31b918244375f2992b61e985b1bbb4bba78539712d96790"
+}

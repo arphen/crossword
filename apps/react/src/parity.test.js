@@ -164,6 +164,20 @@ describe('desktop reference contracts (controller method tests)', () => {
     expect([...app.completedWords]).toEqual(['Feline']);
   });
 
+  it('checks the canonical fill behind a displayed multi-character token', () => {
+    const { app } = fresh();
+    app.crossword[0].characters[0] = { letters: 'SS' };
+    app.crossword[1].characters[0] = { letters: 'SS' };
+    app.init();
+    app.grid[0][0] = 'SS';
+    input(app, 0, 0).value = 'ß';
+
+    app.check_all();
+
+    expect(input(app, 0, 0).classList.contains('green')).toBe(true);
+    expect(input(app, 0, 0).classList.contains('red')).toBe(false);
+  });
+
   it('reveals only empty nonblack cells; rebus input opens, focuses, normalizes and saves', () => {
     const { app, controller } = fresh();
     const event = key(' ', input(app, 0, 0));

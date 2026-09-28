@@ -1,0 +1,4737 @@
+"""Private, local Ollama + xfill puzzle creation for the /future play lane.
+
+This is deliberately separate from the admitted-pack publication pipeline.
+Generated puzzles are experimental, local play artifacts; no content review or
+publication claim is made here.
+"""
+
+from datetime import datetime, timezone
+from collections.abc import Mapping
+from functools import lru_cache
+import json
+import math
+import os
+from pathlib import Path
+import re
+from time import monotonic
+from uuid import UUID, uuid4
+
+import requests
+from flask import Blueprint, current_app, jsonify, request
+from sqlalchemy.exc import IntegrityError
+
+from .construction_runtime import (
+    FullSizeDraftRejected,
+    FullSizeRuntimeUnavailable,
+    generate_full_size_draft,
+)
+from .construction_evidence import evaluate_private_board
+from .construction_simulation_adapter import evaluate_sibling_adapter
+from .weekday_mechanics_evaluation import evaluate_thursday_mechanic_board
+from .clue_grammar_bridge import (
+    summarize_surface_clue_families,
+    validate_surface_clue_family,
+)
+from .clue_grounding_validators import validate_private_clue_witnesses
+from .clue_semantic_challenger import (
+    challenge_private_clue_pair,
+    summarize_challenge_classifications,
+)
+from .database import db
+from .admitted_pack_config import (
+    AdmittedPackConfigError,
+    load_configured_admitted_pack,
+)
+from .episteme_store import (
+    EpistemeCommandRejected,
+    EpistemeRuntimeUnavailable,
+    get_or_create_episteme_profile,
+)
+from .future import StartingProfile, catalog
+from .future_grid_jobs import FutureGridDraftJob, _digest, _response, _stamp
+from .future_puzzles import register_legacy_puzzle, store_private_puzzle_provenance
+from .language_signals import has_explicit_language_signal
+from .language_task_pack import private_display_text_for_review, task_pair_for_review
+from .token_construction import (
+    construct_native_token_grid,
+    emit_single_cell_language_tokens,
+    native_token_hints,
+    validate_native_token_cells,
+)
+from .models import Crossword
+
+
+private_puzzle_api = Blueprint("private_puzzle_api", __name__)
+
+MAX_BODY_BYTES = 4096
+MAX_OLLAMA_RESPONSE_BYTES = 256 * 1024
+MAX_THEME_WORDS = 6
+DEFAULT_CLUE_TOKENS_PER_ENTRY = 56
+PRIVATE_CLUE_CHALLENGE_ENV = "CROSSWORD_PRIVATE_CLUE_CHALLENGE"
+PRIVATE_CLUE_CHALLENGE_VERSION = "private-clue-model-challenge-v1"
+THURSDAY_MECHANIC_MAX_IFFY = 12
+_UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+_ANSWER = re.compile(r"^[A-Z]{3,15}$")
+_CLUE_ID = re.compile(r"^[1-9][0-9]{0,2}[AD]$")
+_WEEKDAYS = {day["id"] for day in catalog["days"]}
+
+# A private crossword can be strange, slangy, or occasionally adult when the
+# player asks for that register. These are construction artefacts that should
+# never be surfaced accidentally: one misspelled slang variant and one model
+# hallucination observed in the bundled xfill vocabulary. Keep this list
+# intentionally small and explainable; it is not a general content filter.
+_PRIVATE_FILL_BLOCKLIST = frozenset({"FUCCBOIS", "METAPIEMAN"})
+_CLUE_FACT_TERMS = (
+    "airport",
+    "actor",
+    "actress",
+    "biblical",
+    "brand",
+    "character",
+    "broadcasting",
+    "botanical",
+    "company",
+    "country",
+    "famous",
+    "film",
+    "godfather",
+    "greek god",
+    "hamlet",
+    "major",
+    "nickname",
+    "nintendo",
+    "nation",
+    "palindrome",
+    "river",
+    "rose",
+    "singer",
+    "skull",
+    "sportswear",
+    "surname",
+    "television",
+    "tv",
+    "world conflict",
+    "zodiac",
+)
+# These verbs and relation words are useful signals, but they are not proof
+# that a model's assertion is true.  The private generator has no source
+# ledger for a generated clue, so a factual-looking surface deserves a second
+# look whenever it makes a specific relation (``singer with ...``, ``river in
+# ...``).  Keeping the detector small and explainable is preferable to
+# pretending that a broad NER pass could establish truth.
+_CLUE_FACT_RELATIONS = (
+    "born",
+    "died",
+    "founded",
+    "known for",
+    "member of",
+    "played",
+    "portrayed",
+    "starred",
+    "wrote",
+    "sang",
+    "located",
+    "capital of",
+    "home of",
+    "with",
+    "from",
+    "in",
+    "of",
+)
+_CLUE_FACT_RELATION_RE = re.compile(
+    r"\b(?:" + "|".join(re.escape(term) for term in _CLUE_FACT_RELATIONS) + r")\b",
+    re.IGNORECASE,
+)
+# These short templates do not give a player a usable route into the fill.
+# Keep the detector deliberately narrow: a longer clue may legitimately use
+# the phrase while adding the specificity that makes it fair.
+_GENERIC_CLUE_RE = re.compile(
+    r"^\s*(?:(?:a|an|the)\s+)?"
+    r"(?:common|usual|ordinary|generic|standard)\s+"
+    r"(?:name|term|word|designation|label)"
+    r"(?:\s+(?:for|of))?\s*[?.]?\s*$",
+    re.IGNORECASE,
+)
+_LANGUAGE_YES = {
+    "dutch": {"JA"},
+    "french": {"OUI"},
+    "german": {"JA"},
+    "italian": {"SI"},
+    "japanese": {"HAI"},
+    "portuguese": {"SIM"},
+    "spanish": {"SI"},
+}
+# One optional first-thread form per setup language. These are deliberately
+# ordinary, three-or-more-letter forms so the current ASCII crossword engine
+# can place them; they remain private synthetic starters until a reviewed
+# language pack supplies source and native-speaker evidence.
+_LANGUAGE_STARTER_FORMS = {
+    "dutch": ("JA", "HUIS", "WATER"),
+    "french": ("OUI",),
+    "german": ("NEIN", "GUT", "HALLO"),
+    "spanish": ("HOLA",),
+    "italian": ("CIAO",),
+    "portuguese": ("SIM",),
+    "japanese": ("SUSHI", "HAI"),
+}
+# The opening uses human-readable language names while episteme tasks use
+# stable language tags. Keep the bridge local and explicit so a selected
+# language can create a small, reversible review thread without treating
+# exposure as mastery.
+_LANGUAGE_CODES = {
+    "Dutch": "nl",
+    "French": "fr",
+    "German": "de",
+    "Spanish": "es",
+    "Italian": "it",
+    "Portuguese": "pt",
+    "Japanese": "ja",
+}
+# These are the reviewed, reversible clue-family mappings currently emitted by
+# the authored reflection cards. Keep the bridge explicit: arbitrary prose in
+# the profile must never become a generation control merely because it happens
+# to contain a familiar word.
+_REFLECTION_CLUE_FAMILIES = {
+    "clue-wordplay": "wordplay",
+    "crossing-supported-discovery": "discovery",
+    "earned-crossword-challenge": "challenge",
+}
+# ClueQualityNotes writes these labels as explicit association-field controls.
+# Keep the translation closed and literal: arbitrary prose in a profile must
+# never become a model steering instruction merely because it contains a clue
+# word.
+_EXPLICIT_CLUE_FEEDBACK_FAMILIES = {
+    "factual surface is unverified": "factual-relation",
+    "answer giveaway removed": "answer-giveaway",
+    "anagram needs repair": "wordplay",
+    "reversal needs repair": "wordplay",
+    "language relation needs repair": "factual-relation",
+    "quotation mark was normalized": "spoken-equivalent",
+    "brackets were normalized": "nonverbal-expression",
+    "bracket scope was normalized": "nonverbal-expression",
+    "question mark was normalized": "pun",
+    "local challenger recommends review": "factual-relation",
+    "local challenger recommends a safer foothold": "discovery",
+}
+_ANAGRAM_RE = re.compile(
+    r"\b(?:anagram|scramble|mixed[- ]up letters?)\s+of\s+[\"'“‘]?([A-Za-z]+)",
+    re.IGNORECASE,
+)
+_REVERSE_RE = re.compile(
+    r"[\"'“‘]?([A-Za-z]+)[\"'”’]?\s+(?:spelled|written)\s+"
+    r"(?:backward|backwards|in reverse)|\b(?:reverse|backward|backwards)\s+of\s+"
+    r"[\"'“‘]?([A-Za-z]+)",
+    re.IGNORECASE,
+)
+_HIDDEN_RE = re.compile(
+    r"\b(?:hidden|found|inside)\s+in\s+[\"“‘]([^\"”’\n]{2,96})[\"”’]",
+    re.IGNORECASE,
+)
+# These are deliberately surface-level conventions.  They let provenance say
+# what a deterministic checker actually observed without turning a model clue
+# into a sourced fact.  The first two can be checked against the answer; the
+# remaining labels only describe an explicit clue convention.
+_SAFE_CLUE_RELATIONS = (
+    ("anagram", _ANAGRAM_RE, "mechanical"),
+    ("reversal", _REVERSE_RE, "mechanical"),
+    ("hidden-word", _HIDDEN_RE, "mechanical"),
+    (
+        "language-label",
+        re.compile(
+            r"\b(?:in\s+)?(?:Dutch|French|German|Italian|Portuguese|Spanish|Japanese)\b",
+            re.IGNORECASE,
+        ),
+        "surface",
+    ),
+    (
+        "abbreviation-label",
+        re.compile(r"[\[(]\s*abbr\.?\s*[\])]", re.IGNORECASE),
+        "surface",
+    ),
+    (
+        "plural-label",
+        re.compile(r"[\[(]\s*pl\.?\s*[\])]", re.IGNORECASE),
+        "surface",
+    ),
+)
+
+_CLUE_FAMILY_LANGUAGE_RE = re.compile(
+    r"\b(?:in\s+)?(Dutch|French|German|Italian|Portuguese|Spanish|Japanese)\b",
+    re.IGNORECASE,
+)
+_CLUE_FAMILY_FILL_RE = re.compile(
+    r"(?:_{2,}|\b(?:and|or|to|of)\s+___\b)", re.IGNORECASE
+)
+_CLUE_FAMILY_ABBR_RE = re.compile(r"[\[(]\s*abbr\.?\s*[\])]|\bbriefly\b", re.IGNORECASE)
+_CLUE_FAMILY_TENSE_RE = re.compile(
+    r"(?:\b(?:past|present|future)\s+tense\b|[\[(]\s*(?:past|present|future)(?:\s+tense)?\s*[\])])",
+    re.IGNORECASE,
+)
+
+# This is a provenance contract for the private clue pass.  It is deliberately
+# separate from the published V2/editorial contracts: the local model has no
+# source ledger, so the bundle can report what was observed and what remains
+# unknown, but it cannot certify a sense or a fact.
+GROUNDED_CLUE_BUNDLE_VERSION = "private-grounded-clue-bundle-v1"
+REVIEWED_CLUE_PACK_VERSION = "private-reviewed-clue-pack-v1"
+CLUE_DIVERSITY_REPAIR_VERSION = "private-clue-diversity-repair-v1"
+CLUE_DIVERSITY_REPAIR_ENV = "CROSSWORD_PRIVATE_CLUE_DIVERSITY_REPAIR"
+FILL_QUALITY_POLICY_VERSION = "private-fill-quality-policy-v1"
+_FILL_RETRY_MAX_ATTEMPTS = 4
+_FILL_RETRY_SEED_STEP = 104_729
+_SUNDAY_FALLBACK_SEED = 20260931
+_SUNDAY_FALLBACK_THEMES = ["ECHO", "SOUND", "SONIC", "VOICE"]
+_SOURCE_FREE_FALLBACK_RE = re.compile(
+    r"^Entry supported by its crossings \([1-9][0-9]* letters\)$"
+)
+_CLUE_PROPER_NAME_RE = re.compile(
+    r"\b(?:actor|actress|author|band|character|director|king|queen|singer|"
+    r"surname|writer|person|president|saint|celebrity)\b",
+    re.IGNORECASE,
+)
+_PLURAL_MARKER_RE = re.compile(r"[\[(]\s*pl\.?\s*[\])]", re.IGNORECASE)
+_COMMON_IRREGULAR_PLURALS = frozenset(
+    {
+        "CHILDREN",
+        "FEET",
+        "GEese".upper(),
+        "MEN",
+        "MICE",
+        "PEOPLE",
+        "TEETH",
+        "WOMEN",
+        "OXEN",
+    }
+)
+
+
+def _clue_family_observation(clue):
+    """Classify visible clue signals without asserting the intended meaning.
+
+    Private generated clues do not have a reviewed sense annotation.  This
+    observation records only text-visible conventions so a reviewer or future
+    challenger can select the right validator.  ``confidence`` deliberately
+    stays structural: a question mark may signal a pun, but it cannot prove
+    one.
+    """
+    text = clue if isinstance(clue, str) else ""
+    stripped = text.strip()
+    signals = []
+
+    if (
+        len(stripped) >= 2
+        and stripped[0] in {'"', "“", "'", "‘"}
+        and stripped[-1] in {'"', "”", "'", "’"}
+    ):
+        signals.append(
+            {
+                "kind": "quote",
+                "start": 0,
+                "end": len(stripped),
+                "role": "spoken-equivalent",
+            }
+        )
+        family = "spoken-equivalent"
+    elif (
+        stripped.startswith("[")
+        and stripped.endswith("]")
+        and not _PLURAL_MARKER_RE.fullmatch(stripped)
+    ):
+        signals.append(
+            {
+                "kind": "brackets",
+                "start": 0,
+                "end": len(stripped),
+                "role": "nonverbal-expression",
+            }
+        )
+        family = "nonverbal-expression"
+    else:
+        plural = _PLURAL_MARKER_RE.search(stripped)
+        language = _CLUE_FAMILY_LANGUAGE_RE.search(stripped)
+        fill = _CLUE_FAMILY_FILL_RE.search(stripped)
+        abbreviation = _CLUE_FAMILY_ABBR_RE.search(stripped)
+        tense = _CLUE_FAMILY_TENSE_RE.search(stripped)
+        if plural:
+            signals.append(
+                {
+                    "kind": "plural-marker",
+                    "start": plural.start(),
+                    "end": plural.end(),
+                }
+            )
+        if tense:
+            signals.append(
+                {
+                    "kind": "tense-marker",
+                    "start": tense.start(),
+                    "end": tense.end(),
+                }
+            )
+        if language:
+            signals.append(
+                {
+                    "kind": "language-indicator",
+                    "start": language.start(),
+                    "end": language.end(),
+                    "language": language.group(1).casefold(),
+                }
+            )
+            family = "factual-relation"
+        elif fill:
+            signals.append(
+                {"kind": "fill-blank", "start": fill.start(), "end": fill.end()}
+            )
+            family = "fill-blank"
+        elif abbreviation:
+            signals.append(
+                {
+                    "kind": "abbreviation-indicator",
+                    "start": abbreviation.start(),
+                    "end": abbreviation.end(),
+                }
+            )
+            family = "metalinguistic"
+        elif stripped.endswith("?"):
+            signals.append(
+                {
+                    "kind": "question-mark",
+                    "start": len(stripped) - 1,
+                    "end": len(stripped),
+                }
+            )
+            family = "pun"
+        elif _contains_clue_fact_term(stripped) and _CLUE_FACT_RELATION_RE.search(
+            stripped
+        ):
+            family = "factual-relation"
+        else:
+            family = "definition"
+
+    return {
+        "family": family,
+        "confidence": "surface-signal-only",
+        "signals": signals,
+        "uncertainty": ["semantic-family-unverified"],
+    }
+
+
+_DIFFICULTY = {
+    "monday": {"candidates": 40, "time": 1, "voice": "welcoming, direct, familiar"},
+    "tuesday": {
+        "candidates": 65,
+        "time": 1.75,
+        "voice": "playful, with alternate senses and a fair second reading",
+    },
+    "wednesday": {
+        "candidates": 75,
+        "time": 2,
+        "voice": "varied, with fair misdirection and wordplay",
+    },
+    "thursday": {
+        "candidates": 100,
+        "time": 3,
+        "voice": "layered, lateral, and rewarding to untangle",
+    },
+    "friday": {
+        "candidates": 125,
+        "time": 4,
+        "voice": "indirect, nuanced, and less literal",
+    },
+    "saturday": {
+        "candidates": 150,
+        "time": 5,
+        "voice": "the most demanding, still fair and precisely worded",
+    },
+    "sunday": {
+        "candidates": 200,
+        "time": 5,
+        "voice": "roomy, playful, and connected by a light theme",
+    },
+}
+
+# The first locally playable weekday recipes are intentionally honest about
+# what the current full-size builder can express: themed answer entries and a
+# standard letter grid.  These settings steer both model prompts and the
+# number of theme locks passed to xfill; they are not review or playability
+# gates.
+_WEEKDAY_RECIPES = {
+    "monday": {
+        "id": "monday-private-v1",
+        "intent": "Clear clues and approachable theme entries aim to offer several early footholds.",
+        "themeAnswerCount": 3,
+        "themeDirection": "Choose a small, immediately legible cluster with familiar answer forms and a clear shared connection.",
+        "clueDirection": "Favor direct senses, clear signals, and gentle wordplay. Give unfamiliar answers especially accessible footholds.",
+        "themeMode": "approachable-cluster",
+    },
+    "tuesday": {
+        "id": "tuesday-private-v1",
+        "intent": "Familiar material with a little more indirection makes Tuesday feel like a real step beyond Monday without withholding footholds.",
+        "themeAnswerCount": 3,
+        "themeDirection": "Choose a small, coherent cluster whose connection is discoverable after one or two answers; keep the material broadly approachable and let the pattern add the lift.",
+        "clueDirection": "Use alternate senses, conversational surfaces, and a few fair second readings. Keep at least some direct footholds, but do not make Tuesday a Monday repeat or rely on obscure trivia.",
+        "themeMode": "approachable-cluster-with-a-turn",
+    },
+    "wednesday": {
+        "id": "wednesday-private-v1",
+        "intent": "Varied clues and fair misdirection aim for a satisfying middle-distance solve with dependable crossings.",
+        "themeAnswerCount": 4,
+        "themeDirection": "Choose a varied but coherent cluster whose relationship is inferable with a little thought; avoid obscure trivia.",
+        "clueDirection": "Mix clue forms and use fair semantic misdirection while preserving clear footholds and dependable crossings.",
+        "themeMode": "inferable-cluster",
+    },
+    "thursday": {
+        "id": "thursday-private-v1",
+        "intent": "Layered clues and a connected theme aim to reward spotting a pattern; this recipe uses a standard letter grid.",
+        "themeAnswerCount": 5,
+        "themeDirection": "Choose several theme answers connected by one surprising but inferable pattern. The grid uses ordinary letters only; do not rely on rebus or special-cell mechanics.",
+        "clueDirection": "Use layered, lateral clues for the shared theme while keeping ordinary clues trustworthy and the pattern inferable from multiple entries.",
+        "themeMode": "shared-affix-when-validated",
+    },
+    "sunday": {
+        "id": "sunday-private-v1",
+        "intent": "A larger, roomy themed journey keeps midweek clue density while giving the theme space to breathe.",
+        "themeAnswerCount": 4,
+        "themeDirection": "Choose a broad, connected cluster that can sustain a larger Sunday grid; let the theme feel discoverable without requiring specialist trivia.",
+        "clueDirection": "Keep the clue voice around Wednesday difficulty: varied, fair, and playful, with extra room coming from the 21×21 grid rather than arbitrary obscurity.",
+        "themeMode": "large-themed-journey",
+    },
+}
+
+
+def _weekday_recipe(weekday):
+    recipe = _WEEKDAY_RECIPES.get(weekday)
+    if recipe is not None:
+        return recipe
+    return {
+        "id": f"{weekday}-private-v1",
+        "intent": f"A locally made {weekday.title()} crossword shaped by its selected clue voice.",
+        "themeAnswerCount": 4,
+        "themeDirection": "Choose a coherent, clueable theme cluster.",
+        "clueDirection": "Follow the selected weekday clue voice.",
+        "themeMode": "coherent-cluster",
+    }
+
+
+def _error(message, status):
+    response = jsonify(error=message)
+    response.status_code = status
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+def _local_origin():
+    origin = request.headers.get("Origin")
+    return origin is not None and origin == request.host_url.rstrip("/")
+
+
+def _response_json(response):
+    if len(response.content) > MAX_OLLAMA_RESPONSE_BYTES:
+        raise ValueError("Local model response is too large")
+    response.raise_for_status()
+    value = response.json()
+    content = (
+        value.get("message", {}).get("content") if isinstance(value, dict) else None
+    )
+    if not isinstance(content, str) or not content.strip():
+        raise ValueError("Local model response is empty")
+    return json.loads(content)
+
+
+_EXPLICIT_MODEL_TAGS = (
+    "gemma4:26b",
+    "qwen3.8:27b",
+    "gemma4:31b",
+    "gemma3:27b",
+)
+
+
+def _saved_model_override(starting):
+    """Return a validated profile model preference, if one was saved.
+
+    Older profiles omit this field and retain automatic host selection. The
+    request's explicit ``model`` still wins; this helper only supplies the
+    default for clients that rely on the persisted profile setting.
+    """
+    profile = starting.profile if isinstance(starting.profile, Mapping) else {}
+    preference = profile.get("modelPreference")
+    return preference if preference in _EXPLICIT_MODEL_TAGS else None
+
+
+def _ollama_installed_models():
+    try:
+        response = requests.get("http://127.0.0.1:11434/api/tags", timeout=(2, 4))
+        response.raise_for_status()
+        return {
+            item.get("name")
+            for item in response.json().get("models", [])
+            if isinstance(item, dict) and isinstance(item.get("name"), str)
+        }
+    except (requests.RequestException, ValueError, TypeError):
+        raise RuntimeError("Ollama is unavailable on this device") from None
+
+
+def _installed_model():
+    installed = _ollama_installed_models()
+    preferred = [
+        os.environ.get("CROSSWORD_PUZZLE_MODEL"),
+        os.environ.get("CROSSWORD_PROFILE_MODEL"),
+        *_EXPLICIT_MODEL_TAGS,
+    ]
+    model = next((name for name in preferred if name and name in installed), None)
+    if model is None:
+        raise RuntimeError(
+            "Install Gemma 4 26B or Qwen 3.8 27B in Ollama to make a local puzzle"
+        )
+    return model
+
+
+def _resolve_model_override(value):
+    """Resolve an optional browser-selected model against local Ollama state.
+
+    The browser can ask for one of the supported local tags, but it cannot
+    smuggle an arbitrary model name into the prompt boundary.  ``None`` keeps
+    the existing environment-preferred selection behavior.
+    """
+    if value is None:
+        return _installed_model()
+    if not isinstance(value, str) or value not in _EXPLICIT_MODEL_TAGS:
+        raise ValueError("Unsupported local writing model")
+    if value not in _ollama_installed_models():
+        raise RuntimeError(f"Install {value} in Ollama before selecting it")
+    return value
+
+
+def _learning_review_outcomes(starting, evidence, language_code):
+    """Resolve local recall records back to source answer forms.
+
+    Review rows intentionally store an opaque task handle.  The source form is
+    recovered only inside the local generation brief by replaying the same
+    evidence links that created that handle.  Missing profile context or an
+    unavailable review table leaves the older exposure-only behavior intact.
+    """
+    profile_id = getattr(starting, "id", None)
+    if not isinstance(profile_id, str) or not _UUID.fullmatch(profile_id):
+        return None
+    if not isinstance(evidence, list) or not language_code:
+        return None
+    try:
+        from .learning_review import (
+            FutureLearningReviewRecord,
+            _due,
+            _review_task_id,
+        )
+
+        records = FutureLearningReviewRecord.query.filter_by(
+            profile_id=profile_id
+        ).all()
+    except (RuntimeError, AttributeError):
+        # Unit-level context construction can run without Flask's app context.
+        return None
+    latest = {}
+    for record in records:
+        previous = latest.get(record.task_id)
+        if previous is None or record.recorded_at > previous.recorded_at:
+            latest[record.task_id] = record
+
+    outcome_forms = {
+        "pending": [],
+        "notYet": [],
+        "assisted": [],
+        "remembered": [],
+        # This is a construction hint, not a new mastery state.  It contains
+        # forms whose host scheduler says are due now, including a previously
+        # remembered form that has reached its next interval.
+        "due": [],
+        # Bounded scheduler metadata used only to order optional construction
+        # candidates.  It is never a mastery estimate or a placement lock.
+        "dueDetails": [],
+    }
+    seen = set()
+    for item in reversed(evidence):
+        if not isinstance(item, dict) or item.get("type") != "session-analysis":
+            continue
+        evidence_id = item.get("evidenceId")
+        if not isinstance(evidence_id, str) or not evidence_id:
+            continue
+        links = item.get("taskLinks", [])
+        for link in links if isinstance(links, list) else []:
+            tasks = link.get("tasks", []) if isinstance(link, dict) else []
+            for task in tasks if isinstance(tasks, list) else []:
+                if not isinstance(task, dict) or task.get("language") != language_code:
+                    continue
+                source_task_id = task.get("taskId")
+                if not isinstance(source_task_id, str) or not source_task_id.startswith(
+                    "private-answer-form:"
+                ):
+                    continue
+                answer = source_task_id.removeprefix("private-answer-form:")
+                if not answer or answer in seen:
+                    continue
+                seen.add(answer)
+                review_id = _review_task_id(profile_id, evidence_id, source_task_id)
+                record = latest.get(review_id)
+                if record is None:
+                    outcome_forms["pending"].append(answer)
+                elif record.response == "not-yet":
+                    outcome_forms["notYet"].append(answer)
+                elif record.input_mode == "assisted":
+                    outcome_forms["assisted"].append(answer)
+                elif record.response == "remembered":
+                    outcome_forms["remembered"].append(answer)
+    # The scheduler owns due-ness and interval policy.  Reuse its opaque queue
+    # rather than reimplementing timestamps here; a due form is still only an
+    # optional candidate for the next native fill.
+    try:
+        due_items = _due(profile_id)
+    except Exception:
+        # Context construction is also used by small unit-level callers that
+        # do not have the learning tables available.  In that case retain the
+        # exposure-only behavior above.
+        due_items = []
+    answer_by_task = {}
+    due_details = []
+    for item in due_items:
+        source_task_id = item.get("sourceTaskId") if isinstance(item, dict) else None
+        if not isinstance(source_task_id, str) or not source_task_id.startswith(
+            "private-answer-form:"
+        ):
+            continue
+        answer = source_task_id.removeprefix("private-answer-form:")
+        if answer and answer not in answer_by_task.values():
+            answer_by_task[item.get("taskId")] = answer
+            stage = item.get("reviewStage")
+            interval_hours = item.get("intervalHours")
+            last_response = item.get("lastResponse")
+            last_mode = item.get("lastMode")
+            if type(stage) is int and 0 <= stage <= 12:
+                detail = {
+                    "form": answer,
+                    "reviewStage": stage,
+                }
+                if type(interval_hours) is int and interval_hours > 0:
+                    detail["intervalHours"] = min(interval_hours, 24 * 365)
+                if last_response in {"remembered", "not-yet", "pass"}:
+                    detail["lastResponse"] = last_response
+                if last_mode in {"independent", "assisted"}:
+                    detail["lastMode"] = last_mode
+                overdue_hours = item.get("overdueHours")
+                if isinstance(overdue_hours, (int, float)) and not isinstance(
+                    overdue_hours, bool
+                ) and overdue_hours >= 0:
+                    detail["overdueHours"] = round(float(overdue_hours), 3)
+                scheduler_priority = item.get("schedulerPriority")
+                if isinstance(scheduler_priority, (int, float)) and not isinstance(
+                    scheduler_priority, bool
+                ) and scheduler_priority >= 0:
+                    detail["schedulerPriority"] = round(float(scheduler_priority), 3)
+                due_details.append(detail)
+    outcome_forms["due"] = list(answer_by_task.values())[:12]
+    outcome_forms["dueDetails"] = due_details[:12]
+    return outcome_forms
+
+
+def _play_calibration(evidence):
+    """Summarize recent solve behavior as a narrow difficulty signal.
+
+    Solve evidence is useful for choosing how much scaffolding to ask the
+    local model for, but it is not evidence about taste, identity, or mastery.
+    Keep the summary small, deterministic, and capped so one noisy session
+    cannot swing the next board.
+    """
+    if not isinstance(evidence, list):
+        return {
+            "status": "no-history",
+            "source": "solve-behavior",
+            "interpretation": "difficulty-only",
+            "reversible": True,
+        }
+    summaries = []
+    for item in reversed(evidence):
+        if not isinstance(item, dict) or item.get("type") != "session-analysis":
+            continue
+        analysis = item.get("analysis")
+        observations = (
+            analysis.get("observations") if isinstance(analysis, dict) else None
+        )
+        if not isinstance(observations, list) or not observations:
+            continue
+        observations = [entry for entry in observations if isinstance(entry, dict)]
+        if not observations:
+            continue
+        total = len(observations)
+        correct = sum(entry.get("finalState") == "correct" for entry in observations)
+        independent = sum(
+            entry.get("outcome") == "independent-retrieval" for entry in observations
+        )
+        supported = sum(
+            entry.get("outcome")
+            in {
+                "supported-retrieval",
+                "check-assisted-correction",
+                "reveal-assisted-correction",
+            }
+            for entry in observations
+        )
+        incorrect = sum(
+            int(entry.get("incorrectAttemptCount", 0))
+            for entry in observations
+            if isinstance(entry.get("incorrectAttemptCount", 0), int)
+        )
+        summaries.append(
+            {
+                "completionRate": round(correct / total, 3),
+                "independentRate": round(independent / total, 3),
+                "supportRate": round(supported / total, 3),
+                "mistakeRate": round(min(1.0, incorrect / max(1, total)), 3),
+                "entryCount": total,
+            }
+        )
+        if len(summaries) >= 6:
+            break
+    if not summaries:
+        return {
+            "status": "no-history",
+            "source": "solve-behavior",
+            "interpretation": "difficulty-only",
+            "reversible": True,
+        }
+    count = len(summaries)
+    averages = {
+        key: round(sum(item[key] for item in summaries) / count, 3)
+        for key in ("completionRate", "independentRate", "supportRate", "mistakeRate")
+    }
+    if averages["supportRate"] >= 0.45 or averages["completionRate"] < 0.55:
+        recommendation = "more-footholds"
+    elif (
+        averages["completionRate"] >= 0.82
+        and averages["supportRate"] <= 0.18
+        and averages["mistakeRate"] <= 0.15
+    ):
+        recommendation = "gentle-stretch"
+    else:
+        recommendation = "balanced"
+    return {
+        "status": "calibrated",
+        "source": "solve-behavior",
+        "interpretation": "difficulty-only",
+        "reversible": True,
+        "sessions": count,
+        **averages,
+        "recommendation": recommendation,
+        "recent": summaries,
+    }
+
+
+def _profile_context(starting, episteme):
+    """Give the model a bounded word-field, not a personality diagnosis."""
+    projection = episteme.get("projection", {}) if isinstance(episteme, dict) else {}
+    seed_profile = starting.profile if isinstance(starting.profile, dict) else {}
+    claims = projection.get("claims", []) if isinstance(projection, dict) else []
+    associations = (
+        projection.get("associations", []) if isinstance(projection, dict) else []
+    )
+    knowledge = projection.get("knowledge", []) if isinstance(projection, dict) else []
+    reflection_signal_ids = {
+        item.get("evidenceId")
+        for item in (episteme.get("evidence", []) if isinstance(episteme, dict) else [])
+        if isinstance(item, dict)
+        and item.get("type") == "preference-signal"
+        and item.get("source") == "reflection-card"
+        and isinstance(item.get("evidenceId"), str)
+    }
+    recent_private_answers = []
+    evidence = episteme.get("evidence", []) if isinstance(episteme, dict) else []
+    if isinstance(evidence, list):
+        for item in reversed(evidence):
+            if not isinstance(item, dict) or item.get("type") != "session-analysis":
+                continue
+            links = item.get("taskLinks", [])
+            if not isinstance(links, list):
+                continue
+            for link in links:
+                tasks = link.get("tasks", []) if isinstance(link, dict) else []
+                for task in tasks if isinstance(tasks, list) else []:
+                    task_id = task.get("taskId") if isinstance(task, dict) else None
+                    if isinstance(task_id, str) and task_id.startswith(
+                        "private-answer-form:"
+                    ):
+                        answer = task_id.removeprefix("private-answer-form:")
+                        if answer and answer not in recent_private_answers:
+                            recent_private_answers.append(answer)
+                        if len(recent_private_answers) >= 24:
+                            break
+                if len(recent_private_answers) >= 24:
+                    break
+            if len(recent_private_answers) >= 24:
+                break
+    preference_tensions = [
+        {
+            "concept": (item.get("concept") or {}).get("label"),
+            "kind": item.get("kind"),
+            "stance": item.get("stance"),
+        }
+        for item in claims[:24]
+        if isinstance(item, dict)
+    ]
+    avoid_topics = [
+        item["concept"]
+        for item in preference_tensions
+        if isinstance(item.get("concept"), str)
+        and item.get("stance") in {"avoid", "dislike", "turn-away", "not-for-me"}
+    ][:12]
+    clue_family_targets = []
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        concept = claim.get("concept")
+        concept_id = concept.get("conceptId") if isinstance(concept, dict) else None
+        family = _REFLECTION_CLUE_FAMILIES.get(concept_id)
+        stance = claim.get("stance")
+        evidence_ids = claim.get("evidenceIds")
+        strength = claim.get("strength")
+        claim_reflection_ids = [
+            evidence_id
+            for evidence_id in (evidence_ids if isinstance(evidence_ids, list) else [])
+            if evidence_id in reflection_signal_ids
+        ]
+        if (
+            family is None
+            or stance not in {"seek", "avoid"}
+            or not isinstance(evidence_ids, list)
+            or not claim_reflection_ids
+            or not isinstance(strength, (int, float))
+            or not 0 < strength <= 1
+        ):
+            continue
+        clue_family_targets.append(
+            {
+                "family": family,
+                "direction": "include" if stance == "seek" else "avoid",
+                "strength": round(float(strength), 3),
+                "evidenceCount": min(8, len(claim_reflection_ids)),
+                # This signal comes only from an authored card response and
+                # can be reversed by the card's retract/restore action.
+                "source": "reviewed-reflection",
+                "reversible": True,
+            }
+        )
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        concept = claim.get("concept")
+        if not isinstance(concept, dict):
+            continue
+        concept_id = concept.get("conceptId")
+        label = concept.get("label")
+        if (
+            not isinstance(concept_id, str)
+            or not concept_id.startswith("association:en:clue%20surfaces%3A")
+            or not isinstance(label, str)
+        ):
+            continue
+        family = _EXPLICIT_CLUE_FEEDBACK_FAMILIES.get(
+            label.removeprefix("clue surfaces:").strip().casefold()
+        )
+        stance = claim.get("stance")
+        strength = claim.get("strength")
+        evidence_ids = claim.get("evidenceIds")
+        if (
+            family is None
+            or stance not in {"seek", "avoid"}
+            or not isinstance(strength, (int, float))
+            or not 0 < strength <= 1
+            or not isinstance(evidence_ids, list)
+        ):
+            continue
+        clue_family_targets.append(
+            {
+                "family": family,
+                "direction": "include" if stance == "seek" else "avoid",
+                "strength": round(float(strength), 3),
+                "evidenceCount": min(8, len(evidence_ids)),
+                "source": "explicit-clue-feedback",
+                "reversible": True,
+            }
+        )
+    clue_family_targets.sort(
+        key=lambda item: (
+            0 if item.get("source") == "explicit-clue-feedback" else 1,
+            item["family"],
+            item["direction"],
+            -item["strength"],
+        )
+    )
+    learning_language = seed_profile.get("learningLanguage")
+    language_code = _LANGUAGE_CODES.get(learning_language)
+    language_review_forms = []
+    if language_code and isinstance(evidence, list):
+        for item in reversed(evidence):
+            if not isinstance(item, dict) or item.get("type") != "session-analysis":
+                continue
+            links = item.get("taskLinks", [])
+            for link in links if isinstance(links, list) else []:
+                tasks = link.get("tasks", []) if isinstance(link, dict) else []
+                for task in tasks if isinstance(tasks, list) else []:
+                    if (
+                        not isinstance(task, dict)
+                        or task.get("language") != language_code
+                    ):
+                        continue
+                    task_id = task.get("taskId")
+                    if not isinstance(task_id, str) or not task_id.startswith(
+                        "private-answer-form:"
+                    ):
+                        continue
+                    answer = task_id.removeprefix("private-answer-form:")
+                    if answer and answer not in language_review_forms:
+                        language_review_forms.append(answer)
+                    if len(language_review_forms) >= 12:
+                        break
+                if len(language_review_forms) >= 12:
+                    break
+            if len(language_review_forms) >= 12:
+                break
+    review_outcomes = _learning_review_outcomes(starting, evidence, language_code)
+    starter_forms = []
+    if (
+        language_code
+        and not language_review_forms
+        and review_outcomes is None
+        and isinstance(learning_language, str)
+    ):
+        starter_forms = _eligible_language_review_forms(
+            _LANGUAGE_STARTER_FORMS.get(learning_language.casefold(), ())
+        )[:1]
+    due_review_forms = []
+    if review_outcomes is not None:
+        language_review_forms = []
+        for answer in (
+            review_outcomes["notYet"]
+            + review_outcomes["assisted"]
+            + review_outcomes["pending"]
+        ):
+            if answer not in language_review_forms:
+                language_review_forms.append(answer)
+            if len(language_review_forms) >= 12:
+                break
+        due_review_forms = [
+            answer
+            for answer in review_outcomes.get("due", [])
+            if answer not in due_review_forms
+        ][:12]
+    candidate_review_forms = []
+    for answer in due_review_forms + language_review_forms + starter_forms:
+        if answer not in candidate_review_forms:
+            candidate_review_forms.append(answer)
+    language_learning = None
+    if language_code:
+        language_learning = {
+            "language": learning_language,
+            "code": language_code,
+            "mode": "gentle-recurrence",
+            "reviewDue": bool(candidate_review_forms),
+            "reviewForms": language_review_forms,
+            "exposureCount": len(language_review_forms),
+            "source": "explicit-setup",
+            "masteryClaim": "none",
+            "reversible": True,
+        }
+        if review_outcomes is not None:
+            language_learning.update(
+                {
+                    "pendingForms": review_outcomes["pending"][:12],
+                    "notYetForms": review_outcomes["notYet"][:12],
+                    "assistedForms": review_outcomes["assisted"][:12],
+                    "rememberedForms": review_outcomes["remembered"][:12],
+                    "reviewOutcomeVersion": "language-recall-v1",
+                    "dueForms": due_review_forms,
+                    "candidateForms": candidate_review_forms[:12],
+                    "dueDetails": review_outcomes.get("dueDetails", [])[:12],
+                }
+            )
+        elif starter_forms:
+            # A selected language gets one tiny, explicit first thread when a
+            # local fill dictionary can support it. This is an unadmitted
+            # private starter, never a reviewed translation or a mastery claim;
+            # later exposure evidence owns recurrence.
+            language_learning.update(
+                {
+                    "reviewDue": False,
+                    "starterForms": starter_forms[:2],
+                    "candidateForms": candidate_review_forms[:2],
+                    "starterPolicy": "private-language-starter-v1",
+                    "starterStatus": "synthetic-unadmitted-not-established",
+                }
+            )
+        candidate_weights = (
+            _language_candidate_weights(language_learning)
+            if review_outcomes is not None
+            else []
+        )
+        if review_outcomes is not None:
+            language_learning["candidateWeights"] = candidate_weights
+        eligible_review_forms = _eligible_language_review_forms(
+            [item["form"] for item in candidate_weights]
+            if review_outcomes is not None
+            else candidate_review_forms
+        )
+        language_learning["eligibleReviewForms"] = eligible_review_forms[:4]
+    play_calibration = _play_calibration(evidence)
+    association_steering = _association_steering_receipt(associations)
+    return {
+        "opening_associations": seed_profile.get("associations", [])[:24],
+        "opening_observations": seed_profile.get("observations", [])[:8],
+        "language_interest": seed_profile.get("learningLanguage"),
+        "language_learning": language_learning,
+        "opening_choices": {
+            key: starting.draft.get(key)
+            for key in (
+                "firstStimulus",
+                "object",
+                "companion",
+                "variation",
+                "traces",
+                "learningLanguage",
+            )
+            if starting.draft.get(key) not in (None, [], "None for now")
+        },
+        "active_associations": [
+            {
+                "phrase": item.get("phrase"),
+                "response": item.get("response"),
+                "origin": item.get("origin"),
+            }
+            for item in associations
+            if isinstance(item, dict)
+            and not _association_is_expired(item)
+            and item.get("response") not in {"rejected", "passed"}
+        ][:24],
+        "association_steering": association_steering,
+        "preference_tensions": preference_tensions,
+        "avoid_topics": avoid_topics,
+        "clue_family_targets": clue_family_targets[:8],
+        "recent_private_answers": recent_private_answers,
+        "play_calibration": play_calibration,
+        "recent_word_exposures": [
+            {
+                "concept": (item.get("task") or {}).get("taskId"),
+                "kind": (item.get("task") or {}).get("taskKind"),
+                "exposures": (item.get("independent") or {}).get("evidenceCount", 0),
+            }
+            for item in knowledge[:20]
+            if isinstance(item, dict)
+        ],
+    }
+
+
+def _association_is_expired(item):
+    """Read reducer expiry without turning an association into a diagnosis."""
+    if not isinstance(item, dict):
+        return False
+    for key in ("calibrationProvenance", "modelProvenance"):
+        provenance = item.get(key)
+        if isinstance(provenance, dict) and provenance.get("expired") is True:
+            return True
+    return False
+
+
+def _association_steering_receipt(associations):
+    """Return bounded, answer-free association steering provenance.
+
+    Association phrases stay in the private model context, but the puzzle
+    receipt only records the reversible status, source and relation lanes.
+    Expired or explicitly rejected/passed proposals are excluded from the
+    active steering count before generation.
+    """
+    records = [item for item in (associations if isinstance(associations, list) else [])[:24] if isinstance(item, dict)]
+    response_counts = {}
+    origin_counts = {}
+    relation_counts = {}
+    expired_count = 0
+    excluded_response_count = 0
+    eligible_count = 0
+    for item in records:
+        response = item.get("response") if item.get("response") in {"kept", "rejected", "passed"} else "untested"
+        response_counts[response] = response_counts.get(response, 0) + 1
+        origin = item.get("origin") if isinstance(item.get("origin"), str) else "unknown"
+        origin_counts[origin] = origin_counts.get(origin, 0) + 1
+        relation = item.get("relation") if isinstance(item.get("relation"), str) else "unknown"
+        relation_counts[relation] = relation_counts.get(relation, 0) + 1
+        expired = _association_is_expired(item)
+        if expired:
+            expired_count += 1
+        if item.get("response") in {"rejected", "passed"}:
+            excluded_response_count += 1
+        if not expired and item.get("response") not in {"rejected", "passed"}:
+            eligible_count += 1
+    unique_relations = len([key for key in relation_counts if key != "unknown"])
+    return {
+        "version": "private-association-steering-v1",
+        "projectionCount": len(records),
+        "eligibleCount": eligible_count,
+        "expiredCount": expired_count,
+        "excludedResponseCount": excluded_response_count,
+        "responseCounts": dict(sorted(response_counts.items())),
+        "originCounts": dict(sorted(origin_counts.items())),
+        "relationCounts": dict(sorted(relation_counts.items())),
+        "diversity": {
+            "uniqueRelations": unique_relations,
+            "status": "varied" if unique_relations >= 2 else ("narrow" if records else "none"),
+        },
+        "reversible": True,
+        "interpretation": "bounded-association-steering-not-a-personality-claim",
+    }
+
+
+def _personalization_receipt(episteme, context, *, seed, weekday, model):
+    """Return a compact, answer-free receipt for why this board was made.
+
+    The full episteme remains host-owned.  This receipt is safe to carry with
+    the private puzzle/job result: it binds the board to one exact profile
+    revision and digest, while exposing only bounded category counts and the
+    difficulty/language lanes that influenced construction.
+    """
+    projection = episteme.get("projection", {}) if isinstance(episteme, dict) else {}
+    evidence = episteme.get("evidence", []) if isinstance(episteme, dict) else []
+    claims = projection.get("claims", []) if isinstance(projection, dict) else []
+    associations = projection.get("associations", []) if isinstance(projection, dict) else []
+    knowledge = projection.get("knowledge", []) if isinstance(projection, dict) else []
+    language_learning = context.get("language_learning") if isinstance(context, dict) else None
+    play_calibration = context.get("play_calibration") if isinstance(context, dict) else None
+    association_steering = (
+        context.get("association_steering")
+        if isinstance(context, dict) and isinstance(context.get("association_steering"), dict)
+        else _association_steering_receipt(associations)
+    )
+    return {
+        "version": "private-personalization-receipt-v1",
+        "profileId": episteme.get("profileId") if isinstance(episteme, dict) else None,
+        "epistemeRevision": episteme.get("revision") if isinstance(episteme, dict) else None,
+        "epistemeDigest": _digest(episteme),
+        "epistemeDigestAlgorithm": "sha256-canonical-json-v1",
+        "seed": seed,
+        "weekday": weekday,
+        "model": model,
+        "associationSteering": association_steering,
+        "inputs": {
+            "claimCount": min(len(claims), 24) if isinstance(claims, list) else 0,
+            "associationCount": min(len(associations), 24) if isinstance(associations, list) else 0,
+            "knowledgeItemCount": min(len(knowledge), 20) if isinstance(knowledge, list) else 0,
+            "evidenceCount": min(len(evidence), 64) if isinstance(evidence, list) else 0,
+            "clueFamilyTargetCount": min(len(context.get("clue_family_targets", [])), 8)
+            if isinstance(context, dict) and isinstance(context.get("clue_family_targets"), list)
+            else 0,
+            "recentExposureCount": min(len(context.get("recent_private_answers", [])), 24)
+            if isinstance(context, dict) and isinstance(context.get("recent_private_answers"), list)
+            else 0,
+            "languageThread": bool(language_learning),
+            "difficultyRecommendation": play_calibration.get("recommendation")
+            if isinstance(play_calibration, dict)
+            else None,
+        },
+        "reversible": True,
+        "interpretation": "generation-input-receipt-only",
+    }
+
+
+def _theme_exposure_receipt(context, theme_entries):
+    """Explain exact-form cooling without exposing answer history in the UI."""
+    recent = {
+        answer.upper()
+        for answer in (
+            context.get("recent_private_answers", [])
+            if isinstance(context, dict)
+            else []
+        )
+        if isinstance(answer, str) and _ANSWER.fullmatch(answer.upper())
+    }
+    answers = [
+        entry.get("answer", "").upper()
+        for entry in (theme_entries if isinstance(theme_entries, list) else [])
+        if isinstance(entry, dict)
+        and entry.get("theme") is True
+        and isinstance(entry.get("answer"), str)
+        and _ANSWER.fullmatch(entry["answer"].upper())
+    ]
+    repeated = sum(answer in recent for answer in answers)
+    return {
+        "version": "private-theme-exposure-receipt-v1",
+        "policy": "cool-exact-recent-answer-forms-when-fresh-candidates-exist",
+        "recentExposureCount": min(len(recent), 24),
+        "themeAnswerCount": len(answers),
+        "freshThemeCount": max(0, len(answers) - repeated),
+        "repeatedThemeCount": repeated,
+        "reversible": True,
+        "interpretation": "recent-exposure-steering-only",
+        "masteryClaim": "none",
+    }
+
+
+def _chat(model, messages, schema, *, timeout, tokens, temperature):
+    response = requests.post(
+        "http://127.0.0.1:11434/api/chat",
+        timeout=(2, timeout),
+        json={
+            "model": model,
+            "stream": False,
+            "think": False,
+            "format": schema,
+            "options": {"temperature": temperature, "num_predict": tokens},
+            "messages": messages,
+        },
+    )
+    return _response_json(response)
+
+
+def _clue_token_budget(entry_count):
+    """Bound clue output without making the model's budget a hidden gate.
+
+    Clues are deliberately short and the structured response repeats the entry
+    id, so the old 72-token-per-entry ceiling left a large unused decode tail
+    on full-size boards. Keep a host override for unusual local models, but
+    clamp it to a range that still leaves enough room for a concise clue set.
+    """
+    try:
+        per_entry = int(
+            os.environ.get(
+                "CROSSWORD_PRIVATE_CLUE_TOKENS_PER_ENTRY",
+                DEFAULT_CLUE_TOKENS_PER_ENTRY,
+            )
+        )
+    except (TypeError, ValueError):
+        per_entry = DEFAULT_CLUE_TOKENS_PER_ENTRY
+    per_entry = max(32, min(96, per_entry))
+    return min(5200, max(1800, entry_count * per_entry))
+
+
+def _make_themes(model, context, weekday):
+    recipe = _weekday_recipe(weekday)
+    schema = {
+        "type": "object",
+        "properties": {
+            "themes": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": MAX_THEME_WORDS,
+                "items": {"type": "string", "pattern": "^[A-Z]{3,15}$"},
+            }
+        },
+        "required": ["themes"],
+        "additionalProperties": False,
+    }
+    value = _chat(
+        model,
+        [
+            {
+                "role": "system",
+                "content": (
+                    "Create a small set of crossword theme answers from this evolving word-field. "
+                    f"{recipe['themeDirection']} "
+                    "They should feel surprising but recognizable, with at least one bridge from the player's associations. "
+                    "Choose answer forms likely to appear in a crossword dictionary. Mostly use ordinary English words, but allow a small minority of proper names or culturally specific terms when the player's word-field clearly invites them and the grid can give fair crossing support; never invent a spelling or identity. "
+                    "Do not use accidental slang variants or sexualized fill unless the player's word-field explicitly calls for that register. "
+                    "Treat preference tensions as steering: avoid topics listed with an avoid/dislike/turn-away stance, while using seek/keep topics as invitations rather than proof of identity. "
+                    "Use clue_family_targets as explicit, reversible editorial steering from authored reflection responses or direct clue feedback: include targets should shape a visible minority of clue surfaces, and avoid targets should reduce that family. Do not invent targets from behavior or silence. "
+                    "Do not infer a preference from silence, and do not turn the avoid list into a personality diagnosis. "
+                    "If language_interest is set, let a small minority of entries or clue surfaces invite that language with an explicit language signal; keep the rest in clear English so the crossword remains playable. "
+                    "When language_learning.reviewDue is true, gently revisit no more than two candidateForms when they fit the word-field; dueForms are the first optional candidates, followed by notYetForms, assistedForms, and pendingForms. A remembered form may re-enter candidateForms only after the host scheduler marks it due. This is spaced exposure only and never evidence that the player has mastered them. When reviewDue is false, introduce at most two clearly signalled language moments. "
+                    "eligibleReviewForms are optional candidates already present in the local fill dictionary; prefer them only when they fit the theme and clue budget, never force them as locks, and never use a missing candidate as evidence of mastery. "
+                    "candidateWeights are bounded host hints (higher means earlier optional consideration); due items may also carry a scheduler-history priority that only orders equally due forms. They never require a form to appear in the grid. "
+                    "Avoid repeating exact answer forms listed in recent_private_answers when at least two fresh candidates are available; recent exposure is not mastery and a deliberate review is still allowed when the word-field calls for it. "
+                    "Use play_calibration only to tune accessibility: more-footholds means favor ordinary answers and clearer crossings, balanced means keep the recipe as written, and gentle-stretch means allow a small amount of extra misdirection. Never infer taste, identity, intelligence, or mastery from it, and never mention this signal in a clue. "
+                    "Return 3 to 6 distinct, clueable single words, ASCII A-Z only, 3-15 letters, never 12 letters. "
+                    "Do not describe the player or claim what they know or desire. Return only the requested JSON."
+                ),
+            },
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "difficulty": weekday.title(),
+                        "weekdayRecipe": recipe["id"],
+                        "wordField": context,
+                    },
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+            },
+        ],
+        schema,
+        timeout=90,
+        tokens=240,
+        temperature=0.8,
+    )
+    themes = value.get("themes") if isinstance(value, dict) else None
+    if not isinstance(themes, list):
+        raise ValueError("Local model returned no theme answers")
+    normalized = []
+    for answer in themes:
+        answer = answer.upper() if isinstance(answer, str) else ""
+        if _ANSWER.fullmatch(answer) and len(answer) != 12 and answer not in normalized:
+            normalized.append(answer)
+    recent = {
+        answer.upper()
+        for answer in context.get("recent_private_answers", [])
+        if isinstance(answer, str) and _ANSWER.fullmatch(answer)
+    }
+    fresh = [answer for answer in normalized if answer not in recent]
+    if len(fresh) >= 2:
+        normalized = fresh
+    if len(normalized) < 2:
+        raise ValueError("Local model returned too few usable theme answers")
+    return normalized[:MAX_THEME_WORDS]
+
+
+def _validate_shared_affix_mechanic(themes, mechanic):
+    """Accept only a simple rule that every supplied theme answer obeys."""
+    if not isinstance(themes, list) or not 3 <= len(themes) <= 5:
+        return None
+    if not all(
+        isinstance(answer, str) and _ANSWER.fullmatch(answer) and len(answer) != 12
+        for answer in themes
+    ) or len(set(themes)) != len(themes):
+        return None
+    if (
+        not isinstance(mechanic, dict)
+        or set(mechanic) != {"type", "affix", "position"}
+        or mechanic.get("type") != "shared-affix"
+    ):
+        return None
+    affix = mechanic.get("affix")
+    position = mechanic.get("position")
+    if (
+        not isinstance(affix, str)
+        or not re.fullmatch(r"[A-Z]{2,4}", affix)
+        or position not in {"prefix", "suffix"}
+        or not all(
+            answer.startswith(affix) if position == "prefix" else answer.endswith(affix)
+            for answer in themes
+        )
+    ):
+        return None
+    return {"type": "shared-affix", "affix": affix, "position": position}
+
+
+@lru_cache(maxsize=1)
+def _local_fill_word_set():
+    """Return the normalized words available to the native xfill runtime."""
+    root = os.environ.get("CROSSWORD_XFILL_ROOT")
+    if not isinstance(root, str) or not root.strip():
+        return frozenset()
+    words = set()
+    for filename in ("data/xwordlist.dict", "data/supplemental.txt"):
+        path = Path(root) / filename
+        try:
+            raw = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            continue
+        for line in raw.splitlines():
+            if not line or line.startswith("#"):
+                continue
+            word = line.split(";", 1)[0].strip().upper()
+            if _ANSWER.fullmatch(word) and len(word) != 12:
+                words.add(word)
+    return frozenset(words)
+
+
+def _eligible_language_review_forms(forms):
+    """Keep due language forms optional and construction-compatible."""
+    fill_words = _local_fill_word_set()
+    if not fill_words:
+        return []
+    return [
+        form
+        for form in forms
+        if isinstance(form, str)
+        and _ANSWER.fullmatch(form.upper())
+        and form.upper() in fill_words
+    ]
+
+
+def _language_candidate_weights(learning):
+    """Attach bounded, explainable preference weights to optional forms.
+
+    These are ordering hints for the local model and fill-candidate lane.  A
+    weight never becomes a theme lock, a placement requirement, or a claim
+    that the player knows a form.  Due status comes from the scheduler; the
+    remaining weights only preserve the existing outcome ordering.
+    """
+    if not isinstance(learning, dict):
+        return []
+    candidates = learning.get("candidateForms", learning.get("reviewForms", []))
+    due = {
+        form.upper()
+        for form in learning.get("dueForms", [])
+        if isinstance(form, str) and _ANSWER.fullmatch(form.upper())
+    }
+    due_details = {}
+    for detail in learning.get("dueDetails", []):
+        if not isinstance(detail, dict):
+            continue
+        form = detail.get("form")
+        if isinstance(form, str) and _ANSWER.fullmatch(form.upper()):
+            due_details.setdefault(form.upper(), detail)
+    category_weights = (
+        ("notYetForms", 0.9, "not-yet"),
+        ("assistedForms", 0.8, "assisted"),
+        ("pendingForms", 0.65, "pending"),
+        ("rememberedForms", 0.5, "remembered"),
+    )
+    category_by_form = {}
+    for key, weight, reason in category_weights:
+        for form in learning.get(key, []):
+            if isinstance(form, str) and _ANSWER.fullmatch(form.upper()):
+                category_by_form.setdefault(form.upper(), (weight, reason))
+    weighted = []
+    seen = set()
+    for form in candidates if isinstance(candidates, list) else []:
+        if not isinstance(form, str):
+            continue
+        normalized = form.upper()
+        if not _ANSWER.fullmatch(normalized) or normalized in seen:
+            continue
+        seen.add(normalized)
+        weight, reason = category_by_form.get(normalized, (0.5, "optional"))
+        if normalized in due:
+            weight, reason = 1.0, "due"
+        weighted_item = {
+            "form": normalized,
+            "weight": weight,
+            "reason": reason,
+        }
+        if normalized in due and normalized in due_details:
+            detail = due_details[normalized]
+            stage = detail.get("reviewStage", 0)
+            response = detail.get("lastResponse")
+            stage_bonus = min(0.12, max(0, stage) * 0.03)
+            response_bonus = {
+                "not-yet": 0.12,
+                "assisted": 0.08,
+                "remembered": 0.02,
+            }.get(response, 0.04)
+            overdue_hours = detail.get("overdueHours", 0)
+            interval_hours = detail.get("intervalHours", 24)
+            overdue_bonus = 0.0
+            if (
+                isinstance(overdue_hours, (int, float))
+                and not isinstance(overdue_hours, bool)
+                and isinstance(interval_hours, (int, float))
+                and not isinstance(interval_hours, bool)
+                and interval_hours > 0
+            ):
+                overdue_bonus = min(0.15, max(0.0, overdue_hours / interval_hours) * 0.15)
+            # Priority is an ordering signal, deliberately separate from the
+            # category weight so existing bounded category semantics remain
+            # stable.  It never becomes a probability or a grid constraint.
+            weighted_item["priority"] = round(
+                min(1.4, 1.0 + stage_bonus + response_bonus + overdue_bonus), 3
+            )
+            weighted_item["priorityReason"] = (
+                "scheduler-history-and-overdue"
+                if overdue_bonus
+                else "scheduler-history"
+            )
+            if overdue_bonus:
+                weighted_item["overdueBonus"] = round(overdue_bonus, 3)
+        weighted.append(weighted_item)
+    # Keep the context bounded and make the preference measurable: a due form
+    # is always ordered before lower-priority optional candidates while ties
+    # retain the deterministic scheduler/category order above.
+    weighted.sort(key=lambda item: (-item.get("weight", 0), -item.get("priority", 0)))
+    return weighted[:12]
+
+
+def _language_learning_generation_record(context, entries, clues):
+    """Record optional due-form use without turning it into mastery."""
+    learning = context.get("language_learning") if isinstance(context, dict) else None
+    if not isinstance(learning, dict):
+        return None
+    review_forms = [
+        form.upper()
+        for form in learning.get("candidateForms", learning.get("reviewForms", []))
+        if isinstance(form, str) and _ANSWER.fullmatch(form.upper())
+    ]
+    eligible = {
+        form.upper()
+        for form in learning.get("eligibleReviewForms", [])
+        if isinstance(form, str) and _ANSWER.fullmatch(form.upper())
+    }
+    language = learning.get("language")
+    used = []
+    token_hints = []
+    token_hint_source = None
+    task_pair_sources = []
+    if isinstance(language, str):
+        for entry in entries if isinstance(entries, list) else []:
+            answer = entry.get("answer") if isinstance(entry, dict) else None
+            clue_id = entry.get("id") if isinstance(entry, dict) else None
+            clue = clues.get(clue_id) if isinstance(clues, dict) else None
+            if (
+                isinstance(answer, str)
+                and answer.upper() in eligible
+                and isinstance(clue, str)
+                and has_explicit_language_signal(clue, language)
+                and answer.upper() not in used
+            ):
+                used.append(answer.upper())
+                pair = task_pair_for_review(language, answer)
+                if isinstance(pair, Mapping):
+                    task_pair_sources.append(
+                        {
+                            "entryId": (
+                                f"{entry.get('direction')}-{entry.get('number')}"
+                                if entry.get("direction") in {"across", "down"}
+                                and isinstance(entry.get("number"), int)
+                                else clue_id
+                            ),
+                            "pairId": pair.get("pairId"),
+                            "packId": pair.get("packId"),
+                            "packDigest": pair.get("packDigest"),
+                            "sourceText": pair.get("sourceText"),
+                            "semanticStatus": pair.get("semanticStatus"),
+                            "reviewStatus": pair.get("reviewStatus"),
+                        }
+                    )
+                display, display_source = private_display_text_for_review(language, answer)
+                direction = entry.get("direction")
+                number = entry.get("number")
+                entry_id = (
+                    f"{direction}-{number}"
+                    if direction in {"across", "down"} and isinstance(number, int)
+                    else None
+                )
+                if display and entry_id and len(display) == len(answer):
+                    token_hint_source = display_source
+                    for index, display_token in enumerate(display):
+                        if display_token != answer[index]:
+                            token_hints.append(
+                                {
+                                    "entryId": entry_id,
+                                    "cellIndex": index,
+                                    "displayToken": display_token,
+                                }
+                            )
+    record = {
+        **learning,
+        "candidatePolicy": "optional-local-fill",
+        "usedForms": used[:2],
+        "unplacedForms": [form for form in review_forms if form not in used][:12],
+        "usageEvidence": "answer-and-explicit-language-clue",
+        **(
+            {
+                "tokenHints": token_hints[:8],
+                "tokenHintSource": token_hint_source,
+            }
+            if token_hints
+            else {}
+        ),
+    }
+    if task_pair_sources:
+        record["taskPairSources"] = task_pair_sources[:2]
+    return record
+
+
+@lru_cache(maxsize=1)
+def _local_shared_affix_groups():
+    """Return a small deterministic view of words the native filler can use.
+
+    Thursday's pattern proposal must be grounded in the same local vocabulary
+    that xfill receives.  The runtime already pins that vocabulary through
+    ``CROSSWORD_XFILL_ROOT``; reading only its two line-oriented dictionaries
+    here keeps the proposal bounded and avoids presenting the model with words
+    that the fill stage cannot place.  Missing/invalid files simply disable
+    this hint; the existing proposal and honest fallback remain available.
+    """
+    root = os.environ.get("CROSSWORD_XFILL_ROOT")
+    if not isinstance(root, str) or not root.strip():
+        return []
+    scored_words = {}
+    for filename in ("data/xwordlist.dict", "data/supplemental.txt"):
+        path = Path(root) / filename
+        try:
+            raw = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            continue
+        for line in raw.splitlines():
+            if not line or line.startswith("#") or ";" not in line:
+                continue
+            word = line.split(";", 1)[0].strip().upper()
+            try:
+                score = int(line.split(";", 1)[1].strip())
+            except ValueError:
+                continue
+            # Very low-scoring entries are useful for ordinary fill but make
+            # poor anchors for a Thursday pattern. Keep the proposal pool
+            # conservative; the ordinary route still has the complete list.
+            if _ANSWER.fullmatch(word) and len(word) != 12 and score >= 70:
+                scored_words[word] = max(score, scored_words.get(word, 0))
+    if not scored_words:
+        return []
+    groups = []
+    for position in ("prefix", "suffix"):
+        for size in (2, 3, 4):
+            grouped = {}
+            for word in scored_words:
+                affix = word[:size] if position == "prefix" else word[-size:]
+                grouped.setdefault(affix, []).append(word)
+            for affix, members in grouped.items():
+                preferred = [
+                    word
+                    for word in members
+                    if 4 <= len(word) <= 9 and scored_words[word] >= 80
+                ]
+                if len(preferred) < 3:
+                    preferred = members
+                if len(preferred) < 3:
+                    continue
+                groups.append(
+                    {
+                        "type": "shared-affix",
+                        "affix": affix,
+                        "position": position,
+                        "answers": sorted(
+                            preferred,
+                            key=lambda word: (
+                                -scored_words[word],
+                                abs(len(word) - 6),
+                                word,
+                            ),
+                        )[:8],
+                        "count": len(members),
+                    }
+                )
+    groups.sort(key=lambda item: (-item["count"], item["position"], item["affix"]))
+    return groups[:32]
+
+
+def _deterministic_thursday_theme_proposal(context):
+    """Choose a checked local affix group when the model proposal is unusable.
+
+    This is deliberately a construction fallback, not a model-quality claim:
+    every answer comes from the same local vocabulary that native xfill sees,
+    and the final filled board still has to validate the mechanic.  A small
+    overlap with the player's bounded word field only ranks groups; it never
+    turns an association into a claim about the player.
+    """
+    groups = _local_shared_affix_groups()
+    if not groups:
+        raise ValueError("No local Thursday affix group is available")
+    signals = set()
+    if isinstance(context, Mapping):
+        for key in ("opening_associations", "opening_observations"):
+            values = context.get(key)
+            if isinstance(values, list):
+                signals.update(
+                    value.upper()
+                    for value in values
+                    if isinstance(value, str) and value.strip()
+                )
+        active = context.get("active_associations")
+        if isinstance(active, list):
+            for item in active:
+                if isinstance(item, Mapping) and isinstance(item.get("phrase"), str):
+                    signals.add(item["phrase"].upper())
+    recent = {
+        answer.upper()
+        for answer in context.get("recent_private_answers", [])
+        if isinstance(answer, str) and _ANSWER.fullmatch(answer.upper())
+    } if isinstance(context, Mapping) else set()
+
+    ranked = []
+    for group in groups:
+        answers = [
+            answer.upper()
+            for answer in group.get("answers", [])
+            if isinstance(answer, str) and _ANSWER.fullmatch(answer.upper())
+        ]
+        fresh = [answer for answer in answers if answer not in recent]
+        if len(fresh) < 3:
+            fresh = answers
+        if len(fresh) < 3:
+            continue
+        overlap = sum(
+            1
+            for answer in fresh
+            if answer in signals or any(signal in answer for signal in signals)
+        )
+        ranked.append((
+            -overlap,
+            -int(group.get("count", len(fresh))),
+            str(group.get("position", "")),
+            str(group.get("affix", "")),
+            fresh[:5],
+            group,
+        ))
+    if not ranked:
+        raise ValueError("No usable local Thursday affix group is available")
+    ranked.sort(key=lambda item: item[:4])
+    _, _, _, _, themes, group = ranked[0]
+    mechanic = _validate_shared_affix_mechanic(themes, {
+        "type": group.get("type"),
+        "affix": group.get("affix"),
+        "position": group.get("position"),
+    })
+    if mechanic is None:
+        raise ValueError("Local Thursday affix group failed validation")
+    return themes, mechanic
+
+
+def _make_thursday_theme_proposal(model, context):
+    """Ask for a small theme set and an explicit, mechanically checkable rule."""
+    schema = {
+        "type": "object",
+        "properties": {
+            "themes": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 5,
+                "items": {"type": "string", "pattern": "^[A-Z]{3,15}$"},
+            },
+            "mechanic": {
+                "type": "object",
+                "properties": {
+                    "type": {"type": "string", "enum": ["shared-affix"]},
+                    "affix": {"type": "string", "pattern": "^[A-Z]{2,4}$"},
+                    "position": {
+                        "type": "string",
+                        "enum": ["prefix", "suffix"],
+                    },
+                },
+                "required": ["type", "affix", "position"],
+                "additionalProperties": False,
+            },
+        },
+        "required": ["themes", "mechanic"],
+        "additionalProperties": False,
+    }
+    value = _chat(
+        model,
+        [
+            {
+                "role": "system",
+                "content": (
+                    "Propose three to five clueable theme answers for a Thursday crossword and one typed shared-affix rule. "
+                    "Every proposed answer must begin or end with the exact same 2-4 letter A-Z affix; state whether it is a prefix or suffix. "
+                    "Prefer ordinary English words with a plausible, inferable relationship. A small, clearly signalled proper-name cluster is allowed when the word-field invites it and the local fill supports it; never invent names, spellings, or biographical trivia. "
+                    "Choose a rule that gives solvers a fair pattern to notice from multiple entries. The grid uses ordinary letters only. "
+                    "When local fill candidates are supplied, choose every theme answer from one supplied group and copy that group's affix and position exactly. "
+                    "Use the word-field only as a source of motifs, never to make claims about the player. Return only the requested JSON."
+                ),
+            },
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "difficulty": "Thursday",
+                        "weekdayRecipe": _weekday_recipe("thursday")["id"],
+                        "wordField": context,
+                        "localFillCandidates": _local_shared_affix_groups(),
+                    },
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+            },
+        ],
+        schema,
+        timeout=90,
+        tokens=300,
+        temperature=0.8,
+    )
+    raw_themes = value.get("themes") if isinstance(value, dict) else None
+    if not isinstance(raw_themes, list):
+        raise ValueError("Local model returned no Thursday theme answers")
+    themes = []
+    for answer in raw_themes:
+        if not isinstance(answer, str) or not _ANSWER.fullmatch(answer):
+            raise ValueError("Local model returned an invalid Thursday theme answer")
+        answer = answer.upper()
+        if len(answer) == 12 or answer in themes:
+            raise ValueError(
+                "Local model returned duplicate or invalid Thursday themes"
+            )
+        themes.append(answer)
+    if not 3 <= len(themes) <= 5:
+        raise ValueError("Local model returned too few Thursday theme answers")
+    recent = {
+        answer.upper()
+        for answer in context.get("recent_private_answers", [])
+        if isinstance(answer, str) and _ANSWER.fullmatch(answer)
+    }
+    fresh = [answer for answer in themes if answer not in recent]
+    if len(fresh) >= 3:
+        themes = fresh
+    local_candidates = {
+        answer
+        for group in _local_shared_affix_groups()
+        for answer in group.get("answers", [])
+    }
+    if local_candidates and not set(themes).issubset(local_candidates):
+        raise ValueError("Thursday theme answers are outside the local fill vocabulary")
+    mechanic = _validate_shared_affix_mechanic(themes, value.get("mechanic"))
+    if mechanic is None:
+        raise ValueError("Thursday shared-affix proposal did not match its answers")
+    return themes, mechanic
+
+
+def _clue_schema(entry_ids):
+    return {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string", "minLength": 2, "maxLength": 64},
+            "clues": {
+                "type": "array",
+                "minItems": len(entry_ids),
+                "maxItems": len(entry_ids),
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string", "enum": entry_ids},
+                        "text": {"type": "string", "minLength": 2, "maxLength": 180},
+                    },
+                    "required": ["id", "text"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "required": ["title", "clues"],
+        "additionalProperties": False,
+    }
+
+
+def _clue_challenge_schema(entry_ids):
+    """Return the bounded schema for the optional advisory clue pass."""
+    return {
+        "type": "object",
+        "properties": {
+            "checks": {
+                "type": "array",
+                "minItems": len(entry_ids),
+                "maxItems": len(entry_ids),
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string", "enum": entry_ids},
+                        "disposition": {
+                            "type": "string",
+                            "enum": ["keep", "fallback", "review"],
+                        },
+                        "confidence": {
+                            "type": "string",
+                            "enum": ["low", "medium", "high"],
+                        },
+                        "reason": {"type": "string", "minLength": 1, "maxLength": 240},
+                    },
+                    "required": ["id", "disposition", "confidence", "reason"],
+                    "additionalProperties": False,
+                },
+            }
+        },
+        "required": ["checks"],
+        "additionalProperties": False,
+    }
+
+
+def _contains_clue_fact_term(clue):
+    text = clue.casefold() if isinstance(clue, str) else ""
+    return any(
+        re.search(rf"(?<![a-z]){re.escape(term)}(?![a-z])", text)
+        for term in _CLUE_FACT_TERMS
+    )
+
+
+def _clue_surface_issues(clue):
+    """Check visible punctuation conventions without claiming semantics."""
+    text = clue if isinstance(clue, str) else ""
+    issues = []
+    quote_count = text.count('"') + text.count("“") + text.count("”")
+    if quote_count % 2:
+        issues.append("unbalanced-quotation")
+    left_brackets = text.count("[")
+    right_brackets = text.count("]")
+    if left_brackets != right_brackets:
+        issues.append("unbalanced-brackets")
+    elif left_brackets and not (
+        text.strip().startswith("[") and text.strip().endswith("]")
+    ):
+        issues.append("bracket-scope")
+    if "?" in text and not text.rstrip().endswith("?"):
+        issues.append("question-mark-placement")
+    return issues
+
+
+def _clue_risk_flags(entry, clue):
+    """Return small, explainable risks for a generated clue surface.
+
+    This is a triage signal, not a semantic truth engine.  It deliberately
+    combines a factual vocabulary term with a relation word before calling a
+    clue source-less.  Thus a clue such as ``Sound that bounces back`` remains
+    an ordinary lexical foothold, while ``Singer with a hit song?`` receives a
+    conservative repair request.  The answer is never used as evidence for a
+    factual claim.
+    """
+    text = clue if isinstance(clue, str) else ""
+    flags = []
+    if _contains_clue_fact_term(text) and _CLUE_FACT_RELATION_RE.search(text):
+        flags.append("unsupported-factual-surface")
+    # A weak fill entry is precisely where a surprising proper-name or trivia
+    # assertion is least useful.  Keep this separate from a quality defect so
+    # the provenance can say that a foothold was requested without claiming a
+    # semantic failure.
+    if isinstance(entry, dict) and entry.get("needsFoothold") is True:
+        flags.append("foothold-required")
+    flags.extend(_clue_surface_issues(clue))
+    return flags
+
+
+def _clue_fact_risk(entry, clue):
+    """Classify the *surface risk* of a clue without judging its truth.
+
+    The private model does not receive a source ledger.  A clue which mentions
+    a singer, place, work, or other relation can therefore be useful prose but
+    cannot be called grounded merely because it sounds plausible.  Keep this
+    separate from ``_clue_risk_flags`` so the older, small issue vocabulary
+    remains stable for callers while provenance gets a more useful category.
+    """
+    flags = _clue_risk_flags(entry, clue)
+    if "unsupported-factual-surface" not in flags:
+        return {
+            "status": "no-factual-signal-observed",
+            "category": None,
+            "source": "surface-detector-v1",
+            "truth": "not-established",
+        }
+    text = clue if isinstance(clue, str) else ""
+    category = (
+        "proper-name-or-biography"
+        if _CLUE_PROPER_NAME_RE.search(text)
+        else "factual-relation"
+    )
+    return {
+        "status": "source-free-factual-signal",
+        "category": category,
+        "source": "surface-detector-v1",
+        "truth": "not-established",
+        "flags": ["unsupported-factual-surface"],
+    }
+
+
+def _risky_clue_entries(entries, clues):
+    """Select clues that deserve a second, conservative model pass."""
+    risky = []
+    for entry in entries:
+        clue_id = entry["id"]
+        answer = entry["answer"]
+        risk_flags = _clue_risk_flags(entry, clues.get(clue_id, ""))
+        factual_surface = "unsupported-factual-surface" in risk_flags
+        short_or_iffy = len(answer) <= 4 or entry.get("needsFoothold") is True
+        wordplay_issue = _clue_wordplay_issue(entry, clues.get(clue_id, ""))
+        morphology_issue = _clue_morphology_issue(entry, clues.get(clue_id, ""))
+        surface_issues = _clue_surface_issues(clues.get(clue_id, ""))
+        if (
+            factual_surface
+            or short_or_iffy
+            or wordplay_issue
+            or morphology_issue
+            or surface_issues
+        ):
+            risky.append(entry)
+    # Keep the repair pass bounded. Factual surfaces take priority, followed
+    # by low-score footholds; the ordinary clue bundle remains the fast path.
+    risky.sort(
+        key=lambda entry: (
+            not any(
+                flag == "unsupported-factual-surface"
+                for flag in _clue_risk_flags(entry, clues.get(entry["id"], ""))
+            ),
+            _clue_wordplay_issue(entry, clues.get(entry["id"], "")) is None,
+            not _clue_surface_issues(clues.get(entry["id"], "")),
+            not entry.get("needsFoothold"),
+            len(entry["answer"]),
+        )
+    )
+    return risky[:20]
+
+
+def _letters_only(value):
+    return re.sub(r"[^A-Z]", "", str(value).upper())
+
+
+def _answer_lexical_forms(answer):
+    """Return high-confidence lexical forms that must stay out of a clue.
+
+    The private model is allowed to propose unusual fill, but a clue cannot
+    simply repeat the answer or its obvious inflection.  This is intentionally
+    a small orthographic guard rather than a stemmer: token boundaries keep
+    short fills from matching inside unrelated words, and the generated forms
+    cover the ordinary plural/tense variants that most often leak through.
+    """
+    answer = _letters_only(answer)
+    if not answer:
+        return set()
+    forms = {answer}
+    if len(answer) < 3:
+        return forms
+
+    if answer.endswith("IES") and len(answer) > 3:
+        forms.add(answer[:-3] + "Y")
+    if answer.endswith("ES") and len(answer) > 4:
+        forms.add(answer[:-2])
+    if answer.endswith("S") and not answer.endswith("SS") and len(answer) > 3:
+        forms.add(answer[:-1])
+    if not answer.endswith("S"):
+        forms.add(answer + "S")
+    if not answer.endswith("ES"):
+        forms.add(answer + "ES")
+
+    if answer.endswith("ING") and len(answer) > 5:
+        forms.add(answer[:-3])
+    if answer.endswith("ED") and len(answer) > 4:
+        forms.add(answer[:-2])
+    if answer.endswith("E") and len(answer) > 3:
+        forms.add(answer[:-1] + "ED")
+    else:
+        forms.add(answer + "ED")
+    if not answer.endswith("ING"):
+        forms.add(answer + "ING")
+    return {form for form in forms if len(form) >= 3}
+
+
+def _clue_answer_overlap(entry, clue):
+    """Return the answer form leaked into a clue, if any."""
+    if not isinstance(entry, dict) or not isinstance(clue, str):
+        return None
+    answer = entry.get("answer", "")
+    text = clue.upper()
+    for form in sorted(_answer_lexical_forms(answer), key=len, reverse=True):
+        if re.search(rf"(?<![A-Z]){re.escape(form)}(?![A-Z])", text):
+            return form
+    return None
+
+
+def _clue_wordplay_issue(entry, clue):
+    """Catch mechanically checkable clue/answer mismatches before play.
+
+    This intentionally stays small. It does not pretend to prove semantic
+    fairness; it only rejects a few high-confidence model failures observed in
+    local boards, such as a false anagram or an answer that is not the stated
+    reversal. Returning a reason lets the repair pass and provenance expose
+    unresolved issues without turning private play into a publication gate.
+    """
+    if not isinstance(entry, dict) or not isinstance(clue, str):
+        return "invalid-clue"
+    answer = _letters_only(entry.get("answer", ""))
+    text = clue.strip()
+    if not answer or not text:
+        return "invalid-clue"
+    overlap = _clue_answer_overlap(entry, text)
+    if overlap == answer:
+        return "answer-giveaway"
+    if overlap is not None:
+        return "answer-form-in-clue"
+    if _GENERIC_CLUE_RE.fullmatch(text):
+        return "generic-clue"
+
+    anagram = _ANAGRAM_RE.search(text)
+    if anagram and sorted(_letters_only(anagram.group(1))) != sorted(answer):
+        return "anagram-mismatch"
+
+    reverse = _REVERSE_RE.search(text)
+    source = (
+        next((group for group in reverse.groups() if group), None) if reverse else None
+    )
+    if source and _letters_only(source)[::-1] != answer:
+        return "reversal-mismatch"
+
+    hidden = _HIDDEN_RE.search(text)
+    if hidden and answer not in _letters_only(hidden.group(1)):
+        return "hidden-word-mismatch"
+
+    lowered = text.casefold()
+    for language, expected in _LANGUAGE_YES.items():
+        if re.search(rf"\b{re.escape(language)}\b.*\b(?:yes|affirmative)\b", lowered):
+            if answer not in expected:
+                return "language-answer-mismatch"
+    return None
+
+
+def _clue_morphology_issue(entry, clue):
+    """Catch an explicit plural marker attached to an obvious singular fill.
+
+    Private clues do not carry a reviewed part-of-speech record, so this is
+    intentionally narrow. It only checks the crossword convention the player
+    can see directly: ``(pl.)`` or ``[pl.]``. Irregular plural forms are kept
+    in a small allow-list; all other morphology remains explicitly unknown.
+    """
+    if not isinstance(entry, dict) or not isinstance(clue, str):
+        return "invalid-clue"
+    answer = _letters_only(entry.get("answer", ""))
+    if not answer or not _PLURAL_MARKER_RE.search(clue):
+        return None
+    if answer in _COMMON_IRREGULAR_PLURALS:
+        return None
+    # A terminal S is only a weak shape signal, but it is enough to avoid
+    # replacing ordinary plural entries such as CATS. Do not assert that it
+    # proves number; this helper only flags the obvious opposite case.
+    if answer.endswith("S") and not answer.endswith(("SS", "US", "IS")):
+        return None
+    return "plural-marker-with-singular-shape"
+
+
+def _answer_structure(entry):
+    """Return structural answer metadata without exposing the answer itself.
+
+    Length and repeated-letter count are properties of the supplied fill, not
+    guesses about its meaning.  They are useful for explaining a crossing
+    scaffold and for checking that a generated clue is being evaluated against
+    the same answer that xfill produced.
+    """
+    answer = _letters_only(entry.get("answer", "")) if isinstance(entry, dict) else ""
+    counts = {}
+    for letter in answer:
+        counts[letter] = counts.get(letter, 0) + 1
+    return {
+        "answerLength": len(answer) if answer else None,
+        "answerShape": "letters-only" if answer else "unknown",
+        "repeatedLetterCount": sum(1 for count in counts.values() if count > 1),
+    }
+
+
+def _clue_generation_bundle(entries):
+    """Build the bounded, answer-aware brief supplied to the clue model.
+
+    This is intentionally a *policy* bundle, not a semantic answer key.  The
+    fill engine supplies answer shape and support signals; no source-backed
+    sense is available at this stage.  Making that distinction explicit in the
+    prompt prevents a model from treating a low fill score or a short answer
+    as evidence for a name, biography, or obscure fact.
+    """
+    records = []
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        structure = _answer_structure(entry)
+        score = entry.get("fillScore")
+        weak = entry.get("needsFoothold") is True
+        support_band = (
+            "weak"
+            if weak
+            else "ordinary"
+            if isinstance(score, (int, float))
+            else "unknown"
+        )
+        risk_reasons = []
+        if weak:
+            risk_reasons.append("low-fill-score-or-explicit-foothold")
+        if structure["answerLength"] is not None and structure["answerLength"] <= 4:
+            risk_reasons.append("short-answer")
+        records.append(
+            {
+                "id": entry.get("id"),
+                **structure,
+                "fillScore": score,
+                "supportBand": support_band,
+                "theme": entry.get("theme") is True,
+                "cluePolicy": entry.get(
+                    "cluePolicy", "ordinary-definition-or-signalled-wordplay"
+                ),
+                "factRisk": {
+                    "status": "unassessed-before-clue-surface",
+                    "source": "no-source-ledger",
+                    "truth": "not-established",
+                    "reasons": risk_reasons,
+                },
+                "semanticStatus": "not-established",
+                "allowedBasis": [
+                    "answer-shape",
+                    "mechanical-wordplay-when-checkable",
+                    "visible-clue-convention",
+                    "ordinary-lexical-sense-proposed-by-model",
+                ],
+                "forbiddenInference": [
+                    "proper-name-from-short-answer",
+                    "fact-from-fill-score",
+                    "sense-truth-from-model-confidence",
+                ],
+            }
+        )
+    return {
+        "version": GROUNDED_CLUE_BUNDLE_VERSION,
+        "status": "brief-only",
+        "sourcePolicy": "private-model-without-source-ledger",
+        "semanticStatus": "not-established",
+        "entries": records,
+        "uncertainty": [
+            "semantic-sense-unverified",
+            "factual-support-unverified",
+            "player-support-unmeasured",
+        ],
+    }
+
+
+def _reviewed_grounding_projection(reviewed_content, clue):
+    """Return a bounded source witness when the visible clue is pack-backed.
+
+    The pack loader has already validated the source pins and child records.
+    This projection only marks an exact visible clue/sense/fact join; it never
+    promotes a model paraphrase or a partial answer match into reviewed truth.
+    """
+    if not isinstance(reviewed_content, Mapping) or not isinstance(clue, str):
+        return None
+    text = reviewed_content.get("text")
+    if not isinstance(text, str) or text.strip() != clue.strip():
+        return None
+    senses = reviewed_content.get("senses")
+    facts = reviewed_content.get("facts")
+    senses = [item for item in senses if isinstance(item, Mapping)] if isinstance(senses, list) else []
+    facts = [item for item in facts if isinstance(item, Mapping)] if isinstance(facts, list) else []
+    if not senses and not facts:
+        return None
+    return {
+        "status": "reviewed-source",
+        "semanticStatus": "reviewed-source",
+        "truth": "source-backed",
+        "lexemeId": reviewed_content.get("lexemeId"),
+        "clueId": reviewed_content.get("clueId"),
+        "evidenceType": reviewed_content.get("evidenceType"),
+        "evidenceId": reviewed_content.get("evidenceId"),
+        "packId": reviewed_content.get("packId"),
+        "packSha256": reviewed_content.get("packSha256"),
+        "senseIds": [item.get("senseId") for item in senses if isinstance(item.get("senseId"), str)],
+        "factIds": [item.get("factId") for item in facts if isinstance(item.get("factId"), str)],
+        "senses": len(senses),
+        "facts": len(facts),
+        "uncertainty": ["player-support-unmeasured"],
+    }
+
+
+def _clue_grounding(entry, clue, *, model_response=None, reviewed_content=None):
+    """Describe what local deterministic checks know about one clue.
+
+    This is intentionally an uncertainty-bearing diagnostic.  A matching
+    anagram or reversal proves only that mechanical relation; it does not
+    prove a definition, biography, translation, or the model's broader clue
+    claim.  For ordinary clues the semantic meaning remains explicitly
+    unverified.
+    """
+    structure = _answer_structure(entry)
+    text = clue if isinstance(clue, str) else ""
+    family_observation = _clue_family_observation(text)
+    grammar_bridge = validate_surface_clue_family(text, family_observation)
+    witness_validators = validate_private_clue_witnesses(entry, text)
+    issue = _clue_wordplay_issue(entry, text)
+    relation = None
+    relation_kind = None
+    relation_verification = "not-present"
+    morphology = "unclassified"
+    morphology_issue = _clue_morphology_issue(entry, text)
+    surface_issues = _clue_surface_issues(text)
+    for label, pattern, kind in _SAFE_CLUE_RELATIONS:
+        if pattern.search(text):
+            relation = label
+            relation_kind = kind
+            if kind == "mechanical":
+                relation_verification = "consistent" if issue is None else "failed"
+            else:
+                relation_verification = "surface-only"
+            if label == "plural-label":
+                morphology = (
+                    "plural-marker-mismatch"
+                    if morphology_issue
+                    else "plural-marker-present; answer morphology unverified"
+                )
+            break
+
+    fallback = text.startswith("Entry supported by its crossings")
+    if fallback:
+        status = "crossing-scaffold"
+    elif relation_kind == "mechanical" and relation_verification == "consistent":
+        status = "mechanically-consistent"
+    elif relation_kind == "mechanical":
+        status = "mechanical-relation-failed"
+    elif relation_kind == "surface":
+        status = (
+            "surface-convention-invalid"
+            if surface_issues
+            else "surface-convention-only"
+        )
+        if morphology_issue:
+            status = "morphology-check-failed"
+    elif surface_issues:
+        status = "surface-convention-invalid"
+    elif issue:
+        status = "mechanical-check-failed"
+    else:
+        status = "semantic-unverified"
+
+    semantic_challenge = challenge_private_clue_pair(
+        entry,
+        text,
+        mechanical_issue=issue,
+        risk_flags=_clue_risk_flags(entry, text),
+        surface_issues=surface_issues,
+        witness_validators=witness_validators,
+        grammar_bridge=grammar_bridge,
+        fallback_used=fallback,
+        model_response=model_response,
+    )
+
+    reviewed = _reviewed_grounding_projection(reviewed_content, text)
+    semantic_status = (
+        reviewed["semanticStatus"] if isinstance(reviewed, Mapping) else "not-established"
+    )
+    uncertainty = (
+        reviewed["uncertainty"]
+        if isinstance(reviewed, Mapping)
+        else [
+            "semantic-meaning-unverified",
+            "factual-support-unverified",
+        ]
+    )
+    grounding_basis = [
+        "answer-shape",
+        "visible-clue-convention",
+        "mechanical-checks-when-applicable",
+    ]
+    if reviewed is not None:
+        grounding_basis.append("exact-reviewed-sense-or-fact-join")
+    return {
+        **structure,
+        "familyObservation": family_observation,
+        "grammarBridge": grammar_bridge,
+        "witnessValidators": witness_validators,
+        "factRisk": _clue_fact_risk(entry, text),
+        "status": status,
+        "relation": relation,
+        "relationKind": relation_kind,
+        "relationVerification": relation_verification,
+        "morphology": morphology,
+        "morphologyIssue": morphology_issue,
+        "surfaceIssues": surface_issues,
+        "riskFlags": _clue_risk_flags(entry, text),
+        "semanticStatus": semantic_status,
+        "groundingBasis": grounding_basis,
+        "reviewedSource": reviewed,
+        "uncertainty": uncertainty,
+        "mechanicalIssue": issue,
+        "semanticChallenge": semantic_challenge,
+    }
+
+
+def _source_free_fallback_record(entry, clue, grounding):
+    """Return explicit fallback provenance for an answer-free clue surface."""
+    used = isinstance(clue, str) and bool(_SOURCE_FREE_FALLBACK_RE.fullmatch(clue))
+    if not used:
+        return {
+            "used": False,
+            "kind": None,
+            "reasonCodes": [],
+            "answerDisclosure": "none",
+            "semanticStatus": "not-established",
+        }
+
+    reasons = []
+    if isinstance(entry, dict) and entry.get("needsFoothold") is True:
+        reasons.append("weak-or-obscure-fill")
+    fact_risk = grounding.get("factRisk", {})
+    if fact_risk.get("status") == "source-free-factual-signal":
+        reasons.append("unsupported-factual-surface")
+    if grounding.get("mechanicalIssue"):
+        reasons.append("mechanical-clue-check-failed")
+    if grounding.get("morphologyIssue"):
+        reasons.append("morphology-check-failed")
+    if not reasons:
+        reasons.append("conservative-private-safety-fallback")
+    return {
+        "used": True,
+        "kind": "crossing-scaffold",
+        "reasonCodes": reasons,
+        "answerDisclosure": "none",
+        "semanticStatus": "not-established",
+        "textPolicy": "source-free-and-answer-free",
+    }
+
+
+def _surface_signal_counts(records):
+    """Count literal clue markers without inferring what the clue means."""
+
+    counts = {}
+    for record in records if isinstance(records, list) else []:
+        if not isinstance(record, Mapping):
+            continue
+        observation = record.get("familyObservation")
+        signals = observation.get("signals") if isinstance(observation, Mapping) else None
+        for signal in signals if isinstance(signals, list) else []:
+            kind = signal.get("kind") if isinstance(signal, Mapping) else None
+            if isinstance(kind, str) and kind:
+                counts[kind] = counts.get(kind, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _grounded_clue_bundle(
+    entries,
+    clues,
+    *,
+    model_challenges=None,
+    reviewed_pack=None,
+):
+    """Produce the provenance bundle for the final, visible clue surfaces.
+
+    The bundle combines the existing answer-shape, fact-risk, and family
+    diagnostics into one stable record.  ``semanticStatus`` is intentionally
+    negative/uncertain for every entry: deterministic surface checks cannot
+    establish that a proposed definition, translation, or biography is true.
+    """
+    records = []
+    fallback_records = []
+    fact_risk_counts = {}
+    family_counts = {}
+    status_counts = {}
+    challenge_records = []
+    reviewed_count = 0
+    reviewed_by_id = (
+        reviewed_pack.get("byId")
+        if isinstance(reviewed_pack, Mapping)
+        and isinstance(reviewed_pack.get("byId"), Mapping)
+        else {}
+    )
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, dict):
+            continue
+        entry_id = entry.get("id")
+        clue = clues.get(entry_id, "") if isinstance(clues, dict) else ""
+        model_response = (
+            model_challenges.get(entry_id)
+            if isinstance(model_challenges, dict)
+            else None
+        )
+        grounding = _clue_grounding(
+            entry,
+            clue,
+            model_response=model_response,
+            reviewed_content=reviewed_by_id.get(entry_id),
+        )
+        if grounding.get("semanticStatus") == "reviewed-source":
+            reviewed_count += 1
+        fallback = _source_free_fallback_record(entry, clue, grounding)
+        fact_risk = grounding["factRisk"]
+        fact_category = fact_risk.get("category") or "none-observed"
+        family = grounding["familyObservation"]["family"]
+        status = grounding["status"]
+        challenge_records.append(grounding["semanticChallenge"])
+        fact_risk_counts[fact_category] = fact_risk_counts.get(fact_category, 0) + 1
+        family_counts[family] = family_counts.get(family, 0) + 1
+        status_counts[status] = status_counts.get(status, 0) + 1
+        record = {
+            "id": entry_id,
+            "answerLength": grounding["answerLength"],
+            "answerShape": grounding["answerShape"],
+            "repeatedLetterCount": grounding["repeatedLetterCount"],
+            "fillScore": entry.get("fillScore"),
+            "supportBand": (
+                "weak"
+                if entry.get("needsFoothold") is True
+                else "ordinary"
+                if isinstance(entry.get("fillScore"), (int, float))
+                else "unknown"
+            ),
+            "familyObservation": grounding["familyObservation"],
+            "grammarBridge": grounding["grammarBridge"],
+            "witnessValidators": grounding["witnessValidators"],
+            "factRisk": fact_risk,
+            "status": status,
+            "relation": grounding["relation"],
+            "relationVerification": grounding["relationVerification"],
+            "surfaceIssues": grounding["surfaceIssues"],
+            "riskFlags": grounding["riskFlags"],
+            "mechanicalIssue": grounding["mechanicalIssue"],
+            "morphologyIssue": grounding["morphologyIssue"],
+            "semanticChallenge": grounding["semanticChallenge"],
+            "semanticStatus": grounding["semanticStatus"],
+            "reviewedSource": grounding["reviewedSource"],
+            "fallback": fallback,
+        }
+        records.append(record)
+        if fallback["used"]:
+            fallback_records.append(
+                {
+                    "id": entry_id,
+                    "kind": fallback["kind"],
+                    "reasonCodes": fallback["reasonCodes"],
+                    "answerDisclosure": fallback["answerDisclosure"],
+                    "semanticStatus": fallback["semanticStatus"],
+                }
+            )
+    return {
+        "version": GROUNDED_CLUE_BUNDLE_VERSION,
+        "status": "diagnostic",
+        "sourcePolicy": (
+            "private-model-with-reviewed-source"
+            if reviewed_count
+            else "private-model-without-source-ledger"
+        ),
+        "semanticStatus": "reviewed-source-present" if reviewed_count else "not-established",
+        "entryCount": len(records),
+        "reviewedCount": reviewed_count,
+        "fallbackCount": len(fallback_records),
+        "factRiskCounts": fact_risk_counts,
+        "familyCounts": family_counts,
+        "signalCounts": _surface_signal_counts(records),
+        "statusCounts": status_counts,
+        "semanticChallenge": summarize_challenge_classifications(challenge_records),
+        "grammarBridge": summarize_surface_clue_families(
+            [{"grammarBridge": item["grammarBridge"]} for item in records]
+        ),
+        "fallbacks": fallback_records,
+        "entries": records,
+        "uncertainty": (
+            ["player-support-unmeasured"]
+            if reviewed_count
+            else [
+                "semantic-sense-unverified",
+                "factual-support-unverified",
+                "player-support-unmeasured",
+            ]
+        ),
+    }
+
+
+def _clue_quality_summary(
+    entries,
+    clues,
+    *,
+    model_challenges=None,
+    reviewed_pack=None,
+):
+    issue_counts = {}
+    fallback_count = 0
+    grounding_entries = []
+    grounding_status_counts = {}
+    grounding_relation_counts = {}
+    grounding_family_counts = {}
+    challenge_records = []
+    grammar_bridge_entries = []
+    reviewed_count = 0
+    reviewed_by_id = (
+        reviewed_pack.get("byId")
+        if isinstance(reviewed_pack, Mapping)
+        and isinstance(reviewed_pack.get("byId"), Mapping)
+        else {}
+    )
+    for entry in entries:
+        clue = clues.get(entry["id"], "")
+        issue = _clue_wordplay_issue(entry, clue)
+        if issue:
+            issue_counts[issue] = issue_counts.get(issue, 0) + 1
+        morphology_issue = _clue_morphology_issue(entry, clue)
+        if morphology_issue:
+            issue_counts[morphology_issue] = issue_counts.get(morphology_issue, 0) + 1
+        for flag in _clue_risk_flags(entry, clue):
+            if flag == "foothold-required":
+                continue
+            issue_counts[flag] = issue_counts.get(flag, 0) + 1
+        if isinstance(clue, str) and clue.startswith(
+            "Entry supported by its crossings"
+        ):
+            fallback_count += 1
+        model_response = (
+            model_challenges.get(entry.get("id"))
+            if isinstance(model_challenges, dict)
+            else None
+        )
+        grounding = _clue_grounding(
+            entry,
+            clue,
+            model_response=model_response,
+            reviewed_content=reviewed_by_id.get(entry.get("id")),
+        )
+        if grounding.get("semanticStatus") == "reviewed-source":
+            reviewed_count += 1
+        grounding_entries.append({"id": entry["id"], **grounding})
+        challenge_records.append(grounding["semanticChallenge"])
+        status = grounding["status"]
+        grounding_status_counts[status] = grounding_status_counts.get(status, 0) + 1
+        relation = grounding["relation"]
+        if relation:
+            grounding_relation_counts[relation] = (
+                grounding_relation_counts.get(relation, 0) + 1
+            )
+        family = grounding["familyObservation"]["family"]
+        grounding_family_counts[family] = grounding_family_counts.get(family, 0) + 1
+        grammar_bridge_entries.append(grounding["grammarBridge"])
+    summary = {
+        "checkedCount": len(entries),
+        "issueCount": sum(issue_counts.values()),
+        "issueCounts": issue_counts,
+        "signalCounts": _surface_signal_counts(grounding_entries),
+        "grounding": {
+            "version": GROUNDED_CLUE_BUNDLE_VERSION,
+            "entryCount": len(grounding_entries),
+            "statusCounts": grounding_status_counts,
+            "relationCounts": grounding_relation_counts,
+            "familyCounts": grounding_family_counts,
+            "signalCounts": _surface_signal_counts(grounding_entries),
+            "entries": grounding_entries,
+            "grammarBridge": summarize_surface_clue_families(
+                [{"grammarBridge": item} for item in grammar_bridge_entries]
+            ),
+            "semanticChallenge": summarize_challenge_classifications(challenge_records),
+            "reviewedCount": reviewed_count,
+            "semanticStatus": "reviewed-source-present" if reviewed_count else "not-established",
+        },
+        # Keep a richer, machine-readable bundle beside the older compact
+        # grounding projection used by the local UI.  It is still diagnostic:
+        # no field here establishes a clue sense or factual truth.
+        "groundedClueBundle": _grounded_clue_bundle(
+            entries,
+            clues,
+            model_challenges=model_challenges,
+            reviewed_pack=reviewed_pack,
+        ),
+    }
+    if fallback_count:
+        summary["fallbackCount"] = fallback_count
+    return summary
+
+
+def _theme_mechanic_direction(mechanic):
+    if not isinstance(mechanic, dict) or mechanic.get("type") != "shared-affix":
+        return ""
+    position = mechanic.get("position")
+    affix = mechanic.get("affix")
+    if position not in {"prefix", "suffix"} or not isinstance(affix, str):
+        return ""
+    relation = "begin with" if position == "prefix" else "end with"
+    return (
+        f"The host validated that every themed answer {relation} {affix}. "
+        "Clue each theme answer fairly as an ordinary word while leaving the shared pattern inferable across entries. "
+        "Do not imply special cells or altered letter entry."
+    )
+
+
+def _repair_risky_clues(model, entries, clues, context, weekday):
+    """Repair likely factual hallucinations without blocking private play."""
+    risky = _risky_clue_entries(entries, clues)
+    if not risky:
+        return clues
+    entry_ids = [entry["id"] for entry in risky]
+    schema = _clue_schema(entry_ids)
+    theme_mechanic = context.get("_weekday_theme_mechanic")
+    mechanic_direction = _theme_mechanic_direction(theme_mechanic)
+    try:
+        value = _chat(
+            model,
+            [
+                {
+                    "role": "system",
+                    "content": (
+                        "Audit and, where needed, rewrite these crossword clues for a private experimental puzzle. "
+                        f"Keep the {weekday.title()} voice. The supplied answer is authoritative. "
+                        f"{mechanic_direction} "
+                        "A draft clue may be kept only when its factual assertion is certainly true for that exact answer. "
+                        "groundingDiagnostics are deterministic surface observations, not evidence of a sense or fact; "
+                        "treat source-free-factual-signal as a reason to remove the assertion, not as a fact to repeat. "
+                        "Never invent a celebrity credit, fictional character, airport, country, brand, surname, or title. "
+                        "When a fact is uncertain, replace it with a direct definition, function, sound, spelling, or "
+                        "clearly signalled wordplay that does not require outside trivia. Keep clues concise and fair, "
+                        "preserve part of speech/number/tense, and use (abbr.), quotation marks, brackets, or ? only when fitting. "
+                        "Honor each entry's cluePolicy. For source-free-foothold entries, remove proper names and factual relation claims entirely; use an ordinary lexical sense, sound, spelling, function, or clearly signalled wordplay that benefits from crossings. "
+                        "Check every stated anagram, reversal, and foreign-language translation against the supplied answer; "
+                        "never keep a mechanically false wordplay clue. Do not put the answer, its obvious stem, or an "
+                        "inflected form in the clue. Do not use vague template clues such as 'common name', 'common term', "
+                        "'usual name', or 'generic word'; add a real definition, relation, or signalled mechanism instead. "
+                        "Return exactly one clue for every supplied id and no extra keys."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "difficulty": weekday.title(),
+                            "themeMechanic": theme_mechanic,
+                            "wordField": {
+                                key: value
+                                for key, value in context.items()
+                                if not key.startswith("_")
+                            },
+                            "entries": [
+                                {
+                                    **entry,
+                                    "draftClue": clues[entry["id"]],
+                                    # Give the repair pass the same
+                                    # deterministic observations that will be
+                                    # retained in provenance.  They are
+                                    # warnings and policy signals, never
+                                    # semantic evidence.
+                                    "groundingDiagnostics": _clue_grounding(
+                                        entry, clues[entry["id"]]
+                                    ),
+                                }
+                                for entry in risky
+                            ],
+                        },
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ),
+                },
+            ],
+            schema,
+            timeout=90,
+            tokens=min(2600, max(600, len(risky) * 42)),
+            temperature=0.35,
+        )
+        entries_by_id = {entry["id"]: entry for entry in risky}
+        repaired = {}
+        for clue in value.get("clues", []) if isinstance(value, dict) else []:
+            if not isinstance(clue, dict) or set(clue) != {"id", "text"}:
+                continue
+            clue_id = clue["id"]
+            text = clue["text"].strip() if isinstance(clue["text"], str) else ""
+            if clue_id in entry_ids and 2 <= len(text) <= 180 and "\n" not in text:
+                # Do not allow the repair pass to introduce a mechanically
+                # false anagram/reversal or an answer giveaway of its own.
+                if _clue_wordplay_issue(
+                    entries_by_id[clue_id], text
+                ) is None and not _clue_surface_issues(text):
+                    repaired[clue_id] = text
+                else:
+                    repaired[clue_id] = clues[clue_id]
+        if set(repaired) == set(entry_ids):
+            return {**clues, **repaired}
+    except (requests.RequestException, ValueError, TypeError, KeyError, RecursionError):
+        # The first clue bundle is already playable. A conservative repair is
+        # an enhancement, never a reason to make local play unavailable.
+        pass
+    return clues
+
+
+def _clue_diversity_report(entries, clues, *, repair=None):
+    """Summarize visible clue conventions without asserting their meaning."""
+    family_counts = {}
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, Mapping):
+            continue
+        clue = clues.get(entry.get("id"), "") if isinstance(clues, Mapping) else ""
+        family = _clue_family_observation(clue).get("family", "definition")
+        family_counts[family] = family_counts.get(family, 0) + 1
+    non_definition = sorted(
+        family for family in family_counts if family != "definition"
+    )
+    result = {
+        "version": CLUE_DIVERSITY_REPAIR_VERSION,
+        "entryCount": sum(family_counts.values()),
+        "familyCounts": dict(sorted(family_counts.items())),
+        "nonDefinitionFamilies": non_definition,
+        "status": (
+            "varied"
+            if len(non_definition) >= 2
+            else "definition-heavy"
+            if family_counts
+            else "empty"
+        ),
+        "policy": "visible-convention-diversity-only",
+        "semanticStatus": "not-established",
+        "playPolicy": "never-gates-private-play",
+    }
+    if isinstance(repair, Mapping):
+        result["repair"] = dict(repair)
+    return result
+
+
+def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_id):
+    """Add a few safe clue surfaces when a large board is definition-only.
+
+    This is intentionally a small, fail-open second pass. It never rewrites
+    exact reviewed text, never blocks a playable board, and accepts only
+    visibly signalled non-definition surfaces that pass the existing
+    mechanical/surface guards.
+    """
+    initial = _clue_diversity_report(entries, clues)
+    base = {
+        "version": CLUE_DIVERSITY_REPAIR_VERSION,
+        "status": "not-needed",
+        "attempted": False,
+        "selectedCount": 0,
+        "rewrittenCount": 0,
+        "reason": "sufficient-surface-variety",
+    }
+    if len(entries) < 24:
+        return clues, {**base, "reason": "small-board"}
+    if len(initial["nonDefinitionFamilies"]) >= 2:
+        return clues, base
+    enabled = os.environ.get(CLUE_DIVERSITY_REPAIR_ENV, "1").strip().casefold()
+    if enabled in {"0", "false", "no", "off"}:
+        return clues, {**base, "status": "disabled", "reason": "host-disabled"}
+    reviewed_ids = {
+        clue_id
+        for clue_id, record in (reviewed_by_id.items() if isinstance(reviewed_by_id, Mapping) else ())
+        if isinstance(record, Mapping) and isinstance(record.get("text"), str) and record.get("text").strip()
+    }
+    candidates = []
+    for entry in entries:
+        if not isinstance(entry, Mapping):
+            continue
+        entry_id = entry.get("id")
+        if not isinstance(entry_id, str) or entry_id in reviewed_ids:
+            continue
+        clue = clues.get(entry_id, "") if isinstance(clues, Mapping) else ""
+        if _clue_family_observation(clue).get("family") != "definition":
+            continue
+        # Theme and weak entries already have dedicated clue policies; leave
+        # those surfaces to the main writer and foothold repair pass.
+        if entry.get("theme") is True or entry.get("needsFoothold") is True:
+            continue
+        candidates.append(entry)
+    candidates.sort(key=lambda item: (len(str(item.get("answer", ""))), item.get("id", "")))
+    candidates = candidates[:4]
+    if not candidates:
+        return clues, {**base, "status": "not-needed", "reason": "no-eligible-entries"}
+    desired_families = ["pun", "fill-blank", "nonverbal-expression", "spoken-equivalent"]
+    selected = [
+        {
+            "id": entry["id"],
+            "answer": entry.get("answer"),
+            "length": entry.get("length"),
+            "draftClue": clues.get(entry["id"], ""),
+            "desiredFamily": desired_families[index],
+        }
+        for index, entry in enumerate(candidates)
+    ]
+    schema = _clue_schema([item["id"] for item in selected])
+    try:
+        value = _chat(
+            model,
+            [
+                {
+                    "role": "system",
+                    "content": (
+                        "Increase visible crossword clue variety for this private board. "
+                        f"Keep the {weekday.title()} voice and the supplied answers. "
+                        "Rewrite only the selected entries, preserving fair grammar and answer shape. "
+                        "Use the requested visible convention when it genuinely fits: a question-mark pun, "
+                        "a fill-in-the-blank, a bracketed sound/action cue, or a quoted utterance. "
+                        "Do not invent facts, proper names, translations, or wordplay. Do not put an answer in its clue. "
+                        "Return exactly one clue for every supplied id and no extra keys."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "difficulty": weekday.title(),
+                            "wordField": {
+                                key: value
+                                for key, value in context.items()
+                                if not key.startswith("_")
+                            },
+                            "entries": selected,
+                        },
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ),
+                },
+            ],
+            schema,
+            timeout=90,
+            tokens=min(1800, max(600, len(selected) * 44)),
+            temperature=0.45,
+        )
+        returned = value.get("clues") if isinstance(value, Mapping) else None
+        if not isinstance(value, Mapping) or not isinstance(value.get("title"), str) or not isinstance(returned, list):
+            raise ValueError("clue-diversity-response-invalid")
+        by_id = {}
+        selected_by_id = {item["id"]: item for item in selected}
+        for clue in returned:
+            if not isinstance(clue, Mapping) or set(clue) != {"id", "text"}:
+                continue
+            clue_id = clue.get("id")
+            text = clue.get("text").strip() if isinstance(clue.get("text"), str) else ""
+            entry = selected_by_id.get(clue_id)
+            if entry is None or not 2 <= len(text) <= 180 or "\n" in text:
+                continue
+            if _clue_family_observation(text).get("family") == "definition":
+                continue
+            if _clue_surface_issues(text) or _clue_wordplay_issue(entry, text) is not None:
+                continue
+            if "answer-giveaway" in _clue_risk_flags(entry, text):
+                continue
+            by_id[clue_id] = text
+        if not by_id:
+            return clues, {
+                **base,
+                "status": "no-safe-rewrite",
+                "attempted": True,
+                "selectedCount": len(selected),
+                "reason": "model-returned-no-safe-surface",
+            }
+        return {
+            **clues,
+            **by_id,
+        }, {
+            **base,
+            "status": "repaired",
+            "attempted": True,
+            "selectedCount": len(selected),
+            "rewrittenCount": len(by_id),
+            "reason": "definition-heavy-board",
+        }
+    except (requests.RequestException, ValueError, TypeError, KeyError, RecursionError):
+        return clues, {
+            **base,
+            "status": "unavailable",
+            "attempted": True,
+            "selectedCount": len(selected),
+            "reason": "local-model-repair-unavailable",
+        }
+
+
+def _source_free_foothold(entry):
+    """Return an honest last-resort surface for an ungrounded weak entry.
+
+    A generated clue is private-play content, so we do not fail an otherwise
+    playable board because a local model repeated an unsupported fact.  For a
+    low-scoring entry, however, retaining that fact would make the crossing
+    scaffold look like evidence for a hallucination.  This short metaclue is
+    intentionally answer-free and lets crossings or the assistance ladder
+    carry the solve.  The provenance quality summary exposes its use.
+    """
+    length = entry.get("length") if isinstance(entry, dict) else None
+    if not isinstance(length, int) or length < 1:
+        answer = entry.get("answer", "") if isinstance(entry, dict) else ""
+        length = len(answer) if isinstance(answer, str) else 0
+    return f"Entry supported by its crossings ({length} letters)"
+
+
+def _normalize_clue_surface(clue):
+    """Repair punctuation-only defects after the model's conservative pass."""
+    if not isinstance(clue, str):
+        return clue
+    text = clue.strip()
+    issues = _clue_surface_issues(text)
+    if not issues:
+        return text
+    if any(issue in issues for issue in ("unbalanced-brackets", "bracket-scope")):
+        text = text.replace("[", "").replace("]", "")
+    if "unbalanced-quotation" in issues:
+        text = text.replace('"', "").replace("“", "").replace("”", "")
+    if "question-mark-placement" in issues:
+        text = text.replace("?", "")
+    return " ".join(text.split())
+
+
+def _enforce_private_clue_safety(entries, clues):
+    """Remove unsupported trivia from the weakest entries after repair.
+
+    ``_repair_risky_clues`` asks the model for a conservative rewrite.  This
+    final deterministic guard is intentionally narrower: it only replaces a
+    still factual-looking clue when the fill engine already marked the entry
+    as needing a foothold.  Stronger entries keep ordinary factual surfaces in
+    private play, while their risk remains visible in ``clueQuality``.
+    """
+    safe = {clue_id: _normalize_clue_surface(clue) for clue_id, clue in clues.items()}
+    for entry in entries:
+        clue_id = entry.get("id") if isinstance(entry, dict) else None
+        if not isinstance(clue_id, str) or clue_id not in safe:
+            continue
+        clue = safe[clue_id]
+        flags = _clue_risk_flags(entry, clue)
+        mechanical_issue = _clue_wordplay_issue(entry, clue)
+        morphology_issue = _clue_morphology_issue(entry, clue)
+        if (
+            "unsupported-factual-surface" in flags
+            and entry.get("needsFoothold") is True
+            # A themed name can be the point of the puzzle. Preserve the
+            # repaired surface there so a deliberately invited obscure person
+            # is still playable through crossings; the uncertainty remains in
+            # clueQuality and the local puzzle is never publication content.
+            and entry.get("theme") is not True
+        ) or mechanical_issue in {
+            # A private board must never leave a clue that gives away its
+            # answer or asserts a mechanically false relation. If the repair
+            # pass could not produce a safe replacement, keep the crossing
+            # scaffold and let the assistance ladder do the teaching.
+            "answer-giveaway",
+            "answer-form-in-clue",
+            "generic-clue",
+            "anagram-mismatch",
+            "reversal-mismatch",
+            "hidden-word-mismatch",
+            "language-answer-mismatch",
+        } or morphology_issue == "plural-marker-with-singular-shape":
+            safe[clue_id] = _source_free_foothold(entry)
+    return safe
+
+
+def _reviewed_clue_pack_projection(entries, configured_pack):
+    """Project exact reviewed clues for answers present in a configured pack.
+
+    The private route may run without a pack. When one is configured, this
+    helper copies only the already validated clue text and a compact evidence
+    receipt; it never turns a raw lexicon answer into a semantic claim.
+    """
+    content = getattr(configured_pack, "content", None)
+    by_answer = {}
+    for lexeme in getattr(content, "lexemes", ()):
+        answer = _letters_only(getattr(lexeme, "answer", ""))
+        if not answer:
+            continue
+        record = by_answer.setdefault(
+            answer,
+            {
+                "text": None,
+                "clueId": None,
+                "evidenceType": None,
+                "evidenceId": None,
+                "lexemeId": getattr(lexeme, "lexeme_id", None),
+                "senses": [],
+                "facts": [],
+            },
+        )
+        for sense in getattr(lexeme, "senses", ()):
+            gloss = getattr(sense, "gloss", None)
+            if isinstance(gloss, str) and gloss.strip():
+                record["senses"].append(
+                    {
+                        "senseId": getattr(sense, "sense_id", None),
+                        "gloss": gloss.strip(),
+                        "resolutionStatus": getattr(sense, "resolution_status", None),
+                    }
+                )
+        for fact in getattr(lexeme, "facts", ()):
+            statement = getattr(fact, "statement", None)
+            if isinstance(statement, str) and statement.strip():
+                record["facts"].append(
+                    {
+                        "factId": getattr(fact, "fact_id", None),
+                        "statement": statement.strip(),
+                    }
+                )
+        for clue in getattr(lexeme, "clues", ()):
+            text = getattr(clue, "text", None)
+            if not isinstance(text, str) or not 2 <= len(text.strip()) <= 180:
+                continue
+            provenance = getattr(clue, "provenance", {})
+            source = provenance.get("source", {}) if isinstance(provenance, Mapping) else {}
+            if record["text"] is None:
+                record.update(
+                    {
+                        "text": text.strip(),
+                        "clueId": getattr(clue, "clue_id", None),
+                        "evidenceType": getattr(clue, "evidence_type", None),
+                        "evidenceId": getattr(clue, "evidence_id", None),
+                        "grammarVersion": (
+                            getattr(clue, "grammar", {}).get("grammarVersion")
+                            if isinstance(getattr(clue, "grammar", {}), Mapping)
+                            else None
+                        ),
+                        "sourceId": source.get("sourceId") if isinstance(source, Mapping) else None,
+                        "sourceVersion": source.get("version") if isinstance(source, Mapping) else None,
+                        "sourceArtifactSha256": (
+                            source.get("artifactSha256") if isinstance(source, Mapping) else None
+                        ),
+                        "evidenceRefs": (
+                            list(provenance.get("evidenceRefs", []))
+                            if isinstance(provenance, Mapping)
+                            and isinstance(provenance.get("evidenceRefs"), (list, tuple))
+                            else []
+                        ),
+                        "reviewerId": provenance.get("reviewerId")
+                        if isinstance(provenance, Mapping)
+                        else None,
+                        "reviewedAt": provenance.get("reviewedAt")
+                        if isinstance(provenance, Mapping)
+                        else None,
+                    }
+                )
+            break
+
+    by_id = {}
+    for entry in entries if isinstance(entries, list) else []:
+        if not isinstance(entry, dict) or not isinstance(entry.get("id"), str):
+            continue
+        answer = _letters_only(entry.get("answer", ""))
+        if answer in by_answer:
+            by_id[entry["id"]] = dict(by_answer[answer])
+    pack_id = getattr(configured_pack, "pack_id", None)
+    pack_sha256 = getattr(configured_pack, "pack_sha256", None)
+    for record in by_id.values():
+        record["packId"] = pack_id
+        record["packSha256"] = pack_sha256
+    return {
+        "version": REVIEWED_CLUE_PACK_VERSION,
+        "status": "configured" if by_id else "configured-no-matches",
+        "packId": pack_id,
+        "packSha256": pack_sha256,
+        "byId": by_id,
+    }
+
+
+def _load_reviewed_clue_pack(entries):
+    """Load an optional verified pack without making it a private-play gate."""
+    try:
+        config = current_app.config
+    except RuntimeError:
+        return {
+            "version": REVIEWED_CLUE_PACK_VERSION,
+            "status": "not-configured",
+            "byId": {},
+        }
+    required = (
+        "FUTURE_ADMITTED_PACK_PATH",
+        "FUTURE_ADMITTED_PACK_ID",
+        "FUTURE_ADMITTED_PACK_SHA256",
+        "FUTURE_ADMITTED_SOURCE_PINS_JSON",
+    )
+    # Flask's base configuration always contains these keys with ``None``
+    # values. Treat that default state as genuinely absent; only a non-empty
+    # setting should switch the optional pack into its configured/fail-open
+    # loading path. A partially populated configuration still attempts the
+    # strict loader and reports ``unavailable``.
+    if not any(
+        isinstance(config.get(key), str) and config.get(key).strip()
+        for key in required
+    ):
+        return {
+            "version": REVIEWED_CLUE_PACK_VERSION,
+            "status": "not-configured",
+            "byId": {},
+        }
+    try:
+        configured = load_configured_admitted_pack(config)
+    except (AdmittedPackConfigError, OSError, TypeError, ValueError, RecursionError):
+        return {
+            "version": REVIEWED_CLUE_PACK_VERSION,
+            "status": "unavailable",
+            "byId": {},
+            "uncertainty": "configured-pack-could-not-be-loaded",
+        }
+    return _reviewed_clue_pack_projection(entries, configured)
+
+
+def _reviewed_clue_pack_summary(pack):
+    """Return a bounded public provenance summary without clue text."""
+    value = pack if isinstance(pack, dict) else {}
+    by_id = value.get("byId") if isinstance(value.get("byId"), dict) else {}
+    context_count = sum(
+        bool(
+            isinstance(record, dict)
+            and (record.get("senses") or record.get("facts"))
+        )
+        for record in by_id.values()
+    )
+    summary = {
+        "version": REVIEWED_CLUE_PACK_VERSION,
+        "status": value.get("status", "not-configured"),
+        "matchedCount": len(by_id),
+        "contextCount": context_count,
+        "uncertainty": "reviewed-source-provenance-is-not-a-publication-claim",
+    }
+    for key in ("packId", "packSha256"):
+        if isinstance(value.get(key), str):
+            summary[key] = value[key]
+    if value.get("status") == "unavailable":
+        summary["uncertainty"] = value.get(
+            "uncertainty", "configured-pack-could-not-be-loaded"
+        )
+    return summary
+
+
+def _ensure_language_clue_signal(clue, language):
+    """Repair a private language clue into one of the explicit signal forms."""
+    text = clue.strip() if isinstance(clue, str) else ""
+    language_name = language.strip() if isinstance(language, str) else ""
+    if not text or not language_name or has_explicit_language_signal(text, language_name):
+        return text
+    prefix = re.match(
+        rf"^{re.escape(language_name)}\s+(?P<surface>.+)$",
+        text,
+        re.IGNORECASE,
+    )
+    if prefix:
+        surface = prefix.group("surface").strip(" ,:;-\t")
+        if surface:
+            return f"{language_name} for {surface}"
+    return f"{text}, in {language_name}"
+
+
+def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
+    recipe = _weekday_recipe(weekday)
+    theme_mechanic = context.get("_weekday_theme_mechanic")
+    mechanic_direction = _theme_mechanic_direction(theme_mechanic)
+    voice = _DIFFICULTY[weekday]["voice"]
+    entry_ids = [entry["id"] for entry in entries]
+    schema = _clue_schema(entry_ids)
+    reviewed_by_id = (
+        reviewed_pack.get("byId")
+        if isinstance(reviewed_pack, dict)
+        and isinstance(reviewed_pack.get("byId"), dict)
+        else {}
+    )
+    value = _chat(
+        model,
+        [
+            {
+                "role": "system",
+                "content": (
+                    "Write original, lively crossword clues for a private experimental puzzle. "
+                    f"Target {weekday.title()} difficulty: {voice}. "
+                    f"{recipe['clueDirection']} "
+                    f"{mechanic_direction} "
+                    "Clues must be fair, concise, grammatical, and match the answer's part of speech, number, and tense. "
+                    "Vary clue forms: direct definitions, quotations for exact utterances, bracketed sound/action cues, "
+                    "abbreviation labels, wordplay, and question marks for puns or playful definitions. Use those conventions "
+                    "only when they fit. When a clue uses parentheses like (abbr.) or (pl.), make the answer conform. Treat an explicit (pl.) or [pl.] marker as a hard visible convention: use it only for an answer that is clearly plural, and rewrite it when the answer shape is singular. "
+                    "Make crossings helpful: clue unusual answers accessibly and avoid stacking obscure trivia. "
+                    "If the word-field includes a learning language, use explicit labels such as '___, in German' for foreign-language material and never pretend an English clue is a translation. "
+                    "Use language_learning as a small recurrence lane: when reviewDue is true, prefer at most two listed candidateForms if they fit, with the explicit language label; dueForms are the first optional candidates, then notYetForms and assistedForms. Do not claim the player knows, remembers, or has mastered any form. "
+                    "If eligibleReviewForms are present, use at most two only when they fit the frozen grid and label the clue with the explicit language; they are optional candidates, not mandatory entries. "
+                    "Treat candidateWeights as bounded ordering hints only; never turn them into a placement requirement or mastery claim. "
+                    "Use play_calibration only to tune accessibility: more-footholds means make weak entries more transparent and crossings generous, balanced means follow the weekday recipe, and gentle-stretch means permit a small amount of fair misdirection. It is a difficulty signal only, never a claim about the player. "
+                    "Do not invent biographies, credits, titles, brands, places, or historical facts. Before emitting a clue, "
+                    "silently check that every factual assertion matches the supplied answer. If you are not certain of a fact, "
+                    "use a transparent definition, sound, spelling, function, or clearly signalled wordplay instead. Never write "
+                    "a made-up 'singer with', 'character from', or surname association just to make a clue sound specific. "
+                    "Each entry includes a cluePolicy. For a source-free foothold, use only an ordinary lexical sense, sound, spelling, function, or clearly signalled wordplay; do not name a person, work, place, brand, or event and do not make a relation claim such as 'with', 'from', or 'in'. "
+                    "Treat fill score as a support signal: a low-scoring entry needs a generous foothold and must not be made difficult by obscure trivia. "
+                    "Use the personal word-field as a source of motifs, never as a basis for claims about the player. "
+                    "Honor clue_family_targets when present: they are explicit, reversible steering from prior reflection responses or direct clue feedback, so an include target may shape a small visible set of clue mechanisms and an avoid target should be downweighted. Do not infer a target from solve behavior. "
+                    "If uncertain about a proper name or fact, clue the word through a reliable wordplay/definition instead. "
+                    "Never repeat the answer, its obvious stem, or an inflected form in the clue, and never emit a vague "
+                    "template such as 'common name' or 'common term' as the whole clue. "
+                    "The groundingBundle is a host policy brief, not a source of meaning: use answer shape and support bands "
+                    "to choose a generous route, but never promote its factRisk or semanticStatus fields into a claim. "
+                    "When footholdSeedPlan is present, use its candidate support entries as early, transparent crossing seeds: "
+                    "keep those support clues more gettable than the weak target they seed, without calling the relationship a "
+                    "solve-probability estimate or revealing a target answer in the support clue. "
+                    "When reviewedContent is present, treat its senses and facts as the only supplied source context for that entry; do not add a new biographical or factual detail. An exact reviewed clueText is authoritative and will be preserved after this pass. "
+                    "Return exactly one clue for every supplied id, preserving each id exactly, and no extra keys."
+                ),
+            },
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "difficulty": weekday.title(),
+                        "themeMechanic": theme_mechanic,
+                        "wordField": {
+                            key: value
+                            for key, value in context.items()
+                            if not key.startswith("_")
+                        },
+                        "entries": entries,
+                        # Keep the answer-aware policy separate from the
+                        # entries themselves.  It tells the model what the
+                        # host can actually support and what remains unknown.
+                        "groundingBundle": _clue_generation_bundle(entries),
+                        "footholdSeedPlan": context.get("_foothold_seed_plan"),
+                        "reviewedClues": [
+                            {
+                                "id": clue_id,
+                                "text": record.get("text"),
+                                "evidenceType": record.get("evidenceType"),
+                                "evidenceId": record.get("evidenceId"),
+                            }
+                            for clue_id, record in sorted(reviewed_by_id.items())
+                            if isinstance(record, dict)
+                            and isinstance(record.get("text"), str)
+                        ],
+                        "reviewedContent": [
+                            {
+                                "id": clue_id,
+                                "senses": record.get("senses", [])[:3],
+                                "facts": record.get("facts", [])[:3],
+                            }
+                            for clue_id, record in sorted(reviewed_by_id.items())
+                            if isinstance(record, dict)
+                            and (record.get("senses") or record.get("facts"))
+                        ],
+                    },
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+            },
+        ],
+        schema,
+        timeout=180,
+        tokens=_clue_token_budget(len(entries)),
+        temperature=0.65,
+    )
+    if not isinstance(value, dict) or not isinstance(value.get("clues"), list):
+        raise ValueError("Local model returned an incomplete clue set")
+    clues = {}
+    for clue in value["clues"]:
+        if not isinstance(clue, dict) or set(clue) != {"id", "text"}:
+            raise ValueError("Local model returned malformed clues")
+        clue_id = clue["id"]
+        text = clue["text"].strip() if isinstance(clue["text"], str) else ""
+        if (
+            not isinstance(clue_id, str)
+            or not _CLUE_ID.fullmatch(clue_id)
+            or clue_id not in entry_ids
+            or not 2 <= len(text) <= 180
+            or clue_id in clues
+            or "\n" in text
+        ):
+            raise ValueError("Local model returned invalid clue text")
+        clues[clue_id] = text
+    if set(clues) != set(entry_ids):
+        raise ValueError("Local model did not clue every entry")
+    title = value.get("title")
+    if not isinstance(title, str) or not 2 <= len(title.strip()) <= 64:
+        raise ValueError("Local model returned an invalid title")
+    repaired = _repair_risky_clues(model, entries, clues, context, weekday)
+    learning = context.get("language_learning") if isinstance(context, dict) else None
+    language = learning.get("language") if isinstance(learning, dict) else None
+    eligible_forms = {
+        form.upper()
+        for form in learning.get("eligibleReviewForms", [])
+        if isinstance(form, str) and _ANSWER.fullmatch(form.upper())
+    } if isinstance(learning, dict) else set()
+    if isinstance(language, str) and eligible_forms:
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            answer = entry.get("answer")
+            clue_id = entry.get("id")
+            if (
+                isinstance(answer, str)
+                and answer.upper() in eligible_forms
+                and isinstance(clue_id, str)
+                and isinstance(repaired.get(clue_id), str)
+            ):
+                pair = task_pair_for_review(language, answer)
+                source_text = pair.get("sourceText") if isinstance(pair, Mapping) else None
+                if isinstance(source_text, str) and source_text.strip():
+                    # The task pack owns this narrow source cue. Exact
+                    # reviewed clue text, when present, is restored below.
+                    repaired[clue_id] = f"{language} for {source_text.strip()}"
+                else:
+                    repaired[clue_id] = _ensure_language_clue_signal(
+                        repaired[clue_id], language
+                    )
+    # Exact reviewed clue text wins over the model's paraphrase. The model
+    # still writes the uncovered entries and the title, while source-backed
+    # entries retain their validated evidence wording and receipt.
+    for clue_id, record in reviewed_by_id.items():
+        text = record.get("text") if isinstance(record, dict) else None
+        if isinstance(text, str) and text:
+            repaired[clue_id] = text
+    repaired, diversity_repair = _repair_clue_diversity(
+        model,
+        entries,
+        repaired,
+        context,
+        weekday,
+        reviewed_by_id,
+    )
+    context["_clue_diversity_repair"] = diversity_repair
+    return title.strip(), _enforce_private_clue_safety(entries, repaired)
+
+
+def _challenge_private_clues(model, entries, clues, context, weekday):
+    """Run an optional, fail-open model critique over the visible clue set.
+
+    The deterministic challenger remains the source of classification.  This
+    pass only supplies a bounded recommendation envelope to that challenger,
+    so a local model can call out a suspicious clue without turning its own
+    unverified judgment into a safety gate or a semantic fact.
+    """
+    enabled = os.environ.get(PRIVATE_CLUE_CHALLENGE_ENV, "").strip().casefold()
+    base = {
+        "version": PRIVATE_CLUE_CHALLENGE_VERSION,
+        "status": "disabled",
+        "enabled": False,
+        "model": model,
+        "weekday": weekday,
+        "checkedCount": 0,
+        "scope": "all-entries",
+        "byId": {},
+        "uncertainty": "advisory-model-output-unverified",
+        "playPolicy": "never-gates-private-play",
+    }
+    if enabled not in {"1", "true", "yes", "on"}:
+        return base
+    if not isinstance(entries, list) or not isinstance(clues, dict):
+        return {**base, "status": "invalid-input", "enabled": True}
+    all_entry_ids = [
+        entry.get("id")
+        for entry in entries
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str)
+    ]
+    if not all_entry_ids:
+        return {**base, "status": "empty", "enabled": True}
+    entry_ids = all_entry_ids
+    scope = "all-entries"
+    # A full Wednesday/Sunday board can contain dozens of ordinary clues. The
+    # challenger is useful where deterministic policy already found a reason
+    # to look twice, but a second model pass over every clean definition adds
+    # latency without adding evidence. Keep small fixtures exhaustive for
+    # contract coverage; bound real boards to risky, weak, or mechanically
+    # questionable entries and make that scope visible in provenance.
+    if len(all_entry_ids) > 12:
+        selected_ids = []
+        for entry in entries:
+            if not isinstance(entry, dict) or entry.get("id") not in all_entry_ids:
+                continue
+            clue = clues.get(entry["id"], "")
+            if (
+                entry.get("needsFoothold") is True
+                or _clue_risk_flags(entry, clue)
+                or _clue_wordplay_issue(entry, clue) is not None
+                or _clue_morphology_issue(entry, clue) is not None
+            ):
+                selected_ids.append(entry["id"])
+        entry_ids = selected_ids
+        scope = "deterministic-risk-selection"
+        if not entry_ids:
+            return {
+                **base,
+                "status": "skipped-no-risk",
+                "enabled": True,
+                "scope": scope,
+            }
+    payload_entries = []
+    for entry in entries:
+        if not isinstance(entry, dict) or entry.get("id") not in entry_ids:
+            continue
+        clue = clues.get(entry["id"], "")
+        payload_entries.append(
+            {
+                "id": entry["id"],
+                "answer": entry.get("answer"),
+                "clue": clue,
+                "theme": entry.get("theme") is True,
+                "supportBand": (
+                    "weak" if entry.get("needsFoothold") is True else "ordinary"
+                ),
+                "deterministicSignals": {
+                    "riskFlags": _clue_risk_flags(entry, clue),
+                    "mechanicalIssue": _clue_wordplay_issue(entry, clue),
+                    "morphologyIssue": _clue_morphology_issue(entry, clue),
+                    "family": _clue_family_observation(clue).get("family"),
+                },
+            }
+        )
+    schema = _clue_challenge_schema(entry_ids)
+    try:
+        value = _chat(
+            model,
+            [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an advisory crossword clue challenger for a private local puzzle. "
+                        "For each supplied id, classify only the visible clue surface as keep, fallback, or review. "
+                        "Use fallback for a clue that gives away the answer or makes a plainly false mechanical claim; "
+                        "use review when a definition, fact, translation, or proper-name assertion may be uncertain. "
+                        "Use keep only for a clue that appears ordinary and fair. This is a recommendation, not proof: "
+                        "do not invent sources, do not claim semantic certainty, and do not omit any id. Keep each reason short."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "difficulty": weekday.title(),
+                            "wordField": {
+                                key: value
+                                for key, value in context.items()
+                                if not key.startswith("_")
+                            },
+                            "entries": payload_entries,
+                        },
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ),
+                },
+            ],
+            schema,
+            timeout=90,
+            tokens=min(2400, max(600, len(entry_ids) * 32)),
+            temperature=0.2,
+        )
+    except Exception as error:  # optional diagnostics must never block play
+        return {
+            **base,
+            "status": "failed",
+            "enabled": True,
+            "scope": scope,
+            "error": str(error)[:240],
+        }
+    checks = value.get("checks") if isinstance(value, dict) else None
+    if not isinstance(checks, list):
+        return {
+            **base,
+            "status": "invalid-response",
+            "enabled": True,
+            "scope": scope,
+        }
+    by_id = {}
+    for item in checks:
+        if not isinstance(item, dict):
+            return {
+                **base,
+                "status": "invalid-response",
+                "enabled": True,
+                "scope": scope,
+            }
+        item_id = item.get("id")
+        if (
+            item_id not in entry_ids
+            or item_id in by_id
+            or item.get("disposition") not in {"keep", "fallback", "review"}
+            or item.get("confidence") not in {"low", "medium", "high"}
+            or not isinstance(item.get("reason"), str)
+            or not 1 <= len(item["reason"].strip()) <= 240
+        ):
+            return {
+                **base,
+                "status": "invalid-response",
+                "enabled": True,
+                "scope": scope,
+            }
+        by_id[item_id] = {
+            "disposition": item["disposition"],
+            "confidence": item["confidence"],
+            "reason": item["reason"].strip(),
+            "source": "local-model-advisory",
+        }
+    if set(by_id) != set(entry_ids):
+        return {
+            **base,
+            "status": "incomplete-response",
+            "enabled": True,
+            "scope": scope,
+        }
+    return {
+        **base,
+        "status": "completed",
+        "enabled": True,
+        "scope": scope,
+        "checkedCount": len(by_id),
+        "byId": by_id,
+    }
+
+
+def _legacy_puzzle(
+    grid, themes, title, clues, model, weekday, seed, language_interest=None
+):
+    native_tokens = {
+        (cell["row"], cell["column"]): cell
+        for cell in validate_native_token_cells(grid).get("cells", [])
+    }
+    entries = []
+    for raw in grid["entries"]:
+        direction = "across" if raw["dir"] == "A" else "down"
+        answer = raw["answer"]
+        cell_tokens = raw.get("cellTokens")
+        if cell_tokens is None:
+            if not _ANSWER.fullmatch(answer) or len(answer) != raw.get("len"):
+                raise ValueError("Native fill returned an invalid entry")
+            cell_tokens = list(answer)
+        elif (
+            not isinstance(cell_tokens, list)
+            or len(cell_tokens) != raw.get("len")
+            or any(
+                not isinstance(token, str)
+                or not re.fullmatch(r"[A-Z]{1,8}", token)
+                for token in cell_tokens
+            )
+            or answer != "".join(cell_tokens)
+            or not re.fullmatch(r"[A-Z]{3,30}", answer)
+        ):
+            raise ValueError("Native fill returned an invalid token sequence")
+        if raw.get("row", -1) < 0 or raw.get("col", -1) < 0:
+            raise ValueError("Native fill returned an invalid entry")
+        key = f"{raw['num']}{raw['dir']}"
+        clue = clues.get(key)
+        if not isinstance(clue, str):
+            raise ValueError("A generated entry has no clue")
+        characters = []
+        row, column = raw["row"], raw["col"]
+        for index, letter in enumerate(cell_tokens):
+            coordinate = (
+                row if raw["dir"] == "A" else row + index,
+                column + index if raw["dir"] == "A" else column,
+            )
+            token = native_tokens.get(coordinate)
+            characters.append({"letters": token["fillToken"] if token else letter})
+        entries.append(
+            {
+                "clue_number": raw["num"],
+                "clue_text": clue,
+                "direction": direction,
+                "start_x": raw["col"],
+                "start_y": raw["row"],
+                "characters": characters,
+            }
+        )
+    now = datetime.now(timezone.utc)
+    notepad = f"Private local generation · {weekday.title()} · {model} · seed {seed}"
+    if isinstance(language_interest, str) and language_interest in _LANGUAGE_CODES:
+        notepad += f" · language thread: {language_interest}"
+    dimension = len(grid.get("fill", []))
+    if dimension < 1 or any(
+        not isinstance(row, str) or len(row) != dimension
+        for row in grid.get("fill", [])
+    ):
+        raise ValueError("Native fill returned inconsistent grid dimensions")
+    metadata = {
+        "date": now.strftime("%y%m%d"),
+        "title": title,
+        "authors": ["Local model + xfill"],
+        "width": dimension,
+        "height": dimension,
+        "notepad": notepad,
+    }
+    crossword = Crossword.model_validate({"metadata": metadata, "entries": entries})
+    manifest = register_legacy_puzzle(
+        crossword,
+        allow_token_cells=any(
+            len(cell["fillToken"]) > 1 for cell in native_tokens.values()
+        )
+        or any(
+            len(token) > 1
+            for raw in grid["entries"]
+            if isinstance(raw, dict)
+            for token in (raw.get("cellTokens") or [])
+            if isinstance(token, str)
+        ),
+    )
+    return crossword, manifest
+
+
+def _private_fill_violations(grid):
+    """Return accidental construction artefacts before clue writing begins."""
+    entries = grid.get("entries") if isinstance(grid, dict) else None
+    if not isinstance(entries, list):
+        return []
+    return [
+        entry.get("answer")
+        for entry in entries
+        if isinstance(entry, dict) and entry.get("answer") in _PRIVATE_FILL_BLOCKLIST
+    ]
+
+
+def _fill_quality_number(value):
+    """Return whether a native xfill quality value is finite and numeric."""
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
+
+
+def _fill_board_digest(grid):
+    """Identify an attempted board without copying its answer fill into provenance."""
+    if not isinstance(grid, dict):
+        return None
+    fill = grid.get("fill")
+    entries = grid.get("entries")
+    if not isinstance(fill, list) or not isinstance(entries, list):
+        return None
+    projection = {
+        "fill": fill,
+        "entries": [
+            {
+                key: entry.get(key)
+                for key in ("num", "dir", "row", "col", "len", "answer", "theme")
+            }
+            for entry in entries
+            if isinstance(entry, dict)
+        ],
+    }
+    return _digest(projection)
+
+
+def _fill_quality_report(grid):
+    """Read the xfill score receipt without turning it into human quality.
+
+    The native runtime reports scores from its pinned word list.  They are
+    useful for comparing deterministic retry candidates, but they do not
+    establish clue fairness or a player's chance of solving the board.  When a
+    caller supplies a fixture without those fields, report that fact instead
+    of manufacturing a score or applying a private-play rejection gate.
+    """
+    if not isinstance(grid, dict) or not isinstance(grid.get("entries"), list):
+        return {
+            "version": FILL_QUALITY_POLICY_VERSION,
+            "status": "unavailable",
+            "reason": "grid-quality-fields-unavailable",
+            "uncertainty": "xfill-heuristic-not-human-quality",
+        }
+    fields = {
+        "entryCount": len(grid["entries"]),
+        "meanScore": grid.get("mean_score"),
+        "minimumScore": grid.get("min_score"),
+        "iffyCount": grid.get("iffy"),
+        "weakCount": grid.get("weak"),
+    }
+    if not all(
+        _fill_quality_number(fields[key]) for key in fields if key != "entryCount"
+    ):
+        return {
+            "version": FILL_QUALITY_POLICY_VERSION,
+            "status": "unavailable",
+            "reason": "native-quality-receipt-missing-or-invalid",
+            "entryCount": fields["entryCount"],
+            "uncertainty": "xfill-heuristic-not-human-quality",
+        }
+    theme_count = sum(
+        1
+        for entry in grid["entries"]
+        if isinstance(entry, dict) and entry.get("theme") is True
+    )
+    return {
+        "version": FILL_QUALITY_POLICY_VERSION,
+        "status": "measured",
+        **fields,
+        "themeCount": theme_count,
+        "source": "native-xfill-reported",
+        "uncertainty": "xfill-heuristic-not-human-quality",
+    }
+
+
+def _fill_quality_selection_key(report, attempt_index, *, theme_floor=0):
+    """Return deterministic ordering among measured retry candidates.
+
+    Preserve a small amount of authored/personalized theme when a candidate
+    survives with a reasonable weak-entry band. A theme floor is only a
+    preference among candidates with the same iffy count; it never rejects a
+    playable board and it falls back to the older score ordering when no
+    candidate meets the floor.
+    """
+    if report.get("status") != "measured":
+        # An unmeasured fixture is retained as a safe compatibility fallback,
+        # but it never outranks a measured native-runtime candidate.
+        return (1, 0, 1, 0, 0, 0, 0, attempt_index)
+    entry_count = report.get("entryCount", 0)
+    weak_limit = max(12, math.ceil(entry_count * 0.25))
+    if theme_floor >= 3:
+        # A Thursday mechanic is the day's discoverable content. Once a
+        # candidate has the required instances, preserve it even when its
+        # structural weak-entry band is wider than the ordinary policy. Iffy
+        # count still leads the ordering, and the uncertainty stays visible.
+        retains_theme = report.get("themeCount", 0) >= theme_floor
+    else:
+        retains_theme = (
+            theme_floor <= 0
+            or (
+                report.get("themeCount", 0) >= theme_floor
+                and report.get("weakCount", weak_limit + 1) <= weak_limit
+            )
+        )
+    if theme_floor >= 3:
+        # Thursday should keep its discoverable rule when the themed board is
+        # still within a bounded mechanical-risk budget. If every themed
+        # candidate exceeds that budget, ordinary fill quality wins and the
+        # mechanic is truthfully reported unavailable.
+        mechanic_candidate = (
+            retains_theme
+            and report.get("iffyCount", THURSDAY_MECHANIC_MAX_IFFY + 1)
+            <= THURSDAY_MECHANIC_MAX_IFFY
+        )
+        return (
+            0 if mechanic_candidate else 1,
+            report["iffyCount"],
+            report["weakCount"],
+            -report["meanScore"],
+            -report["minimumScore"],
+            -report.get("themeCount", 0),
+            attempt_index,
+        )
+    return (
+        0,
+        report["iffyCount"],
+        0 if retains_theme else 1,
+        report["weakCount"],
+        -report["meanScore"],
+        -report["minimumScore"],
+        -report["themeCount"],
+        attempt_index,
+    )
+
+
+def _fill_retry_options(seed, options):
+    """Build a small deterministic set of quality alternatives.
+
+    Every option is still a native xfill request.  The final two candidates
+    progressively release theme locks so a difficult personalized theme does
+    not make the full grid unavailable.  This is selection, not a quality
+    gate: if every valid candidate is weak, the best one remains playable and
+    its uncertainty is retained in provenance.
+    """
+    themes = options.get("themes", [])
+    if options.get("gridSize") == 21:
+        # A large Sunday board needs a reliable escape from an unlucky model
+        # theme set. Try the player's set first, then a known placeable local
+        # theme package before spending the expensive open-grid search.
+        specs = [
+            ("theme-locked-primary", seed, list(themes)),
+            (
+                "sunday-anchor-fallback",
+                _SUNDAY_FALLBACK_SEED,
+                list(_SUNDAY_FALLBACK_THEMES),
+            ),
+            (
+                "reduced-theme-fallback",
+                seed,
+                list(themes[:1]),
+            ),
+            (
+                "open-grid-reseed",
+                (seed + 2 * _FILL_RETRY_SEED_STEP) % 2_147_483_648,
+                [],
+            ),
+        ]
+    else:
+        specs = [
+            ("theme-locked-primary", seed, list(themes)),
+            (
+                "reduced-theme-fallback",
+                seed,
+                list(themes[:1]),
+            ),
+            (
+                "theme-locked-reseed",
+                (seed + _FILL_RETRY_SEED_STEP) % 2_147_483_648,
+                list(themes),
+            ),
+            (
+                "open-grid-reseed",
+                (seed + 2 * _FILL_RETRY_SEED_STEP) % 2_147_483_648,
+                [],
+            ),
+        ]
+    attempts = []
+    seen = set()
+    for label, attempt_seed, attempt_themes in specs:
+        identity = (attempt_seed, tuple(attempt_themes))
+        if identity in seen:
+            continue
+        seen.add(identity)
+        attempt_options = {
+            **options,
+            "seed": attempt_seed,
+            "themes": attempt_themes,
+        }
+        # Sunday has four times the cells. Give its final open-grid rescue a
+        # larger native search budget so an unlucky thematic proposal does not
+        # make the 21×21 lane appear unavailable. The budget is still bounded
+        # by the runtime contract and is retained in the attempt receipt.
+        if options.get("gridSize") == 21:
+            if label == "theme-locked-primary":
+                # Probe the personalized locks briefly. A full Sunday search
+                # can spend minutes proving an unlucky theme set impossible;
+                # the deterministic anchor below is the bounded playable
+                # fallback for local-first sessions.
+                attempt_options.update({"candidates": 10, "time": 0.25})
+            elif label == "open-grid-reseed":
+                attempt_options.update({"candidates": 400, "time": 10})
+            elif label == "sunday-anchor-fallback":
+                # The larger board's xfill score is intentionally advisory:
+                # this known-placeable anchor has a healthy mean score but
+                # more weak fills than the 15x15 gate. Keep it playable and
+                # retain the measured uncertainty in provenance.
+                attempt_options.update({"candidates": 200, "time": 5, "maxIffy": 100})
+            elif label in {"theme-locked-reseed"}:
+                attempt_options.update({"candidates": 250, "time": 7})
+        attempts.append(
+            {
+                "label": label,
+                "seed": attempt_seed,
+                "options": attempt_options,
+            }
+        )
+        if len(attempts) >= _FILL_RETRY_MAX_ATTEMPTS:
+            break
+    return attempts
+
+
+def _fill_quality_policy(attempts, selected_index, *, theme_floor=0):
+    """Freeze the bounded comparison receipt for the selected fill."""
+    measured = [
+        attempt
+        for attempt in attempts
+        if attempt.get("quality", {}).get("status") == "measured"
+    ]
+    return {
+        "version": FILL_QUALITY_POLICY_VERSION,
+        "status": "measured" if measured else "unavailable",
+        "attemptCount": len(attempts),
+        "selectedAttempt": selected_index + 1 if selected_index is not None else None,
+        "themeFloor": theme_floor,
+        "selectionBasis": (
+            "fewest-iffy-then-theme-floor-then-weak-then-mean-then-min"
+            if measured
+            else "first-valid-board-without-native-quality-receipt"
+        ),
+        "attempts": attempts,
+        "uncertainty": "xfill-heuristic-not-human-quality",
+    }
+
+
+def _crossing_support_summary(grid, entries):
+    """Report structural crossing access without claiming player support."""
+    raw_entries = grid.get("entries") if isinstance(grid, dict) else None
+    fill = grid.get("fill") if isinstance(grid, dict) else None
+    if not isinstance(raw_entries, list) or not isinstance(fill, list):
+        return {
+            "version": "structural-crossing-v1",
+            "status": "unavailable",
+            "entryCount": 0,
+            "weakEntryCount": 0,
+            "weakWithoutCrossing": [],
+            "minimumScore": None,
+            "meanScore": None,
+            "uncertainty": "player-support-unmeasured",
+        }
+    cells = {}
+    by_id = {}
+    for raw in raw_entries:
+        if not isinstance(raw, dict):
+            continue
+        entry_id = f"{raw.get('num')}{raw.get('dir')}"
+        row, col, length = raw.get("row"), raw.get("col"), raw.get("len")
+        if (
+            not isinstance(row, int)
+            or not isinstance(col, int)
+            or not isinstance(length, int)
+            or length < 1
+            or raw.get("dir") not in {"A", "D"}
+        ):
+            continue
+        by_id[entry_id] = raw
+        for offset in range(length):
+            coordinate = (
+                row if raw["dir"] == "A" else row + offset,
+                col + offset if raw["dir"] == "A" else col,
+            )
+            cells.setdefault(coordinate, []).append(entry_id)
+    scores = []
+    weak_without_crossing = []
+    edges = []
+    weak_count = 0
+    for entry in entries if isinstance(entries, list) else []:
+        entry_id = entry.get("id") if isinstance(entry, dict) else None
+        raw = by_id.get(entry_id)
+        if not isinstance(entry_id, str) or not isinstance(raw, dict):
+            continue
+        row, col, length = raw["row"], raw["col"], raw["len"]
+        crossing_cells = []
+        support_ids = set()
+        for offset in range(length):
+            coordinate = (
+                row if raw["dir"] == "A" else row + offset,
+                col + offset if raw["dir"] == "A" else col,
+            )
+            other_ids = [item for item in cells.get(coordinate, []) if item != entry_id]
+            if other_ids:
+                crossing_cells.append(coordinate)
+                support_ids.update(other_ids)
+        score = round(len(crossing_cells) / length, 3) if length else 0
+        scores.append(score)
+        is_weak = entry.get("needsFoothold") is True
+        if is_weak:
+            weak_count += 1
+            if not crossing_cells:
+                weak_without_crossing.append(entry_id)
+        edges.append(
+            {
+                "entryId": entry_id,
+                "crossingCellCount": len(crossing_cells),
+                "crossingScore": score,
+                "supportEntryIds": sorted(support_ids),
+            }
+        )
+    return {
+        "version": "structural-crossing-v1",
+        "status": "measured",
+        "entryCount": len(scores),
+        "weakEntryCount": weak_count,
+        "weakWithoutCrossing": sorted(weak_without_crossing),
+        "minimumScore": min(scores) if scores else None,
+        "meanScore": round(sum(scores) / len(scores), 3) if scores else None,
+        "edges": edges,
+        "uncertainty": "player-support-unmeasured",
+    }
+
+
+def _generate(
+    seed,
+    weekday,
+    starting,
+    episteme,
+    *,
+    stage_callback=None,
+    model_override=None,
+):
+    def report_stage(stage):
+        if callable(stage_callback):
+            try:
+                stage_callback(stage)
+            except Exception:
+                # Progress is advisory. A temporary status-write failure must
+                # never discard an otherwise playable local puzzle.
+                pass
+
+    total_started = monotonic()
+    model = _resolve_model_override(model_override)
+    context = _profile_context(starting, episteme.profile_json)
+    recipe = _weekday_recipe(weekday)
+    report_stage("theme-proposal")
+    theme_started = monotonic()
+    theme_mechanic = None
+    mechanic_unavailable_reason = None
+    theme_proposal_source = "model"
+    if weekday == "thursday":
+        try:
+            themes, theme_mechanic = _make_thursday_theme_proposal(model, context)
+        except Exception:
+            # Keep Thursday useful when the model misses its structured
+            # response: choose a checked local vocabulary group and let the
+            # final native fill validate it. If that local lane is unavailable,
+            # preserve the ordinary-theme fail-open route.
+            try:
+                themes, theme_mechanic = _deterministic_thursday_theme_proposal(
+                    context
+                )
+                theme_proposal_source = "deterministic-local-affix-group"
+            except Exception:
+                mechanic_unavailable_reason = "proposal-unavailable"
+                theme_proposal_source = "ordinary-theme-fallback"
+                themes = _make_themes(model, context, weekday)
+    else:
+        themes = _make_themes(model, context, weekday)
+    theme_proposal_seconds = max(0.0, monotonic() - theme_started)
+    difficulty = _DIFFICULTY[weekday]
+    grid_size = 21 if weekday == "sunday" else 15
+    options = {
+        "seed": seed,
+        "candidates": difficulty["candidates"],
+        "time": difficulty["time"],
+        "keepMean": 50,
+        "minScore": 40,
+        "maxIffy": 20,
+        "themes": themes[: recipe["themeAnswerCount"]],
+    }
+    if grid_size == 21:
+        options["gridSize"] = 21
+    report_stage("native-xfill")
+    xfill_started = monotonic()
+    # Generated theme tokens can be unfamiliar to the bundled fill list, and a
+    # local lexicon can contain an accidental artefact. Evaluate a bounded,
+    # deterministic set of native retries and choose the best measured board;
+    # this improves the usual case without turning heuristic scores into a
+    # private-play rejection gate.
+    result = None
+    selected_attempt_index = None
+    selected_seed = seed
+    last_fill_error = None
+    fill_attempts = []
+    successful_fills = []
+    theme_floor = min(2, len(options.get("themes", [])))
+    # A validated Thursday proposal is only meaningful when at least three
+    # instances survive the fill. Prefer that stronger floor during candidate
+    # selection; if no candidate meets it, the ordinary open-grid fallback
+    # remains playable and the provenance records the unavailable mechanic.
+    mechanic_theme_floor = (
+        3
+        if weekday == "thursday" and theme_mechanic is not None
+        else theme_floor
+    )
+    for attempt_index, retry in enumerate(_fill_retry_options(seed, options)):
+        retry_options = retry["options"]
+        attempt_record = {
+            "attempt": attempt_index + 1,
+            "label": retry["label"],
+            "seed": retry["seed"],
+            "options": retry_options,
+            "themeLocks": list(retry_options["themes"]),
+            "status": "pending",
+        }
+        try:
+            candidate = generate_full_size_draft(
+                seed=retry["seed"], options=retry_options
+            )
+            candidate_grid = (
+                candidate.get("grid") if isinstance(candidate, dict) else None
+            )
+            if not isinstance(candidate_grid, dict) or not isinstance(
+                candidate_grid.get("entries"), list
+            ):
+                raise FullSizeRuntimeUnavailable(
+                    "Native fill returned no usable entry list"
+                )
+            violations = _private_fill_violations(candidate_grid)
+            if violations:
+                attempt_record.update(
+                    {
+                        "status": "rejected",
+                        "reason": "private-fill-blocklist",
+                        "violations": violations,
+                        "quality": _fill_quality_report(candidate_grid),
+                        "boardDigest": _fill_board_digest(candidate_grid),
+                        "sourceDigest": candidate.get("sourceDigest")
+                        if isinstance(candidate, dict)
+                        else None,
+                    }
+                )
+                fill_attempts.append(attempt_record)
+                last_fill_error = FullSizeDraftRejected(
+                    "Native fill contained an accidental construction artefact"
+                )
+                continue
+            quality = _fill_quality_report(candidate_grid)
+            attempt_record.update(
+                {
+                    "status": "candidate",
+                    "quality": quality,
+                    "boardDigest": _fill_board_digest(candidate_grid),
+                    "sourceDigest": candidate.get("sourceDigest")
+                    if isinstance(candidate, dict)
+                    else None,
+                }
+            )
+            fill_attempts.append(attempt_record)
+            successful_fills.append(
+                {
+                    "index": attempt_index,
+                    "seed": retry["seed"],
+                    "options": retry_options,
+                    "candidate": candidate,
+                    "quality": quality,
+                }
+            )
+            # Sunday generation is already a large native search. Once a
+            # measured 21x21 candidate clears the runtime's own gates, keep
+            # the first playable board instead of launching another bounded
+            # search just to make a heuristic comparison. The attempt receipt
+            # still records every try made before this success.
+            if options.get("gridSize") == 21 and quality["status"] == "measured":
+                break
+            # A fixture or older runtime without native quality fields cannot
+            # be ranked honestly. Retain the first valid board and record that
+            # comparison was unavailable; production xfill always reports the
+            # measured fields above.
+            if quality["status"] != "measured":
+                break
+        except (FullSizeDraftRejected, FullSizeRuntimeUnavailable) as error:
+            last_fill_error = error
+            attempt_record.update({"status": "failed", "reason": str(error)[:240]})
+            fill_attempts.append(attempt_record)
+    if result is None:
+        if not successful_fills:
+            raise last_fill_error or FullSizeRuntimeUnavailable(
+                "The local construction runtime did not return a usable fill"
+            )
+        selected = min(
+            successful_fills,
+            key=lambda item: _fill_quality_selection_key(
+                item["quality"],
+                item["index"],
+                theme_floor=mechanic_theme_floor,
+            ),
+        )
+        result = selected["candidate"]
+        selected_attempt_index = selected["index"]
+        selected_seed = selected["seed"]
+        options = selected["options"]
+    fill_policy = _fill_quality_policy(
+        fill_attempts, selected_attempt_index, theme_floor=mechanic_theme_floor
+    )
+    native_xfill_seconds = max(0.0, monotonic() - xfill_started)
+    grid = result.get("grid") if isinstance(result, dict) else None
+    if not isinstance(grid, dict) or not isinstance(grid.get("entries"), list):
+        raise ValueError("Native fill returned no entries")
+    grid = construct_native_token_grid(grid)
+    token_construction = validate_native_token_cells(grid)
+    active_theme_mechanic = None
+    mechanic_theme_answers = [
+        entry.get("answer")
+        for entry in grid["entries"]
+        if isinstance(entry, dict) and entry.get("theme") is True
+    ]
+    if theme_mechanic is not None:
+        active_theme_mechanic = _validate_shared_affix_mechanic(
+            mechanic_theme_answers, theme_mechanic
+        )
+        if active_theme_mechanic is None:
+            mechanic_unavailable_reason = (
+                "insufficient-themed-entries"
+                if len(mechanic_theme_answers) < 3
+                else "fill-pattern-mismatch"
+            )
+    clue_entries = [
+        {
+            "id": f"{entry['num']}{entry['dir']}",
+            "number": entry["num"],
+            "direction": "across" if entry["dir"] == "A" else "down",
+            "answer": entry["answer"],
+            "length": entry["len"],
+            "theme": entry.get("theme") is True,
+            "fillScore": entry.get("score"),
+            "needsFoothold": isinstance(entry.get("score"), (int, float))
+            and entry.get("score", 100) < 60,
+            "cluePolicy": (
+                "source-free-foothold"
+                if (
+                    isinstance(entry.get("score"), (int, float))
+                    and entry.get("score", 100) < 60
+                )
+                else "ordinary-definition-or-signalled-wordplay"
+            ),
+        }
+        for entry in grid["entries"]
+    ]
+    pre_clue_construction = evaluate_private_board(
+        grid,
+        clue_entries,
+        source_digest=result.get("sourceDigest") if isinstance(result, dict) else None,
+    )
+    clue_context = {
+        **context,
+        "_foothold_seed_plan": pre_clue_construction.get("footholdSeedPlan"),
+    }
+    if active_theme_mechanic is not None:
+        clue_context["_weekday_theme_mechanic"] = active_theme_mechanic
+    reviewed_clue_pack = _load_reviewed_clue_pack(clue_entries)
+    report_stage("clue-generation")
+    clue_started = monotonic()
+    if reviewed_clue_pack.get("byId"):
+        title, clues = _make_clues(
+            model,
+            clue_entries,
+            clue_context,
+            weekday,
+            reviewed_pack=reviewed_clue_pack,
+        )
+    else:
+        title, clues = _make_clues(model, clue_entries, clue_context, weekday)
+    clue_generation_seconds = max(0.0, monotonic() - clue_started)
+    challenge_enabled = os.environ.get(
+        PRIVATE_CLUE_CHALLENGE_ENV, ""
+    ).strip().casefold() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    if challenge_enabled:
+        report_stage("clue-challenge")
+    clue_challenge_started = monotonic() if challenge_enabled else None
+    clue_challenge = _challenge_private_clues(
+        model,
+        clue_entries,
+        clues,
+        clue_context,
+        weekday,
+    )
+    clue_challenge_seconds = (
+        max(0.0, monotonic() - clue_challenge_started)
+        if clue_challenge_started is not None
+        else 0.0
+    )
+    report_stage("finalizing")
+    clue_quality = _clue_quality_summary(
+        clue_entries,
+        clues,
+        model_challenges=clue_challenge.get("byId", {}),
+        reviewed_pack=reviewed_clue_pack,
+    )
+    clue_quality["reviewedCluePack"] = _reviewed_clue_pack_summary(
+        reviewed_clue_pack
+    )
+    clue_diversity = _clue_diversity_report(
+        clue_entries,
+        clues,
+        repair=clue_context.get("_clue_diversity_repair"),
+    )
+    clue_quality["diversity"] = clue_diversity
+    crossing_support = _crossing_support_summary(grid, clue_entries)
+    construction_evidence = evaluate_private_board(
+        grid,
+        clue_entries,
+        source_digest=result.get("sourceDigest") if isinstance(result, dict) else None,
+        clue_quality=clue_quality,
+    )
+    sibling_evaluator_adapter = evaluate_sibling_adapter(
+        grid,
+        clue_entries,
+        clues,
+        board_digest=construction_evidence.get("boardDigest"),
+        source_digest=result.get("sourceDigest") if isinstance(result, dict) else None,
+    )
+    construction_evidence["siblingEvaluatorAdapter"] = sibling_evaluator_adapter
+    fill_quality = {
+        "entryCount": len(grid["entries"]),
+        "meanScore": grid.get("mean_score"),
+        "minimumScore": grid.get("min_score"),
+        "iffyCount": grid.get("iffy"),
+        "weakCount": grid.get("weak"),
+        "footholdCount": sum(1 for item in clue_entries if item["needsFoothold"]),
+        "qualityPolicy": fill_policy,
+    }
+    timings = {
+        "themeProposal": round(theme_proposal_seconds, 3),
+        "nativeXfill": round(native_xfill_seconds, 3),
+        "clueGeneration": round(clue_generation_seconds, 3),
+        "total": round(max(0.0, monotonic() - total_started), 3),
+    }
+    if clue_challenge.get("enabled") is True:
+        timings["clueChallenge"] = round(clue_challenge_seconds, 3)
+        # Preserve the historical ordering used by local diagnostics.
+        timings = {
+            "themeProposal": timings["themeProposal"],
+            "nativeXfill": timings["nativeXfill"],
+            "clueGeneration": timings["clueGeneration"],
+            "clueChallenge": timings["clueChallenge"],
+            "total": timings["total"],
+        }
+    language_learning = _language_learning_generation_record(
+        context, clue_entries, clues
+    )
+    if isinstance(language_learning, dict):
+        language_cells = emit_single_cell_language_tokens(
+            grid,
+            language_learning.get("tokenHints"),
+            language=language_learning.get("language")
+            or context.get("language_interest"),
+            source=language_learning.get("tokenHintSource"),
+        )
+        if language_cells:
+            grid["tokenCells"] = language_cells
+    grid = construct_native_token_grid(grid)
+    token_construction = validate_native_token_cells(grid)
+    crossword, manifest = _legacy_puzzle(
+        grid,
+        themes,
+        title,
+        clues,
+        model,
+        weekday,
+        selected_seed,
+        context.get("language_interest"),
+    )
+    native_hints = native_token_hints(grid)
+    if native_hints and isinstance(language_learning, dict):
+        existing_hints = language_learning.get("tokenHints", [])
+        combined_hints = []
+        for hint in [*existing_hints, *native_hints]:
+            if hint not in combined_hints:
+                combined_hints.append(hint)
+        language_learning = {
+            **language_learning,
+            "tokenHints": combined_hints[:16],
+            "tokenHintSource": "native-constructor",
+        }
+    provenance = {
+        "source": "local-ollama-xfill",
+        "model": model,
+        "engine": "xfill",
+        "seed": seed,
+        "weekday": weekday,
+        "personalizationReceipt": _personalization_receipt(
+            episteme.profile_json,
+            context,
+            seed=seed,
+            weekday=weekday,
+            model=model,
+        ),
+        "weekdayRecipe": {
+            "id": recipe["id"],
+            "intent": recipe["intent"],
+            "themeMode": (
+                "shared-affix"
+                if active_theme_mechanic is not None
+                else (
+                    "standard-theme" if weekday == "thursday" else recipe["themeMode"]
+                )
+            ),
+            "themeAnswerTarget": recipe["themeAnswerCount"],
+            "themeLocksUsed": len(options["themes"]),
+            "themeEntriesUsed": sum(1 for entry in clue_entries if entry["theme"]),
+            "gridMechanic": "ordinary-letter-grid",
+        },
+        "themeProposal": {
+            "source": theme_proposal_source,
+            "mechanicRequested": weekday == "thursday" and theme_mechanic is not None,
+        },
+        "themeExposure": _theme_exposure_receipt(context, clue_entries),
+        "languageInterest": context.get("language_interest"),
+        "languageLearning": language_learning,
+        "playCalibration": context.get("play_calibration"),
+        "clueFamilyTargets": context.get("clue_family_targets", []),
+        "themeAnswers": [item["answer"] for item in clue_entries if item["theme"]],
+        "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "experimental": True,
+        "fillQuality": {
+            **fill_quality,
+        },
+        "crossingSupport": crossing_support,
+        # This is a local structural receipt.  It intentionally records the
+        # sibling evaluator boundary and never turns topology into player
+        # support or a completion prediction.
+        "constructionEvidence": construction_evidence,
+        # The adapter is a lab-only diagnostic.  Missing explicit estimates
+        # produce ``not-invoked`` and an unavailable sibling runtime produces
+        # ``failed``; neither state affects playable private generation.
+        "siblingEvaluatorAdapter": sibling_evaluator_adapter,
+        "clueQuality": clue_quality,
+        "clueDiversity": clue_diversity,
+        "clueBundle": clue_quality["groundedClueBundle"],
+        "reviewedCluePack": _reviewed_clue_pack_summary(reviewed_clue_pack),
+        # Optional local-model recommendations are retained as advisory
+        # evidence. The deterministic challenger still owns classification,
+        # and private play never waits on or gates on this pass.
+        "semanticClueChallenge": {
+            key: value for key, value in clue_challenge.items() if key != "byId"
+        },
+        "timingsSeconds": timings,
+        "tokenConstruction": {
+            **token_construction,
+            "language": context.get("language_interest"),
+            "hints": native_hints[:16],
+        },
+    }
+    if grid_size == 21:
+        provenance["weekdayRecipe"]["gridSize"] = 21
+    if weekday == "thursday":
+        if active_theme_mechanic is not None:
+            provenance["themeMechanic"] = {
+                "status": "validated",
+                **active_theme_mechanic,
+                "themeAnswers": mechanic_theme_answers,
+            }
+        else:
+            provenance["themeMechanic"] = {
+                "status": "unavailable",
+                "type": "shared-affix",
+                "reason": mechanic_unavailable_reason or "fill-pattern-mismatch",
+            }
+        # Keep a digest-bound, answer-structural receipt beside the mechanic
+        # declaration.  This is an inspection artifact for real generated
+        # boards; it does not gate private play or make a fairness claim.
+        provenance["mechanicEvaluation"] = evaluate_thursday_mechanic_board(
+            {"entries": grid["entries"]},
+            provenance,
+            board_id=f"thursday-{selected_seed}",
+        )
+    return crossword, manifest, provenance
+
+
+def _json_copy(value):
+    return json.loads(json.dumps(value, ensure_ascii=False, allow_nan=False))
+
+
+@private_puzzle_api.post("/api/future/private-puzzle-jobs")
+def create_private_puzzle_job():
+    """Queue a playable local puzzle while the browser keeps its solver alive."""
+    if not _local_origin():
+        return _error("Cross-origin puzzle job creation is not allowed", 403)
+    request.max_content_length = MAX_BODY_BYTES
+    if (request.content_length or 0) > MAX_BODY_BYTES:
+        return _error("Puzzle job request is too large", 413)
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or not set(body).issubset(
+        {"profileId", "idempotencyKey", "seed", "weekday", "model"}
+    ) or not {"profileId", "idempotencyKey", "seed", "weekday"}.issubset(body):
+        return _error(
+            "Puzzle job request must include profileId, idempotencyKey, seed and weekday",
+            400,
+        )
+    profile_id = body["profileId"]
+    idempotency_key = body["idempotencyKey"]
+    seed = body["seed"]
+    weekday = body["weekday"]
+    requested_model = body.get("model")
+    if (
+        not isinstance(profile_id, str)
+        or not _UUID.fullmatch(profile_id)
+        or str(UUID(profile_id)) != profile_id
+        or not isinstance(idempotency_key, str)
+        or not _UUID.fullmatch(idempotency_key)
+        or str(UUID(idempotency_key)) != idempotency_key
+        or type(seed) is not int
+        or not 0 <= seed <= 2_147_483_647
+        or weekday not in _WEEKDAYS
+        or (requested_model is not None and not isinstance(requested_model, str))
+    ):
+        return _error("Invalid profile, idempotency key, seed or difficulty", 400)
+    if requested_model is not None and requested_model not in _EXPLICIT_MODEL_TAGS:
+        return _error("Unsupported local writing model", 400)
+
+    intent = {
+        "mode": "private-puzzle",
+        "profileId": profile_id,
+        "idempotencyKey": idempotency_key,
+        "seed": seed,
+        "weekday": weekday,
+    }
+    if requested_model is not None:
+        intent["model"] = requested_model
+    request_digest = _digest(intent)
+    existing = FutureGridDraftJob.query.filter_by(
+        profile_id=profile_id,
+        idempotency_key=idempotency_key,
+    ).one_or_none()
+    if existing is not None:
+        if existing.request_digest != request_digest:
+            return _error(
+                "Idempotency key was already used for a different request", 409
+            )
+        return _response(existing)
+
+    starting = db.session.get(StartingProfile, profile_id)
+    if starting is None:
+        return _error("Profile not found; save the opening first", 404)
+    effective_model = requested_model or _saved_model_override(starting)
+    try:
+        episteme = get_or_create_episteme_profile(profile_id, starting.updated_at)
+    except (EpistemeCommandRejected, EpistemeRuntimeUnavailable):
+        db.session.rollback()
+        return _error("The local episteme could not be loaded", 503)
+    if (
+        not isinstance(episteme.profile_json, dict)
+        or episteme.profile_json.get("profileId") != profile_id
+        or episteme.profile_json.get("updatedAt") != episteme.updated_at
+    ):
+        db.session.rollback()
+        return _error("The stored local episteme snapshot is inconsistent", 409)
+
+    if effective_model is not None:
+        try:
+            _resolve_model_override(effective_model)
+        except RuntimeError as error:
+            db.session.rollback()
+            return _error(str(error)[:240], 503)
+
+    frozen = {
+        "version": 1,
+        "mode": "private-puzzle",
+        "profileId": profile_id,
+        "profileUpdatedAt": starting.updated_at,
+        "startingProfile": _json_copy(starting.profile),
+        "startingDraft": _json_copy(starting.draft),
+        "epistemeRevision": episteme.revision,
+        "epistemeUpdatedAt": episteme.updated_at,
+        "epistemeProfile": _json_copy(episteme.profile_json),
+        "weekday": weekday,
+        "seed": seed,
+        "stage": "private-puzzle",
+    }
+    if effective_model is not None:
+        frozen["model"] = effective_model
+    now = _stamp()
+    job = FutureGridDraftJob(
+        id=str(uuid4()),
+        profile_id=profile_id,
+        idempotency_key=idempotency_key,
+        request_digest=request_digest,
+        request_json=frozen,
+        state="queued",
+        created_at=now,
+        updated_at=now,
+    )
+    db.session.add(job)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        existing = FutureGridDraftJob.query.filter_by(
+            profile_id=profile_id,
+            idempotency_key=idempotency_key,
+        ).one_or_none()
+        if existing is None:
+            raise
+        if existing.request_digest != request_digest:
+            return _error(
+                "Idempotency key was already used for a different request", 409
+            )
+        return _response(existing)
+    return _response(job, 202)
+
+
+@private_puzzle_api.post("/api/future/private-puzzles")
+def create_private_puzzle():
+    """Make and return one immediately playable profile-personalized puzzle."""
+    if not _local_origin():
+        return _error("Cross-origin puzzle creation is not allowed", 403)
+    request.max_content_length = MAX_BODY_BYTES
+    if (request.content_length or 0) > MAX_BODY_BYTES:
+        return _error("Puzzle request is too large", 413)
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or not set(body).issubset(
+        {"profileId", "seed", "weekday", "model"}
+    ) or not {"profileId", "seed", "weekday"}.issubset(body):
+        return _error("Puzzle request must include profileId, seed and weekday", 400)
+    profile_id, seed, weekday = body["profileId"], body["seed"], body["weekday"]
+    requested_model = body.get("model")
+    if (
+        not isinstance(profile_id, str)
+        or not _UUID.fullmatch(profile_id)
+        or str(UUID(profile_id)) != profile_id
+        or type(seed) is not int
+        or not 0 <= seed <= 2_147_483_647
+        or weekday not in _WEEKDAYS
+        or (requested_model is not None and not isinstance(requested_model, str))
+    ):
+        return _error("Invalid profile, seed or difficulty", 400)
+    if requested_model is not None and requested_model not in _EXPLICIT_MODEL_TAGS:
+        return _error("Unsupported local writing model", 400)
+    starting = db.session.get(StartingProfile, profile_id)
+    if starting is None:
+        return _error("Profile not found; save the opening first", 404)
+    effective_model = requested_model or _saved_model_override(starting)
+    try:
+        episteme = get_or_create_episteme_profile(profile_id, starting.updated_at)
+        if effective_model is None:
+            crossword, manifest, provenance = _generate(seed, weekday, starting, episteme)
+        else:
+            crossword, manifest, provenance = _generate(
+                seed,
+                weekday,
+                starting,
+                episteme,
+                model_override=effective_model,
+            )
+    except (EpistemeCommandRejected, EpistemeRuntimeUnavailable):
+        db.session.rollback()
+        return _error("The local episteme could not be loaded", 503)
+    except requests.RequestException:
+        db.session.rollback()
+        return _error("The local writing model did not finish; try again", 503)
+    except RuntimeError as error:
+        db.session.rollback()
+        return _error(str(error)[:240], 503)
+    except (
+        ValueError,
+        TypeError,
+        KeyError,
+        RecursionError,
+        FullSizeDraftRejected,
+        FullSizeRuntimeUnavailable,
+    ) as error:
+        db.session.rollback()
+        message = str(error).strip()
+        return _error(message[:240] or "Local puzzle generation failed", 422)
+    # The playable manifest is the replay contract; keep the richer
+    # experimental clue/fill receipt beside it for reload and postgame review.
+    # A storage failure remains fail-open for local play.
+    try:
+        store_private_puzzle_provenance(
+            profile_id=profile_id,
+            manifest=manifest,
+            provenance=provenance,
+        )
+    except (ValueError, TypeError, KeyError, RecursionError, IntegrityError):
+        db.session.rollback()
+    response = jsonify(
+        {
+            **crossword.model_dump(exclude={"across_entries", "down_entries"}),
+            "puzzleManifest": manifest,
+            "provenance": provenance,
+        }
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response

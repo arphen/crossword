@@ -1,0 +1,110 @@
+{
+  "challenge": {
+    "checkedCount": 15,
+    "playPolicy": "never-gates-private-play",
+    "status": "completed",
+    "version": "private-clue-model-challenge-v1"
+  },
+  "clues": {
+    "checkedCount": 78,
+    "issueCount": 0,
+    "issueCounts": {},
+    "reviewedCluePack": {
+      "contextCount": 0,
+      "matchedCount": 0,
+      "status": "not-configured",
+      "uncertainty": "reviewed-source-provenance-is-not-a-publication-claim",
+      "version": "private-reviewed-clue-pack-v1"
+    }
+  },
+  "construction": {
+    "boardDigest": "sha256:52f341f4dd0399cabd9b7f8450f4eaf8535be54cda4fea8d114fd34e994b7c96",
+    "entryCount": 78,
+    "isolatedEntries": [],
+    "meanCrossingScore": 1.0,
+    "minimumCrossingScore": 1.0,
+    "sourceDigest": "sha256:0d003853979c22a4b6a363b231a135c0b23dab5bc99272ebfe841612924a71eb",
+    "status": "measured",
+    "uncertainty": {
+      "humanPlaytest": "not-run",
+      "playerSupport": "unmeasured",
+      "semanticFairness": "unverified",
+      "siblingEvaluator": "not-invoked"
+    }
+  },
+  "crossingSupport": {
+    "entryCount": 78,
+    "status": "measured",
+    "uncertainty": "player-support-unmeasured",
+    "weakEntryCount": 15,
+    "weakWithoutCrossing": []
+  },
+  "fill": {
+    "attemptCount": 4,
+    "entryCount": 78,
+    "footholdCount": 15,
+    "iffyCount": 0,
+    "meanScore": 80.69,
+    "minimumScore": 55,
+    "selectedAttempt": 1,
+    "selectedAttemptLabel": "theme-locked-primary",
+    "uncertainty": "xfill-heuristic-not-human-quality"
+  },
+  "generatedAt": "2026-09-28T05:03:01+00:00",
+  "job": {
+    "jobId": "74afda5d-b20c-4c95-b1d9-2d0cd32572dc",
+    "playable": true,
+    "profileId": "b3aa0d6d-a950-49a1-9b54-da9745b63d65",
+    "state": "ready"
+  },
+  "limitations": [
+    "local experimental puzzle; no semantic truth or human fairness claim",
+    "xfill scores are heuristic and not player-quality measurements",
+    "temporary profile and SQLite database were disposable"
+  ],
+  "personalization": {
+    "epistemeRevision": 0,
+    "inputs": {
+      "associationCount": 0,
+      "claimCount": 0,
+      "clueFamilyTargetCount": 0,
+      "difficultyRecommendation": null,
+      "evidenceCount": 0,
+      "knowledgeItemCount": 0,
+      "languageThread": false,
+      "recentExposureCount": 0
+    },
+    "interpretation": "generation-input-receipt-only",
+    "model": "gemma4:26b",
+    "seed": 137,
+    "version": "private-personalization-receipt-v1"
+  },
+  "puzzle": {
+    "entryCount": 78,
+    "height": 15,
+    "themeAnswers": [
+      "WEAVE",
+      "STITCH",
+      "RESONANCE",
+      "ECHO"
+    ],
+    "title": "Wednesday Experimental",
+    "width": 15
+  },
+  "runtime": {
+    "database": "disposable-sqlite",
+    "model": "gemma4:26b",
+    "route": "durable-private-puzzle-job",
+    "seed": 137,
+    "weekday": "wednesday"
+  },
+  "timingsSeconds": {
+    "clueChallenge": 12.453,
+    "clueGeneration": 123.399,
+    "nativeXfill": 37.288,
+    "themeProposal": 13.349,
+    "total": 186.577
+  },
+  "version": "private-current-source-live-smoke-v1",
+  "artifactDigest": "sha256:a0157f023310e891c801585dbbec45031a6ccb18531ade6bad5444f2a4944bc0"
+}

@@ -1,0 +1,100 @@
+{
+  "version": "private-weekday-mechanic-study-v1",
+  "scope": "loopback-private-thursday-boards",
+  "status": "observed",
+  "studyId": "real-gemma4-26b-thursday-mechanic-floor-20260928",
+  "profileId": "44444444-4444-4444-8444-444444444444",
+  "requestedSeeds": [
+    142
+  ],
+  "summary": {
+    "pass": 0,
+    "fallbackSafe": 0,
+    "fail": 1,
+    "requestFailed": 0,
+    "boardCount": 1
+  },
+  "cases": [
+    {
+      "seed": 142,
+      "status": "fail",
+      "mechanicStatus": "validated",
+      "report": {
+        "version": "private-weekday-mechanic-evaluation-v1",
+        "scope": "private-local-evaluation",
+        "boardId": "thursday-142",
+        "boardDigest": "sha256:b39c920f2543e2edcdec253854b9a9557e692eaa3491a4e941713e129ffa573b",
+        "status": "fail",
+        "mechanic": {
+          "status": "validated",
+          "type": "shared-affix",
+          "affix": "NG",
+          "position": "suffix",
+          "themeAnswers": [
+            "BORING",
+            "BOXING",
+            "WHALESONG",
+            "ACTING"
+          ]
+        },
+        "instanceCount": 4,
+        "instances": [
+          {
+            "answer": "BORING",
+            "entryIds": [],
+            "ordinaryLetterAnswer": true,
+            "affixMatches": true
+          },
+          {
+            "answer": "BOXING",
+            "entryIds": [],
+            "ordinaryLetterAnswer": true,
+            "affixMatches": true
+          },
+          {
+            "answer": "WHALESONG",
+            "entryIds": [],
+            "ordinaryLetterAnswer": true,
+            "affixMatches": true
+          },
+          {
+            "answer": "ACTING",
+            "entryIds": [],
+            "ordinaryLetterAnswer": true,
+            "affixMatches": true
+          }
+        ],
+        "recipe": {
+          "id": "thursday-private-v1",
+          "themeMode": "shared-affix",
+          "gridMechanic": "ordinary-letter-grid"
+        },
+        "reasonCodes": [
+          "declared-and-filled-theme-answers-differ",
+          "theme-answer-not-in-grid:ACTING",
+          "theme-answer-not-in-grid:BORING",
+          "theme-answer-not-in-grid:BOXING",
+          "theme-answer-not-in-grid:WHALESONG"
+        ],
+        "uncertainty": {
+          "semanticFairness": "unverified",
+          "modelQuality": "not-measured",
+          "playerSolveProbability": "unmeasured",
+          "humanPlaytest": "not-run"
+        }
+      }
+    }
+  ],
+  "uncertainty": {
+    "semanticFairness": "unverified",
+    "modelQuality": "not-measured",
+    "playerSolveProbability": "unmeasured",
+    "humanPlaytest": "not-run"
+  },
+  "metadata": {
+    "transport": "loopback-http",
+    "baseUrl": "http://127.0.0.1:5001",
+    "weekday": "thursday"
+  },
+  "studyDigest": "sha256:64469d40c5bdbbe9b240530cfd4ca07ac15cbf0c0fdbf14c86fe768b85c44b86"
+}

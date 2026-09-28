@@ -1,11 +1,11 @@
 .DEFAULT_GOAL := help
 .SHELL := /bin/sh
 
-.PHONY: help check-uv check-node doctor install dev sync venv setup \
+.PHONY: help check-uv check-node doctor runtime-doctor install dev sync venv setup \
 	test test-js test-live core-test legacy-test legacy-test-live build legacy-assets react-assets \
 	mutation-test \
-	legacy-run web-dev run legacy-smoke test-cov test-watch lint format clean \
-	run-prod shell docker-build docker-run deps-update deps-list deps-tree \
+	legacy-run web-dev run future-worker future-worker-once legacy-smoke test-cov test-watch lint format clean \
+	run-personal run-prod shell docker-build docker-run deps-update deps-list deps-tree \
 	npm-audit hooks-install map-update map-check check bootstrap all
 
 BLUE := \033[0;34m
@@ -16,6 +16,7 @@ NC := \033[0m
 
 SMOKE_HOST ?= 127.0.0.1
 SMOKE_PORT ?= 5001
+CROSSWORD_XFILL_ROOT ?= ../crossword-generator/vendor/xfill
 
 help: ## Show the reproducible developer commands
 	@echo "$(BLUE)Crossword legacy continuity bridge$(NC)"
@@ -43,6 +44,9 @@ check-node: ## Check that the pinned Node/npm tools are available
 
 doctor: check-uv check-node ## Verify pinned tool versions and the uv environment
 	uv run python scripts/doctor.py
+
+runtime-doctor: check-uv check-node ## Read-only check for xfill, the runtime archive, and Ollama
+	uv run --no-sync python scripts/runtime_doctor.py
 
 install: check-uv ## Install runtime Python dependencies from uv.lock
 	uv sync --frozen
@@ -109,8 +113,36 @@ legacy-run: run ## Start the same server; Vue fallback at http://127.0.0.1:5001/
 
 web-dev: run ## Alias for the React/Flask development server
 
-run: check-uv build ## Build both frontends; run React at http://127.0.0.1:5001/
-	uv run --no-sync python run.py
+run: check-uv build ## Build both frontends; run React and the local puzzle worker at http://127.0.0.1:5001/
+	@set -eu; \
+	worker_log="$${TMPDIR:-/tmp}/crossword-future-worker.$$$$.log"; \
+	CROSSWORD_PRIVATE_CLUE_CHALLENGE="$${CROSSWORD_PRIVATE_CLUE_CHALLENGE:-1}" CROSSWORD_XFILL_ROOT="$(CROSSWORD_XFILL_ROOT)" uv run --no-sync python -c 'from src.crossword.app import app; assert app'; \
+	CROSSWORD_PRIVATE_CLUE_CHALLENGE="$${CROSSWORD_PRIVATE_CLUE_CHALLENGE:-1}" CROSSWORD_XFILL_ROOT="$(CROSSWORD_XFILL_ROOT)" uv run --no-sync python -m src.crossword.future_worker --poll-seconds 1 >"$$worker_log" 2>&1 & \
+	worker_pid=$$!; \
+	cleanup() { kill "$$worker_pid" 2>/dev/null || true; wait "$$worker_pid" 2>/dev/null || true; }; \
+	trap cleanup EXIT INT TERM; \
+	sleep 0.5; \
+	if ! kill -0 "$$worker_pid" 2>/dev/null; then cat "$$worker_log"; exit 1; fi; \
+	CROSSWORD_PRIVATE_CLUE_CHALLENGE="$${CROSSWORD_PRIVATE_CLUE_CHALLENGE:-1}" CROSSWORD_REFLECTION_MODEL_CARDS="$${CROSSWORD_REFLECTION_MODEL_CARDS:-1}" CROSSWORD_XFILL_ROOT="$(CROSSWORD_XFILL_ROOT)" uv run --no-sync python run.py
+
+run-personal: check-uv check-node build runtime-doctor ## Check the local personal runtime, then start Flask and its durable worker
+	@set -eu; \
+	worker_log="$${TMPDIR:-/tmp}/crossword-future-worker.$$$$.log"; \
+	CROSSWORD_PRIVATE_CLUE_CHALLENGE="$${CROSSWORD_PRIVATE_CLUE_CHALLENGE:-1}" CROSSWORD_XFILL_ROOT="$(CROSSWORD_XFILL_ROOT)" uv run --no-sync python -c 'from src.crossword.app import app; assert app'; \
+	CROSSWORD_PRIVATE_CLUE_CHALLENGE="$${CROSSWORD_PRIVATE_CLUE_CHALLENGE:-1}" CROSSWORD_XFILL_ROOT="$(CROSSWORD_XFILL_ROOT)" uv run --no-sync python -m src.crossword.future_worker --poll-seconds 1 >"$$worker_log" 2>&1 & \
+	worker_pid=$$!; \
+	cleanup() { kill "$$worker_pid" 2>/dev/null || true; wait "$$worker_pid" 2>/dev/null || true; rm -f "$$worker_log"; }; \
+	trap cleanup EXIT INT TERM; \
+	sleep 0.5; \
+	if ! kill -0 "$$worker_pid" 2>/dev/null; then cat "$$worker_log"; exit 1; fi; \
+	echo "Personal runtime ready at http://127.0.0.1:5001/future/ (Ctrl-C to stop)."; \
+	CROSSWORD_PRIVATE_CLUE_CHALLENGE="$${CROSSWORD_PRIVATE_CLUE_CHALLENGE:-1}" CROSSWORD_REFLECTION_MODEL_CARDS="$${CROSSWORD_REFLECTION_MODEL_CARDS:-1}" CROSSWORD_XFILL_ROOT="$(CROSSWORD_XFILL_ROOT)" uv run --no-sync python run.py
+
+future-worker: check-uv check-node ## Process durable /future answer-grid draft jobs
+	CROSSWORD_XFILL_ROOT="$(CROSSWORD_XFILL_ROOT)" uv run --no-sync python -m src.crossword.future_worker
+
+future-worker-once: check-uv check-node ## Process one queued /future answer-grid draft job
+	CROSSWORD_XFILL_ROOT="$(CROSSWORD_XFILL_ROOT)" uv run --no-sync python -m src.crossword.future_worker --once
 
 legacy-smoke: check-uv check-node legacy-assets ## Mount the legacy page on a local synthetic fixture
 	@set -eu; \

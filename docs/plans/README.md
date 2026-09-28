@@ -49,6 +49,23 @@ The following notes develop the product's underlying ideas from the 27 September
 5. [Domain lexicons: acquiring material with ways into it](11_DOMAIN_LEXICONS_AND_SOURCES.md): what additional lists should contain, concrete source options, and why names, facts, associations, and fill are different resources.
 6. [Editorial intelligence beyond a valid grid](12_EDITORIAL_INTELLIGENCE_AND_LLMs.md): what LLMs contribute, what a theme must earn, and what quality means in the actual solve.
 
+These six documents are implementation inputs to `06_PERSONAL_EPISTEME.md`, not
+separate features waiting to be ticked off. The active backlog carries their
+operational consequences: E08/E09 cover expertise-aware retrieval and crossing
+support; E10 and E20 cover clue meaning and convention fluency; E12/E13/E19
+cover the evolving episteme and indirect preference evidence; E04/E17 cover
+domain and language packs; and E05/E18/E21 cover model, editorial, weekday, and
+mechanic evaluation. Their unresolved human-review and source-admission limits
+remain visible in those rows. Private local play can therefore use experimental
+model material, while any claim of reviewed or publishable content still needs
+the evidence gates in the active plan.
+
+## Editorial research proposals
+
+[Learning to earn the “aha”](13_LEARNING_TO_EARN_THE_AHA.md) develops the conceptual notes into a bounded research direction: Jev-style typed evaluation, candidate generation and ranking, separate solving and answer-aware evaluation, retrospective necessity, crossing support, and a path toward a specialized critic or adapted language model. It proposes an initial comparison study rather than a new implementation mandate.
+
+[Clue grammar, meaning, and the enjoyment of an unyielding world](14_CLUE_GRAMMAR_MEANING_AND_ENJOYMENT.md) catalogs NYT-style American clue conventions and their semantic roles, connects them to the pleasure of stable rules and earned resolution, and specifies how generation and evaluation can preserve those relationships. It distinguishes documented conventions, proposed house commitments, and psychoanalytic interpretation, including the limits of claiming a complete publisher grammar.
+
 ## Historical/contextual plans
 
 The following documents retain useful reasoning and earlier audits. Browser-only, backend-free, static-workspace-first and obsolete sequencing instructions in them are superseded by ADR 0003 and the active specification.

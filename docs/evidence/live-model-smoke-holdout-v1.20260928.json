@@ -1,0 +1,334 @@
+{
+  "schemaVersion": 1,
+  "reportKind": "live-model-smoke-holdout-v1",
+  "comparative": true,
+  "sourceFixture": "/tmp/crossword-model-eval/qwen-gemma-20260926/holdout-v1.full.json",
+  "sourceFixtureSha256": "c1d9a0c40934a24740cd7587c654689351fe56b67683e4875754c3cea904165e",
+  "requestedModels": [
+    "qwen3.8:27b",
+    "gemma4:26b"
+  ],
+  "generation": {
+    "seed": 20260928,
+    "temperature": 0,
+    "maxOutputTokens": 768,
+    "format": "json",
+    "streaming": false
+  },
+  "runtime": {
+    "provider": "ollama-loopback",
+    "baseUrl": "http://127.0.0.1:11434",
+    "tagDigests": {
+      "qwen3.8:27b": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+      "gemma4:26b": "08ae7ec1744bd7f451c4a530afb39d2673ad9d07a8369b8a33a3613b41212a68"
+    }
+  },
+  "observations": [
+    {
+      "fixtureId": "calibration-association-holdout-01",
+      "task": "calibration-association",
+      "sequence": 0,
+      "requestedModel": "qwen3.8:27b",
+      "identity": {
+        "requestedModel": "qwen3.8:27b",
+        "returnedModel": "qwen3.8:27b",
+        "tagDigest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+        "parameterSize": "27.3B",
+        "quantizationLevel": "Q4_K_M",
+        "contextLength": 262144,
+        "verified": true
+      },
+      "promptHash": "c4b174acd577512145374f8210c49b3daf9ebcde29a6542313b3d5c7be455796",
+      "status": "complete",
+      "rawOutput": "{\n  \"paths\": [\n    {\n      \"signifiers\": [\n        \"paper boat\",\n        \"low bell\"\n      ],\n      \"connection\": \"The fragile vessel might suggest a tentative journey, while the low bell could imply a quiet, internal signal rather than an external alarm, creating a tension between movement and stillness.\",\n      \"alternative\": \"Alternatively, the boat may simply represent a childhood memory of play, and the bell could be a random auditory association with a specific time of day, with no deeper symbolic link intended.\"\n    },\n    {\n      \"signifiers\": [\n        \"one blue fold\",\n        \"threshold\"\n      ],\n      \"connection\": \"The singular blue fold might act as a visual marker for a specific point of change, aligning with the concept of a threshold as a boundary between two states, where the color blue could denote calmness or depth at that transition.\",\n      \"alternative\": \"Conversely, the blue fold could be a purely aesthetic choice to break the monotony of white paper, and the word 'threshold' might be selected for its phonetic quality or common usage in literature, unrelated to the visual element.\"\n    },\n    {\n      \"signifiers\": [\n        \"low bell\",\n        \"threshold\"\n      ],\n      \"connection\": \"A low-pitched bell often signifies a subtle, perhaps subconscious, cue, which could metaphorically resonate with the idea of a threshold as a liminal space where awareness shifts, suggesting a gentle crossing rather than a dramatic event.\",\n      \"alternative\": \"On the other hand, the low bell might be associated with a specific mechanical object like a door chime, and 'threshold' could refer to a physical door frame, making the connection purely spatial and functional rather than symbolic.\"\n    }\n  ]\n}",
+      "rawOutputHash": "4aaefc90a87608df0ca9545df9dfac51685538ae7672f73d79df189f7501e5cb",
+      "jsonStatus": "valid",
+      "shapeGate": {
+        "status": "valid",
+        "issues": [],
+        "scope": "shape-only-no-semantic-claim"
+      },
+      "providerMetrics": {
+        "total_duration": 98075391250,
+        "load_duration": 7880937583,
+        "prompt_eval_count": 123,
+        "prompt_eval_duration": 2145077000,
+        "eval_count": 387,
+        "eval_duration": 88056133000
+      },
+      "wallMs": 98093.831,
+      "outputId": "b8961cfd0a3f951e886760cf68547116b9ededf3ed73d942060aa50d4c171b7d"
+    },
+    {
+      "fixtureId": "theme-answers-holdout-01",
+      "task": "theme-answers",
+      "sequence": 1,
+      "requestedModel": "qwen3.8:27b",
+      "identity": {
+        "requestedModel": "qwen3.8:27b",
+        "returnedModel": "qwen3.8:27b",
+        "tagDigest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+        "parameterSize": "27.3B",
+        "quantizationLevel": "Q4_K_M",
+        "contextLength": 262144,
+        "verified": true
+      },
+      "promptHash": "f9785210872d7438c359f72e4470c9905e054dcb48369b6c4ab11acac1dc0ff2",
+      "status": "complete",
+      "rawOutput": "{\n  \"theme\": \"Small Acts of Repair\",\n  \"answers\": [\n    {\n      \"answer\": \"PATCHUP\",\n      \"mechanism\": \"The phrase is a compound word where the first part (PATCH) is a verb meaning to repair, and the second part (UP) is a particle indicating completion or improvement, forming a common idiom for fixing something.\"\n    },\n    {\n      \"answer\": \"FIXUP\",\n      \"mechanism\": \"The phrase is a compound word where the first part (FIX) is a verb meaning to repair, and the second part (UP) is a particle indicating completion or improvement, forming a common idiom for fixing something.\"\n    },\n    {\n      \"answer\": \"MENDIT\",\n      \"mechanism\": \"The phrase is a compound word where the first part (MEND) is a verb meaning to repair, and the second part (IT) is a pronoun referring to the object being repaired, forming a common imperative phrase for fixing something.\"\n    },\n    {\n      \"answer\": \"REPAIRIT\",\n      \"mechanism\": \"The phrase is a compound word where the first part (REPAIR) is a verb meaning to restore to good condition, and the second part (IT) is a pronoun referring to the object being repaired, forming a common imperative phrase for fixing something.\"\n    }\n  ]\n}",
+      "rawOutputHash": "d30f138dfe188a3487a02c7a6321da6fb02299cc922b94b14e68ae6858da95b1",
+      "jsonStatus": "valid",
+      "shapeGate": {
+        "status": "valid",
+        "issues": [],
+        "scope": "shape-only-no-semantic-claim"
+      },
+      "providerMetrics": {
+        "total_duration": 48618023750,
+        "load_duration": 3963500,
+        "prompt_eval_count": 103,
+        "prompt_eval_duration": 2128172000,
+        "eval_count": 301,
+        "eval_duration": 46336740000
+      },
+      "wallMs": 48624.654,
+      "outputId": "32b273c2d0d622af0cc45cc8371ad3fb365019a9b9b0fee231d7475ad7c5c90a"
+    },
+    {
+      "fixtureId": "crossword-clue-holdout-01",
+      "task": "crossword-clue",
+      "sequence": 2,
+      "requestedModel": "qwen3.8:27b",
+      "identity": {
+        "requestedModel": "qwen3.8:27b",
+        "returnedModel": "qwen3.8:27b",
+        "tagDigest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+        "parameterSize": "27.3B",
+        "quantizationLevel": "Q4_K_M",
+        "contextLength": 262144,
+        "verified": true
+      },
+      "promptHash": "3dda5e14766837b2009d34052c6c21da5c8b677bbb44f0da3dac6fbd590e5ff5",
+      "status": "complete",
+      "rawOutput": "{\"clue\":\"I ___ tired yesterday\"}",
+      "rawOutputHash": "e5d63fcd08a7b9faf6f710f78d7060374e916377ce4595717fcd89a8c4c37025",
+      "jsonStatus": "valid",
+      "shapeGate": {
+        "status": "valid",
+        "issues": [],
+        "scope": "shape-only-no-semantic-claim"
+      },
+      "providerMetrics": {
+        "total_duration": 5164678500,
+        "load_duration": 4421792,
+        "prompt_eval_count": 81,
+        "prompt_eval_duration": 1740747000,
+        "eval_count": 10,
+        "eval_duration": 3270158000
+      },
+      "wallMs": 5168.115,
+      "outputId": "0bc5522779f045137c3ab6eef6647d4a166e4bd06a76768aff821b66c0ea972e"
+    },
+    {
+      "fixtureId": "language-learning-holdout-01",
+      "task": "language-learning",
+      "sequence": 3,
+      "requestedModel": "qwen3.8:27b",
+      "identity": {
+        "requestedModel": "qwen3.8:27b",
+        "returnedModel": "qwen3.8:27b",
+        "tagDigest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+        "parameterSize": "27.3B",
+        "quantizationLevel": "Q4_K_M",
+        "contextLength": 262144,
+        "verified": true
+      },
+      "promptHash": "178b6d59a43131384fbe3d652f094c898850899cda51ed365f7e3a70819f055d",
+      "status": "complete",
+      "rawOutput": "{\n  \"items\": [\n    {\n      \"answer\": \"PERRO\",\n      \"clue\": \"Mascota que ladra\",\n      \"gloss\": \"Pet that barks\"\n    },\n    {\n      \"answer\": \"AGUA\",\n      \"clue\": \"Bebida transparente\",\n      \"gloss\": \"Transparent drink\"\n    },\n    {\n      \"answer\": \"TREN\",\n      \"clue\": \"Vehículo que va por las vías\",\n      \"gloss\": \"Vehicle that goes on the tracks\"\n    }\n  ]\n}",
+      "rawOutputHash": "2c93c581c490f9b427a809a66184c3c2f088d8e8ea382a0a2a50da4472fe591b",
+      "jsonStatus": "valid",
+      "shapeGate": {
+        "status": "valid",
+        "issues": [],
+        "scope": "shape-only-no-semantic-claim"
+      },
+      "providerMetrics": {
+        "total_duration": 22708488000,
+        "load_duration": 3527209,
+        "prompt_eval_count": 100,
+        "prompt_eval_duration": 1745382000,
+        "eval_count": 136,
+        "eval_duration": 20888397000
+      },
+      "wallMs": 22716.077,
+      "outputId": "fada815ff7e6a030931e7a2025eefb4ee61929bf9fcaaa9a463b083da38cfc77"
+    },
+    {
+      "fixtureId": "calibration-association-holdout-01",
+      "task": "calibration-association",
+      "sequence": 0,
+      "requestedModel": "gemma4:26b",
+      "identity": {
+        "requestedModel": "gemma4:26b",
+        "returnedModel": "gemma4:26b",
+        "tagDigest": "08ae7ec1744bd7f451c4a530afb39d2673ad9d07a8369b8a33a3613b41212a68",
+        "parameterSize": "25.2B",
+        "quantizationLevel": "Q4_K_M",
+        "contextLength": 262144,
+        "verified": true
+      },
+      "promptHash": "c4b174acd577512145374f8210c49b3daf9ebcde29a6542313b3d5c7be455796",
+      "status": "complete",
+      "rawOutput": "{\n  \"paths\": [\n    {\n      \"signifiers\": [\n        \"paper boat\",\n        \"threshold\"\n      ],\n      \"connection\": \"The combination might suggest a sense of transition or movement through a boundary, perhaps implying a journey into an unknown state.\",\n      \"alternative\": \"Alternatively, it could represent a feeling of fragility during a period of change.\"\n    },\n    {\n      \"signifiers\": [\n        \"one blue fold\",\n        \"low bell\"\n      ],\n      \"connection\": \"These elements could potentially relate to a specific sensory or aesthetic focus, perhaps hinting at a subdued or singular point of emphasis.\",\n      \"alternative\": \"It might also suggest a preference for quietude or minimal signaling.\"\n    },\n    {\n      \"signifiers\": [\n        \"low bell\",\n        \"threshold\"\n      ],\n      \"connection\": \"This pairing might indicate an association with an approaching event or a signal marking the beginning of a new phase.\",\n      \"alternative\": \"Conversely, it could be interpreted as a sense of lingering at a point of entry.\"\n    }\n  ]\n}",
+      "rawOutputHash": "6751800ff0d4c0f00dfe2df88782125b0e2cdedb8662d80b75700651567e4893",
+      "jsonStatus": "valid",
+      "shapeGate": {
+        "status": "valid",
+        "issues": [],
+        "scope": "shape-only-no-semantic-claim"
+      },
+      "providerMetrics": {
+        "total_duration": 17616141416,
+        "load_duration": 10539943125,
+        "prompt_eval_count": 122,
+        "prompt_eval_duration": 434240000,
+        "eval_count": 245,
+        "eval_duration": 6634794000
+      },
+      "wallMs": 17619.686,
+      "outputId": "e2b860f72b0c9bb8d9f3d6b4f2602f2e354ec80a5b3bab1ed3b8e6135e2431fd"
+    },
+    {
+      "fixtureId": "theme-answers-holdout-01",
+      "task": "theme-answers",
+      "sequence": 1,
+      "requestedModel": "gemma4:26b",
+      "identity": {
+        "requestedModel": "gemma4:26b",
+        "returnedModel": "gemma4:26b",
+        "tagDigest": "08ae7ec1744bd7f451c4a530afb39d2673ad9d07a8369b8a33a3613b41212a68",
+        "parameterSize": "25.2B",
+        "quantizationLevel": "Q4_K_M",
+        "contextLength": 262144,
+        "verified": true
+      },
+      "promptHash": "f9785210872d7438c359f72e4470c9905e054dcb48369b6c4ab11acac1dc0ff2",
+      "status": "complete",
+      "rawOutput": "{\n  \"theme\": \"Small acts of repair or tending\",\n  \"answers\": [\n    {\n      \"answer\": \"MEND A HOLE\",\n      \"mechanism\": \"Each answer contains a hidden synonym for 'fix' or 'repair' within the phrase.\"\n    },\n    {\n      \"answer\": \"PATCH A RUG\",\n      \"mechanism\": \"Each answer contains a hidden synonym for 'fix' or 'repair' within the phrase.\"\n    },\n    {\n      \"answer\": \"HEAL A CUT\",\n      \"mechanism\": \"Each answer contains a hidden synonym for 'fix' or 'repair' within the phrase.\"\n    },\n    {\n      \"answer\": \"TEND A GARDEN\",\n      \"mechanism\": \"Each answer contains a hidden synonym for 'fix' or 'repair' within the phrase.\"\n    }\n  ]\n}",
+      "rawOutputHash": "a4b02f5d385076f43b953b11a29c0cf516258467434fcf432ff41a69d86cc0bb",
+      "jsonStatus": "valid",
+      "shapeGate": {
+        "status": "valid",
+        "issues": [],
+        "scope": "shape-only-no-semantic-claim"
+      },
+      "providerMetrics": {
+        "total_duration": 4847740958,
+        "load_duration": 1293333,
+        "prompt_eval_count": 102,
+        "prompt_eval_duration": 397233000,
+        "eval_count": 192,
+        "eval_duration": 4441858000
+      },
+      "wallMs": 4848.791,
+      "outputId": "7ce63d448f38cc90a8d8b840cfd694d8136dccff486c26271b716b82534ebd43"
+    },
+    {
+      "fixtureId": "crossword-clue-holdout-01",
+      "task": "crossword-clue",
+      "sequence": 2,
+      "requestedModel": "gemma4:26b",
+      "identity": {
+        "requestedModel": "gemma4:26b",
+        "returnedModel": "gemma4:26b",
+        "tagDigest": "08ae7ec1744bd7f451c4a530afb39d2673ad9d07a8369b8a33a3613b41212a68",
+        "parameterSize": "25.2B",
+        "quantizationLevel": "Q4_K_M",
+        "contextLength": 262144,
+        "verified": true
+      },
+      "promptHash": "3dda5e14766837b2009d34052c6c21da5c8b677bbb44f0da3dac6fbd590e5ff5",
+      "status": "complete",
+      "rawOutput": "{\"clue\":\"Past tense of 'am'\"}",
+      "rawOutputHash": "32a00a747eba8f30184797bbeff40f85d561e249212455c7afd94c68fb09f89a",
+      "jsonStatus": "valid",
+      "shapeGate": {
+        "status": "valid",
+        "issues": [],
+        "scope": "shape-only-no-semantic-claim"
+      },
+      "providerMetrics": {
+        "total_duration": 669370417,
+        "load_duration": 1222625,
+        "prompt_eval_count": 83,
+        "prompt_eval_duration": 346997000,
+        "eval_count": 12,
+        "eval_duration": 313296000
+      },
+      "wallMs": 670.361,
+      "outputId": "ddb662f200f81041dbf9e69bf0888a6114c348ffcf7bb0e72ba8e3f5703721cc"
+    },
+    {
+      "fixtureId": "language-learning-holdout-01",
+      "task": "language-learning",
+      "sequence": 3,
+      "requestedModel": "gemma4:26b",
+      "identity": {
+        "requestedModel": "gemma4:26b",
+        "returnedModel": "gemma4:26b",
+        "tagDigest": "08ae7ec1744bd7f451c4a530afb39d2673ad9d07a8369b8a33a3613b41212a68",
+        "parameterSize": "25.2B",
+        "quantizationLevel": "Q4_K_M",
+        "contextLength": 262144,
+        "verified": true
+      },
+      "promptHash": "178b6d59a43131384fbe3d652f094c898850899cda51ed365f7e3a70819f055d",
+      "status": "complete",
+      "rawOutput": "{\"items\":[{\"answer\":\"PERRO\",\"clue\":\"Un animal que dice 'guau'.\",\"gloss\":\"dog\"},{\"answer\":\"AGUA\",\"clue\":\"Es necesaria para beber.\",\"gloss\":\"water\"},{\"answer\":\"TREN\",\"clue\":\"Un transporte largo sobre vías.\",\"gloss\":\"train\"}]}",
+      "rawOutputHash": "8177376f20505189989c5d1a2a6d6044f3e9e71c6da033a88e8846cf5b2cc835",
+      "jsonStatus": "valid",
+      "shapeGate": {
+        "status": "valid",
+        "issues": [],
+        "scope": "shape-only-no-semantic-claim"
+      },
+      "providerMetrics": {
+        "total_duration": 2179789958,
+        "load_duration": 1184292,
+        "prompt_eval_count": 101,
+        "prompt_eval_duration": 390474000,
+        "eval_count": 63,
+        "eval_duration": 1783307000
+      },
+      "wallMs": 2181.479,
+      "outputId": "c0fc4dab11a531252305deb0f7a4b4da6b444d62ce8b17adfdbfaa3e03bce7d9"
+    }
+  ],
+  "summary": {
+    "qwen3.8:27b": {
+      "requested": 4,
+      "complete": 4,
+      "jsonValid": 4,
+      "shapeValid": 4,
+      "wallMs": 174602.677
+    },
+    "gemma4:26b": {
+      "requested": 4,
+      "complete": 4,
+      "jsonValid": 4,
+      "shapeValid": 4,
+      "wallMs": 25320.317
+    }
+  },
+  "semanticEditorial": {
+    "status": "pending",
+    "winnerClaim": "none"
+  },
+  "caveats": [
+    "Shape checks do not establish semantic correctness, clue fairness, language accuracy, or enjoyment.",
+    "Models ran serially on the current machine; cold/warm loading and hardware contention affect latency.",
+    "The exact quantized Ollama tag digest is retained for reproducibility."
+  ],
+  "artifactSha256": "4280699b3459a51d47d5afaf6e303e699ec7837b4beefccff6a87081ae527309"
+}

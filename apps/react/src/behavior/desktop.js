@@ -58,6 +58,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             showCacheModal: false, // For the cache status modal
             solvedPuzzlesList: {},   // To store { day: [id1, id2], ... }
             currentPuzzleMetadata: null, // To store metadata of the currently loaded puzzle
+            currentPuzzleManifest: null, // Optional versioned puzzle document supplied by the host
             score: 100, // Starting score
             timer: 0, // Time in seconds
             timerInterval: null, // Timer interval reference
@@ -311,6 +312,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             day = day.toLowerCase();
             this.selectedWeekday = day;
             this.currentPuzzleMetadata = null; // Reset metadata on new load
+            this.currentPuzzleManifest = null;
 
             if (this.isOffline) {
                 this.loadCachedCrossword(day);
@@ -345,6 +347,10 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                     await this.loadCrossword(day, attempt + 1); // Try to get another one
                     return;
                 }
+
+                // Keep the optional canonical document alongside the legacy
+                // entry model. Older puzzle responses remain unchanged.
+                this.currentPuzzleManifest = response.data.puzzleManifest ?? null;
 
                 // Cache the whole puzzle object (metadata + entries)
                 this.cacheCrossword(day, response.data);
@@ -446,6 +452,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
 
             // --- If puzzle is NOT solved, proceed as before ---
             this.currentPuzzleMetadata = selectedPuzzle.metadata; // Set metadata for the loaded puzzle
+            this.currentPuzzleManifest = selectedPuzzle.puzzleManifest ?? null;
             this.crossword = selectedPuzzle.entries; // Set entries
 
             // Remove the used puzzle from cache
@@ -621,7 +628,13 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                     const input = this.$refs[`input-${y}-${x}`]?.[0];
                     if (!input) continue;
 
-                    const value = input.value.toLowerCase();
+                    // Future token-aware cells render a display grapheme in
+                    // the input (for example `ß`) while the controller keeps
+                    // the canonical fill token (`SS`). Compare the grid's
+                    // canonical value so check works for both ordinary and
+                    // explicit rebus/language cells; the input remains the
+                    // visual surface only.
+                    const value = String(this.grid[y]?.[x] ?? '').toLowerCase();
                     const correct = entry.characters[i].letters.toLowerCase();
 
                     if (value === '') {
@@ -1356,21 +1369,21 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             this.solvedPuzzlesList = allSolved;
         },
 
-        async markCurrentPuzzleAsComplete() {
+        async markCurrentPuzzleAsComplete(onConfirmed = undefined) {
             if (!this.currentPuzzleMetadata) {
                 alert("No puzzle loaded to mark as complete.");
-                return;
+                return false;
             }
 
-            if (confirm("Are you sure you want to mark this puzzle as complete? You won't see it again.")) {
-                const puzzleId = this.getPuzzleId(this.currentPuzzleMetadata);
-                if (puzzleId) {
-                    const day = this.getCurrentDay();
-                    await this.markPuzzleSolved(day, puzzleId);
-                    alert("Puzzle marked as complete. Loading a new one.");
-                    this.loadCrossword(this.selectedWeekday);
-                }
-            }
+            if (!confirm("Are you sure you want to mark this puzzle as complete? You won't see it again.")) return false;
+            const puzzleId = this.getPuzzleId(this.currentPuzzleMetadata);
+            if (!puzzleId) return false;
+            const day = this.getCurrentDay();
+            await this.markPuzzleSolved(day, puzzleId);
+            await onConfirmed?.();
+            alert("Puzzle marked as complete. Loading a new one.");
+            this.loadCrossword(this.selectedWeekday);
+            return true;
         },
 
         // Multiplayer Methods

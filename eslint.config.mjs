@@ -7,13 +7,15 @@ export default tseslint.config(
   {
     ignores: [
       '**/node_modules/**',
+      '.browsers/**',
       '.venv/**',
       '.uv_cache/**',
       'vendor/**',
       'reports/**',
-      'coverage/**',
+      '**/coverage/**',
       'playwright-report/**',
       'test-results/**',
+      'apps/web/dist/**',
       '.stryker-tmp/**',
       'src/crossword/static/lib/**',
       'src/crossword/static/react/**',

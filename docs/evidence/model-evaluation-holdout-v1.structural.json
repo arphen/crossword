@@ -1,0 +1,488 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "private-model-structural-evaluation",
+  "evaluationVersion": "model-evaluation-report-v1",
+  "source": {
+    "runId": "live-6c9198622c8b197c635fedf1",
+    "dataset": "holdout-v1",
+    "reportKind": "paired-blind-comparison",
+    "fixtureHash": "8c2efc4775aa7d85cce124c88db2b9f3bd0cd4b9dce8a2b49d9a0a25bd245dc4",
+    "sourceReportSha256": "sha256:c1d9a0c40934a24740cd7587c654689351fe56b67683e4875754c3cea904165e",
+    "observations": 8
+  },
+  "comparison": {
+    "paired": true,
+    "requestedModels": [
+      "qwen3.8:27b",
+      "gemma4:26b"
+    ],
+    "modelsObserved": 2,
+    "winnerClaim": "none",
+    "decisionStatus": "undecided"
+  },
+  "generation": {
+    "temperature": 0,
+    "seed": 20260926,
+    "maxOutputTokens": 512,
+    "thinking": false,
+    "responseFormat": "json",
+    "streaming": false,
+    "contextLimit": null,
+    "contextPolicy": "Ollama model default; not explicitly pinned"
+  },
+  "context": {
+    "temperature": 0,
+    "seed": 20260926,
+    "maxOutputTokens": 512,
+    "thinking": false,
+    "responseFormat": "json",
+    "streaming": false,
+    "contextLimit": null,
+    "contextPolicy": "Ollama model default; not explicitly pinned"
+  },
+  "runtime": {
+    "ollamaVersion": "0.34.2",
+    "nodeVersion": "v24.20.0",
+    "platform": "darwin",
+    "platformRelease": "25.5.0",
+    "architecture": "arm64",
+    "reportedPhysicalMemoryBytes": 38654705664
+  },
+  "identityVerification": "Exact requested tag is present with a SHA-256 digest before the run; each response model name must exactly equal the request; the same tag digest must remain after the run.",
+  "models": [
+    {
+      "requestedModel": "qwen3.8:27b",
+      "observationCount": 4,
+      "identity": {
+        "returnedModels": [
+          "qwen3.8:27b"
+        ],
+        "tagDigests": [
+          "sha256:22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643"
+        ],
+        "allReturnedNamesMatchRequested": true,
+        "allVerified": true,
+        "exactReceipts": [
+          {
+            "outputId": "5fdb4f1ca5bafebff2df6076ad0d3a04a9d905b334f091cd0ead09cebb9c568b",
+            "fixtureId": "calibration-association-holdout-01",
+            "sequence": 0,
+            "requestedModel": "qwen3.8:27b",
+            "returnedModel": "qwen3.8:27b",
+            "tagDigest": "sha256:22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+            "parameterSize": "27.3B",
+            "quantizationLevel": "Q4_K_M",
+            "verified": true
+          },
+          {
+            "outputId": "0f7ff208d061ece0f3ef5abc06614f4c1b32ac4f54e81bb220f0a15bb0a198c6",
+            "fixtureId": "theme-answers-holdout-01",
+            "sequence": 1,
+            "requestedModel": "qwen3.8:27b",
+            "returnedModel": "qwen3.8:27b",
+            "tagDigest": "sha256:22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+            "parameterSize": "27.3B",
+            "quantizationLevel": "Q4_K_M",
+            "verified": true
+          },
+          {
+            "outputId": "95281021ebc50274962e05255e823d2c866d95ca434b6ed06cdbd2d031d18e2c",
+            "fixtureId": "crossword-clue-holdout-01",
+            "sequence": 2,
+            "requestedModel": "qwen3.8:27b",
+            "returnedModel": "qwen3.8:27b",
+            "tagDigest": "sha256:22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+            "parameterSize": "27.3B",
+            "quantizationLevel": "Q4_K_M",
+            "verified": true
+          },
+          {
+            "outputId": "d33af70545358ad308dabd1de022d346d53ff0b130e18a0c7de8db0d81fed4cc",
+            "fixtureId": "language-learning-holdout-01",
+            "sequence": 3,
+            "requestedModel": "qwen3.8:27b",
+            "returnedModel": "qwen3.8:27b",
+            "tagDigest": "sha256:22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+            "parameterSize": "27.3B",
+            "quantizationLevel": "Q4_K_M",
+            "verified": true
+          }
+        ]
+      },
+      "schema": {
+        "valid": 4,
+        "invalid": 0,
+        "total": 4,
+        "rate": 1.0
+      },
+      "taskGate": {
+        "passed": 2,
+        "failed": 2,
+        "total": 4,
+        "rate": 0.5,
+        "failures": [
+          {
+            "outputId": "0f7ff208d061ece0f3ef5abc06614f4c1b32ac4f54e81bb220f0a15bb0a198c6",
+            "fixtureId": "theme-answers-holdout-01",
+            "task": "theme-answers",
+            "status": "invalid",
+            "issues": [
+              "Theme answer 2 has 5 letters; expected 7–14 after spacing is removed.",
+              "Theme answer 3 has 6 letters; expected 7–14 after spacing is removed."
+            ]
+          },
+          {
+            "outputId": "d33af70545358ad308dabd1de022d346d53ff0b130e18a0c7de8db0d81fed4cc",
+            "fixtureId": "language-learning-holdout-01",
+            "task": "language-learning",
+            "status": "invalid",
+            "issues": [
+              "PERRO clue lacks enough deterministic Spanish-language cues.",
+              "AGUA clue lacks enough deterministic Spanish-language cues."
+            ]
+          }
+        ],
+        "issueCounts": {
+          "AGUA clue lacks enough deterministic Spanish-language cues.": 1,
+          "PERRO clue lacks enough deterministic Spanish-language cues.": 1,
+          "Theme answer 2 has 5 letters; expected 7–14 after spacing is removed.": 1,
+          "Theme answer 3 has 6 letters; expected 7–14 after spacing is removed.": 1
+        }
+      },
+      "latency": {
+        "observed": 4,
+        "missing": 0,
+        "sum": 184456.554,
+        "mean": 46114.139,
+        "median": 37211.455,
+        "minimum": 5370.016,
+        "maximum": 104663.628,
+        "metric": "runnerWallMs",
+        "byTask": {
+          "calibration-association": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 104663.628,
+            "mean": 104663.628,
+            "median": 104663.628,
+            "minimum": 104663.628,
+            "maximum": 104663.628
+          },
+          "crossword-clue": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 5370.016,
+            "mean": 5370.016,
+            "median": 5370.016,
+            "minimum": 5370.016,
+            "maximum": 5370.016
+          },
+          "language-learning": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 23695.808,
+            "mean": 23695.808,
+            "median": 23695.808,
+            "minimum": 23695.808,
+            "maximum": 23695.808
+          },
+          "theme-answers": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 50727.102,
+            "mean": 50727.102,
+            "median": 50727.102,
+            "minimum": 50727.102,
+            "maximum": 50727.102
+          }
+        }
+      },
+      "outputSize": {
+        "observed": 4,
+        "missing": 0,
+        "sum": 3314,
+        "mean": 828.5,
+        "median": 774.0,
+        "minimum": 32,
+        "maximum": 1734,
+        "unit": "utf8Bytes",
+        "byTask": {
+          "calibration-association": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 1734,
+            "mean": 1734,
+            "median": 1734,
+            "minimum": 1734,
+            "maximum": 1734
+          },
+          "crossword-clue": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 32,
+            "mean": 32,
+            "median": 32,
+            "minimum": 32,
+            "maximum": 32
+          },
+          "language-learning": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 367,
+            "mean": 367,
+            "median": 367,
+            "minimum": 367,
+            "maximum": 367
+          },
+          "theme-answers": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 1181,
+            "mean": 1181,
+            "median": 1181,
+            "minimum": 1181,
+            "maximum": 1181
+          }
+        }
+      },
+      "providerMetrics": {
+        "observed": 4,
+        "totals": {
+          "totalDurationNs": 184378914459,
+          "loadDurationNs": 10288479042,
+          "promptEvalCount": 407,
+          "promptEvalDurationNs": 8168005000,
+          "evalCount": 834,
+          "evalDurationNs": 165502548000
+        }
+      }
+    },
+    {
+      "requestedModel": "gemma4:26b",
+      "observationCount": 4,
+      "identity": {
+        "returnedModels": [
+          "gemma4:26b"
+        ],
+        "tagDigests": [
+          "sha256:08ae7ec1744bd7f451c4a530afb39d2673ad9d07a8369b8a33a3613b41212a68"
+        ],
+        "allReturnedNamesMatchRequested": true,
+        "allVerified": true,
+        "exactReceipts": [
+          {
+            "outputId": "f63d58320109d025b7d63fa19820280b9bad1517b6aab5e309906e5b73843016",
+            "fixtureId": "calibration-association-holdout-01",
+            "sequence": 4,
+            "requestedModel": "gemma4:26b",
+            "returnedModel": "gemma4:26b",
+            "tagDigest": "sha256:08ae7ec1744bd7f451c4a530afb39d2673ad9d07a8369b8a33a3613b41212a68",
+            "parameterSize": "25.2B",
+            "quantizationLevel": "Q4_K_M",
+            "verified": true
+          },
+          {
+            "outputId": "62a209f652097e66c5060519c00cfd5f7ec76e2df1ecbb85c9e559b645b65405",
+            "fixtureId": "theme-answers-holdout-01",
+            "sequence": 5,
+            "requestedModel": "gemma4:26b",
+            "returnedModel": "gemma4:26b",
+            "tagDigest": "sha256:08ae7ec1744bd7f451c4a530afb39d2673ad9d07a8369b8a33a3613b41212a68",
+            "parameterSize": "25.2B",
+            "quantizationLevel": "Q4_K_M",
+            "verified": true
+          },
+          {
+            "outputId": "4f8e68939a4afbbfbdd2a5f7f44da9c0d5bd9f19c0597fbdebff6749306f23e6",
+            "fixtureId": "crossword-clue-holdout-01",
+            "sequence": 6,
+            "requestedModel": "gemma4:26b",
+            "returnedModel": "gemma4:26b",
+            "tagDigest": "sha256:08ae7ec1744bd7f451c4a530afb39d2673ad9d07a8369b8a33a3613b41212a68",
+            "parameterSize": "25.2B",
+            "quantizationLevel": "Q4_K_M",
+            "verified": true
+          },
+          {
+            "outputId": "2af07374f35b7479cb813bc740e3b730649bc1dc8b138ca2f3ea833a6db23dac",
+            "fixtureId": "language-learning-holdout-01",
+            "sequence": 7,
+            "requestedModel": "gemma4:26b",
+            "returnedModel": "gemma4:26b",
+            "tagDigest": "sha256:08ae7ec1744bd7f451c4a530afb39d2673ad9d07a8369b8a33a3613b41212a68",
+            "parameterSize": "25.2B",
+            "quantizationLevel": "Q4_K_M",
+            "verified": true
+          }
+        ]
+      },
+      "schema": {
+        "valid": 4,
+        "invalid": 0,
+        "total": 4,
+        "rate": 1.0
+      },
+      "taskGate": {
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "rate": 1.0,
+        "failures": [],
+        "issueCounts": {}
+      },
+      "latency": {
+        "observed": 4,
+        "missing": 0,
+        "sum": 24957.058,
+        "mean": 6239.265,
+        "median": 3783.082,
+        "minimum": 711.879,
+        "maximum": 16679.015,
+        "metric": "runnerWallMs",
+        "byTask": {
+          "calibration-association": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 16679.015,
+            "mean": 16679.015,
+            "median": 16679.015,
+            "minimum": 16679.015,
+            "maximum": 16679.015
+          },
+          "crossword-clue": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 711.879,
+            "mean": 711.879,
+            "median": 711.879,
+            "minimum": 711.879,
+            "maximum": 711.879
+          },
+          "language-learning": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 2412.279,
+            "mean": 2412.279,
+            "median": 2412.279,
+            "minimum": 2412.279,
+            "maximum": 2412.279
+          },
+          "theme-answers": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 5153.885,
+            "mean": 5153.885,
+            "median": 5153.885,
+            "minimum": 5153.885,
+            "maximum": 5153.885
+          }
+        }
+      },
+      "outputSize": {
+        "observed": 4,
+        "missing": 0,
+        "sum": 1942,
+        "mean": 485.5,
+        "median": 434.0,
+        "minimum": 29,
+        "maximum": 1045,
+        "unit": "utf8Bytes",
+        "byTask": {
+          "calibration-association": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 1045,
+            "mean": 1045,
+            "median": 1045,
+            "minimum": 1045,
+            "maximum": 1045
+          },
+          "crossword-clue": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 29,
+            "mean": 29,
+            "median": 29,
+            "minimum": 29,
+            "maximum": 29
+          },
+          "language-learning": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 224,
+            "mean": 224,
+            "median": 224,
+            "minimum": 224,
+            "maximum": 224
+          },
+          "theme-answers": {
+            "observed": 1,
+            "missing": 0,
+            "sum": 644,
+            "mean": 644,
+            "median": 644,
+            "minimum": 644,
+            "maximum": 644
+          }
+        }
+      },
+      "providerMetrics": {
+        "observed": 4,
+        "totals": {
+          "totalDurationNs": 24918606083,
+          "loadDurationNs": 8757317833,
+          "promptEvalCount": 408,
+          "promptEvalDurationNs": 2075129000,
+          "evalCount": 512,
+          "evalDurationNs": 14052025000
+        }
+      }
+    }
+  ],
+  "integrity": {
+    "duplicateOutputIds": [],
+    "rawOutputHashesChecked": 8,
+    "rawOutputHashMismatches": [],
+    "status": "valid"
+  },
+  "semanticEditorial": {
+    "status": "pending",
+    "fields": {
+      "semanticCoherence": {
+        "status": "pending",
+        "evidence": "independent-blind-editorial-or-player-review"
+      },
+      "clueFairness": {
+        "status": "pending",
+        "evidence": "independent-blind-editorial-or-player-review"
+      },
+      "sourceGrounding": {
+        "status": "pending",
+        "evidence": "independent-blind-editorial-or-player-review"
+      },
+      "languageAccuracy": {
+        "status": "pending",
+        "evidence": "independent-blind-editorial-or-player-review"
+      },
+      "playerResonance": {
+        "status": "pending",
+        "evidence": "independent-blind-editorial-or-player-review"
+      },
+      "editorialPreference": {
+        "status": "pending",
+        "evidence": "independent-blind-editorial-or-player-review"
+      }
+    },
+    "humanRatings": "pending",
+    "winnerClaim": "none"
+  },
+  "limitations": [
+    "Structural metrics are independent of semantic, editorial, and player judgments.",
+    "Schema validity does not establish a correct answer, coherent theme, fair clue, source truth, language accuracy, or educational value.",
+    "Task-gate failures are deterministic fixture failures, not a complete measure of model quality.",
+    "Runner wall time is exploratory and depends on model load state, batching order, hardware, and the unpinned runtime context.",
+    "Output size is measured from the returned UTF-8 text and does not measure model memory or GPU use.",
+    "No semantic/editorial ratings or model winner are declared by this artifact."
+  ],
+  "reportDigest": "sha256:8736a30fa2c03f6d0629fb53bf198dc04ec169a85ed7e608fd49eb9bccb2eef2"
+}

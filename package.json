@@ -62,12 +62,14 @@
     ],
     "testPathIgnorePatterns": [
       "/apps/",
-      "/packages/"
+      "/packages/",
+      "/tests/e2e/"
     ]
   },
   "dependencies": {
     "@crossword/construction": "file:vendor/generator/crossword-construction-0.1.0.tgz",
     "@crossword/generator": "file:vendor/generator/crossword-generator-0.1.0.tgz",
+    "@crossword/local-runtime": "file:vendor/generator/crossword-local-runtime-0.1.2.tgz",
     "@crossword/model-runtime": "file:vendor/generator/crossword-model-runtime-0.1.0.tgz"
   }
 }

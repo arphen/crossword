@@ -2,8 +2,90 @@
 
 > **25 September 2026 supersession notice:** Read the [active personal crossword plan](06_PERSONAL_EPISTEME.md) and [ADR 0003](../adr/0003-local-ollama-native-runtime.md) first. The owner has selected the current React/Flask application, Ollama and native construction. Browser-only, backend-free, new-static-workspace and conflicting delivery instructions below are historical. The active plan also governs initial visual calibration, weekday recipes and clue grammar.
 
-Paste-ready work packages for implementation agents (Copilot in VS Code or any
-equivalent). One agent per package; never two agents on the same files.
+## Current prompt — Improve the private generated crossword
+
+The private game now works end to end in the existing app. Read [Plan 06 §22](06_PERSONAL_EPISTEME.md#22-private-game-implementation-handoff-for-luna)
+and [ADR 0003](../adr/0003-local-ollama-native-runtime.md) for current status
+and the accepted Ollama/native direction.
+
+```text
+Continue in /Users/arphen/projectc/crossword. Read AGENTS.md and inspect the
+current working tree first. Preserve every existing change; do not reset or
+commit.
+
+The private /future lane is now playable. It begins without loading a daily
+puzzle, lets the player select a weekday and make a profile-seeded crossword,
+then opens the model-generated result in the regular solver. Gemma 4 26B plus
+native xfill completed a real browser generation in about 58 seconds: a 15x15,
+78-entry Wednesday board with SCENE / STAGED / ACT / PROPS as theme answers.
+The exact board and typed letter returned after reload with its saved solve
+journal. Private creation now uses a durable idempotent job and local worker;
+the browser polls queued/running/ready state, can stop waiting, and normalizes
+the worker envelope into the solver’s legacy payload. The CI fixture runs that
+same worker boundary. A Playwright run passed all six tests using an isolated
+synthetic generator fixture, covering onboarding, job create/poll, solve,
+reflection, reload and the unchanged daily route at `/`. A follow-up live
+Wednesday API run returned a 15x15, 74-entry board in 70.553 seconds (6.500s
+theme proposal, 11.865s native xfill, 51.927s clue generation), and a Thursday
+run took about 86 seconds. That word field drew on the saved
+thread/fork/echo/moss opening.
+
+The next implementation pass added a small private-fill artefact blocklist,
+bounded xfill retries, fill-quality/foothold signals in the clue prompt, and a
+conservative repair pass for likely factual hallucinations. A post-fix live
+Wednesday request returned 76 entries in 68.792 seconds (1.815s theme proposal,
+16.708s xfill, 50.207s clue generation plus repair), with no blocked artefacts.
+Finished private sessions now link their generated answer forms as
+`contentReview=unreviewed` exposure evidence, and the next theme prompt reads a
+bounded recent-exposure list without treating it as mastery. Theme prompting
+now exposes reflection-derived avoid topics as steering and keeps a selected
+learning language explicit in the clue prompt/provenance; it must remain a
+small invitation, not a claim about the player's identity or fluency.
+
+A fresh real Thursday request on 27 September returned 74 entries in 85.398
+seconds (12.469s theme proposal, 25.134s xfill, 47.522s clue generation plus
+repair), themed around STITCH / RESONANCE / PATTERN / TUNING. The private route
+now performs a small deterministic clue check for false anagrams, reversals,
+answer giveaways, and common-language translation mismatches, recording the
+result in `provenance.clueQuality`. This is a diagnostic and repair input for
+private play, not a publication or semantic-truth gate. The board still showed
+weak factual surfaces such as `ISART` / “River in France” and `ALBERTII` /
+“Botanical name for a type of rose”, so the next pass should improve grounded
+clue choices rather than expanding the blocklist.
+
+A rerun with the guard enabled kept the same 74-entry shape and returned
+`clueQuality.issueCount=0` in 85.907 seconds. It still produced plausible but
+source-less factual surfaces (`ISART` / “French Alpine river”, `LEO` / “Zodiac
+lion”), which confirms that the remaining issue is semantic grounding and
+editorial judgment rather than the mechanically detectable wordplay failures.
+
+Now make the actual game more delightful and reliable. Run another Thursday
+game and inspect the complete board for remaining semantic clue mismatches,
+malformed abbreviations, weak crossings, and whether the profile meaningfully
+shapes the word-field. The durable queue, honest waiting state, cancellation,
+and worker-to-solver payload handoff are complete; a minute or two is acceptable
+for local play, so focus the next pass on semantic clue grounding, explicit
+stage diagnostics, and profile-sensitive variety rather than speculative token
+shaving. Use opening and solve/reflection history as revisable evidence, not as
+a diagnosis of personality or proof of learning. Preserve the daily `/` route
+and current highlighting/input/check/reveal behavior.
+
+Do not spend this run on human source review, license receipts, curator
+worksheets, publication packets, or synthetic-fixture review. Those apply only
+to later sharing/publication and do not gate our private use. Keep generated
+puzzles local and clearly experimental.
+
+Run focused tests and the browser journey after changes. Report the exact
+model, generation timings, themes, grid/entry counts, observed gameplay issue
+and what you fixed. Do not claim a quality winner, learning outcome, or complete
+Plan 06 while real gameplay gaps remain.
+```
+
+## Archived work packages
+
+The following dated assignments are historical context, not current agent
+status or permission to recreate `apps/web`. The current prompt and Plan 06
+supersede their conflicting scope, runtime and sequencing instructions.
 
 Coordination status 2026-09-02: **Luna 1, Luna 2, Luna 3, MR-1, SCAN-1 are
 in flight repo-side.** Before delegating one of them, check `git log --oneline`

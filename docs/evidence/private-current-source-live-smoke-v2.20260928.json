@@ -1,0 +1,59 @@
+{
+  "version": "private-current-source-live-smoke-v2",
+  "observedDate": "2026-09-28",
+  "runtime": {
+    "route": "durable-private-puzzle-job",
+    "model": "gemma4:26b",
+    "weekday": "wednesday",
+    "seed": 42424242,
+    "database": "disposable-sqlite",
+    "stageSequence": [
+      "theme-proposal",
+      "native-xfill",
+      "clue-generation",
+      "ready"
+    ]
+  },
+  "job": {
+    "jobId": "89843d07-4a3c-4cbe-b6f5-3efa1f0a61b6",
+    "profileId": "6bb8a396-46b6-4ca8-87c1-e38103729e07",
+    "state": "ready",
+    "playable": true
+  },
+  "puzzle": {
+    "width": 15,
+    "height": 15,
+    "entryCount": 78
+  },
+  "clues": {
+    "checkedCount": 78,
+    "issueCount": 0,
+    "signalCounts": {
+      "abbreviation-indicator": 15,
+      "language-indicator": 1
+    },
+    "semanticStatus": "not-established"
+  },
+  "timingsSeconds": {
+    "themeProposal": 13.699,
+    "nativeXfill": 28.322,
+    "clueGeneration": 149.174,
+    "clueChallenge": 11.979,
+    "total": 203.475
+  },
+  "runtimeReadiness": {
+    "ready": true,
+    "ollamaPreferredModelsInstalled": [
+      "gemma4:26b",
+      "qwen3.8:27b"
+    ],
+    "nativeXfill": true,
+    "worker": "ready"
+  },
+  "limitations": [
+    "local experimental puzzle; no semantic truth or human fairness claim",
+    "xfill scores are heuristic and not player-quality measurements",
+    "temporary profile and SQLite database were deleted after the run"
+  ],
+  "artifactDigest": "sha256:863fb414edc77d92f7d2a54366cb27714ace3f1d131af2ec6da7e665e7695959"
+}

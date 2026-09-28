@@ -72,24 +72,79 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 - `apps/react/index.html`
 - `apps/react/package.json`
-- `apps/react/src/CrosswordView.jsx` — `classes:6`, `CrosswordView:16`, `clueClasses:18`, `cellPresentation:26`, `activeEntryCellClasses:30`, `isCursorCell:41`, `answer:47`, `selfClick:63`
+- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:6`, `clueSignalKind:22`, `renderClueSurface:32`, `classes:60`, `CrosswordView:70`, `describeRebusInput:85`, `entryContainsCell:93`, `entryAtCell:98`, `directional:99`, `tokenAt:112`, `displayGridValue:115`, `gridValues:140`, `clueClasses:143`, `cellPresentation:151`, `activeEntryCellClasses:155`, `isCursorCell:166` (+2 more)
+- `apps/react/src/CrosswordView.test.jsx`
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
 - `apps/react/src/behavior-parity.test.js`
+- `apps/react/src/behavior/complete.test.js`
 - `apps/react/src/behavior/desktop.d.ts` — `createOptions:2`
-- `apps/react/src/behavior/desktop.js` — `createOptions:3`, `data:6`, `isHalfCompleted:84`, `weekdayOptions:90`, `selectedWeekday:101`, `activeDirection:104`, `created:113`, `beforeUnmount:143`, `checkAndStartCaching:150`, `needsMore:153`, `handleOnlineStatus:181`, `updateCachedCounts:190`, `updateSolvedCounts:197`, `isPuzzleSolved:203`, `isPuzzleSolvedBackend:208`, `markPuzzleSolved:218` (+82 more)
+- `apps/react/src/behavior/desktop.js` — `createOptions:3`, `data:6`, `isHalfCompleted:85`, `weekdayOptions:91`, `selectedWeekday:102`, `activeDirection:105`, `created:114`, `beforeUnmount:144`, `checkAndStartCaching:151`, `needsMore:154`, `handleOnlineStatus:182`, `updateCachedCounts:191`, `updateSolvedCounts:198`, `isPuzzleSolved:204`, `isPuzzleSolvedBackend:209`, `markPuzzleSolved:219` (+82 more)
 - `apps/react/src/behavior/mobile.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/mobile.js` — `createOptions:3`, `myEntries:19`, `sortedEntries:23`, `checkButtonLabel:33`, `toggleCheck:38`, `clearIncorrectAndMarkSolved:48`, `isPerfect:57`, `isEntryFilled:91`, `isCellCorrect:96`, `loadPuzzle:102`, `getCellValue:111`, `getCoordinates:115`, `selectEntry:125`, `focusInput:134`, `handleInput:143`, `handleKeydown:167` (+3 more)
 - `apps/react/src/controller.d.ts` — `ControllerConfiguration:9`, `Controller:16`, `createController:26`
 - `apps/react/src/controller.js` — `createController:6`, `notify:19`, `unwrap:20`, `observe:21`, `get:28`, `set:45`, `deleteProperty:54`, `setTimeout:61`, `clearTimeout:62`, `setInterval:63`, `clearInterval:64`, `requestAnimationFrame:65`, `cancelAnimationFrame:66`, `subscribe:82`, `flush:84`, `start:85` (+1 more)
 - `apps/react/src/desktop.css`
-- `apps/react/src/future/FutureApp.jsx` — `Arrow:33`, `Mark:48`, `ObjectChoice:59`, `ProfileField:77`, `FutureApp:140`, `selectedDay:156`, `update:157`, `persist:195`, `timeout:201`, `enter:211`, `reflect:218`, `timeout:223`, `advance:237`, `skip:244`
+- `apps/react/src/future/AssistancePanel.jsx` — `idFor:4`, `blankCell:8`, `revealEntry:14`, `AssistanceLadder:32`, `hasBlank:48`
+- `apps/react/src/future/AssistancePanel.test.jsx`
+- `apps/react/src/future/CalibrationHypotheses.jsx` — `getResponse:15`, `initialResponseActivity:20`, `responseActivityKey:30`, `CalibrationHypotheses:45`, `respond:69`, `revise:91`, `startSwipe:112`, `finishSwipe:120`
+- `apps/react/src/future/CalibrationHypotheses.test.jsx`
+- `apps/react/src/future/ClueQualityNotes.jsx` — `legacyEntryId:27`, `labelForFlag:32`, `ClueQualityNotes:36`, `groundedById:85`, `prior:114`, `toggleFlag:149`
+- `apps/react/src/future/ClueQualityNotes.test.jsx`
+- `apps/react/src/future/EpistemeSnapshotView.jsx` — `claimLabel:5`, `claimTensionLabel:12`, `associationLabel:20`, `EpistemeSnapshot:33`, `correctClaim:61`, `claims:91`, `tensionClaims:92`, `signalClaims:93`, `renderClaim:96`
+- `apps/react/src/future/EpistemeSnapshotView.test.jsx`
+- `apps/react/src/future/FutureApp.jsx` — `stimulusById:96`, `stimulusByLegacyId:97`, `hasActiveHypothesisSource:128`, `stimulusCaption:157`, `presentationFor:178`, `draftFromCalibration:183`, `selectedAt:198`, `objectId:217`, `companionId:220`, `stableJson:255`, `isAppendOnlyCalibrationExtension:266`, `Arrow:300`, `Mark:315`, `ObjectChoice:326`, `ProfileField:353`, `FutureApp:490` (+42 more)
 - `apps/react/src/future/FutureApp.test.jsx`
-- `apps/react/src/future/FutureSolver.jsx` — `futureOptions:12`, `FutureSolver:40`
+- `apps/react/src/future/FutureSolver.jsx` — `reflectionStorageKey:25`, `reflectionStorageValue:29`, `savedReflectionSessionId:39`, `futureOptions:57`, `FutureSolver:124`, `enableHostSync:184`, `onEntryFocused:383`, `onCellChanged:385`, `onCheckAll:387`, `onRevealAll:388`, `onCellRevealed:401`, `onHintShown:403`
 - `apps/react/src/future/FutureSolver.test.js`
+- `apps/react/src/future/GameHistory.jsx` — `dayLabel:3`, `dateLabel:8`, `gameHistoryStats:14`, `personalizationHistorySummary:22`, `calibrationSummary:48`, `GameHistory:64`, `body:85`, `downloadCalibration:103`, `body:115`
+- `apps/react/src/future/GameHistory.test.jsx`
+- `apps/react/src/future/LearningReview.jsx` — `LearningReview:13`, `body:40`, `showMore:63`, `body:70`, `merged:74`, `reveal:90`, `body:95`, `respond:105`, `body:122`
+- `apps/react/src/future/LearningReview.test.jsx`
+- `apps/react/src/future/PostgameAssociations.jsx` — `initialResponses:16`, `AssociationCard:22`, `finishSwipe:27`, `PostgameAssociations:120`, `respond:133`, `expand:158`
+- `apps/react/src/future/PostgameAssociations.test.jsx`
+- `apps/react/src/future/PrivatePuzzleControls.jsx` — `pendingJobStorageKey:61`, `validPendingJob:65`, `loadPendingPrivateJob:81`, `savePendingPrivateJob:102`, `clearPendingPrivateJob:121`, `describeJobStage:139`, `describeStageElapsed:143`, `describeWeekdayRecipe:149`, `describePlayCalibration:156`, `describeThemeThread:161`, `describeLanguageTokenThread:173`, `describeLanguageRecurrence:184`, `overdue:193`, `describeLanguageTaskSources:204`, `describePersonalizationReceipt:221`, `personalizationReceiptFacts:240` (+13 more)
+- `apps/react/src/future/PrivatePuzzleControls.test.jsx`
+- `apps/react/src/future/PrivatePuzzleReceipt.jsx` — `integer:3`, `score:7`, `receiptStats:13`, `PrivatePuzzleReceipt:58`, `body:75`
+- `apps/react/src/future/PrivatePuzzleReceipt.test.jsx`
+- `apps/react/src/future/ProfileNarrativePanel.jsx` — `ProfileNarrativePanel:4`, `writeFieldNote:33`, `keepSuggestion:47`
+- `apps/react/src/future/ProfileNarrativePanel.test.jsx`
+- `apps/react/src/future/ReflectionCards.jsx` — `restoredAnswers:18`, `signalReceipt:39`, `ReflectionCards:53`, `respond:59`, `revise:91`, `startSwipe:123`, `finishSwipe:131`, `indexFor:147`, `complete:151`
+- `apps/react/src/future/ReflectionCards.test.jsx`
 - `apps/react/src/future/Signifier.jsx` — `Signifier:4`, `paint:6`
-- `apps/react/src/future/episteme.js` — `STORAGE_KEY:4`, `createProfileId:5`, `freshDraft:17`, `validateDraft:31`, `object:43`, `readDraft:72`, `writeDraft:83`, `seedProfile:97`, `object:98`, `changeObject:129`, `saveProfile:139`, `expandAssociations:151`
+- `apps/react/src/future/StimulusArtwork.jsx` — `legacySignifierKind:42`, `stableText:47`, `AbstractForm:54`, `TextureMaterial:100`, `StimulusArtwork:174`
+- `apps/react/src/future/StimulusArtwork.test.jsx`
+- `apps/react/src/future/assistanceLadder.js` — `entryId:24`, `entryCellIds:28`, `clueReading:36`, `assistanceLadder:85`, `crossingCells:94`
+- `apps/react/src/future/assistanceLadder.test.js`
+- `apps/react/src/future/calibrationHypothesesApi.js` — `record:4`, `secureId:10`, `calibrationPath:23`, `responseJson:29`, `payload:30`, `loadCalibrationHypotheses:36`, `createCalibrationHypotheses:52`, `respondToCalibrationHypothesis:69`, `reviseCalibrationHypothesisResponse:106`
+- `apps/react/src/future/calibrationHypothesesApi.test.js`
+- `apps/react/src/future/calibrationJournal.js` — `CalibrationJournalStorageError:8`, `constructor:10`, `requestResult:21`, `transactionResult:29`, `isRecord:38`, `canonicalJson:42`, `validateRecord:54`, `clone:83`, `validateSession:104`, `openDatabase:115`, `assertMonotonicSession:178`, `createCalibrationJournalStore:234`, `getDatabase:240`, `unpack:246`, `read:266`, `load:279` (+7 more)
+- `apps/react/src/future/calibrationJournal.test.js`
+- `apps/react/src/future/calibrationPresentation.js` — `CALIBRATION_SELECTOR_VERSION_V1:10`, `CALIBRATION_SELECTOR_VERSION_V2:11`, `deriveCalibrationSeed:20`, `assertSeed:34`, `createSeededUint32:45`, `createSeededRandom:57`, `randomBelow:68`, `seededShuffle:84`, `toCalibrationOffer:125`, `createCalibrationPresentation:163`
+- `apps/react/src/future/calibrationPresentation.test.js`
+- `apps/react/src/future/calibrationRecovery.js` — `CALIBRATION_RECOVERY_VERSION:3`, `describeCalibrationConflict:13`, `createCalibrationRecoveryDraft:55`
+- `apps/react/src/future/calibrationRecovery.test.js`
+- `apps/react/src/future/calibrationRuntime.js` — `requireSession:19`, `isoTimestamp:27`, `nondecreasingTimestamp:37`, `canonicalJson:42`, `sameJson:54`, `validated:64`, `createInitialCalibrationSession:76`, `updateCalibrationCursor:113`, `activeChosenObservations:133`, `latestMovementObservation:160`, `nextSequence:173`, `appendCalibrationObservation:186`, `persistedOffer:225`, `skipCalibration:328`, `completeCalibration:349`
+- `apps/react/src/future/calibrationRuntime.test.js`
+- `apps/react/src/future/episteme.js` — `STORAGE_KEY:4`, `LOCAL_MODEL_CHOICES:5`, `STIMULUS_IDS:24`, `createProfileId:25`, `freshDraft:37`, `validateDraft:56`, `object:88`, `readDraft:117`, `writeDraft:152`, `seedProfile:166`, `object:167`, `changeObject:207`, `firstStimulus:208`, `saveProfile:222`, `result:234`, `loadSavedProfile:248` (+8 more)
 - `apps/react/src/future/episteme.test.js`
+- `apps/react/src/future/epistemeSnapshot.js` — `validProfileId:3`, `normalizeEpistemeSnapshot:7`, `loadEpistemeSnapshot:33`
 - `apps/react/src/future/future.css`
+- `apps/react/src/future/journalStore.js` — `FUTURE_JOURNAL_MAX_BYTES:6`, `FUTURE_JOURNAL_MAX_EVENTS:7`, `FutureJournalStorageError:11`, `constructor:13`, `requestResult:21`, `transactionResult:29`, `isRecord:38`, `canonicalJson:42`, `validateRecord:51`, `openDatabase:107`, `recordId:144`, `createFutureJournalStore:156`, `getDatabase:162`, `unpack:168`, `load:176`, `list:186` (+4 more)
+- `apps/react/src/future/journalStore.test.js`
+- `apps/react/src/future/languageInput.js` — `LANGUAGE_INPUT_PACK_VERSION:15`, `LANGUAGE_TOKEN_METADATA_VERSION:16`, `text:211`, `canonicalLanguage:215`, `resolveLanguagePack:222`, `displayCharacter:227`, `displayText:240`, `fillText:249`, `alias:254`, `rejectedResult:275`, `tokenMetadata:289`, `normalizeLanguageToken:315`, `describeLanguageToken:353`, `normalizeLanguageRebusValue:365`, `normalizeDisplayToken:372`, `normalizeFillToken:378` (+6 more)
+- `apps/react/src/future/languageInput.test.js`
+- `apps/react/src/future/postgame_associations.js` — `uuid:1`, `loadPostgameAssociations:18`, `body:33`, `respondToPostgameAssociation:38`, `body:57`, `expandPostgameAssociation:62`, `body:78`
+- `apps/react/src/future/privatePuzzleStore.js` — `PRIVATE_PUZZLE_STORAGE_PREFIX:4`, `PRIVATE_PUZZLE_HISTORY_SUFFIX:6`, `isRecord:20`, `validRecord:24`, `recordTimestamp:55`, `recordFor:61`, `boundedStrings:72`, `strings:74`, `compactGrounding:78`, `compactClueQuality:98`, `compactPuzzleForStorage:117`, `historyKey:181`, `writeCurrentRecord:185`, `savePrivatePuzzle:190`, `listPrivatePuzzles:238`, `loadPrivatePuzzle:259` (+1 more)
+- `apps/react/src/future/privatePuzzleStore.test.js`
+- `apps/react/src/future/profileNarrative.js` — `validDigest:3`, `normalizeGeneration:7`, `normalizeItem:17`, `normalizeSuggestion:32`, `normalizeProfileNarrative:58`, `paragraphs:79`, `openQuestions:80`, `acceptProfileSuggestion:92`, `body:109`, `loadProfileNarrative:115`, `body:120`, `generateProfileNarrative:128`, `body:138`
+- `apps/react/src/future/puzzleV2Adapter.js` — `FUTURE_PUZZLE_V2_PUBLICATION_RECEIPT_VERSION:3`, `PuzzleV2AdapterError:10`, `constructor:11`, `isRecord:18`, `hasExactKeys:22`, `isIsoTimestamp:30`, `reject:57`, `projectValidatedPuzzleDocumentV2:73`, `cellsById:74`, `cluesByEntryId:78`, `grid:115`, `adaptPublishedPuzzleV2Envelope:144`
+- `apps/react/src/future/puzzleV2Adapter.test.js`
+- `apps/react/src/future/reflection.js` — `uuid:1`, `submitReflectionResponse:14`, `submitReflectionAction:61`
+- `apps/react/src/future/reflection.test.js`
+- `apps/react/src/future/sessionJournal.js` — `stableJson:9`, `sha256:20`, `randomUuid:30`, `randomCapability:43`, `entryCells:51`, `supportedManifest:61`, `canonicalCells:137`, `describeLegacyPuzzle:167`, `entries:207`, `activeEntryId:228`, `httpStatus:233`, `byteLength:242`, `valuesByCell:246`, `cellPosition:261`, `appPuzzleIdentity:266`, `eventCellChanges:275` (+43 more)
+- `apps/react/src/future/sessionJournal.test.js`
+- `apps/react/src/future/tokenManifest.js` — `FUTURE_TOKEN_MANIFEST_VERSION:16`, `FUTURE_TOKEN_POLICY_VERSION:17`, `FUTURE_TOKEN_CELL_POLICY:18`, `FUTURE_TOKEN_FILL_POLICY:19`, `FUTURE_TOKEN_PRODUCER_VERSION:26`, `isRecord:67`, `exactKeys:71`, `nonEmptyString:79`, `issue:83`, `stableJson:87`, `digest:98`, `sourcePuzzleDigest:109`, `puzzleDimensions:114`, `cellId:123`, `entryCells:127`, `tokenForCharacter:134` (+18 more)
+- `apps/react/src/future/tokenManifest.test.js`
 - `apps/react/src/main.jsx` — `FutureApp:14`, `App:17`
 - `apps/react/src/mobile-render-parity.test.jsx`
 - `apps/react/src/mobile.css`
@@ -105,6 +160,22 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/adr/0002-in-browser-model-runtime.md`
 - `docs/adr/0003-local-ollama-native-runtime.md`
 - `docs/content-scan.md`
+- `docs/evidence/live-model-smoke-holdout-v1.20260928.json`
+- `docs/evidence/model-evaluation-holdout-v1.structural.json`
+- `docs/evidence/private-current-source-live-smoke-v1.20260928.json`
+- `docs/evidence/private-current-source-live-smoke-v2.20260928.json`
+- `docs/evidence/private-fill-quality-comparison-v1.synthetic.json`
+- `docs/evidence/private-fill-quality-study-v1.real-gemma4-26b-wednesday-20260928.json`
+- `docs/evidence/private-fill-quality-study-v1.real-gemma4-26b-wednesday-recovery-20260928.json`
+- `docs/evidence/private-fill-quality-study-v1.synthetic.json`
+- `docs/evidence/private-foothold-seed-plan-smoke-v1.20260928.json`
+- `docs/evidence/private-weekday-mechanic-study-v1.real-gemma4-26b-20260928.json`
+- `docs/evidence/private-weekday-mechanic-study-v1.real-gemma4-26b-fallback-20260928.json`
+- `docs/evidence/private-weekday-mechanic-study-v1.real-gemma4-26b-floor-20260928.json`
+- `docs/evidence/private-weekday-mechanic-study-v1.real-gemma4-26b-manifest-20260928.json`
+- `docs/evidence/private-weekday-mechanic-study-v1.real-gemma4-26b-seed140-20260928.json`
+- `docs/evidence/private-weekday-mechanic-study-v1.real-gemma4-26b-strict-floor-20260928.json`
+- `docs/evidence/private-weekday-mechanic-study-v1.real-gemma4-26b-thursday-20260928.json`
 - `docs/future-onboarding.md`
 - `docs/generator-integration.md`
 - `docs/legacy-assets.md`
@@ -116,7 +187,15 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/plans/03_ARCHITECTURE_MIGRATION.md`
 - `docs/plans/04_QUALITY_DELIVERY.md`
 - `docs/plans/05_EXECUTION_BACKLOG.md`
-- `docs/plans/06_PERSONAL_EPISTEME.md`
+- `docs/plans/06_PERSONAL_EPISTEME.md` — large file; path only
+- `docs/plans/07_EXPERTISE_AND_THE_GENERAL_CROSSWORD.md`
+- `docs/plans/08_AN_INTERNATIONAL_AUDIENCE.md`
+- `docs/plans/09_SIGNIFICATION_AND_THE_AHA.md`
+- `docs/plans/10_EPISTEME_AS_AN_EVOLVING_RELATION.md`
+- `docs/plans/11_DOMAIN_LEXICONS_AND_SOURCES.md`
+- `docs/plans/12_EDITORIAL_INTELLIGENCE_AND_LLMs.md`
+- `docs/plans/13_LEARNING_TO_EARN_THE_AHA.md`
+- `docs/plans/14_CLUE_GRAMMAR_MEANING_AND_ENJOYMENT.md`
 - `docs/plans/LUNA_PROMPTS.md`
 - `docs/plans/README.md`
 - `docs/react-port-parity.md`
@@ -131,11 +210,32 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `packages/application/src/sessionUseCases.ts` — `CellId:4`, `PuzzleDocument:5`, `PuzzleIndex:6`, `SolveSessionSnapshot:7`, `SessionUseCases:12`, `isCompatible:19`, `knownCell:27`, `createSessionUseCases:33`, `load:35`, `save:40`, `restart:45`, `restore:49`
 - `packages/application/tsconfig.json`
 - `packages/domain/package.json`
+- `packages/domain/src/calibration.test.ts`
+- `packages/domain/src/calibration.ts` — `CALIBRATION_SCHEMA_VERSION:2`, `CALIBRATION_MAX_OBSERVATIONS:3`, `CALIBRATION_MAX_OFFERED_STIMULI:4`, `CALIBRATION_MAX_SESSION_CHARS:5`, `CALIBRATION_MAX_ELAPSED_MS:6`, `CalibrationMovementV1:8`, `CalibrationWeekdayV1:9`, `CalibrationPresentationModeV1:17`, `CalibrationScopeV1:22`, `CalibrationStimulusPresentationV1:26`, `CalibrationResponseV1:33`, `CalibrationRelationV1:37`, `CalibrationObservationActionV1:46`, `CalibrationObservationV1:54`, `CalibrationSkipV1:68`, `CalibrationSetupV1:74` (+23 more)
+- `packages/domain/src/clueGrammar.test.ts`
+- `packages/domain/src/clueGrammar.ts` — `CLUE_GRAMMAR_VERSION:6`, `ClueVariantRole:8`, `ClueFamily:15`, `PartOfSpeech:27`, `NumberForm:40`, `VerbTense:48`, `VerbAspect:58`, `GrammaticalPerson:65`, `Register:67`, `GrammarFeatures:78`, `GrammarDimension:88`, `SpanBase:97`, `ClueSignalSpan:104`, `SubstitutionWitness:130`, `AmbiguityWitness:139`, `ConstructionWitness:146` (+32 more)
+- `packages/domain/src/clueGrammarFixtures.test.ts`
+- `packages/domain/src/clueGrammarFixtures.ts` — `ClueGrammarFixture:18`, `signal:58`, `annotation:75`, `fixture:95`, `directDefinition:119`, `fillBlank:144`, `spoken:156`, `nonverbal:172`, `wordplay:191`, `crossReference:209`, `themed:1002`, `CLUE_GRAMMAR_FIXTURES:1450`, `ClueGrammarFixtureCounts:1483`, `CLUE_GRAMMAR_FIXTURE_COUNTS:1490`
+- `packages/domain/src/episteme.test.ts`
+- `packages/domain/src/episteme.ts` — `KNOWLEDGE_REDUCER_VERSION:6`, `PREFERENCE_REDUCER_VERSION:7`, `ASSOCIATION_REDUCER_VERSION:8`, `EPISTEME_SCHEMA_VERSION:9`, `ClaimKindV1:19`, `ClaimStanceV1:20`, `EvidenceAdequacyV1:21`, `PreferenceScopeV1:22`, `OpenConceptV1:29`, `KnowledgeTaskV1:35`, `SessionAnalysisEvidenceV1:48`, `PreferenceMappingV1:57`, `PreferenceResponseV1:67`, `PreferenceSignalEvidenceV1:74`, `ExplicitPreferenceEvidenceV1:88`, `PerformanceEvidenceV1:101` (+105 more)
+- `packages/domain/src/epistemeBrief.test.ts`
+- `packages/domain/src/epistemeBrief.ts` — `EPISTEME_BRIEF_VERSION:15`, `EPISTEME_BRIEF_LIMIT_DEFAULT:17`, `EPISTEME_BRIEF_LIMIT_MAX:18`, `EPISTEME_BRIEF_CANDIDATE_MAX:19`, `EPISTEME_BRIEF_BROAD_FLOOR:20`, `EligibleLexiconCandidateV1:45`, `EpistemeBriefLaneV1:62`, `EpistemeBriefOptionsV1:70`, `EpistemeBriefHardExclusionV1:77`, `EpistemeBriefScoreComponentsV1:83`, `EpistemeBriefDecisionV1:93`, `EpistemeBriefSelectionV1:108`, `EpistemeBriefV1:119`, `HardExclusion:136`, `ScoredCandidate:138`, `BriefIndexes:147` (+32 more)
+- `packages/domain/src/epistemeBriefEvaluation.test.ts`
+- `packages/domain/src/epistemeBriefEvaluation.ts` — `EPISTEME_BRIEF_EVALUATION_VERSION:24`, `EPISTEME_BRIEF_EVALUATION_FIXTURE_VERSION:25`, `EPISTEME_BRIEF_LANES:27`, `EpistemeBriefEvaluationMetricsV1:36`, `EpistemeBriefEvaluationProfileV1:53`, `EpistemeBriefEvaluationComparisonV1:60`, `EpistemeBriefEvaluationFixtureV1:68`, `EpistemeBriefEvaluationDraftV1:76`, `unique:90`, `ratio:94`, `laneCounts:98`, `summarizeEpistemeBrief:106`, `candidateIds:109`, `answers:110`, `concepts:111`, `sources:112` (+16 more)
 - `packages/domain/src/index.ts`
+- `packages/domain/src/publicationV2.test.ts`
+- `packages/domain/src/publicationV2.ts` — `PuzzleDocumentV2:4`, `PuzzleV2Weekday:5`, `PUZZLE_V2_PUBLICATION_REVIEW_SCHEMA:8`, `PUZZLE_V2_PUBLICATION_GATE_VERSION:9`, `PuzzleV2PublicationEvidenceKind:24`, `PuzzleV2PublicationEvidenceRef:35`, `PuzzleV2PublicationSourceAttestation:41`, `PuzzleV2ClueAdjudication:51`, `PuzzleV2SupportAssignment:68`, `PuzzleV2CrossingCertificate:73`, `PuzzleV2SolveSimulationReceipt:91`, `PuzzleV2CrossingReview:105`, `PuzzleV2BlindWeekdayReview:115`, `PuzzleV2MechanicRouteReview:121`, `PuzzleV2WeekdayReview:129`, `PuzzleV2PublicationReviewPacketV1:147` (+26 more)
 - `packages/domain/src/puzzle.test.ts`
 - `packages/domain/src/puzzle.ts` — `Direction:1`, `CellId:2`, `EntryId:3`, `PuzzleId:4`, `PuzzleSource:5`, `ClueMechanism:6`, `ClueVariant:8`, `ClueSet:14`, `ProvenanceRecord:19`, `GenerationReceipt:27`, `QualityReport:36`, `IntegrityDigest:42`, `Cell:47`, `Entry:57`, `PuzzleTopology:66`, `PuzzleProvenance:73` (+38 more)
+- `packages/domain/src/puzzleV2.test.ts`
+- `packages/domain/src/puzzleV2.ts` — `ClueFamily:3`, `ClueGrammarAnnotation:4`, `ClueVariantRole:5`, `PuzzleMechanic:6`, `PUZZLE_DOCUMENT_V2_VERSION:16`, `PUZZLE_DOCUMENT_V2_SIZE:17`, `PUZZLE_DOCUMENT_V2_CANONICALIZATION:18`, `PuzzleV2Weekday:20`, `PuzzleV2Cell:29`, `PuzzleV2Entry:40`, `PuzzleV2ClueSupport:52`, `PuzzleV2ClueVariant:57`, `PuzzleV2SourcePin:69`, `PuzzleV2LexemeProvenance:78`, `PuzzleV2SenseProvenance:83`, `PuzzleV2FactProvenance:90` (+59 more)
+- `packages/domain/src/puzzleV2GoldenContract.test.ts`
+- `packages/domain/src/reflection.test.ts`
+- `packages/domain/src/reflection.ts` — `REFLECTION_CARD_SCHEMA_VERSION:9`, `REFLECTION_RESPONSE_SCHEMA_VERSION:10`, `REFLECTION_ACTION_SCHEMA_VERSION:11`, `REFLECTION_RESPONSE_BUDGET:12`, `AMBIGUOUS_REFLECTION_BUDGET:13`, `REFLECTION_NEGATIVE_SCOPE_MAX_DAYS:14`, `ReflectionResponseKindV1:16`, `ReflectionCardStatusV1:17`, `ReflectionGenerationReceiptV1:19`, `ReflectionCardV1:33`, `ReflectionResponseV1:58`, `ReflectionResponseActionV1:70`, `RecordValue:79`, `isRecord:81`, `hasExactKeys:85`, `nonEmpty:94` (+17 more)
 - `packages/domain/src/session.test.ts`
 - `packages/domain/src/session.ts` — `CellId:4`, `Direction:5`, `Entry:6`, `EntryId:7`, `PuzzleDocument:8`, `PuzzleIndex:9`, `Selection:13`, `SessionStatus:19`, `MoveKey:20`, `EntryStep:21`, `CheckScope:22`, `SessionEventType:23`, `SolveEvent:34`, `SolveSessionSnapshot:44`, `CheckResult:61`, `emptyLetters:67` (+37 more)
+- `packages/domain/src/solveV2.test.ts`
+- `packages/domain/src/solveV2.ts` — `SolveTokenV2:6`, `SolveEventV2Base:8`, `VisiblePatternCellV2:20`, `SolveEventV2:27`, `SolveSessionV2:124`, `EntryObservation:138`, `SessionAnalysis:172`, `RecordValue:187`, `ReplayPuzzleCell:190`, `ReplayPuzzleEntry:191`, `ReplayPuzzleDocument:196`, `isRecord:202`, `hasExactKeys:206`, `isBoundedString:218`, `isToken:224`, `isNullableToken:234` (+36 more)
 - `packages/domain/tsconfig.json`
 - `packages/persistence/package.json`
 - `packages/persistence/src/archive.test.ts`
@@ -150,36 +250,93 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 ## scripts
 
 - `scripts/build-legacy-assets.mjs`
-- `scripts/ci-server.py` — `deny_outbound:23`, `synthetic_puzzle:27`, `main:48`
+- `scripts/calibration-validator.cjs`
+- `scripts/ci-server.py` — `deny_outbound:25`, `synthetic_puzzle:29`, `main:65`
 - `scripts/doctor.py` — `read_pin:14`, `command_version:22`, `node_package_manager:36`, `python_version:44`, `main:48`
+- `scripts/episteme-brief-evaluation.cjs` — `digest:22`, `parseArgs:26`, `buildReport:31`
+- `scripts/episteme-reducer.cjs`
+- `scripts/fill-quality-compare.py` — `main:22`
+- `scripts/fill-quality-study.py` — `main:23`
 - `scripts/forbidden-content.json`
 - `scripts/grid-click-browser-check.mjs` — `snapshot:29`, `arrowSnapshot:56`, `destination:106`
 - `scripts/legacy-browser-smoke.mjs` — `browser:13`
 - `scripts/legacy-smoke-server.py` — `synthetic_crossword:23`, `main:61`
+- `scripts/live-model-holdout.py` — `_Response:33`, `_Response.__init__:34`, `_Response.raise_for_status:38`, `_Response.json:42`, `_Session:46`, `_Session.request:47`, `_Session.get:62`, `_Session.post:65`, `_canonical:69`, `_sha256:79`, `_text:83`, `_shape_gate:87`, `_tags:142`, `_observation:156`, `main:229`
 - `scripts/mobile-browser-parity.mjs` — `capture:40`, `walk:48`, `activeCell:66`
+- `scripts/model-evaluation-report.py` — `main:18`
+- `scripts/private-fill-study.py` — `_request_puzzle:31`, `_validate_local_base_url:62`, `_case_from_response:73`, `main:93`
+- `scripts/private-weekday-mechanic-study.py` — `_canonical:34`, `_digest:44`, `_validate_loopback:48`, `_request:59`, `_evaluate:88`, `main:140`
 - `scripts/react-browser-parity.mjs` — `character:18`, `snapshot:71`, `normalize:73`, `walk:74`, `checkpoint:78`, `cell:105`, `focusIs:107`, `selected:124`, `coordinates:130`
+- `scripts/reflection-bridge.cjs`
+- `scripts/runtime_doctor.py` — `_preferred_model_tags:45`, `_sha512_integrity:66`, `_load_json:74`, `_check_runtime_archive:82`, `_check_runtime_cli:118`, `_configured_xfill_root:153`, `_check_xfill_engine:163`, `_ollama_url:187`, `_check_ollama:203`, `collect_report:241`, `_print_report:257`, `main:278`
 - `scripts/scan-forbidden-content.mjs` — `patterns:24`, `walk:35`, `isExempt:47`, `violations:82`, `exemptHits:83`
+- `scripts/sibling-construction-simulation.cjs` — `loadSimulator:15`
 - `scripts/snapshot-react-behavior.mjs`
+- `scripts/solve-analyzer.cjs` — `main:48`
 - `scripts/watermark-browser-check.mjs` — `measure:27`, `pseudo:34`, `state:69`
 
 ## src
 
 - `src/cell.py` — `Cell:10`, `Cell.validate_letter:29`, `Cell.display_letter:38`, `Cell.full_content:46`, `Cell.answer_value:58`, `Cell.__str__:66`, `Cell.from_char:84`, `Cell.from_formatted_string:101`, `Cell.to_api_format:156`
 - `src/crossword/__init__.py`
-- `src/crossword/app.py` — `GameSession:41`, `GameSession.__init__:42`, `GameSession.update_cell:51`, `GameSession.to_dict:54`, `_react_index:65`, `index:74`, `future_index:80`, `legacy_index:86`, `legacy_mobile_client:91`, `react_assets:95`, `get_crossword:103`, `get_crossword_by_date:109`, `daterange:133`, `get_random_crossword:144`, `grid:185`, `get_completed_puzzles:192` (+11 more)
+- `src/crossword/admitted_pack.py` — `AdmittedPackError:39`, `SourcePin:44`, `AdmittedSenseContent:53`, `AdmittedFactContent:65`, `AdmittedClueContent:74`, `AdmittedLexemeContent:87`, `AdmittedPackContent:100`, `canonical_json:108`, `_is_record:123`, `_text:127`, `_id:131`, `_digest:135`, `_unique_text_list:139`, `_source_projection:149`, `_reviewed_provenance:170`, `_personalization:191` (+6 more)
+- `src/crossword/admitted_pack_config.py` — `AdmittedPackConfigError:32`, `AdmittedPackConfigError.__init__:42`, `ConfiguredAdmittedPack:47`, `_DuplicatePinKey:61`, `_unique_object:65`, `_reject_json_constant:74`, `_required_string:78`, `_parse_source_pins:87`, `_configured_pack_pins:139`, `load_configured_admitted_pack:157`, `load_configured_admitted_candidates:195`
+- `src/crossword/admitted_pack_loader.py` — `AdmittedPackLoadError:31`, `_DuplicateObjectKey:35`, `LoadedAdmittedPack:40`, `_object_without_duplicate_keys:47`, `_reject_non_json_constant:56`, `_validate_pins:60`, `_parse_and_resolve:85`, `_parse_pack:107`, `_parse_resolve_and_project:128`, `load_admitted_pack_bytes:159`, `load_admitted_pack_bytes_with_content:180`, `load_admitted_pack_file:199`, `load_admitted_pack_file_with_content:224`
+- `src/crossword/admitted_retrieval_api.py` — `_error:70`, `_valid_uuid:77`, `_local_origin:84`, `_now:89`, `_canonical_digest:93`, `_read_snapshot:98`, `_selection_limit:163`, `_is_record:176`, `_finite_number:180`, `_valid_id_list:189`, `_valid_score_components:198`, `_valid_candidate:206`, `_valid_compiled_brief:232`, `read_retrieval_brief:349`
+- `src/crossword/app.py` — `GameSession:94`, `GameSession.__init__:95`, `GameSession.update_cell:104`, `GameSession.to_dict:107`, `_react_index:118`, `index:127`, `future_index:133`, `legacy_index:139`, `legacy_mobile_client:144`, `react_assets:148`, `get_crossword:156`, `get_crossword_by_date:162`, `daterange:192`, `get_random_crossword:203`, `grid:250`, `get_completed_puzzles:257` (+11 more)
+- `src/crossword/calibration_api.py` — `CalibrationSessionRecord:25`, `CalibrationRuntimeUnavailable:35`, `CalibrationPayloadRejected:39`, `_error:43`, `_canonical_json:50`, `_valid_uuid:54`, `_same_origin:63`, `_read_bounded_json:68`, `_catalog_stimuli:87`, `_run_validator:99`, `_sequences:144`, `_has_active_response:157`, `_validate_host_invariants:180`, `_validate_append:206`, `_etag:239`, `_session_response:243` (+4 more)
+- `src/crossword/calibration_hypothesis_api.py` — `CalibrationHypothesisDeckRecord:62`, `CalibrationHypothesisResponseRecord:79`, `CalibrationHypothesisActionRecord:96`, `HypothesisRuntimeUnavailable:114`, `_canonical:118`, `_hash:122`, `_valid_uuid:126`, `_local_origin:135`, `_error:140`, `_read_json:147`, `_catalog:168`, `_calibration_and_profile:183`, `_active_chosen_source:216`, `_text:303`, `_reject_player_inference:316`, `_validate_model_paths:322` (+32 more)
+- `src/crossword/clue_grammar_bridge.py` — `_issue:67`, `_signals:74`, `_surface_signal_present:81`, `_signal_matches_literal:100`, `validate_surface_clue_family:119`, `summarize_surface_clue_families:223`
+- `src/crossword/clue_grounding_validators.py` — `_letters_only:57`, `_span:61`, `_validator_base:84`, `_mechanical_validator:100`, `validate_private_clue_witnesses:153`
+- `src/crossword/clue_semantic_challenger.py` — `_codes:39`, `_mechanical_statuses:45`, `_model_projection:58`, `challenge_private_clue_pair:107`, `summarize_challenge_classifications:206`
+- `src/crossword/construction_evidence.py` — `_canonical:24`, `_digest:28`, `_entry_id:32`, `_entry_cells:40`, `_board_projection:58`, `_round:74`, `_foothold_seed_plan:78`, `evaluate_private_board:211`
+- `src/crossword/construction_runtime.py` — `FullSizeRuntimeUnavailable:45`, `FullSizeDraftRejected:49`, `FullSizeDraftCancelled:53`, `_validated_options:57`, `_validate_result:97`, `_validate_admitted_wordlist:137`, `_stop_process:190`, `_run_cancellable:223`, `generate_full_size_draft:264`
+- `src/crossword/construction_simulation_adapter.py` — `DerivedFillSignalEnvelope:46`, `EstimateProvenanceEnvelope:52`, `EstimateProvenanceBinding:71`, `_canonical:82`, `_digest:92`, `_probability:96`, `_entry_cells:104`, `_crossings:126`, `_normalize_estimate_envelope:166`, `_estimate_provenance_binding:259`, `_verified_estimate_provenance:299`, `build_simulation_request:337`, `_invoke_bridge:432`, `run_sibling_simulation:463`, `evaluate_sibling_adapter:522`
 - `src/crossword/continuity_export.py` — `ContinuityError:48`, `ContinuityFormatError:52`, `ContinuitySchemaError:56`, `ContinuityIntegrityError:60`, `ContinuitySizeError:68`, `ContinuityContentError:72`, `UnsupportedContinuityVersion:76`, `ContinuityLimits:215`, `ContinuityLimits.__post_init__:224`, `ContinuityPreview:232`, `ContinuityPreview.to_dict:243`, `_normalise_key:254`, `_is_forbidden_key:258`, `_contains_forbidden_value:263`, `_canonical_bytes:267`, `_sha256:283` (+23 more)
 - `src/crossword/data_reader.py` — `already_fetched:11`, `DataReader:15`, `DataReader.__init__:16`, `DataReader.fetch_data:21`, `DataReader.daterange:27`, `DataReader._fetch_data:31`
 - `src/crossword/database.py` — `Base:9`, `CompletedPuzzle:16`, `CompletedPuzzle.__repr__:29`, `CompletedPuzzle.to_dict:32`, `init_db:47`
-- `src/crossword/future.py` — `StartingProfile:22`, `validate_draft:31`, `derive_profile:73`, `starting_profile:101`, `expand_associations:139`
+- `src/crossword/episteme_api.py` — `_error:24`, `_valid_uuid:31`, `_local_origin:40`, `_get_starting_profile:45`, `read_episteme:55`, `update_episteme:74`
+- `src/crossword/episteme_store.py` — `EpistemeProfileRecord:23`, `EpistemeRuntimeUnavailable:32`, `EpistemeCommandRejected:36`, `EpistemeRevisionConflict:40`, `_as_conflict:44`, `run_reducer:51`, `episteme_profile_size:90`, `get_or_create_episteme_profile:94`, `project_episteme_profile:117`, `apply_episteme_command:126`, `replay_or_conflict_after_cas_loss:159`, `now_utc_iso:180`
+- `src/crossword/fill_quality_evaluation.py` — `canonical_fill_quality_json:35`, `_digest:47`, `_number:53`, `_seed:63`, `_string:71`, `_mapping:77`, `_list:83`, `_rounded:89`, `_summary:93`, `_quality:116`, `_attempt:141`, `_case:166`, `_project_attempt:193`, `evaluate_fill_quality_study:203`, `compare_fill_quality_studies:326`, `run_fixed_seed_fill_study:513`
+- `src/crossword/future.py` — `StartingProfile:31`, `validate_draft:40`, `derive_profile:131`, `_profile_response:177`, `_profile_conflict:185`, `_next_updated_at:193`, `_has_version_precondition:204`, `_same_profile_retry:212`, `starting_profile:223`, `expand_associations:325`
 - `src/crossword/future_catalog.json`
+- `src/crossword/future_grid_jobs.py` — `FutureGridDraftJob:64`, `FutureGridDraftPrivateSelection:88`, `_now:103`, `_stamp:107`, `_elapsed_seconds:111`, `_canonical:124`, `_digest:134`, `_uuid:138`, `_response:147`, `_job_error:216`, `_local_origin:223`, `_valid_seed:228`, `_stamp_z:232`, `_json_copy:236`, `_pack_receipt:240`, `_load_pinned_pack:248` (+24 more)
+- `src/crossword/future_puzzles.py` — `FuturePuzzleManifestRecord:28`, `FuturePuzzleProvenanceRecord:37`, `FutureSolveAnalysisRecord:54`, `FuturePuzzleV2CandidateRecord:65`, `canonical_manifest_json:86`, `_private_provenance_projection:90`, `_private_manifest_identity:109`, `stage_private_puzzle_provenance:121`, `store_private_puzzle_provenance:149`, `PersonalizedV2CandidateRejected:168`, `_canonical_v2:172`, `validate_personalized_v2_review_candidate:185`, `stage_personalized_v2_review_candidate:212`, `_candidate_error:241`, `get_personalized_v2_candidate:249`, `get_private_puzzle_provenance:288` (+1 more)
+- `src/crossword/future_worker.py` — `main:17`
+- `src/crossword/language_signals.py` — `has_explicit_language_signal:12`
+- `src/crossword/language_task_pack.py` — `LanguageTaskPackError:93`, `LanguageTaskPair:98`, `LanguageTaskPair.as_record:111`, `_grammar:135`, `_canonical_json:373`, `_digest:386`, `_pack_without_digest:390`, `build_synthetic_language_task_pack:401`, `_nonempty_text:411`, `_valid_timestamp:415`, `_validate_pair:425`, `validate_language_task_pack:477`, `task_pair_for_review:531`, `reviewed_display_text_for_review:581`, `private_display_text_for_review:615`, `single_cell_fill_token:642` (+4 more)
+- `src/crossword/learning_review.py` — `_adaptive_interval_hours:60`, `_fit_forgetting_model:69`, `FutureLearningReviewRecord:145`, `_now:161`, `_iso:165`, `_stamp:177`, `_valid_uuid:181`, `_same_origin:188`, `_error:193`, `_analysis_session_id:200`, `_source_entry:212`, `_review_task_id:236`, `_public_item:244`, `_exposures:248`, `_forgetting_model_observations:331`, `_forgetting_model_diagnostic:368` (+5 more)
+- `src/crossword/legacy_manifest.py` — `_canonical_json:26`, `_digest:37`, `_as_mapping:41`, `_required_text:52`, `_coordinate:58`, `_character:64`, `to_puzzle_document:91`, `verify_integrity:370`
+- `src/crossword/machine_evidence_prerequisites.py` — `_canonical:47`, `_report:57`, `_blocked_report:77`, `_expected_job_result_receipt:95`, `_validate_result_and_manifest:123`, `_validate_private_selection:257`, `build_machine_evidence_prerequisite_report:323`
+- `src/crossword/model_evaluation.py` — `_canonical:36`, `_digest:46`, `canonical_model_evaluation_json:50`, `_object:56`, `_list:62`, `_string:68`, `_status:74`, `_number:80`, `_rounded:88`, `_summary:94`, `_size_summary:116`, `_with_missing:138`, `_provider_summary:144`, `_identity_receipt:170`, `_model_order:186`, `_semantic_editorial_pending:197` (+2 more)
 - `src/crossword/models.py` — `Character:23`, `Character.is_rebus:37`, `Character.display_value:43`, `Character.__str__:47`, `Entry:61`, `Entry.length:81`, `Entry.answer_text:87`, `Entry.__str__:91`, `CrosswordMetadata:95`, `CrosswordMetadata.__str__:104`, `Crossword:109`, `Crossword.across_entries:121`, `Crossword.down_entries:127`, `Crossword.get_entry:131`, `Crossword.__str__:138`
 - `src/crossword/parser.py` — `NYTFormatParser:12`, `NYTFormatParser.parse:25`, `NYTFormatParser._normalize_grid_line:103`, `NYTFormatParser._calculate_actual_dimensions:151`, `NYTFormatParser._parse_entries:209`, `NYTFormatParser._find_starting_positions:266`, `NYTFormatParser._find_across_starts:306`, `NYTFormatParser._find_down_starts:326`, `NYTFormatParser._extract_across_word:346`, `NYTFormatParser._extract_down_word:369`, `NYTFormatParser._extract_character_at_position:392`
+- `src/crossword/personalized_manifest.py` — `PersonalizedManifestRejected:38`, `GridSlot:43`, `GridSlot.key:50`, `GridSlot.entry_id:54`, `PersonalizedManifestBuild:60`, `_reject:68`, `_mapping:72`, `_text:78`, `_freeze_json:84`, `_plain:97`, `_canonical_number:106`, `_canonical_json:138`, `_canonical_bytes:162`, `_is_iso_date_time:169`, `_digest:179`, `_frozen_json_digest:183` (+12 more)
+- `src/crossword/postgame_associations_api.py` — `PostgameAssociationRuntimeUnavailable:63`, `PostgameAssociationRunRecord:67`, `PostgameAssociationResponseRecord:82`, `_canonical:97`, `_hash:103`, `_valid_uuid:107`, `_local_origin:111`, `_error:116`, `_read_json:123`, `_text:142`, `_reject_inference:154`, `_model_identity:159`, `_read_response:170`, `_ollama_session:188`, `_validate_paths:194`, `_diversity_receipt:244` (+10 more)
+- `src/crossword/private_puzzle_generation.py` — `_clue_family_observation:308`, `_weekday_recipe:502`, `_error:516`, `_local_origin:523`, `_response_json:528`, `_saved_model_override:549`, `_ollama_installed_models:561`, `_installed_model:574`, `_resolve_model_override:589`, `_learning_review_outcomes:605`, `_play_calibration:734`, `_profile_context:826`, `_association_is_expired:1128`, `_association_steering_receipt:1139`, `_personalization_receipt:1187`, `_theme_exposure_receipt:1238` (+57 more)
+- `src/crossword/profile_export.py` — `_canonical_archive_bytes:49`, `archive_integrity_digest:60`, `_valid_uuid:67`, `_same_origin:76`, `_error:81`, `_calibrations_for_profile:91`, `_safe_generation_metadata:105`, `_without_capability_fields:116`, `_export_size_preflight:136`, `_export_profile:436`, `export_profile:859`
+- `src/crossword/profile_import.py` — `_valid_uuid:55`, `_same_origin:62`, `_error:67`, `_read_archive:74`, `_id:109`, `_text:115`, `_hash:121`, `_timestamp:131`, `_dict:135`, `_list:141`, `_archive_rows:147`, `_existing_ids:683`, `import_profile:744`
+- `src/crossword/profile_lifecycle.py` — `_valid_uuid:41`, `_same_origin:48`, `_error:53`, `_profile_calibration_ids:60`, `delete_profile:73`
+- `src/crossword/profile_narrative_api.py` — `ProfileNarrativeRuntimeUnavailable:118`, `ProfileNarrativeRecord:122`, `_canonical:136`, `_digest:140`, `_valid_uuid:144`, `_same_origin:148`, `_error:153`, `_read_body:160`, `_profile:181`, `_source:199`, `_model_identity:269`, `_response_json:280`, `_validate_narrative:297`, `_decode_model_json:363`, `_generate:383`, `_payload:479` (+3 more)
+- `src/crossword/profile_retention.py` — `_now:34`, `_valid_uuid:38`, `_same_origin:45`, `_error:50`, `_timestamp:57`, `_policy:70`, `_mode:86`, `_empty_audit:91`, `retain_profile:124`, `profile_retention:246`
+- `src/crossword/publication_attestation.py` — `PublicationAttestationRejected:62`, `PublicationClaimAttestation:66`, `HumanPublicationClaim:95`, `PublicationAttestationCoverage:106`, `_Receipt:116`, `_Receipt.to_dict:127`, `_canonical_json:131`, `_sha256:145`, `_declared_packet_digest:149`, `_object:161`, `_human_refs:167`, `_validated_manifest_ref:206`, `_canonical_uuid:225`, `human_claims_for_packet:232`, `_manifest:310`, `_receipt_from_row:322` (+11 more)
+- `src/crossword/publication_evidence.py` — `PublicationEvidenceRejected:80`, `PublicationEvidenceArtifact:84`, `PublicationEvidenceArtifactClaim:99`, `PublicationEvidenceStorageQuota:117`, `_response:139`, `_candidate_digest:146`, `_validated_candidate:155`, `_request_reviewer:200`, `upload_publication_evidence_artifact:207`, `_store_artifact_with_quota:310`, `_require_record:370`, `_require_list:376`, `_collect_refs:386`, `_check_packet_size:473`, `resolve_publication_packet_evidence:495`, `_valid_canonical_uuid:562` (+4 more)
+- `src/crossword/publication_lineage.py` — `PublicationLineageAuditShapeRejected:110`, `PublicationLineageAuditShapeRejected.__init__:113`, `validate_publication_lineage_audit_shape_v1:161`, `verify_publication_lineage_audit_digest_self_consistency_v1:337`, `_audit_reject:357`, `_audit_object:361`, `_audit_array:367`, `_audit_string:373`, `_audit_digest:382`, `_audit_identity:388`, `_audit_uuid:395`, `_audit_timestamp:406`, `_audit_canonical_digest:427`, `_audit_evidence_belongs_to_claim:438`, `PublicationResealAssessmentV1:453`, `PublicationResealAssessmentV1.to_dict:461` (+2 more)
+- `src/crossword/publication_review.py` — `PublicationReviewRejected:33`, `PublicationReviewDiagnostic:38`, `PublicationReviewDiagnostic.to_dict:51`, `review_publication_packet:56`, `_validate_gate_evaluation:198`, `_packet_digest_for_diagnostic:222`, `_snapshot_packet:227`, `_measure_packet_json_size:250`
+- `src/crossword/reflection_api.py` — `_extend_authored_reflection_bank:290`, `FutureReflectionDeckRecord:333`, `FutureReflectionResponseRecord:343`, `FutureReflectionActionRecord:362`, `ReflectionRuntimeUnavailable:377`, `ReflectionConversionRejected:381`, `_canonical:385`, `_hash:389`, `_valid_uuid:393`, `_error:402`, `_same_origin:409`, `_utc_now:414`, `_mapping:422`, `_language_learning_signal:452`, `_reflection_context:480`, `_analysis_summary:562` (+35 more)
+- `src/crossword/reviewer_auth.py` — `ReviewerAuthConfigError:30`, `ReviewerAuthConfigError.__init__:35`, `ReviewerAuthenticationError:40`, `ReviewerAuthenticationError.__init__:45`, `ReviewerPrincipal:50`, `_valid_reviewer_id:56`, `_valid_token:70`, `_reject_duplicate_json_keys:78`, `_parse_additional_reviewers:87`, `_configured_credentials:134`, `resolve_reviewer_principal:167`
+- `src/crossword/runtime_readiness.py` — `preferred_model_tags:48`, `_ollama_tags_url:73`, `_ollama_status:91`, `_configured_xfill_root:138`, `_xfill_status:148`, `_heartbeat_path:182`, `_parse_timestamp:195`, `_pid_is_alive:207`, `_worker_status:220`, `_queue_status:263`, `_readiness_payload:282`, `runtime_readiness:310`, `worker_heartbeat_path:320`, `write_worker_heartbeat:328`, `clear_worker_heartbeat:358`
 - `src/crossword/scraper.py` — `main:11`, `usecase:19`, `CSVWriter:29`, `CSVWriter.__init__:30`, `CSVWriter.save:37`
+- `src/crossword/session_journal.py` — `PersonalSolveSession:63`, `PersonalSolveEvent:77`, `_canonical:93`, `_digest:97`, `_canonical_uuid:101`, `_origin_is_local:110`, `_error:115`, `_bounded_json_body:122`, `_uuid_list:133`, `_token:143`, `_normalized_token:154`, `_cell_id:158`, `_is_iso_datetime:162`, `_validate_initial_grid:176`, `_manifest_indexes:231`, `_private_task_links:280` (+4 more)
+- `src/crossword/solve_replay.py` — `SolveReplayUnavailable:16`, `SolveReplayRejected:20`, `analyze_solve_session:24`, `analyze_solve_session_v2:29`, `validate_solve_puzzle_v2:34`, `evaluate_puzzle_v2_publication_gate:43`, `_analyze_solve_session:90`, `_run_analyzer:97`
 - `src/crossword/static/main.js` — `data:7`, `isHalfCompleted:85`, `weekdayOptions:91`, `selectedWeekday:102`, `activeDirection:105`, `created:114`, `beforeUnmount:144`, `checkAndStartCaching:151`, `needsMore:154`, `handleOnlineStatus:182`, `updateCachedCounts:191`, `updateSolvedCounts:198`, `isPuzzleSolved:204`, `isPuzzleSolvedBackend:209`, `markPuzzleSolved:219`, `existingEntry:231` (+81 more)
 - `src/crossword/static/mobile.js` — `myEntries:18`, `sortedEntries:22`, `checkButtonLabel:32`, `toggleCheck:37`, `clearIncorrectAndMarkSolved:47`, `isPerfect:56`, `isEntryFilled:90`, `isCellCorrect:95`, `loadPuzzle:101`, `getCellValue:110`, `getCoordinates:114`, `selectEntry:124`, `focusInput:133`, `handleInput:142`, `handleKeydown:166`, `requestSwap:193` (+2 more)
 - `src/crossword/static/styles.css`
 - `src/crossword/templates/mobile.html`
 - `src/crossword/templates/newapp.html`
+- `src/crossword/token_construction.py` — `NativeTokenConstructionRejected:26`, `_entry_id:30`, `_entry_cells:34`, `_bounded_text:53`, `_grid_dimensions:62`, `construct_native_token_grid:72`, `validate_native_token_cells:203`, `emit_single_cell_language_tokens:340`, `native_token_hints:424`
+- `src/crossword/v2_session_journal.py` — `FuturePuzzleV2PublishedRecord:54`, `FuturePuzzleV2SolveSession:71`, `FuturePuzzleV2SolveEvent:86`, `FuturePuzzleV2SolveAnalysis:104`, `_canonical:115`, `_v2_envelope_error:119`, `_validate_publication_receipt:126`, `_validated_published_record:148`, `_validated_profile_candidate:181`, `_validated_session_puzzle:216`, `_indexes:241`, `_validate_event_v2:277`, `_validate_v2_initial_grid:300`, `_writer_matches:307`, `_session_error:314`, `_recompute_final_v2_analysis:318` (+4 more)
+- `src/crossword/weekday_mechanics_evaluation.py` — `_canonical:23`, `_digest:33`, `_ordinary_answer:37`, `_board_and_provenance:47`, `_theme_entries:64`, `_mechanic_base:81`, `evaluate_thursday_mechanic_board:89`, `_evaluate_fallback:238`, `_entry_id:279`, `_uncertainty:283`, `_report:292`, `evaluate_thursday_mechanic_suite:320`, `evaluate_sunday_size_gate:354`
 
 ## tests
 
@@ -190,14 +347,66 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `tests/e2e/fixtures.ts`
 - `tests/js/main.test.js`
 - `tests/legal/test_content_scan.py`
+- `tests/test_admitted_pack.py`
+- `tests/test_admitted_pack_config.py`
+- `tests/test_admitted_pack_loader.py`
+- `tests/test_admitted_retrieval_api.py`
 - `tests/test_api_isolated.py`
+- `tests/test_calibration_api.py`
+- `tests/test_calibration_hypothesis_api.py`
+- `tests/test_clue_grammar_bridge.py`
+- `tests/test_clue_grounding_validators.py`
 - `tests/test_clue_numbering.py`
+- `tests/test_clue_semantic_challenger.py`
+- `tests/test_construction_evidence.py`
+- `tests/test_construction_runtime.py`
+- `tests/test_construction_simulation_adapter.py`
 - `tests/test_continuity_export.py`
+- `tests/test_episteme_api.py`
+- `tests/test_episteme_brief_bridge.py`
+- `tests/test_episteme_brief_evaluation.py`
+- `tests/test_episteme_store.py`
+- `tests/test_fill_quality_evaluation.py`
 - `tests/test_future_api.py`
+- `tests/test_future_catalog_stimuli.py`
+- `tests/test_future_grid_jobs.py`
+- `tests/test_future_v2_candidate_api.py`
 - `tests/test_integration.py`
+- `tests/test_language_task_pack.py`
+- `tests/test_learning_review.py`
+- `tests/test_legacy_manifest.py`
+- `tests/test_lexicon_pack_builder.py`
+- `tests/test_machine_evidence_prerequisites.py`
+- `tests/test_model_evaluation.py`
 - `tests/test_notepad_parsing.py`
+- `tests/test_oewn_candidates.py`
+- `tests/test_oewn_import.py`
 - `tests/test_parser.py`
+- `tests/test_personalized_manifest.py`
+- `tests/test_postgame_associations_api.py`
+- `tests/test_private_provenance.py`
+- `tests/test_private_puzzle_generation.py`
+- `tests/test_profile_export.py`
+- `tests/test_profile_import.py`
+- `tests/test_profile_lifecycle.py`
+- `tests/test_profile_narrative_api.py`
+- `tests/test_profile_retention.py`
+- `tests/test_publication_attestation.py`
+- `tests/test_publication_evidence.py`
+- `tests/test_publication_evidence_legacy_schema.py`
+- `tests/test_publication_lineage.py`
+- `tests/test_publication_review.py`
 - `tests/test_reference_solver.py`
+- `tests/test_reflection_api.py`
+- `tests/test_reviewer_auth.py`
+- `tests/test_reviewer_config.py`
+- `tests/test_runtime_doctor.py`
+- `tests/test_runtime_readiness.py`
+- `tests/test_session_journal.py`
+- `tests/test_solve_replay.py`
+- `tests/test_token_construction.py`
+- `tests/test_v2_session_journal.py`
+- `tests/test_weekday_mechanics_evaluation.py`
 
 ## tools
 
@@ -206,6 +415,9 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `tools/content_scan/allowlist.json`
 - `tools/content_scan/scan_forbidden_content.py` — `ForbiddenPattern:32`, `Finding:41`, `ScanReport:52`, `ScanReport.passed:61`, `load_policy:65`, `_relative_path:94`, `_is_allowlisted:103`, `_iter_files:119`, `scan_paths:143`, `_parser:197`, `main:207`
 - `tools/lexicon/README.md`
+- `tools/lexicon/oewn_candidates.py` — `CandidateProjectionError:34`, `ProjectionLimits:39`, `canonical_json:54`, `_digest:69`, `_required_text:76`, `_validate_attestation:82`, `_validate_staged:142`, `_source_surface_grid_form:280`, `project_candidates:301`, `build_review_from_archive:484`, `write_review_from_archive:509`, `main:537`
+- `tools/lexicon/oewn_import.py` — `OEWNImportError:62`, `ImportLimits:67`, `canonical_json:77`, `_canonical_chunks:89`, `_canonical_digest:100`, `_sha256:111`, `_stable_id:115`, `_duplicate_rejecting_object:120`, `_parse_json:129`, `_safe_members:144`, `_read_member:195`, `_lexical_pos_base:219`, `_pos_compatible:223`, `_normalized_surface:230`, `_form_shape:234`, `_quarantine:250` (+5 more)
+- `tools/lexicon/pack_builder.py` — `PackBuildError:57`, `canonical_json:61`, `_sha256:73`, `_is_record:77`, `_text:81`, `_date:85`, `_normalize_surface:96`, `_record_id:100`, `_quarantine:106`, `_load_json:123`, `_validate_manifest_shape:130`, `_source_ids_with_duplicates:149`, `_record_ids_with_duplicates:160`, `_source_reason:171`, `_source_projection:237`, `_check_records_shape:250` (+6 more)
 - `tools/lexicon/source-ledger.json`
 - `tools/reference_solver/__init__.py`
 - `tools/reference_solver/solver.py` — `FillResult:9`, `_matches:16`, `solve_fill:25`
