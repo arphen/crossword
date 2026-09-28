@@ -1,0 +1,110 @@
+{
+  "version": "private-clue-quality-study-v1",
+  "scope": "answer-free-clue-surface-study",
+  "studyId": "real-gemma4-26b-tuesday-target-20260928",
+  "recipeId": "private-tuesday-v1",
+  "requestedSeeds": [
+    20470390
+  ],
+  "observedSeeds": [
+    20470390
+  ],
+  "missingSeeds": [],
+  "cases": [
+    {
+      "seed": 20470390,
+      "entryCount": 74,
+      "grammarCheckedCount": 74,
+      "grammarIssueCount": 0,
+      "fallbackCount": 1,
+      "semanticStatus": "not-established",
+      "familyCounts": {
+        "definition": 46,
+        "factual-relation": 1,
+        "fill-blank": 20,
+        "metalinguistic": 3,
+        "pun": 4
+      },
+      "nonDefinitionCount": 28,
+      "nonDefinitionRate": 0.378,
+      "nonDefinitionFamilies": [
+        "factual-relation",
+        "fill-blank",
+        "metalinguistic",
+        "pun"
+      ],
+      "floorMet": true,
+      "requiredNonDefinitionFamilies": 4,
+      "requiredNonDefinitionClues": 26,
+      "targetNonDefinitionRate": 0.35,
+      "targetNonDefinitionClues": 26,
+      "signalCounts": {
+        "abbreviation-indicator": 3,
+        "fill-blank": 20,
+        "language-indicator": 1,
+        "question-mark": 4
+      },
+      "issueCounts": {},
+      "semanticChallenge": {
+        "mechanically-supported": 0,
+        "needs-review": 73,
+        "safe-fallback": 1
+      },
+      "repair": {
+        "attempted": true,
+        "attemptCount": 5,
+        "selectedCount": 14,
+        "rewrittenCount": 5,
+        "postSafetyRepair": true,
+        "minimumFamilies": 4,
+        "minimumClueCount": 18
+      },
+      "timingsSeconds": {
+        "themeProposal": 13.057,
+        "nativeXfill": 44.06,
+        "clueGeneration": 174.052,
+        "clueChallenge": 0.006,
+        "total": 231.36
+      }
+    }
+  ],
+  "summary": {
+    "entryCount": 74,
+    "grammarCheckedCount": 74,
+    "grammarIssueCount": 0,
+    "fallbackCount": 1,
+    "nonDefinitionCount": 28,
+    "caseCount": 1,
+    "floorMetCases": 1,
+    "familyCounts": {
+      "definition": 46,
+      "factual-relation": 1,
+      "fill-blank": 20,
+      "metalinguistic": 3,
+      "pun": 4
+    },
+    "signalCounts": {
+      "abbreviation-indicator": 3,
+      "fill-blank": 20,
+      "language-indicator": 1,
+      "question-mark": 4
+    },
+    "issueCounts": {},
+    "totalTimingSeconds": 231.36,
+    "meanTimingSeconds": 231.36
+  },
+  "metadata": {
+    "transport": "loopback-http",
+    "weekday": "tuesday",
+    "model": "gemma4:26b",
+    "seedCount": 1,
+    "sourceReceipt": "loopback://private-puzzle/20470390"
+  },
+  "interpretation": "surface-and-mechanical-receipts-only; no semantic-or-player-quality-claim",
+  "uncertainty": [
+    "clue-semantics-unreviewed",
+    "player-support-unmeasured",
+    "local-model-output"
+  ],
+  "studyDigest": "sha256:b64b12d8681e8d93de754a966798a67b0bda130f8183210156874b988162e274"
+}
