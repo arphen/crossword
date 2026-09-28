@@ -68,7 +68,11 @@ def _request(base_url: str, profile_id: str, seed: int, weekday: str, model: str
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile-id", required=True)
-    parser.add_argument("--weekday", choices=("monday", "tuesday", "wednesday", "thursday", "sunday"), default="wednesday")
+    parser.add_argument(
+        "--weekday",
+        choices=("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"),
+        default="wednesday",
+    )
     parser.add_argument("--seed", action="append", type=int, dest="seeds", required=True)
     parser.add_argument("--model", help="explicit installed Ollama tag")
     parser.add_argument("--base-url", default="http://127.0.0.1:5001")
