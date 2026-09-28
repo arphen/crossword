@@ -1093,6 +1093,36 @@ def test_fill_retry_options_try_a_local_model_theme_anchor(monkeypatch):
     assert attempts[1]["options"]["themes"] == ["ECHO", "MOSS"]
 
 
+def test_fill_retry_options_caps_native_theme_locks_without_dropping_anchor_candidates(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        private_generation,
+        "_local_fill_word_set",
+        lambda: frozenset({"ECHO", "MOSS", "TONE", "SOUND", "REVERB"}),
+    )
+    options = {
+        "seed": 42,
+        "candidates": 75,
+        "time": 2,
+        "keepMean": 50,
+        "minScore": 40,
+        "maxIffy": 20,
+        "themes": ["RESONANCE", "ECHO", "TONE", "REVERB", "SOUND"],
+    }
+
+    attempts = private_generation._fill_retry_options(42, options)
+
+    assert attempts[0]["options"]["themes"] == [
+        "RESONANCE",
+        "ECHO",
+        "TONE",
+        "REVERB",
+    ]
+    assert attempts[2]["options"]["themes"] == attempts[0]["options"]["themes"]
+    assert attempts[1]["options"]["themes"] == ["ECHO", "TONE"]
+
+
 def test_local_theme_anchor_keeps_at_most_two_shortest_placeable_invitations(monkeypatch):
     monkeypatch.setattr(
         private_generation,
@@ -2543,13 +2573,13 @@ def test_selected_weekday_recipe_changes_theme_locks_and_provenance(
         42, weekday, starting, episteme
     )
 
-    assert fill_options[0]["themes"] == themes[:theme_count]
+    assert fill_options[0]["themes"] == themes[: min(theme_count, private_generation._NATIVE_THEME_LOCK_LIMIT)]
     assert provenance["weekdayRecipe"] == {
         "id": recipe_id,
         "intent": private_generation._weekday_recipe(weekday)["intent"],
         "themeMode": theme_mode,
         "themeAnswerTarget": theme_count,
-        "themeLocksUsed": theme_count,
+        "themeLocksUsed": min(theme_count, private_generation._NATIVE_THEME_LOCK_LIMIT),
         "themeEntriesUsed": 1,
         "gridMechanic": "ordinary-letter-grid",
     }

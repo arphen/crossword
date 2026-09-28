@@ -333,6 +333,7 @@ REVIEWED_CLUE_PACK_VERSION = "private-reviewed-clue-pack-v1"
 CLUE_DIVERSITY_REPAIR_VERSION = "private-clue-diversity-repair-v1"
 CLUE_DIVERSITY_REPAIR_ENV = "CROSSWORD_PRIVATE_CLUE_DIVERSITY_REPAIR"
 FILL_QUALITY_POLICY_VERSION = "private-fill-quality-policy-v1"
+_NATIVE_THEME_LOCK_LIMIT = 4
 _FILL_RETRY_MAX_ATTEMPTS = 4
 _FILL_RETRY_SEED_STEP = 104_729
 _SUNDAY_FALLBACK_SEED = 20260931
@@ -4366,12 +4367,16 @@ def _fill_retry_options(seed, options):
     its uncertainty is retained in provenance.
     """
     themes = options.get("themes", [])
+    # The bundled native runtime accepts at most four theme locks. Keep the
+    # full model proposal available for the local-anchor retry, but never send
+    # an invalid five-lock request to xfill.
+    native_themes = list(themes[:_NATIVE_THEME_LOCK_LIMIT])
     if options.get("gridSize") == 21:
         # A large Sunday board needs a reliable escape from an unlucky model
         # theme set. Try the player's set first, then a known placeable local
         # theme package before spending the expensive open-grid search.
         specs = [
-            ("theme-locked-primary", seed, list(themes)),
+            ("theme-locked-primary", seed, native_themes),
             (
                 "sunday-anchor-fallback",
                 _SUNDAY_FALLBACK_SEED,
@@ -4405,12 +4410,12 @@ def _fill_retry_options(seed, options):
             else [("reduced-theme-fallback", seed, list(themes[:1]))]
         )
         specs = [
-            ("theme-locked-primary", seed, list(themes)),
+            ("theme-locked-primary", seed, native_themes),
             *theme_relief,
             (
                 "theme-locked-reseed",
                 (seed + _FILL_RETRY_SEED_STEP) % 2_147_483_648,
-                list(themes),
+                native_themes,
             ),
             (
                 "open-grid-reseed",

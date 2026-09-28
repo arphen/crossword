@@ -33,8 +33,9 @@ requiring approachable footholds. The domain-wordlist direction in
 slice; this change deliberately improves the private clue contract without
 pretending an unreviewed corpus is production content.
 
-The Tuesday recipe now retains up to five theme locks and asks the bounded
-diversity repair pass for at least four safe non-definition clue families and
+The Tuesday recipe now lets the model propose up to five theme locks, then
+submits at most four to the native runtime, and asks the bounded diversity
+repair pass for at least four safe non-definition clue families and
 eighteen signalled clue surfaces. Each pass can consider ten ordinary entries;
 the writer gets up to three follow-up batches, plus one final post-safety pass
 when cleanup lowers the visible count. A fresh Gemma 4 26B loopback Tuesday run on 28 September 2026 produced a
@@ -58,13 +59,16 @@ The Tuesday calibration is now tightened after the earlier live study: the nativ
 search stays at its runtime-compatible 75-candidate budget while the time budget
 rises from 2.0 to 2.5 seconds, and the visible clue-language floor rises from
 fourteen to eighteen safe non-definition surfaces while retaining the four-family
-requirement. The fresh receipt shows the two-entry local-theme anchor surviving
-the 75-candidate path; the five-lock primary is rejected for exceeding the
-installed runtime's four-theme input limit, then the bounded anchor retry keeps
-the job themed and playable. The repair remains bounded and fail-open; it can
-use at most ten ordinary entries per pass and three follow-up batches plus the
-existing post-safety check. Focused generation tests and the fresh real-model
-receipt cover the revised floor and exact answer-leakage cases.
+requirement. The fresh receipt showed the two-entry local-theme anchor surviving
+the 75-candidate path; it also exposed the installed runtime's four-theme input
+limit. The retry adapter now caps primary and reseeded submissions at four locks
+while keeping the full proposal available to the local-anchor retry, so a
+five-lock model proposal no longer creates an avoidable invalid native request.
+The repair remains bounded and fail-open; it can use at most ten ordinary entries
+per pass and three follow-up batches plus the existing post-safety check. Focused
+generation tests and the fresh real-model receipt cover the revised floor and
+exact answer-leakage cases; a post-cap live receipt remains a later calibration
+checkpoint.
 
 The private safety pass now treats an unsupported factual relation as unsafe for
 an ordinary non-theme entry even when its fill score is strong. It keeps exact
