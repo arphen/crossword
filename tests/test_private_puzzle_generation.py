@@ -1225,8 +1225,8 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     assert tuesday["themeAnswerCount"] > monday["themeAnswerCount"]
     assert "second reading" in tuesday["clueDirection"]
     assert tuesday["themeAnswerCount"] == 5
-    assert tuesday["minimumNonDefinitionFamilies"] == 5
-    assert tuesday["minimumNonDefinitionCount"] == 10
+    assert tuesday["minimumNonDefinitionFamilies"] == 6
+    assert tuesday["minimumNonDefinitionCount"] == 14
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] > private_generation._DIFFICULTY["monday"]["candidates"]
     assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
 
@@ -1783,7 +1783,12 @@ def test_large_definition_heavy_board_gets_bounded_surface_diversity_repair(monk
 
 def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
     entries = [
-        {"id": f"{index}A", "answer": "BARK", "length": 4, "theme": False}
+        {
+            "id": f"{index}A",
+            "answer": "JA" if index == 6 else "BARK",
+            "length": 2 if index == 6 else 4,
+            "theme": False,
+        }
         for index in range(1, 31)
     ]
     calls = []
@@ -1797,12 +1802,12 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
                 "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
             }
         surfaces = {
-            ids[0]: "Branch, perhaps?",
-            ids[1]: "Safe and ___",
-            ids[2]: "[Sound heard nearby]",
-            ids[3]: "“Not a chance!”",
-            ids[4]: "Briefly, perhaps",
-            ids[5]: "Aha?",
+            ids[0]: "German for yes",
+            ids[1]: "Branch, perhaps?",
+            ids[2]: "Safe and ___",
+            ids[3]: "[Sound heard nearby]",
+            ids[4]: "“Not a chance!”",
+            ids[5]: "Briefly, perhaps",
         }
         return {
             "title": "A Tuesday board",
@@ -1824,25 +1829,31 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
         "gemma4:26b", entries, context, "tuesday"
     )
 
-    assert len(calls) == 3
+    assert len(calls) == 4
     assert context["_clue_diversity_repair"]["reason"] == "weekday-surface-floor"
     assert context["_clue_diversity_repair"]["selectedCount"] == 6
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )
-    assert len(report["nonDefinitionFamilies"]) >= 5
+    assert len(report["nonDefinitionFamilies"]) >= 6
     assert report["status"] == "varied"
-    assert report["nonDefinitionCount"] == 12
+    assert report["nonDefinitionCount"] >= 14
     assert report["floorMet"] is True
 
 
 def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
     entries = [
-        {"id": f"{index}A", "answer": "BARK", "length": 4, "theme": False}
+        {
+            "id": f"{index}A",
+            "answer": "JA" if index == 6 else "BARK",
+            "length": 2 if index == 6 else 4,
+            "theme": False,
+        }
         for index in range(1, 31)
     ]
     calls = []
     surfaces = [
+        "German for yes",
         "Branch, perhaps?",
         "Safe and ___",
         "[Sound heard nearby]",
@@ -1858,7 +1869,7 @@ def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
                 "title": "A Tuesday board",
                 "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
             }
-        batch_size = {2: 3, 3: 3, 4: 5}[len(calls)]
+        batch_size = {2: 6, 3: 5, 4: 5}[len(calls)]
         return {
             "title": "A Tuesday board",
             "clues": [
@@ -1885,7 +1896,7 @@ def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )
-    assert report["nonDefinitionCount"] == 11
+    assert report["nonDefinitionCount"] >= 14
     assert report["floorMet"] is True
 
 

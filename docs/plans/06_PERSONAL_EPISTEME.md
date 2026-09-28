@@ -25,8 +25,8 @@ slice; this change deliberately improves the private clue contract without
 pretending an unreviewed corpus is production content.
 
 The Tuesday recipe now retains up to five theme locks and asks the bounded
-diversity repair pass for at least five safe non-definition clue families and
-ten signalled clue surfaces, with six rewrite slots per pass and up to three
+diversity repair pass for at least six safe non-definition clue families and
+fourteen signalled clue surfaces, with six rewrite slots per pass and up to three
 repair batches when the model returns fewer safe rewrites. A real Gemma 4 26B
 loopback Tuesday run on 28 September 2026 produced 74 entries, zero
 mechanical clue issues, 12 signalled surfaces, and four safe non-definition
@@ -35,7 +35,7 @@ visible generation requirement, not a claim that
 clue semantics are reviewed; model failure still leaves the board playable and
 records the repair status.
 That checked receipt was captured before the floor was raised and remains a
-historical baseline; a fresh run must verify the five-family/ten-surface
+historical baseline; a fresh run must verify the six-family/fourteen-surface
 contract. If the local clue response is malformed or incomplete, the private
 path now preserves the generated grid with answer-free crossing scaffolds and
 records the fallback reason instead of failing the playable job.
@@ -45,7 +45,8 @@ The receipt now also records `requiredNonDefinitionFamilies` and `floorMet`,
 and the clue-notes panel distinguishes a varied board from one that remained
 playable but fell below its weekday surface floor.
 When Tuesday remains below that floor after safety cleanup, the local writer
-gets one additional bounded pass over fresh ordinary entries; both attempts
+gets up to two additional bounded passes over fresh ordinary entries; all
+attempts
 are retained in the receipt and neither pass gates private play.
 
 The private safety pass now treats an unsupported factual relation as unsafe for
@@ -75,7 +76,7 @@ or automatic preference; its bounded `more-footholds` / `harder-stretch`
 signals can only adjust the next difficulty recommendation. It is the first
 direct playtest-calibration trace for the human evaluation program in §20.
 
-Private generation now applies explicit Monday, Tuesday, Wednesday, and Thursday recipe v1 settings through the existing weekday request. Monday asks for three approachable theme locks and direct footholds; Tuesday asks for up to five locks, a bounded search/time increase, alternate senses, fair second readings, and a five-family/ten-surface clue-language floor; Wednesday uses four inferable theme locks with varied, fair misdirection; Thursday proposes three to five theme answers plus a typed shared-prefix or shared-suffix rule. The host enables that Thursday rule only when every proposed answer and at least three actual filled theme entries match it, then passes the validated rule to clue generation and records it with those answers in provenance. If proposal, validation, or filled-entry matching fails, the maker continues with the ordinary-letter-grid theme path and records the mechanic as unavailable. The chosen recipe ID, intent, requested and used theme counts, actual themed-entry count, and grid mechanic are recorded in provenance. The controls explain each day's aim before generation. These are generation directions, not guarantees of editorial quality; rebus and special-cell mechanics remain unsupported.
+Private generation now applies explicit Monday, Tuesday, Wednesday, and Thursday recipe v1 settings through the existing weekday request. Monday asks for three approachable theme locks and direct footholds; Tuesday asks for up to five locks, a bounded search/time increase, alternate senses, fair second readings, and a six-family/fourteen-surface clue-language floor; Wednesday uses four inferable theme locks with varied, fair misdirection; Thursday proposes three to five theme answers plus a typed shared-prefix or shared-suffix rule. The host enables that Thursday rule only when every proposed answer and at least three actual filled theme entries match it, then passes the validated rule to clue generation and records it with those answers in provenance. If proposal, validation, or filled-entry matching fails, the maker continues with the ordinary-letter-grid theme path and records the mechanic as unavailable. The chosen recipe ID, intent, requested and used theme counts, actual themed-entry count, clue floor, and grid mechanic are recorded in provenance. The controls explain each day's aim before generation. These are generation directions, not guarantees of editorial quality; rebus and special-cell mechanics remain unsupported.
 
 The private fill path now applies `private-fill-quality-policy-v1`: it evaluates at most four deterministic native-xfill candidates (theme-locked, reduced-theme, reseeded, and open-grid variants), ranks measured candidates by fewer iffy entries, then a bounded two-theme retention floor within a 25%-weak-entry band, then fewer weak entries, mean score, and score floor, and records every successful or failed attempt with option, seed, source, board digest, and score receipt provenance. A weak but structurally usable board remains playable when no stronger candidate exists; missing native score fields produce an explicit unavailable diagnostic rather than an invented score or a new play gate. The policy improves selection for the latest 70-entry/13-iffy/38-weak result while preserving local availability; human quality, clue fairness, and player support remain unmeasured. `src/crossword/fill_quality_evaluation.py` and `scripts/fill-quality-study.py` now turn bounded receipts into `private-fill-quality-study-v1`: a fixed-seed report records requested/observed/missing seeds, attempt and retry summaries, selected-attempt metrics, measured/unavailable fields, optional loopback/model metadata, and a SHA-256 study digest. `scripts/private-fill-study.py` collects the same receipts through a running local private-puzzle API for explicit seeds; it does not start Ollama or export profile data. A real Gemma 4 26B Wednesday run through that collector is preserved at `docs/evidence/private-fill-quality-study-v1.real-gemma4-26b-wednesday-20260928.json`: four attempts were captured, the selected theme-locked primary had zero iffy entries and mean score 79.45, and the report retains the weaker alternatives and one failed retry. `compare_fill_quality_studies` and `scripts/fill-quality-compare.py` pair selected measured attempts by seed and report policy-minus-baseline deltas without declaring a human-quality winner. The runner is injected and receipt-only, so CI cannot accidentally start Ollama; the report's acceptance policy is explicitly heuristic and never a human-quality gate. Synthetic checked artifacts live at `docs/evidence/private-fill-quality-study-v1.synthetic.json` and `docs/evidence/private-fill-quality-comparison-v1.synthetic.json`.
 

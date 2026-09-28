@@ -581,13 +581,13 @@ _WEEKDAY_RECIPES = {
     },
     "tuesday": {
         "id": "tuesday-private-v1",
-        "intent": "Familiar material with several fair second readings makes Tuesday a clear step beyond Monday while preserving dependable footholds.",
+        "intent": "Familiar material with a visible layer of fair second readings makes Tuesday a clear step beyond Monday while preserving dependable footholds.",
         "themeAnswerCount": 5,
         "themeDirection": "Choose a coherent cluster of up to five approachable answers whose connection is discoverable after one or two entries; let the pattern add a little lift without requiring specialist trivia.",
-        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but aim for roughly one in five clues to use a pun, fill-in, bracketed cue, quotation, or spoken equivalent so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
+        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but make at least fourteen clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least six distinct surface families so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
         "themeMode": "approachable-cluster-with-a-turn",
-        "minimumNonDefinitionFamilies": 5,
-        "minimumNonDefinitionCount": 10,
+        "minimumNonDefinitionFamilies": 6,
+        "minimumNonDefinitionCount": 14,
     },
     "wednesday": {
         "id": "wednesday-private-v1",
@@ -4923,6 +4923,15 @@ def _generate(
             "themeAnswerTarget": recipe["themeAnswerCount"],
             "themeLocksUsed": len(options["themes"]),
             "themeEntriesUsed": sum(1 for entry in clue_entries if entry["theme"]),
+            **(
+                {
+                    "minimumNonDefinitionFamilies": recipe["minimumNonDefinitionFamilies"],
+                    "minimumNonDefinitionCount": recipe["minimumNonDefinitionCount"],
+                }
+                if isinstance(recipe.get("minimumNonDefinitionFamilies"), int)
+                and isinstance(recipe.get("minimumNonDefinitionCount"), int)
+                else {}
+            ),
             "gridMechanic": "ordinary-letter-grid",
         },
         "themeProposal": {
