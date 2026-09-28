@@ -452,6 +452,7 @@ export default function FutureSolver({
           provenance={app.currentPuzzleProvenance}
           entries={app.crossword}
           profileId={profileId}
+          sessionId={finishedSessionId}
         />
       )}
       <div

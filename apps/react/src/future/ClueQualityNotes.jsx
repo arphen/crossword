@@ -36,7 +36,12 @@ function labelForFlag(flag) {
   return FLAG_COPY[flag] || flag.replaceAll('-', ' ');
 }
 
-export default function ClueQualityNotes({ provenance, entries = [], profileId }) {
+export default function ClueQualityNotes({
+  provenance,
+  entries = [],
+  profileId,
+  sessionId,
+}) {
   const storageKey = profileId
     ? `crossword.future.clue-flags.v1:${profileId}`
     : null;
@@ -51,6 +56,8 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
   });
   const [pendingFlag, setPendingFlag] = useState('');
   const [flagError, setFlagError] = useState('');
+  const [reviewExportState, setReviewExportState] = useState('idle');
+  const [reviewExportError, setReviewExportError] = useState('');
 
   useEffect(() => {
     if (!storageKey) return;
@@ -190,6 +197,41 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
       setFlagError(error instanceof Error ? error.message : 'This clue flag could not be saved.');
     } finally {
       setPendingFlag('');
+    }
+  }
+
+  async function downloadReviewBundle() {
+    if (!profileId || !sessionId || reviewExportState === 'loading') return;
+    setReviewExportState('loading');
+    setReviewExportError('');
+    try {
+      const response = await fetch(
+        `/api/future/sessions/${encodeURIComponent(sessionId)}/private-review-bundle?profileId=${encodeURIComponent(profileId)}`,
+        { cache: 'no-store', headers: { Accept: 'application/json' } },
+      );
+      const payload = await response.json();
+      if (!response.ok || payload?.publishable !== false) {
+        throw new Error(payload?.error || 'The local review bundle could not be created.');
+      }
+      const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], {
+        type: 'application/json',
+      });
+      const objectUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = `private-clue-review-${sessionId}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(objectUrl);
+      setReviewExportState('ready');
+    } catch (error) {
+      setReviewExportState('error');
+      setReviewExportError(
+        error instanceof Error
+          ? error.message
+          : 'The local review bundle could not be downloaded.',
+      );
     }
   }
 
@@ -394,6 +436,31 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
           </p>
         )}
         {flagError && <p className="future-clue-quality-error" role="alert">{flagError}</p>}
+        {sessionId && profileId && (
+          <div className="future-clue-quality-export">
+            <button
+              type="button"
+              className="future-clue-quality-flag"
+              disabled={reviewExportState === 'loading'}
+              onClick={() => void downloadReviewBundle()}
+            >
+              {reviewExportState === 'loading'
+                ? 'Preparing local review…'
+                : reviewExportState === 'ready'
+                  ? 'Download local clue review again'
+                  : 'Download local clue review'}
+            </button>
+            <small>
+              Finished-game handoff with answers and clues for local editorial review;
+              it stays unreviewed and is not added to the episteme.
+            </small>
+            {reviewExportError && (
+              <small className="future-clue-quality-error" role="alert">
+                {reviewExportError}
+              </small>
+            )}
+          </div>
+        )}
       </div>
     </details>
   );

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React, { act } from 'react';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { createRoot } from 'react-dom/client';
 import ClueQualityNotes from './ClueQualityNotes';
 
@@ -159,6 +159,55 @@ it('shows the observed versus target surface rate without calling it difficulty'
   expect(host.textContent).toContain('Visible clue variety reached 38% non-definition surfaces (28 of 74)');
   expect(host.textContent).toContain('the recipe target is 35% (26 surfaces)');
   expect(host.textContent).toContain('does not judge clue meaning or player difficulty');
+});
+
+it('offers a finished-game local clue review download without changing profile state', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalCreateObjectURL = window.URL.createObjectURL;
+  const originalRevokeObjectURL = window.URL.revokeObjectURL;
+  const originalAnchorClick = HTMLAnchorElement.prototype.click;
+  globalThis.fetch = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      schemaVersion: 'private-clue-review-bundle-v1',
+      publishable: false,
+      entries: [],
+    }),
+  });
+  window.URL.createObjectURL = vi.fn(() => 'blob:clue-review');
+  window.URL.revokeObjectURL = vi.fn();
+  HTMLAnchorElement.prototype.click = vi.fn();
+  try {
+    host = document.createElement('div');
+    document.body.append(host);
+    root = createRoot(host);
+    await act(async () =>
+      root.render(
+        <ClueQualityNotes
+          provenance={provenance}
+          entries={[{ clue_number: 1, direction: 'across', clue_text: 'Singer with a hit song?' }]}
+          profileId="profile-1"
+          sessionId="session-1"
+        />,
+      ),
+    );
+
+    const button = [...host.querySelectorAll('button')].find((item) =>
+      item.textContent.includes('Download local clue review'),
+    );
+    expect(button).not.toBeUndefined();
+    await act(async () => button.click());
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/future/sessions/session-1/private-review-bundle?profileId=profile-1',
+      expect.objectContaining({ cache: 'no-store' }),
+    );
+    expect(host.textContent).toContain('Finished-game handoff with answers and clues');
+  } finally {
+    globalThis.fetch = originalFetch;
+    window.URL.createObjectURL = originalCreateObjectURL;
+    window.URL.revokeObjectURL = originalRevokeObjectURL;
+    HTMLAnchorElement.prototype.click = originalAnchorClick;
+  }
 });
 
 it('surfaces non-keep challenger recommendations without turning them into profile controls', async () => {

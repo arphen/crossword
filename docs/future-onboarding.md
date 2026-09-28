@@ -180,7 +180,12 @@ profile. After a finished game, the post-game view reopens that
 `GET /api/future/sessions/<sessionId>/private-provenance?profileId=...` and
 shows construction counts without exposing the answer grid or turning them into
 a player judgment. Missing receipt storage remains fail-open for play; a
-tampered receipt is rejected by its digest check.
+tampered receipt is rejected by its digest check. After the session is finished,
+the owner-scoped `GET /api/future/sessions/<sessionId>/private-review-bundle?profileId=...`
+route joins the exact manifest and provenance into a `private-clue-review-bundle-v1`
+file. The `/future` clue-quality panel offers that answer-bearing download only
+for the finished session; it is marked `publishable=false`, every entry starts
+`unreviewed`, and it never enters the episteme or publication tables.
 
 The receipt also reports the exact-form exposure lane without listing the
 player's answer history: how many recent forms were available, how many theme

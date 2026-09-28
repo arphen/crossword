@@ -9,6 +9,7 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError
 
 from .database import db
+from .clue_review_bundle import build_clue_review_bundle
 from .legacy_manifest import to_puzzle_document, verify_integrity
 from .personalized_manifest import validate_personalized_manifest
 
@@ -326,6 +327,56 @@ def get_private_puzzle_provenance(session_id):
             "provenance": projection,
         }
     )
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@future_puzzle_candidates_api.get(
+    "/api/future/sessions/<session_id>/private-review-bundle"
+)
+def get_private_clue_review_bundle(session_id):
+    """Return an owner-scoped answer-bearing review handoff after a game.
+
+    This route is deliberately separate from the playable manifest and the
+    answer-free provenance route. It is a local editorial aid only: the
+    bundle carries ``publishable=false`` and every entry starts unreviewed.
+    """
+
+    profile_id = request.args.get("profileId")
+    if not isinstance(session_id, str) or not _UUID.fullmatch(session_id):
+        return _candidate_error("Invalid session id", 400)
+    if not isinstance(profile_id, str) or not _UUID.fullmatch(profile_id):
+        return _candidate_error("Invalid profile id", 400)
+    try:
+        if str(UUID(session_id)) != session_id or str(UUID(profile_id)) != profile_id:
+            return _candidate_error("Invalid session or profile id", 400)
+    except ValueError:
+        return _candidate_error("Invalid session or profile id", 400)
+
+    from .session_journal import PersonalSolveSession
+
+    session = db.session.get(PersonalSolveSession, session_id)
+    if session is None or session.profile_id != profile_id:
+        return _candidate_error("Private review bundle not found", 404)
+    if session.status != "finished":
+        return _candidate_error("Private review bundle is available after the game finishes", 409)
+    provenance_record = db.session.get(
+        FuturePuzzleProvenanceRecord,
+        (session.puzzle_hash, profile_id),
+    )
+    manifest_record = db.session.get(FuturePuzzleManifestRecord, session.puzzle_hash)
+    if provenance_record is None or manifest_record is None:
+        return _candidate_error("Private review bundle not found", 404)
+    try:
+        bundle = build_clue_review_bundle(
+            {
+                "puzzleManifest": manifest_record.manifest_json,
+                "provenance": provenance_record.provenance_json,
+            }
+        )
+    except (TypeError, ValueError, KeyError, RecursionError):
+        return _candidate_error("Private review bundle failed integrity validation", 503)
+    response = jsonify(bundle)
     response.headers["Cache-Control"] = "no-store"
     return response
 
