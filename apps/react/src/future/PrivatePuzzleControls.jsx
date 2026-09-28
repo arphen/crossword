@@ -650,8 +650,6 @@ export default function PrivatePuzzleControls({
           signal: abort.signal,
         });
         payload = await readResponse(response);
-      } else {
-        payload = await readResponse(response);
       }
       if (response.ok && payload?.id && payload?.state) {
         await pollDurableJob(payload, operation, weekday, request.seed);

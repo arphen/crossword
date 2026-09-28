@@ -494,6 +494,29 @@ it('requests a puzzle only on click and loads it through the shared app initiali
   expect(host.textContent).toContain('Personal thread: KOFFI · ACCRA');
 });
 
+it('uses the durable response body exactly once before applying a ready board', async () => {
+  const app = appState();
+  const json = vi
+    .fn()
+    .mockResolvedValueOnce(privateJobPayload())
+    .mockRejectedValue(new TypeError('body already used'));
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true,
+    status: 202,
+    json,
+  }));
+  mount(app);
+
+  await act(async () => {
+    clickButton();
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  });
+
+  expect(json).toHaveBeenCalledOnce();
+  expect(app.init).toHaveBeenCalledOnce();
+  expect(host.textContent).toContain('Locally made with Ollama');
+});
+
 it('retries an interrupted durable job request with the same idempotency key', async () => {
   const app = appState();
   const fetchMock = vi
