@@ -1135,6 +1135,12 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
     )
     assert (
         private_generation._clue_wordplay_issue(
+            {"answer": "XENON"}, "Common male name"
+        )
+        == "generic-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
             {"answer": "XENON"}, "A usual term?"
         )
         == "generic-clue"

@@ -148,9 +148,9 @@ _CLUE_FACT_RELATION_RE = re.compile(
     r"\b(?:" + "|".join(re.escape(term) for term in _CLUE_FACT_RELATIONS) + r")\b",
     re.IGNORECASE,
 )
-# These short templates do not give a player a usable route into the fill.
-# Keep the detector deliberately narrow: a longer clue may legitimately use
-# the phrase while adding the specificity that makes it fair.
+# These templates do not give a player a usable route into the fill. Allow a
+# short descriptor between the generic qualifier and noun so variants such as
+# "common male name" cannot slip through as nominally specific clues.
 _GENERIC_CLUE_RE = re.compile(
     r"^\s*(?:(?:a|an|the)\s+)?"
     r"(?:common|usual|ordinary|generic|standard)\s+"
@@ -160,6 +160,7 @@ _GENERIC_CLUE_RE = re.compile(
 )
 _GENERIC_TEMPLATE_PHRASE_RE = re.compile(
     r"\b(?:common|usual|ordinary|generic|standard)\s+"
+    r"(?:(?:[\w][\w'’/-]*|\d+)\s+){0,3}"
     r"(?:name|term|word|designation|label)\b",
     re.IGNORECASE,
 )
