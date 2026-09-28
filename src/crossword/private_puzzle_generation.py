@@ -467,10 +467,11 @@ _WEEKDAY_RECIPES = {
     "tuesday": {
         "id": "tuesday-private-v1",
         "intent": "Familiar material with a little more indirection makes Tuesday feel like a real step beyond Monday without withholding footholds.",
-        "themeAnswerCount": 3,
+        "themeAnswerCount": 4,
         "themeDirection": "Choose a small, coherent cluster whose connection is discoverable after one or two answers; keep the material broadly approachable and let the pattern add the lift.",
         "clueDirection": "Use alternate senses, conversational surfaces, and a few fair second readings. Keep at least some direct footholds, but do not make Tuesday a Monday repeat or rely on obscure trivia.",
         "themeMode": "approachable-cluster-with-a-turn",
+        "minimumNonDefinitionFamilies": 3,
     },
     "wednesday": {
         "id": "wednesday-private-v1",
@@ -2847,6 +2848,8 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
     mechanical/surface guards.
     """
     initial = _clue_diversity_report(entries, clues)
+    recipe = _weekday_recipe(weekday)
+    minimum_families = recipe.get("minimumNonDefinitionFamilies", 2)
     base = {
         "version": CLUE_DIVERSITY_REPAIR_VERSION,
         "status": "not-needed",
@@ -2857,7 +2860,7 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
     }
     if len(entries) < 24:
         return clues, {**base, "reason": "small-board"}
-    if len(initial["nonDefinitionFamilies"]) >= 2:
+    if len(initial["nonDefinitionFamilies"]) >= minimum_families:
         return clues, base
     enabled = os.environ.get(CLUE_DIVERSITY_REPAIR_ENV, "1").strip().casefold()
     if enabled in {"0", "false", "no", "off"}:
@@ -2907,6 +2910,8 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
                     "content": (
                         "Increase visible crossword clue variety for this private board. "
                         f"Keep the {weekday.title()} voice and the supplied answers. "
+                        f"The selected recipe asks for at least {minimum_families} distinct non-definition clue families. "
+                        f"{recipe['clueDirection']} "
                         "Rewrite only the selected entries, preserving fair grammar and answer shape. "
                         "Use the requested visible convention when it genuinely fits: a question-mark pun, "
                         "a fill-in-the-blank, a bracketed sound/action cue, or a quoted utterance. "
@@ -2973,7 +2978,11 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
             "attempted": True,
             "selectedCount": len(selected),
             "rewrittenCount": len(by_id),
-            "reason": "definition-heavy-board",
+                "reason": (
+                    "definition-heavy-board"
+                    if minimum_families <= 2
+                    else "weekday-surface-floor"
+                ),
         }
     except (requests.RequestException, ValueError, TypeError, KeyError, RecursionError):
         return clues, {

@@ -1059,8 +1059,9 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     tuesday = private_generation._weekday_recipe("tuesday")
 
     assert tuesday["id"] == "tuesday-private-v1"
-    assert tuesday["themeAnswerCount"] == monday["themeAnswerCount"]
+    assert tuesday["themeAnswerCount"] > monday["themeAnswerCount"]
     assert "second reading" in tuesday["clueDirection"]
+    assert tuesday["minimumNonDefinitionFamilies"] == 3
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] > private_generation._DIFFICULTY["monday"]["candidates"]
     assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
 
@@ -1592,6 +1593,49 @@ def test_large_definition_heavy_board_gets_bounded_surface_diversity_repair(monk
         "pun": 1,
         "spoken-equivalent": 1,
     }
+
+
+def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
+    entries = [
+        {"id": f"{index}A", "answer": "BARK", "length": 4, "theme": False}
+        for index in range(1, 31)
+    ]
+    calls = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append(messages)
+        ids = schema["properties"]["clues"]["items"]["properties"]["id"]["enum"]
+        if len(calls) == 1:
+            return {
+                "title": "A Tuesday board",
+                "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
+            }
+        surfaces = {
+            ids[0]: "Branch, perhaps?",
+            ids[1]: "Safe and ___",
+            ids[2]: "[Sound heard nearby]",
+            ids[3]: "“Not a chance!”",
+        }
+        return {
+            "title": "A Tuesday board",
+            "clues": [{"id": clue_id, "text": surfaces[clue_id]} for clue_id in ids],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    context = {}
+
+    _, clues = private_generation._make_clues(
+        "gemma4:26b", entries, context, "tuesday"
+    )
+
+    assert len(calls) == 2
+    assert context["_clue_diversity_repair"]["reason"] == "weekday-surface-floor"
+    assert len(private_generation._clue_diversity_report(entries, clues)["nonDefinitionFamilies"]) >= 3
 
 
 def test_clue_surface_checks_and_normalization_preserve_the_answer_free_surface():
