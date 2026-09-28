@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import GameHistory, {
   calibrationSummary,
   gameHistoryStats,
+  generationHistorySummary,
   playtestHistorySummary,
   personalizationHistorySummary,
 } from './GameHistory';
@@ -50,6 +51,13 @@ it('renders an answer-free route summary for saved games', async () => {
           associationSteering: { eligibleCount: 1 },
           clueDiversity: { status: 'varied', repairRewrittenCount: 2 },
         },
+        generationRuntime: {
+          version: 'private-job-runtime-v1',
+          durable: true,
+          attempt: 1,
+          recovery: 'first-attempt',
+          durationSeconds: 8.4,
+        },
       }],
     }),
   })));
@@ -61,6 +69,7 @@ it('renders an answer-free route summary for saved games', async () => {
   expect(host.textContent).toContain('2026-09-28 · Wednesday · gemma4:26b');
   expect(host.textContent).toContain('4 independent · 2 supported · 1 assisted');
   expect(host.textContent).toContain('Episteme revision 4 · signals · threads · recent words · language · 1 active path · varied clue surfaces · 2 surface repairs');
+  expect(host.textContent).toContain('Prepared by a durable local job · prepared in 8s');
   expect(host.textContent).not.toContain('SECRET');
   expect(fetch).toHaveBeenCalledWith(
     '/api/future/profile/profile-1/history?limit=12',
@@ -102,6 +111,44 @@ it('keeps malformed personalization history silent', () => {
       personalization: { version: 'wrong', epistemeRevision: 2 },
     }),
   ).toBe('');
+});
+
+it('summarizes durable generation without exposing puzzle content', () => {
+  expect(generationHistorySummary({
+    generationRuntime: {
+      version: 'private-job-runtime-v1',
+      durable: true,
+      attempt: 2,
+      recovery: 'reclaimed',
+      elapsedSeconds: 121.2,
+    },
+  })).toBe('Prepared by a durable local job · resumed on attempt 2 · prepared in 121s');
+  expect(generationHistorySummary({
+    jobRuntime: {
+      version: 'private-job-runtime-v1',
+      durable: true,
+      attempt: 1,
+      recovery: 'first-attempt',
+    },
+  })).toBe('Prepared by a durable local job');
+  expect(generationHistorySummary({
+    generationRuntime: {
+      version: 'private-job-runtime-v1',
+      durable: false,
+      attempt: 1,
+      recovery: 'first-attempt',
+    },
+  })).toBe('');
+  expect(generationHistorySummary({
+    generationRuntime: {
+      version: 'private-job-runtime-v1',
+      durable: true,
+      attempt: 1,
+      recovery: 'first-attempt',
+      durationSeconds: 12001,
+    },
+    answer: 'SECRET',
+  })).not.toContain('SECRET');
 });
 
 it('summarizes the bounded game-specific pulse without interpreting the player', () => {

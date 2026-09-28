@@ -48,6 +48,40 @@ export function personalizationHistorySummary(item) {
   return `Episteme revision ${personalization.epistemeRevision}${laneText}`;
 }
 
+function generationRuntime(item) {
+  // The history route keeps the runtime receipt separate from personalization
+  // so this line can report how the board was prepared without exposing any
+  // puzzle content. Accept the short-lived jobRuntime alias while older
+  // locally saved histories roll forward to generationRuntime.
+  const runtime = item?.generationRuntime || item?.jobRuntime || item?.generation;
+  if (
+    !runtime ||
+    runtime.version !== 'private-job-runtime-v1' ||
+    runtime.durable !== true ||
+    !Number.isInteger(runtime.attempt) ||
+    runtime.attempt < 1 ||
+    runtime.attempt > 32 ||
+    !['first-attempt', 'reclaimed'].includes(runtime.recovery)
+  ) {
+    return null;
+  }
+  return runtime;
+}
+
+export function generationHistorySummary(item) {
+  const runtime = generationRuntime(item);
+  if (!runtime) return '';
+  const attempt = runtime.recovery === 'reclaimed'
+    ? ` · resumed on attempt ${runtime.attempt}`
+    : '';
+  const elapsed = [runtime.durationSeconds, runtime.elapsedSeconds, runtime.totalElapsedSeconds]
+    .find((value) => Number.isFinite(value) && value >= 0 && value <= 3600);
+  const elapsedText = elapsed === undefined
+    ? ''
+    : ` · prepared in ${elapsed < 1 ? '<1s' : `${Math.round(elapsed)}s`}`;
+  return `Prepared by a durable local job${attempt}${elapsedText}`;
+}
+
 export function playtestHistorySummary(item) {
   const pulse = item?.playtest;
   if (
@@ -204,6 +238,9 @@ export default function GameHistory({ profileId, open }) {
                 </small>
                 {personalizationHistorySummary(item) && (
                   <small>{personalizationHistorySummary(item)}</small>
+                )}
+                {generationHistorySummary(item) && (
+                  <small>{generationHistorySummary(item)}</small>
                 )}
                 {playtestHistorySummary(item) && (
                   <small>{playtestHistorySummary(item)}</small>
