@@ -1721,7 +1721,7 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
         "gemma4:26b", entries, context, "tuesday"
     )
 
-    assert len(calls) == 2
+    assert len(calls) == 3
     assert context["_clue_diversity_repair"]["reason"] == "weekday-surface-floor"
     assert context["_clue_diversity_repair"]["selectedCount"] == 6
     report = private_generation._clue_diversity_report(

@@ -35,6 +35,9 @@ The aggregate, answer-free receipt for that run is preserved at
 The receipt now also records `requiredNonDefinitionFamilies` and `floorMet`,
 and the clue-notes panel distinguishes a varied board from one that remained
 playable but fell below its weekday surface floor.
+When Tuesday remains below that floor after safety cleanup, the local writer
+gets one additional bounded pass over fresh ordinary entries; both attempts
+are retained in the receipt and neither pass gates private play.
 
 The private safety pass now treats an unsupported factual relation as unsafe for
 an ordinary non-theme entry even when its fill score is strong. It keeps exact

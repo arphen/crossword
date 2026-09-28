@@ -3725,6 +3725,28 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         weekday,
         reviewed_by_id,
     )
+    # Tuesday's visible variety floor is a real step-up target. If the first
+    # bounded pass lands below it, give the writer one more fresh set of
+    # ordinary entries. This remains fail-open: the final receipt records both
+    # attempts and the board stays playable even when the second pass is
+    # unavailable or still below the floor.
+    if weekday == "tuesday":
+        first_report = _clue_diversity_report(entries, repaired, repair=diversity_repair)
+        if first_report.get("floorMet") is False:
+            second_repaired, second_report = _repair_clue_diversity(
+                model,
+                entries,
+                repaired,
+                context,
+                weekday,
+                reviewed_by_id,
+            )
+            repaired = second_repaired
+            diversity_repair = {
+                **second_report,
+                "attemptCount": 2,
+                "attempts": [diversity_repair, second_report],
+            }
     context["_clue_diversity_repair"] = diversity_repair
     safety_fallbacks = {}
     safe_clues = _enforce_private_clue_safety(
