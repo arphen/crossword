@@ -229,6 +229,22 @@ def test_rejects_bad_canonical_digest_even_when_expected_pin_matches(tmp_path: P
         _resolve(pack, pins)
 
 
+def test_resolver_reapplies_strict_answer_safety_to_stored_clue_artifacts(
+    tmp_path: Path,
+) -> None:
+    pack, pins = _fixture(tmp_path)
+    clue = pack["clues"][0]
+    clue["text"] = "Shades of cat"
+    clue["grammar"]["clueText"] = clue["text"]
+    clue["grammar"]["morphology"]["substitutionWitness"]["cluePhrase"] = clue[
+        "text"
+    ]
+    _resign(pack)
+
+    with pytest.raises(AdmittedPackError, match="clue-grammar-invalid"):
+        _resolve(pack, pins)
+
+
 def test_rejects_wrong_source_hash_or_id(tmp_path: Path) -> None:
     pack, pins = _fixture(tmp_path)
     pack["sources"][0]["artifactSha256"] = "0" * 64

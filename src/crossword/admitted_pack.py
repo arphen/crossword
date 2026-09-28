@@ -430,7 +430,12 @@ def _validate_pack(
             raise AdmittedPackError("clue-review-date-invalid") from error
         if provenance.get("semanticTruthStatus") != "not-established-by-grammar-validator":
             raise AdmittedPackError("clue-semantic-truth-status-invalid")
-        grammar_batch.append({"annotation": grammar, "context": {}})
+        grammar_batch.append(
+            {
+                "annotation": grammar,
+                "context": {"enforceAnswerSafety": True},
+            }
+        )
 
     grammar_results = _run_clue_grammar(grammar_batch)
     if grammar_results is None:

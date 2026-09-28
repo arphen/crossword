@@ -111,7 +111,9 @@ admitted `lexemeId` and a reviewed statement. A clue needs its own pinned
 must agree with the linked lexeme's answer, pass the actual TypeScript clue
 grammar validator through Node, and survive its admission-mode answer-safety
 checks for answer roots, dead-end generic templates, and explicit plural/past
-markers. If Node or the
+markers. The runtime resolver reapplies that strict mode when loading the
+artifact, so an older or hand-edited pack cannot bypass the admission floor.
+If Node or the
 validator is unavailable, the clue is quarantined while otherwise admissible
 fill records remain available.
 
