@@ -536,6 +536,11 @@ export default function PrivatePuzzleControls({
     setRequestState('ready');
     setJobStage('ready');
     clearPendingPrivateJob(profileId, operation?.jobId);
+    // The replacement board invalidates every postgame surface belonging to
+    // the previous session.  FutureSolver uses this hook to clear the bound
+    // reflection session and its browser receipt before rendering the new
+    // board.
+    onPuzzleRestored?.();
   }
 
   async function pollDurableJob(initialPayload, operation, targetWeekday, seed) {

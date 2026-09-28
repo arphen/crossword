@@ -177,6 +177,42 @@ function apply(evidence: readonly EpistemeEvidenceV1[]) {
 }
 
 describe('personal episteme evidence reducer', () => {
+  it('accepts bounded private clue-surface and language-pack receipts on task links', () => {
+    const extended = sessionEvidence('surface-receipt', observation());
+    const extendedTask: KnowledgeTaskV1 = {
+      ...task,
+      surfaceFamily: 'pun',
+      taskPack: {
+        packId: 'synthetic-local-language-pairs-v1',
+        packVersion: 'language-task-pairs-v1',
+        packDigest: 'a'.repeat(64),
+        pairId: 'de-en-ja-v1',
+        sourceLanguage: 'en',
+        targetLanguage: 'de',
+        sourceText: 'yes',
+        direction: 'source-to-target',
+        source: { sourceId: 'synthetic-local-language-source-v1' },
+        grammar: { version: 'language-task-grammar-v1' },
+        reviewStatus: 'synthetic-unadmitted',
+        semanticStatus: 'not-established',
+        masteryClaim: 'none'
+      }
+    };
+    const withReceipts = {
+      ...extended,
+      taskLinks: extended.taskLinks.map((link) => ({ ...link, tasks: [extendedTask] }))
+    };
+
+    expect(validateEpistemeEvidence(withReceipts)).toBe(true);
+    expect(validateEpistemeEvidence({
+      ...withReceipts,
+      taskLinks: [{
+        ...withReceipts.taskLinks[0],
+        tasks: [{ ...extendedTask, taskPack: { ...extendedTask.taskPack, masteryClaim: 'known' } }]
+      }]
+    })).toBe(false);
+  });
+
   it('uses only approved, independent manual retrieval as independent knowledge evidence', () => {
     const profile = apply([
       sessionEvidence('good', observation()),

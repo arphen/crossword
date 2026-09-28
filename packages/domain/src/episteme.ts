@@ -41,6 +41,10 @@ export type KnowledgeTaskV1 = Readonly<{
   language: string;
   /** Open vocabulary; keep the clue relation separate from the item being learned. */
   clueFamily: string;
+  /** Literal clue-surface family used only for reversible exposure rotation. */
+  surfaceFamily?: string;
+  /** Bounded source/task receipt for an optional language-learning lane. */
+  taskPack?: Readonly<Record<string, unknown>>;
   /** Only reviewed content can contribute knowledge evidence. */
   contentReview: 'approved' | 'quarantined' | 'unreviewed';
 }>;
@@ -397,9 +401,46 @@ function canonicalizeActions(actions: readonly EvidenceActionV1[]): EvidenceActi
 }
 
 function validateTask(task: KnowledgeTaskV1): void {
-  assert(isRecord(task) && hasExactKeys(task, ['taskId', 'taskKind', 'direction', 'language', 'clueFamily', 'contentReview']), 'Knowledge task has unexpected fields');
+  assert(isRecord(task) && hasExactKeys(task, ['taskId', 'taskKind', 'direction', 'language', 'clueFamily', 'contentReview'], ['surfaceFamily', 'taskPack']), 'Knowledge task has unexpected fields');
   assert(nonEmpty(task.taskId) && nonEmpty(task.direction) && nonEmpty(task.language) && nonEmpty(task.clueFamily), 'Knowledge task identifiers and descriptors must be non-empty');
   assert(['sense', 'fact', 'answer-form', 'clue-mechanism'].includes(task.taskKind), 'Unknown knowledge task kind');
+  if (task.surfaceFamily !== undefined) {
+    assert(nonEmpty(task.surfaceFamily), 'Knowledge task surface family must be non-empty');
+  }
+  if (task.taskPack !== undefined) {
+    assert(isRecord(task.taskPack), 'Knowledge task pack receipt must be an object');
+    assert(hasExactKeys(task.taskPack, [
+      'packId',
+      'packVersion',
+      'packDigest',
+      'pairId',
+      'sourceLanguage',
+      'targetLanguage',
+      'sourceText',
+      'direction',
+      'source',
+      'grammar',
+      'reviewStatus',
+      'semanticStatus',
+      'masteryClaim',
+    ]), 'Knowledge task pack receipt has unexpected fields');
+    for (const key of [
+      'packId',
+      'packVersion',
+      'packDigest',
+      'pairId',
+      'sourceLanguage',
+      'targetLanguage',
+      'sourceText',
+      'direction',
+    ]) {
+      assert(nonEmpty(task.taskPack[key]), `Knowledge task pack ${key} must be non-empty`);
+    }
+    assert(isRecord(task.taskPack.source) && isRecord(task.taskPack.grammar), 'Knowledge task pack source and grammar must be objects');
+    assert(task.taskPack.reviewStatus === 'synthetic-unadmitted' || task.taskPack.reviewStatus === 'reviewed-admitted', 'Unknown knowledge task pack review status');
+    assert(task.taskPack.semanticStatus === 'not-established' || task.taskPack.semanticStatus === 'reviewed', 'Unknown knowledge task pack semantic status');
+    assert(task.taskPack.masteryClaim === 'none', 'Knowledge task pack cannot make a mastery claim');
+  }
   assert(['approved', 'quarantined', 'unreviewed'].includes(task.contentReview), 'Unknown content review status');
 }
 

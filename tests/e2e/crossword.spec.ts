@@ -164,6 +164,8 @@ test('future carries a finished solve through a saved, revisable reflection', as
   await expect(firstCard).toContainText('Saved to this local episteme.');
   await firstCard.getByRole('button', { name: 'Undo this signal' }).click();
   await expect(firstCard).toContainText('no longer steering your profile');
+  const finishedJournal = await readFutureSolveJournal(page);
+  expect(finishedJournal.status).toBe('finished');
 
   await page.reload();
   await expect(page.locator('.future-reflections')).toBeVisible({ timeout: 10_000 });
@@ -192,6 +194,29 @@ test('future carries a finished solve through a saved, revisable reflection', as
       ]),
     }),
   ]));
+
+  // The postgame action must start a genuinely new durable handoff. The old
+  // reflection deck and finished-session binding must disappear as soon as
+  // the replacement board is restored.
+  const nextJobCreated = page.waitForResponse(response =>
+    new URL(response.url()).pathname === '/api/future/private-puzzle-jobs'
+      && response.request().method() === 'POST');
+  // A restored finished board has no unsaved progress, so current UI does not
+  // need a destructive confirmation. Keep a handler for hosts that still
+  // report progress after reload so the journey remains compatible.
+  page.on('dialog', async dialog => {
+    await dialog.accept();
+  });
+  await page.getByRole('button', {
+    name: 'Make one more personal crossword',
+    exact: true,
+  }).click();
+  expect((await nextJobCreated).status()).toBe(202);
+  await expect(page.locator('.future-solver #check-all')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('.future-reflections')).toHaveCount(0);
+  const nextJournal = await readFutureSolveJournal(page);
+  expect(nextJournal.status).toBe('active');
+  expect(nextJournal.sessionId).not.toBe(finishedJournal.sessionId);
 });
 
 test('future restores partial host-backed cells, then records checked and revealed analysis', async ({ page, request }) => {

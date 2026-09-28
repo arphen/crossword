@@ -182,6 +182,26 @@ export default function FutureSolver({
   const displayWeekday =
     catalog.days.find((day) => day.id === weekday)?.label || weekday;
 
+  function handlePuzzleRestored() {
+    controller.flush();
+    // A newly restored board starts a new solve identity.  Remove the old
+    // finished-session binding before the next journal opens so its
+    // reflections, receipt, and optional association paths cannot briefly
+    // appear under the replacement puzzle.
+    setFinishedSessionId(null);
+    setReflectionDeck(null);
+    setReflectionState('idle');
+    setAssociationDeck(null);
+    setAssociationState('idle');
+    if (profileId) {
+      try {
+        window.localStorage.removeItem(reflectionStorageKey(profileId));
+      } catch {
+        // The new board remains playable even when browser storage is full.
+      }
+    }
+  }
+
   async function enableHostSync(
     readiness,
     expectedRecorder = recorderRef.current,
@@ -425,7 +445,7 @@ export default function FutureSolver({
         onWeekdayChange={onWeekdayChange}
         modelPreference={modelPreference}
         onModelPreferenceChange={onModelPreferenceChange}
-        onPuzzleRestored={() => controller.flush()}
+        onPuzzleRestored={handlePuzzleRestored}
         postgameReady={Boolean(finishedSessionId)}
       />
       {puzzleIsCurrent ? (
