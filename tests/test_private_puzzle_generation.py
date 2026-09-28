@@ -2259,6 +2259,71 @@ def test_large_definition_heavy_board_gets_bounded_surface_diversity_repair(monk
     }
 
 
+def test_tuesday_diversity_prompt_gives_puns_a_second_reading_example(monkeypatch):
+    entries = [
+        {"id": f"{index}A", "answer": "CAT", "length": 3, "theme": False}
+        for index in range(1, 31)
+    ]
+    captured = {}
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        captured["messages"] = messages
+        requested = json.loads(messages[-1]["content"])["entries"]
+        surfaces = {
+            "pun": "Branch specialist?",
+            "fill-blank": "Safe and ___",
+            "nonverbal-expression": "[Sound heard nearby]",
+            "spoken-equivalent": "“Not a chance!”",
+            "metalinguistic": "Estimated arrival, briefly",
+        }
+        return {
+            "title": "A Tuesday board",
+            "clues": [
+                {"id": item["id"], "text": surfaces[item["desiredFamily"]]}
+                for item in requested
+            ],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    clues, repair = private_generation._repair_clue_diversity(
+        "gemma4:26b",
+        entries,
+        {entry["id"]: "A thing" for entry in entries},
+        {},
+        "tuesday",
+        {},
+    )
+
+    assert repair["rewrittenCount"] > 0
+    system_prompt = captured["messages"][0]["content"]
+    assert "alternate reading or playful double meaning" in system_prompt
+    assert "Branch specialist?" in system_prompt
+    payload = json.loads(captured["messages"][-1]["content"])
+    pun_entry = next(
+        item for item in payload["entries"] if item["desiredFamily"] == "pun"
+    )
+    assert pun_entry["requiredSurface"] == (
+        "end with ? and use a concise alternate-reading question, "
+        "e.g. `Branch specialist?`"
+    )
+    assert clues[pun_entry["id"]] == "Branch specialist?"
+
+
+def test_pun_surface_accepts_only_a_terminal_question_mark():
+    assert private_generation._desired_clue_family_matches(
+        "Branch specialist?", "pun"
+    )
+    assert private_generation._desired_clue_family_matches(
+        "Branch specialist?  ", "pun"
+    )
+    assert not private_generation._desired_clue_family_matches(
+        "Branch specialist", "pun"
+    )
+    assert private_generation._clue_surface_issues("Branch specialist?!") == [
+        "question-mark-placement"
+    ]
+
+
 def test_tuesday_recipe_reports_a_bounded_floor_shortfall(monkeypatch):
     entries = [
         {

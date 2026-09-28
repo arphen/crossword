@@ -89,6 +89,17 @@ _DIVERSITY_FAMILY_ORDER = (
     "metalinguistic",
 )
 
+# These are prompt-facing surface contracts for the bounded Tuesday diversity
+# pass.  The validators below remain authoritative; the examples are only
+# there to make the requested house style legible to a local model.
+_DIVERSITY_REQUIRED_SURFACE = {
+    "pun": "end with ? and use a concise alternate-reading question, e.g. `Branch specialist?`",
+    "fill-blank": "contain ___ or an ellipsis blank",
+    "nonverbal-expression": "be fully bracketed like [Sound heard nearby]",
+    "spoken-equivalent": "be a whole quoted utterance, optionally followed by (Spoken equivalent)",
+    "metalinguistic": "include (abbr.) or the word briefly",
+}
+
 # A private crossword can be strange, slangy, or occasionally adult when the
 # player asks for that register. These are construction artefacts that should
 # never be surfaced accidentally: one misspelled slang variant and one model
@@ -3981,13 +3992,7 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
             "length": entry.get("length"),
             "draftClue": clues.get(entry["id"], ""),
             "desiredFamily": desired_families[index],
-            "requiredSurface": {
-                "pun": "end with a question mark",
-                "fill-blank": "contain ___ or an ellipsis blank",
-                "nonverbal-expression": "be fully bracketed like [Sound heard nearby]",
-                "spoken-equivalent": "be a whole quoted utterance, optionally followed by (Spoken equivalent)",
-                "metalinguistic": "include (abbr.) or the word briefly",
-            }[desired_families[index]],
+            "requiredSurface": _DIVERSITY_REQUIRED_SURFACE[desired_families[index]],
         }
         for index, entry in enumerate(candidates)
     ]
@@ -4030,7 +4035,8 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
                         f"{recipe['clueDirection']} "
                         "Rewrite only the selected entries, preserving fair grammar and answer shape. "
                         "The requested desiredFamily is mandatory for each selected id; do not silently substitute another family. "
-                        "Use its requiredSurface literally: a pun ends in ?, a fill-in contains ___ or an ellipsis, a nonverbal cue is fully bracketed, a spoken-equivalent is a whole quoted utterance, and a metalinguistic clue says abbr. or briefly. "
+                        "Use its requiredSurface literally. For a pun, do more than append a question mark: write a concise question with a plausible alternate reading or playful double meaning; the surface example `Branch specialist?` shows the shape only, and must be adapted to the supplied answer without spelling that answer. "
+                        "A fill-in contains ___ or an ellipsis, a nonverbal cue is fully bracketed, a spoken-equivalent is a whole quoted utterance, and a metalinguistic clue says abbr. or briefly. "
                         "Prefer these surface conventions over unsupported factual relations; do not invent facts, proper names, translations, or wordplay. Do not put an answer in its clue. "
                         "Return exactly one clue for every supplied id and no extra keys."
                     ),
