@@ -173,6 +173,31 @@ it('shows when exact clue text came from a configured reviewed pack', async () =
   expect(host.textContent).toContain('not a publication claim');
 });
 
+it('explains answer-free scaffolds created for ungrounded factual surfaces', async () => {
+  host = document.createElement('div');
+  document.body.append(host);
+  root = createRoot(host);
+  await act(async () =>
+    root.render(
+      <ClueQualityNotes
+        provenance={{
+          ...provenance,
+          clueQuality: {
+            ...provenance.clueQuality,
+            fallbackCount: 2,
+          },
+        }}
+      />,
+    ),
+  );
+
+  await act(async () => host.querySelector('summary').click());
+  expect(host.textContent).toContain(
+    '2 clue surfaces use an answer-free crossing scaffold',
+  );
+  expect(host.textContent).toContain('no reviewed source supported the original surface');
+});
+
 it('distinguishes exact reviewed joins from the broader pack match count', async () => {
   host = document.createElement('div');
   document.body.append(host);

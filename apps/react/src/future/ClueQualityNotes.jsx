@@ -4,6 +4,8 @@ import { recordAssociationPreference } from './episteme';
 const FLAG_COPY = {
   'unsupported-factual-surface': 'factual surface is unverified',
   'answer-giveaway': 'answer giveaway removed',
+  'answer-form-in-clue': 'answer form was removed',
+  'generic-clue': 'generic clue was replaced',
   'anagram-mismatch': 'anagram needs repair',
   'reversal-mismatch': 'reversal needs repair',
   'language-answer-mismatch': 'language relation needs repair',
@@ -122,6 +124,9 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
     : grounding.entries.filter(
         (entry) => entry.semanticStatus === 'reviewed-source',
       ).length;
+  const fallbackCount = Number.isFinite(Number(quality.fallbackCount))
+    ? Number(quality.fallbackCount)
+    : Number(grounding.fallbackCount) || 0;
   const label = quality.issueCount
     ? `${quality.issueCount} local clue note${quality.issueCount === 1 ? '' : 's'}`
     : 'Local clue notes';
@@ -196,6 +201,14 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
             of {footholdSeedPlan.targetCount || 0} weaker entries. This only marks
             a candidate crossing neighbor; it does not predict an easy clue or
             a successful solve.
+          </p>
+        )}
+        {fallbackCount > 0 && (
+          <p className="future-clue-quality-reviewed">
+            {fallbackCount} clue surface{fallbackCount === 1 ? '' : 's'} {fallbackCount === 1 ? 'uses' : 'use'} an
+            answer-free crossing scaffold because no reviewed source supported
+            the original surface. The puzzle remains playable through crossings
+            and assistance.
           </p>
         )}
         {familySummary && (

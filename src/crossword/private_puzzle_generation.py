@@ -3028,16 +3028,28 @@ def _normalize_clue_surface(clue):
     return " ".join(text.split())
 
 
-def _enforce_private_clue_safety(entries, clues):
-    """Remove unsupported trivia from the weakest entries after repair.
+def _enforce_private_clue_safety(entries, clues, *, reviewed_by_id=None):
+    """Remove unsupported trivia after the model repair pass.
 
     ``_repair_risky_clues`` asks the model for a conservative rewrite.  This
-    final deterministic guard is intentionally narrower: it only replaces a
-    still factual-looking clue when the fill engine already marked the entry
-    as needing a foothold.  Stronger entries keep ordinary factual surfaces in
-    private play, while their risk remains visible in ``clueQuality``.
+    A source-free factual relation cannot be distinguished from a hallucinated
+    relation by fill score. Replace it for ordinary entries unless the exact
+    visible text came from the configured reviewed clue pack. Theme entries
+    remain available for private thematic play; their uncertainty is retained
+    in ``clueQuality``. This keeps local play fail-open while preventing a
+    plausible but unsupported biography from becoming the only route into a
+    fill.
     """
     safe = {clue_id: _normalize_clue_surface(clue) for clue_id, clue in clues.items()}
+    reviewed_text_by_id = (
+        {
+            clue_id: record.get("text")
+            for clue_id, record in reviewed_by_id.items()
+            if isinstance(record, Mapping) and isinstance(record.get("text"), str)
+        }
+        if isinstance(reviewed_by_id, Mapping)
+        else {}
+    )
     for entry in entries:
         clue_id = entry.get("id") if isinstance(entry, dict) else None
         if not isinstance(clue_id, str) or clue_id not in safe:
@@ -3046,13 +3058,14 @@ def _enforce_private_clue_safety(entries, clues):
         flags = _clue_risk_flags(entry, clue)
         mechanical_issue = _clue_wordplay_issue(entry, clue)
         morphology_issue = _clue_morphology_issue(entry, clue)
+        exact_reviewed_text = reviewed_text_by_id.get(clue_id)
+        reviewed_surface = (
+            isinstance(exact_reviewed_text, str)
+            and exact_reviewed_text.strip() == clue.strip()
+        )
         if (
             "unsupported-factual-surface" in flags
-            and entry.get("needsFoothold") is True
-            # A themed name can be the point of the puzzle. Preserve the
-            # repaired surface there so a deliberately invited obscure person
-            # is still playable through crossings; the uncertainty remains in
-            # clueQuality and the local puzzle is never publication content.
+            and not reviewed_surface
             and entry.get("theme") is not True
         ) or mechanical_issue in {
             # A private board must never leave a clue that gives away its
@@ -3434,7 +3447,11 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         reviewed_by_id,
     )
     context["_clue_diversity_repair"] = diversity_repair
-    return title.strip(), _enforce_private_clue_safety(entries, repaired)
+    return title.strip(), _enforce_private_clue_safety(
+        entries,
+        repaired,
+        reviewed_by_id=reviewed_by_id,
+    )
 
 
 def _challenge_private_clues(model, entries, clues, context, weekday):

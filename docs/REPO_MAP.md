@@ -88,7 +88,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/AssistancePanel.test.jsx`
 - `apps/react/src/future/CalibrationHypotheses.jsx` — `getResponse:15`, `initialResponseActivity:20`, `responseActivityKey:30`, `CalibrationHypotheses:45`, `respond:69`, `revise:91`, `startSwipe:112`, `finishSwipe:120`
 - `apps/react/src/future/CalibrationHypotheses.test.jsx`
-- `apps/react/src/future/ClueQualityNotes.jsx` — `legacyEntryId:27`, `labelForFlag:32`, `ClueQualityNotes:36`, `groundedById:85`, `prior:114`, `toggleFlag:149`
+- `apps/react/src/future/ClueQualityNotes.jsx` — `legacyEntryId:29`, `labelForFlag:34`, `ClueQualityNotes:38`, `groundedById:87`, `prior:116`, `toggleFlag:154`
 - `apps/react/src/future/ClueQualityNotes.test.jsx`
 - `apps/react/src/future/EpistemeSnapshotView.jsx` — `claimLabel:5`, `claimTensionLabel:12`, `associationLabel:20`, `EpistemeSnapshot:33`, `correctClaim:61`, `claims:91`, `tensionClaims:92`, `signalClaims:93`, `renderClaim:96`
 - `apps/react/src/future/EpistemeSnapshotView.test.jsx`
@@ -288,7 +288,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `src/crossword/calibration_hypothesis_api.py` — `CalibrationHypothesisDeckRecord:62`, `CalibrationHypothesisResponseRecord:79`, `CalibrationHypothesisActionRecord:96`, `HypothesisRuntimeUnavailable:114`, `_canonical:118`, `_hash:122`, `_valid_uuid:126`, `_local_origin:135`, `_error:140`, `_read_json:147`, `_catalog:168`, `_calibration_and_profile:183`, `_active_chosen_source:216`, `_text:303`, `_reject_player_inference:316`, `_validate_model_paths:322` (+32 more)
 - `src/crossword/clue_grammar_bridge.py` — `_issue:67`, `_signals:74`, `_surface_signal_present:81`, `_signal_matches_literal:100`, `validate_surface_clue_family:119`, `summarize_surface_clue_families:223`
 - `src/crossword/clue_grounding_validators.py` — `_letters_only:57`, `_span:61`, `_validator_base:84`, `_mechanical_validator:100`, `validate_private_clue_witnesses:153`
-- `src/crossword/clue_semantic_challenger.py` — `_codes:39`, `_mechanical_statuses:45`, `_model_projection:58`, `challenge_private_clue_pair:107`, `summarize_challenge_classifications:206`
+- `src/crossword/clue_semantic_challenger.py` — `_codes:41`, `_mechanical_statuses:47`, `_model_projection:60`, `challenge_private_clue_pair:109`, `summarize_challenge_classifications:208`
 - `src/crossword/construction_evidence.py` — `_canonical:24`, `_digest:28`, `_entry_id:32`, `_entry_cells:40`, `_board_projection:58`, `_round:74`, `_foothold_seed_plan:78`, `evaluate_private_board:211`
 - `src/crossword/construction_runtime.py` — `FullSizeRuntimeUnavailable:45`, `FullSizeDraftRejected:49`, `FullSizeDraftCancelled:53`, `_validated_options:57`, `_validate_result:97`, `_validate_admitted_wordlist:137`, `_stop_process:190`, `_run_cancellable:223`, `generate_full_size_draft:264`
 - `src/crossword/construction_simulation_adapter.py` — `DerivedFillSignalEnvelope:46`, `EstimateProvenanceEnvelope:52`, `EstimateProvenanceBinding:71`, `_canonical:82`, `_digest:92`, `_probability:96`, `_entry_cells:104`, `_crossings:126`, `_normalize_estimate_envelope:166`, `_estimate_provenance_binding:259`, `_verified_estimate_provenance:299`, `build_simulation_request:337`, `_invoke_bridge:432`, `run_sibling_simulation:463`, `evaluate_sibling_adapter:522`

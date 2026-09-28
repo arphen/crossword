@@ -26,6 +26,8 @@ CLASSIFICATIONS = frozenset({"safe-fallback", "needs-review", "mechanically-supp
 _SAFE_MECHANICAL_ISSUES = frozenset(
     {
         "answer-giveaway",
+        "answer-form-in-clue",
+        "generic-clue",
         "anagram-mismatch",
         "reversal-mismatch",
         "hidden-word-mismatch",

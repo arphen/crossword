@@ -1667,7 +1667,7 @@ def test_clue_risk_flags_only_specific_factual_surfaces_and_tracks_footholds():
     ) == ["foothold-required"]
 
 
-def test_private_clue_safety_replaces_unresolved_trivia_only_for_weak_entries():
+def test_private_clue_safety_replaces_unresolved_trivia_for_ordinary_entries():
     entries = [
         {"id": "1A", "answer": "EVAN", "length": 4, "needsFoothold": True},
         {"id": "2D", "answer": "RESONANCE", "length": 9, "needsFoothold": False},
@@ -1680,8 +1680,23 @@ def test_private_clue_safety_replaces_unresolved_trivia_only_for_weak_entries():
     safe = private_generation._enforce_private_clue_safety(entries, clues)
 
     assert safe["1A"] == "Entry supported by its crossings (4 letters)"
-    assert safe["2D"] == clues["2D"]
+    assert safe["2D"] == "Entry supported by its crossings (9 letters)"
     assert "EVAN" not in safe["1A"]
+
+
+def test_private_clue_safety_preserves_an_exact_reviewed_factual_surface():
+    entries = [
+        {"id": "1A", "answer": "ASHE", "length": 4, "needsFoothold": False}
+    ]
+    clues = {"1A": "Singer of 'Smooth'"}
+
+    safe = private_generation._enforce_private_clue_safety(
+        entries,
+        clues,
+        reviewed_by_id={"1A": {"text": "Singer of 'Smooth'"}},
+    )
+
+    assert safe == clues
 
 
 def test_private_clue_safety_keeps_a_repaired_themed_name_surface():
