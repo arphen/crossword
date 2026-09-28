@@ -512,9 +512,9 @@ def _clue_family_observation(clue):
 _DIFFICULTY = {
     "monday": {"candidates": 40, "time": 1, "voice": "welcoming, direct, familiar"},
     "tuesday": {
-        "candidates": 65,
-        "time": 1.75,
-        "voice": "playful, with alternate senses and a fair second reading",
+        "candidates": 75,
+        "time": 2.0,
+        "voice": "playful, with alternate senses, fair second readings, and a little more lift",
     },
     "wednesday": {
         "candidates": 75,
@@ -559,13 +559,13 @@ _WEEKDAY_RECIPES = {
     },
     "tuesday": {
         "id": "tuesday-private-v1",
-        "intent": "Familiar material with several fair second readings makes Tuesday feel like a real step beyond Monday without withholding footholds.",
-        "themeAnswerCount": 4,
-        "themeDirection": "Choose a small, coherent cluster whose connection is discoverable after one or two answers; keep the material broadly approachable and let the pattern add the lift.",
-        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but make a visible portion of the board use puns, fill-ins, bracketed cues, quotations, or spoken equivalents so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
+        "intent": "Familiar material with several fair second readings makes Tuesday a clear step beyond Monday while preserving dependable footholds.",
+        "themeAnswerCount": 5,
+        "themeDirection": "Choose a coherent cluster of up to five approachable answers whose connection is discoverable after one or two entries; let the pattern add a little lift without requiring specialist trivia.",
+        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but aim for roughly one in five clues to use a pun, fill-in, bracketed cue, quotation, or spoken equivalent so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
         "themeMode": "approachable-cluster-with-a-turn",
-        "minimumNonDefinitionFamilies": 4,
-        "minimumNonDefinitionCount": 8,
+        "minimumNonDefinitionFamilies": 5,
+        "minimumNonDefinitionCount": 10,
     },
     "wednesday": {
         "id": "wednesday-private-v1",
@@ -3585,6 +3585,42 @@ def _ensure_language_clue_signal(clue, language):
     return f"{text}, in {language_name}"
 
 
+def _fallback_private_clues(entries, weekday, context, reason):
+    """Keep a structurally valid board playable when the clue model misfires.
+
+    A malformed model response cannot be repaired safely because the host no
+    longer has a complete clue set to validate. An answer-free crossing
+    scaffold preserves the grid and lets the assistance ladder carry the solve
+    while the receipt records why clue writing fell back.
+    """
+    reason = str(reason).strip()[:160] or "model-response-invalid"
+    context["_clue_generation_fallback"] = reason
+    context["_clue_safety_fallbacks"] = {
+        entry.get("id"): ["model-response-invalid"]
+        for entry in entries
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str)
+    }
+    context["_clue_diversity_repair"] = {
+        "version": CLUE_DIVERSITY_REPAIR_VERSION,
+        "status": "not-attempted",
+        "attempted": False,
+        "selectedCount": 0,
+        "rewrittenCount": 0,
+        "minimumFamilies": _weekday_recipe(weekday).get(
+            "minimumNonDefinitionFamilies", 2
+        ),
+        "reason": "model-response-invalid",
+    }
+    return (
+        f"{weekday.title()} Clues",
+        {
+            entry["id"]: _source_free_foothold(entry)
+            for entry in entries
+            if isinstance(entry, dict) and isinstance(entry.get("id"), str)
+        },
+    )
+
+
 def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
     recipe = _weekday_recipe(weekday)
     theme_mechanic = context.get("_weekday_theme_mechanic")
@@ -3598,8 +3634,9 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         and isinstance(reviewed_pack.get("byId"), dict)
         else {}
     )
-    value = _chat(
-        model,
+    try:
+        value = _chat(
+            model,
         [
             {
                 "role": "system",
@@ -3687,12 +3724,26 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         tokens=_clue_token_budget(len(entries)),
         temperature=0.65,
     )
+    except (
+        requests.RequestException,
+        ValueError,
+        TypeError,
+        KeyError,
+        RecursionError,
+    ) as error:
+        return _fallback_private_clues(
+            entries, weekday, context, f"{type(error).__name__}: {error}"
+        )
     if not isinstance(value, dict) or not isinstance(value.get("clues"), list):
-        raise ValueError("Local model returned an incomplete clue set")
+        return _fallback_private_clues(
+            entries, weekday, context, "Local model returned an incomplete clue set"
+        )
     clues = {}
     for clue in value["clues"]:
         if not isinstance(clue, dict) or set(clue) != {"id", "text"}:
-            raise ValueError("Local model returned malformed clues")
+            return _fallback_private_clues(
+                entries, weekday, context, "Local model returned malformed clues"
+            )
         clue_id = clue["id"]
         text = clue["text"].strip() if isinstance(clue["text"], str) else ""
         if (
@@ -3703,13 +3754,19 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
             or clue_id in clues
             or "\n" in text
         ):
-            raise ValueError("Local model returned invalid clue text")
+            return _fallback_private_clues(
+                entries, weekday, context, "Local model returned invalid clue text"
+            )
         clues[clue_id] = text
     if set(clues) != set(entry_ids):
-        raise ValueError("Local model did not clue every entry")
+        return _fallback_private_clues(
+            entries, weekday, context, "Local model did not clue every entry"
+        )
     title = value.get("title")
     if not isinstance(title, str) or not 2 <= len(title.strip()) <= 64:
-        raise ValueError("Local model returned an invalid title")
+        return _fallback_private_clues(
+            entries, weekday, context, "Local model returned an invalid title"
+        )
     repaired = _repair_risky_clues(model, entries, clues, context, weekday)
     learning = context.get("language_learning") if isinstance(context, dict) else None
     language = learning.get("language") if isinstance(learning, dict) else None
@@ -4491,7 +4548,14 @@ def _generate(
     last_fill_error = None
     fill_attempts = []
     successful_fills = []
-    theme_floor = min(2, len(options.get("themes", [])))
+    # Tuesday keeps one surviving theme lock when the native fill can support
+    # it. This gives the recipe a discoverable turn without making a failed
+    # multi-lock proposal erase personalization from the board.
+    theme_floor = (
+        1
+        if weekday == "tuesday" and options.get("themes")
+        else min(2, len(options.get("themes", [])))
+    )
     # A validated Thursday proposal is only meaningful when at least three
     # instances survive the fill. Prefer that stronger floor during candidate
     # selection; if no candidate meets it, the ordinary open-grid fallback
@@ -4704,6 +4768,12 @@ def _generate(
     clue_quality["reviewedCluePack"] = _reviewed_clue_pack_summary(
         reviewed_clue_pack
     )
+    if isinstance(clue_context.get("_clue_generation_fallback"), str):
+        clue_quality["generationFallback"] = {
+            "status": "answer-free-scaffold",
+            "reason": clue_context["_clue_generation_fallback"],
+            "playPolicy": "fail-open-private-play",
+        }
     clue_diversity = _clue_diversity_report(
         clue_entries,
         clues,
@@ -4840,6 +4910,15 @@ def _generate(
         # ``failed``; neither state affects playable private generation.
         "siblingEvaluatorAdapter": sibling_evaluator_adapter,
         "clueQuality": clue_quality,
+        "clueGenerationFallback": (
+            {
+                "status": "answer-free-scaffold",
+                "reason": clue_context["_clue_generation_fallback"],
+                "playPolicy": "fail-open-private-play",
+            }
+            if isinstance(clue_context.get("_clue_generation_fallback"), str)
+            else None
+        ),
         "clueDiversity": clue_diversity,
         "clueBundle": clue_quality["groundedClueBundle"],
         "reviewedCluePack": _reviewed_clue_pack_summary(reviewed_clue_pack),

@@ -938,6 +938,41 @@ def test_fill_quality_selection_preserves_two_themes_within_weak_band():
     assert selected[0] == 0
 
 
+def test_tuesday_theme_floor_preserves_one_theme_within_weak_band():
+    theme_candidate = private_generation._fill_quality_report(
+        {
+            "entries": [{"theme": True}, {"theme": False}] * 10,
+            "mean_score": 74,
+            "min_score": 50,
+            "iffy": 0,
+            "weak": 10,
+        }
+    )
+    open_candidate = private_generation._fill_quality_report(
+        {
+            "entries": [{"theme": False}] * 20,
+            "mean_score": 84,
+            "min_score": 65,
+            "iffy": 0,
+            "weak": 0,
+        }
+    )
+
+    selected = min(
+        enumerate(
+            [
+                {"quality": theme_candidate},
+                {"quality": open_candidate},
+            ]
+        ),
+        key=lambda item: private_generation._fill_quality_selection_key(
+            item[1]["quality"], item[0], theme_floor=1
+        ),
+    )
+
+    assert selected[0] == 0
+
+
 def test_thursday_theme_floor_preserves_three_instances_outside_ordinary_weak_band():
     mechanic_candidate = private_generation._fill_quality_report(
         {
@@ -1130,6 +1165,34 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
     )
 
 
+def test_malformed_clue_model_response_falls_back_to_answer_free_scaffolds(monkeypatch):
+    def malformed_chat(*_args, **_kwargs):
+        raise ValueError("invalid clue text")
+
+    monkeypatch.setattr(private_generation, "_chat", malformed_chat)
+    context = {}
+    title, clues = private_generation._make_clues(
+        "gemma4:26b",
+        [
+            {"id": "1A", "answer": "ECHO", "length": 4},
+            {"id": "2D", "answer": "MOSS", "length": 4},
+        ],
+        context,
+        "tuesday",
+    )
+
+    assert title == "Tuesday Clues"
+    assert clues == {
+        "1A": "Entry supported by its crossings (4 letters)",
+        "2D": "Entry supported by its crossings (4 letters)",
+    }
+    assert context["_clue_generation_fallback"] == "ValueError: invalid clue text"
+    assert context["_clue_safety_fallbacks"] == {
+        "1A": ["model-response-invalid"],
+        "2D": ["model-response-invalid"],
+    }
+
+
 def test_tuesday_recipe_has_a_real_step_up_from_monday():
     monday = private_generation._weekday_recipe("monday")
     tuesday = private_generation._weekday_recipe("tuesday")
@@ -1137,8 +1200,9 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     assert tuesday["id"] == "tuesday-private-v1"
     assert tuesday["themeAnswerCount"] > monday["themeAnswerCount"]
     assert "second reading" in tuesday["clueDirection"]
-    assert tuesday["minimumNonDefinitionFamilies"] == 4
-    assert tuesday["minimumNonDefinitionCount"] == 8
+    assert tuesday["themeAnswerCount"] == 5
+    assert tuesday["minimumNonDefinitionFamilies"] == 5
+    assert tuesday["minimumNonDefinitionCount"] == 10
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] > private_generation._DIFFICULTY["monday"]["candidates"]
     assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
 
@@ -1713,6 +1777,8 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
             ids[1]: "Safe and ___",
             ids[2]: "[Sound heard nearby]",
             ids[3]: "“Not a chance!”",
+            ids[4]: "Briefly, perhaps",
+            ids[5]: "Aha?",
         }
         return {
             "title": "A Tuesday board",
@@ -1740,9 +1806,9 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )
-    assert len(report["nonDefinitionFamilies"]) >= 3
+    assert len(report["nonDefinitionFamilies"]) >= 5
     assert report["status"] == "varied"
-    assert report["nonDefinitionCount"] == 8
+    assert report["nonDefinitionCount"] == 12
     assert report["floorMet"] is True
 
 
