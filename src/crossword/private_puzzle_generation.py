@@ -703,6 +703,39 @@ def _weekday_recipe(weekday):
     }
 
 
+def _effective_weekday_recipe(weekday, context=None):
+    """Apply explicit difficulty feedback without rewriting the base recipe.
+
+    A player pulse of ``harder-stretch`` is represented upstream as the
+    reversible ``gentle-stretch`` play calibration recommendation.  For
+    Tuesday, make that signal concrete by asking for a little more visible
+    clue-language variety.  The default recipe and every other day remain
+    unchanged; this is a difficulty control, never a taste or mastery claim.
+    """
+    recipe = dict(_weekday_recipe(weekday))
+    calibration = context.get("play_calibration") if isinstance(context, Mapping) else None
+    if weekday != "tuesday" or not isinstance(calibration, Mapping):
+        return recipe
+    if calibration.get("recommendation") != "gentle-stretch":
+        return recipe
+    recipe["difficultyVariant"] = "gentle-stretch"
+    recipe["intent"] = (
+        f"{recipe['intent']} An explicit stretch signal asks for a slightly denser "
+        "layer of fair second readings."
+    )
+    recipe["clueDirection"] = (
+        f"{recipe['clueDirection']} For this gentle stretch, favor a little more "
+        "indirect but precise wording while preserving footholds."
+    )
+    recipe["minimumNonDefinitionCount"] = max(
+        int(recipe.get("minimumNonDefinitionCount", 0)), 28
+    )
+    recipe["targetNonDefinitionRate"] = max(
+        float(recipe.get("targetNonDefinitionRate", 0.0)), 0.56
+    )
+    return recipe
+
+
 def _error(message, status):
     response = jsonify(error=message)
     response.status_code = status
@@ -3404,7 +3437,7 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
     mechanical/surface guards.
     """
     initial = _clue_diversity_report(entries, clues)
-    recipe = _weekday_recipe(weekday)
+    recipe = _effective_weekday_recipe(weekday, context)
     minimum_families = recipe.get("minimumNonDefinitionFamilies", 2)
     base = {
         "version": CLUE_DIVERSITY_REPAIR_VERSION,
@@ -3961,7 +3994,7 @@ def _fallback_private_clues(entries, weekday, context, reason):
 
 
 def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
-    recipe = _weekday_recipe(weekday)
+    recipe = _effective_weekday_recipe(weekday, context)
     theme_mechanic = context.get("_weekday_theme_mechanic")
     mechanic_direction = _theme_mechanic_direction(theme_mechanic)
     voice = _DIFFICULTY[weekday]["voice"]
@@ -4982,7 +5015,7 @@ def _generate(
     total_started = monotonic()
     model = _resolve_model_override(model_override)
     context = _profile_context(starting, episteme.profile_json)
-    recipe = _weekday_recipe(weekday)
+    recipe = _effective_weekday_recipe(weekday, context)
     report_stage("theme-proposal")
     theme_started = monotonic()
     theme_mechanic = None
@@ -5389,6 +5422,11 @@ def _generate(
             "themeAnswerTarget": recipe["themeAnswerCount"],
             "themeLocksUsed": len(options["themes"]),
             "themeEntriesUsed": sum(1 for entry in clue_entries if entry["theme"]),
+            **(
+                {"difficultyVariant": recipe["difficultyVariant"]}
+                if isinstance(recipe.get("difficultyVariant"), str)
+                else {}
+            ),
             **(
                 {
                     "minimumNonDefinitionFamilies": recipe["minimumNonDefinitionFamilies"],

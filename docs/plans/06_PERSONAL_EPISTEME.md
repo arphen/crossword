@@ -2030,6 +2030,14 @@ making any model-quality claim. The receipt is attached to generated
 provenance so a later latency study can distinguish model execution time from
 construction and clue-quality outcomes.
 
+An explicit `gentle-stretch` play-calibration recommendation now changes
+Tuesday's construction target instead of only changing prompt wording: it asks
+for at least 28 visible non-definition surfaces and a 56% target, with the
+variant recorded in the weekday recipe receipt. The ordinary Tuesday recipe,
+other weekdays, and the no-history path remain unchanged. This makes a player's
+`harder-stretch` pulse causally visible in the next board while keeping the
+signal reversible and difficulty-only.
+
 The latest replay-boundary slice adds **2** Python provenance tests and **2** React receipt tests. The focused Python command covering postgame associations, provenance, fill-study evaluation, and private generation passes **104 tests**; the focused React solver/app/reflection/history/receipt command passes **23 tests**. The receipt is owner-scoped, canonical-digest checked, and fail-open when storage is absent. A browser gate initially found that the durable response body was being consumed twice, which prevented a ready job from reaching the solver; the client now reuses the already parsed `202` payload, and `CROSSWORD_E2E_BACKEND_PORT=5015 npm run test:e2e` passes all **6** tests through calibration, worker polling, private play, reflection, reload, and the unchanged daily routes.
 
 The E12 narrative lifecycle slice adds one Python API regression and one React

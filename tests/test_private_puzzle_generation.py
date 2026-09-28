@@ -1514,6 +1514,24 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
 
 
+def test_tuesday_gentle_stretch_feedback_raises_only_clue_variety_target():
+    base = private_generation._effective_weekday_recipe("tuesday", {})
+    stretch = private_generation._effective_weekday_recipe(
+        "tuesday",
+        {"play_calibration": {"recommendation": "gentle-stretch"}},
+    )
+    other_day = private_generation._effective_weekday_recipe(
+        "wednesday",
+        {"play_calibration": {"recommendation": "gentle-stretch"}},
+    )
+
+    assert "difficultyVariant" not in base
+    assert stretch["difficultyVariant"] == "gentle-stretch"
+    assert stretch["minimumNonDefinitionCount"] == 28
+    assert stretch["targetNonDefinitionRate"] == 0.56
+    assert other_day == private_generation._weekday_recipe("wednesday")
+
+
 def test_friday_and_saturday_use_explicit_private_recipes_instead_of_generic_fallback():
     friday = private_generation._weekday_recipe("friday")
     saturday = private_generation._weekday_recipe("saturday")
