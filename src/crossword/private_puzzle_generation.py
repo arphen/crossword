@@ -732,6 +732,48 @@ def _learning_review_outcomes(starting, evidence, language_code):
     return outcome_forms
 
 
+def _playtest_calibration(evidence):
+    """Collect at most six complete game pulses without interpreting them."""
+    groups = {}
+    for item in reversed(evidence if isinstance(evidence, list) else []):
+        if not isinstance(item, dict) or item.get("type") != "performance":
+            continue
+        measure = item.get("measure")
+        if measure not in {
+            "playtest-worth",
+            "playtest-return",
+            "playtest-rough-edge",
+        }:
+            continue
+        evidence_id = item.get("evidenceId")
+        if not isinstance(evidence_id, str) or not evidence_id.startswith(
+            "playtest-pulse:"
+        ):
+            continue
+        parts = evidence_id.split(":")
+        if len(parts) != 3:
+            continue
+        session_id = item.get("sessionId")
+        if not isinstance(session_id, str) or not session_id:
+            continue
+        values = groups.setdefault((session_id, parts[1]), {})
+        key = {
+            "playtest-worth": "worth",
+            "playtest-return": "returnIntent",
+            "playtest-rough-edge": "roughEdge",
+        }[measure]
+        if isinstance(item.get("value"), str):
+            values[key] = item["value"]
+    complete = []
+    for (session_id, pulse_id), values in groups.items():
+        if set(values) != {"worth", "returnIntent", "roughEdge"}:
+            continue
+        complete.append({"sessionId": session_id, "pulseId": pulse_id, **values})
+        if len(complete) >= 6:
+            break
+    return complete
+
+
 def _play_calibration(evidence):
     """Summarize recent solve behavior as a narrow difficulty signal.
 
@@ -790,6 +832,7 @@ def _play_calibration(evidence):
         )
         if len(summaries) >= 6:
             break
+    playtests = _playtest_calibration(evidence)
     if not summaries:
         return {
             "status": "no-history",
@@ -812,7 +855,7 @@ def _play_calibration(evidence):
         recommendation = "gentle-stretch"
     else:
         recommendation = "balanced"
-    return {
+    result = {
         "status": "calibrated",
         "source": "solve-behavior",
         "interpretation": "difficulty-only",
@@ -822,6 +865,44 @@ def _play_calibration(evidence):
         "recommendation": recommendation,
         "recent": summaries,
     }
+    if playtests:
+        worth_counts = {}
+        return_counts = {}
+        rough_edge_counts = {}
+        for pulse in playtests:
+            for key, counts in (
+                ("worth", worth_counts),
+                ("returnIntent", return_counts),
+                ("roughEdge", rough_edge_counts),
+            ):
+                value = pulse.get(key)
+                if isinstance(value, str):
+                    counts[value] = counts.get(value, 0) + 1
+        asks_for_footholds = any(
+            pulse.get("returnIntent") == "more-footholds"
+            or pulse.get("roughEdge")
+            in {"too-opaque", "too-obscure", "crossings-unhelpful"}
+            for pulse in playtests
+        )
+        asks_for_stretch = any(
+            pulse.get("returnIntent") == "harder-stretch"
+            or pulse.get("roughEdge") == "too-easy"
+            for pulse in playtests
+        )
+        if asks_for_footholds:
+            result["recommendation"] = "more-footholds"
+        elif asks_for_stretch and result["recommendation"] != "more-footholds":
+            result["recommendation"] = "gentle-stretch"
+        result["source"] = "solve-behavior+playtest-pulse"
+        result["playtest"] = {
+            "sessionCount": len(playtests),
+            "worthCounts": dict(sorted(worth_counts.items())),
+            "returnIntentCounts": dict(sorted(return_counts.items())),
+            "roughEdgeCounts": dict(sorted(rough_edge_counts.items())),
+            "interpretation": "game-specific-calibration-only",
+            "reversible": True,
+        }
+    return result
 
 
 def _profile_context(starting, episteme):

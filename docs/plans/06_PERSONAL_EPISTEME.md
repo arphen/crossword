@@ -40,8 +40,9 @@ it as answer-free performance evidence through the same CAS episteme ledger.
 It is idempotent, appears again after reload and in the answer-free history
 projection, and is included automatically in profile archives through the
 existing episteme export. It does not create a taste claim, mastery estimate,
-or automatic preference; it is the first direct playtest-calibration trace
-for the human evaluation program in §20.
+or automatic preference; its bounded `more-footholds` / `harder-stretch`
+signals can only adjust the next difficulty recommendation. It is the first
+direct playtest-calibration trace for the human evaluation program in §20.
 
 Private generation now applies explicit Monday, Tuesday, Wednesday, and Thursday recipe v1 settings through the existing weekday request. Monday asks for three approachable theme locks and direct footholds; Tuesday adds a bounded search/time increase plus alternate senses and fair second readings; Wednesday uses four inferable theme locks with varied, fair misdirection; Thursday proposes three to five theme answers plus a typed shared-prefix or shared-suffix rule. The host enables that Thursday rule only when every proposed answer and at least three actual filled theme entries match it, then passes the validated rule to clue generation and records it with those answers in provenance. If proposal, validation, or filled-entry matching fails, the maker continues with the ordinary-letter-grid theme path and records the mechanic as unavailable. The chosen recipe ID, intent, requested and used theme counts, actual themed-entry count, and grid mechanic are recorded in provenance. The controls explain each day's aim before generation. These are generation directions, not guarantees of editorial quality; rebus and special-cell mechanics remain unsupported.
 

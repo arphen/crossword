@@ -319,6 +319,58 @@ def test_play_calibration_is_more_footholds_for_heavy_support_or_low_completion(
     assert calibration["interpretation"] == "difficulty-only"
 
 
+def test_playtest_pulse_is_a_bounded_difficulty_signal_and_not_a_taste_claim():
+    calibration = private_generation._play_calibration(
+        [
+            {
+                "type": "session-analysis",
+                "analysis": {
+                    "observations": [
+                        {
+                            "finalState": "correct",
+                            "outcome": "independent-retrieval",
+                            "incorrectAttemptCount": 0,
+                        }
+                    ]
+                },
+            },
+            {
+                "type": "performance",
+                "evidenceId": "playtest-pulse:11111111-1111-4111-8111-111111111111:worth",
+                "sessionId": "session-1",
+                "measure": "playtest-worth",
+                "value": "yes",
+            },
+            {
+                "type": "performance",
+                "evidenceId": "playtest-pulse:11111111-1111-4111-8111-111111111111:return",
+                "sessionId": "session-1",
+                "measure": "playtest-return",
+                "value": "more-footholds",
+            },
+            {
+                "type": "performance",
+                "evidenceId": "playtest-pulse:11111111-1111-4111-8111-111111111111:rough-edge",
+                "sessionId": "session-1",
+                "measure": "playtest-rough-edge",
+                "value": "too-opaque",
+            },
+        ]
+    )
+
+    assert calibration["source"] == "solve-behavior+playtest-pulse"
+    assert calibration["recommendation"] == "more-footholds"
+    assert calibration["playtest"] == {
+        "sessionCount": 1,
+        "worthCounts": {"yes": 1},
+        "returnIntentCounts": {"more-footholds": 1},
+        "roughEdgeCounts": {"too-opaque": 1},
+        "interpretation": "game-specific-calibration-only",
+        "reversible": True,
+    }
+    assert "taste" not in str(calibration).casefold()
+
+
 def test_model_context_builds_a_small_reversible_language_review_lane():
     starting = SimpleNamespace(
         profile={"associations": [], "observations": [], "learningLanguage": "German"},
