@@ -113,6 +113,12 @@ _CLUE_FACT_TERMS = (
     "world conflict",
     "zodiac",
 )
+_CLUE_IDENTITY_SURFACE_RE = re.compile(
+    r"\b(?:agency|capital|city|conference|director|film|franchise|leader|"
+    r"middle\s+name|organization|poet|representative|senator|team|"
+    r"university|mayor|governor|minister)\b",
+    re.IGNORECASE,
+)
 # These verbs and relation words are useful signals, but they are not proof
 # that a model's assertion is true.  The private generator has no source
 # ledger for a generated clue, so a factual-looking surface deserves a second
@@ -2143,7 +2149,10 @@ def _clue_risk_flags(entry, clue):
     """
     text = clue if isinstance(clue, str) else ""
     flags = []
-    if _contains_clue_fact_term(text) and _CLUE_FACT_RELATION_RE.search(text):
+    if (_contains_clue_fact_term(text) or _CLUE_IDENTITY_SURFACE_RE.search(text)) and (
+        _CLUE_FACT_RELATION_RE.search(text)
+        or _CLUE_IDENTITY_SURFACE_RE.search(text)
+    ):
         flags.append("unsupported-factual-surface")
     # A weak fill entry is precisely where a surprising proper-name or trivia
     # assertion is least useful.  Keep this separate from a quality defect so

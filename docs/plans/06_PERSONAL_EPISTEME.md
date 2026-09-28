@@ -43,6 +43,10 @@ surfaces, while replacing the unresolved ordinary relation with an answer-free
 crossing scaffold. The quality receipt and `/future` clue panel report the
 fallback count and retain the source/semantic uncertainty; private play remains
 fail-open and no source-free text is promoted to a truth claim.
+The same detector now covers source-free identity/domain surfaces such as
+representative, city, director, team, agency, and middle-name prompts, so an
+obscure proper-name route is not treated as grounded merely because it sounds
+specific.
 The receipt also preserves the original fallback reason (for example,
 `unsupported-factual-surface`) after the visible clue has been replaced, so a
 safe surface does not erase the diagnostic that caused it.
