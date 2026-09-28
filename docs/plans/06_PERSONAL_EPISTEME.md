@@ -11,7 +11,7 @@ It returned a playable 76-entry board with zero deterministic grammar issues and
 two answer-free fallbacks. The receipt reached 54 signalled surfaces (71.1%),
 including every required house family: pun (10), fill-in (12), bracketed
 nonverbal cue (13), spoken equivalent (7), and metalinguistic marker (12).
-The required family set and the 43-surface proportional target both reported
+The required family set and the 49-surface proportional target both reported
 `floorMet=true`; the answer-free receipt is
 [`private-tuesday-clue-quality-study-v7.real-gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-v7.real-gemma4-26b-20260928.json),
 digest `sha256:3756e4cf818797b297ad464b4dce04f5eb0a003004cc1f6342b854c6a4e7ee17`.
@@ -55,13 +55,14 @@ is [`private-tuesday-clue-quality-study-v4.real-gemma4-26b-20260928.json`](../ev
 The wider batch is still fail-open and bounded; it improves the observed
 Tuesday floor without claiming semantic fairness or player difficulty.
 
-The ordinary Tuesday recipe now adopts that stronger step as its default:
-28 visible non-definition surfaces and a 56% full-board target across at least
-five families. The explicit `gentle-stretch` calibration remains available as
-a further bounded step at 32 surfaces and 64%; both settings are still
-surface-diversity targets rather than semantic difficulty claims. The v4
-Gemma receipt above already clears the new ordinary floor (44/76, 57.9%),
-while older 24/48 receipts remain historical baselines.
+The ordinary Tuesday recipe now adopts the stronger step as its default:
+32 visible non-definition surfaces and a 64% full-board target across at least
+five families. This makes Tuesday materially denser than Monday while keeping
+the same answer-free fallback and family-set safeguards. The old 28-surface /
+56% receipts remain historical baselines; the target is still a surface-
+diversity contract rather than a semantic difficulty claim. An explicit
+`gentle-stretch` remains a separate, explicit step at 36 surfaces and 72%; it
+only applies after the bounded difficulty signal asks for it.
 
 A fresh real loopback Gemma run against this default (seed `20470406`) returned
 the complete 74-entry board in 276.414 seconds with zero deterministic grammar
@@ -189,7 +190,7 @@ or automatic preference; its bounded `more-footholds` / `harder-stretch`
 signals can only adjust the next difficulty recommendation. It is the first
 direct playtest-calibration trace for the human evaluation program in §20.
 
-Private generation now applies explicit Monday through Saturday recipe v1 settings through the existing weekday request. Monday asks for three approachable theme locks and direct footholds; Tuesday asks for up to five locks, a bounded search/time increase, alternate senses, fair second readings, and a five-family/28-surface clue-language floor with a 56% full-board target; Wednesday uses four inferable theme locks with varied, fair misdirection; Thursday proposes three to five theme answers plus a typed shared-prefix or shared-suffix rule; Friday uses a looser long-form cluster with indirect but precise clues; Saturday uses a compact cluster with the most oblique fair wording and a few deliberate footholds. The host enables that Thursday rule only when every proposed answer and at least three actual filled theme entries match it, then passes the validated rule to clue generation and records it with those answers in provenance. If proposal, validation, or filled-entry matching fails, the maker continues with the ordinary-letter-grid theme path and records the mechanic as unavailable. The chosen recipe ID, intent, requested and used theme counts, actual themed-entry count, clue floor, and grid mechanic are recorded in provenance. The controls explain each day's aim before generation. These are generation directions, not guarantees of editorial quality; rebus and special-cell mechanics remain unsupported.
+Private generation now applies explicit Monday through Saturday recipe v1 settings through the existing weekday request. Monday asks for three approachable theme locks and direct footholds; Tuesday asks for up to five locks, a bounded search/time increase, alternate senses, fair second readings, and a five-family/32-surface clue-language floor with a 64% full-board target; Wednesday uses four inferable theme locks with varied, fair misdirection; Thursday proposes three to five theme answers plus a typed shared-prefix or shared-suffix rule; Friday uses a looser long-form cluster with indirect but precise clues; Saturday uses a compact cluster with the most oblique fair wording and a few deliberate footholds. The host enables that Thursday rule only when every proposed answer and at least three actual filled theme entries match it, then passes the validated rule to clue generation and records it with those answers in provenance. If proposal, validation, or filled-entry matching fails, the maker continues with the ordinary-letter-grid theme path and records the mechanic as unavailable. The chosen recipe ID, intent, requested and used theme counts, actual themed-entry count, clue floor, and grid mechanic are recorded in provenance. The controls explain each day's aim before generation. These are generation directions, not guarantees of editorial quality; rebus and special-cell mechanics remain unsupported.
 
 The private fill path now applies `private-fill-quality-policy-v1`: it evaluates at most four deterministic native-xfill candidates (theme-locked, reduced-theme, reseeded, and open-grid variants), ranks measured candidates by fewer iffy entries, then a bounded two-theme retention floor within a 25%-weak-entry band, then fewer weak entries, mean score, and score floor, and records every successful or failed attempt with option, seed, source, board digest, and score receipt provenance. The local-theme-anchor attempt now retains the two shortest model-proposed invitations already present in the local xfill dictionary, so a placeable pair can survive construction instead of being reduced to one anchor. A bounded native smoke with a two-word anchor produced two themed entries on both seeds; the answer-free receipt is `docs/evidence/private-two-theme-anchor-smoke-v1.json`. A weak but structurally usable board remains playable when no stronger candidate exists; missing native score fields produce an explicit unavailable diagnostic rather than an invented score or a new play gate. The policy improves selection for the latest 70-entry/13-iffy/38-weak result while preserving local availability; human quality, clue fairness, and player support remain unmeasured. `src/crossword/fill_quality_evaluation.py` and `scripts/fill-quality-study.py` now turn bounded receipts into `private-fill-quality-study-v1`: a fixed-seed report records requested/observed/missing seeds, attempt and retry summaries, selected-attempt metrics, measured/unavailable fields, optional loopback/model metadata, and a SHA-256 study digest. `scripts/private-fill-study.py` collects the same receipts through a running local private-puzzle API for explicit seeds; it does not start Ollama or export profile data. A real Gemma 4 26B Wednesday run through that collector is preserved at `docs/evidence/private-fill-quality-study-v1.real-gemma4-26b-wednesday-20260928.json`: four attempts were captured, the selected theme-locked primary had zero iffy entries and mean score 79.45, and the report retains the weaker alternatives and one failed retry. `compare_fill_quality_studies` and `scripts/fill-quality-compare.py` pair selected measured attempts by seed and report policy-minus-baseline deltas without declaring a human-quality winner. The runner is injected and receipt-only, so CI cannot accidentally start Ollama; the report's acceptance policy is explicitly heuristic and never a human-quality gate. Synthetic checked artifacts live at `docs/evidence/private-fill-quality-study-v1.synthetic.json` and `docs/evidence/private-fill-quality-comparison-v1.synthetic.json`.
 
@@ -2063,7 +2064,7 @@ construction and clue-quality outcomes.
 
 An explicit `gentle-stretch` play-calibration recommendation now changes
 Tuesday's construction target instead of only changing prompt wording: it asks
-for at least 28 visible non-definition surfaces and a 56% target, with the
+for at least 36 visible non-definition surfaces and a 72% target, with the
 variant recorded in the weekday recipe receipt. The ordinary Tuesday recipe,
 other weekdays, and the no-history path remain unchanged. This makes a player's
 `harder-stretch` pulse causally visible in the next board while keeping the

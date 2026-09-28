@@ -693,16 +693,20 @@ _WEEKDAY_RECIPES = {
         "intent": "Familiar material with a visible layer of fair second readings makes Tuesday a clear step beyond Monday while preserving dependable footholds.",
         "themeAnswerCount": 5,
         "themeDirection": "Choose a coherent cluster of up to five approachable answers whose connection is discoverable after one or two entries; let the pattern add a little lift without requiring specialist trivia.",
-        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep a small set of direct footholds, then prefer less literal but precise surfaces so the board does not read like Monday with different answers. Make at least twenty-eight clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least five distinct surface families, and aim for a little over half the board to carry one of those signals. Do not rely on obscure trivia.",
+        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep a small set of direct footholds, then prefer less literal but precise surfaces so the board does not read like Monday with different answers. Make at least thirty-two clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least five distinct surface families, and aim for roughly two-thirds of the board to carry one of those signals. Do not rely on obscure trivia.",
         "themeMode": "approachable-cluster-with-a-turn",
         "minimumNonDefinitionFamilies": 5,
-        "minimumNonDefinitionCount": 28,
+        # Tuesday should feel like a real step beyond Monday even when the
+        # model happens to return fluent direct definitions.  Keep the five
+        # family floor, but require the same denser surface target that was
+        # previously reserved for an explicit gentle-stretch pulse.
+        "minimumNonDefinitionCount": 32,
         "requiredNonDefinitionFamilySet": _DIVERSITY_FAMILY_ORDER,
-        # The count floor protects small fixture boards.  On a full 15x15,
-        # the editorial contract asks for slightly more than half of the
-        # visible surfaces to carry a fair convention or second reading so
+        # The count floor protects small fixture boards. On a full 15x15,
+        # the editorial contract asks for roughly two-thirds of the visible
+        # surfaces to carry a fair convention or second reading so
         # Tuesday does not collapse into Monday-style direct definitions.
-        "targetNonDefinitionRate": 0.56,
+        "targetNonDefinitionRate": 0.64,
     },
     "wednesday": {
         "id": "wednesday-private-v1",
@@ -786,10 +790,10 @@ def _effective_weekday_recipe(weekday, context=None):
         "indirect but precise wording while preserving footholds."
     )
     recipe["minimumNonDefinitionCount"] = max(
-        int(recipe.get("minimumNonDefinitionCount", 0)), 32
+        int(recipe.get("minimumNonDefinitionCount", 0)), 36
     )
     recipe["targetNonDefinitionRate"] = max(
-        float(recipe.get("targetNonDefinitionRate", 0.0)), 0.64
+        float(recipe.get("targetNonDefinitionRate", 0.0)), 0.72
     )
     return recipe
 

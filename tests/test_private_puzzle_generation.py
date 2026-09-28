@@ -1586,7 +1586,7 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     assert "second reading" in tuesday["clueDirection"]
     assert tuesday["themeAnswerCount"] == 5
     assert tuesday["minimumNonDefinitionFamilies"] == 5
-    assert tuesday["minimumNonDefinitionCount"] == 28
+    assert tuesday["minimumNonDefinitionCount"] == 32
     assert tuesday["requiredNonDefinitionFamilySet"] == (
         "pun",
         "fill-blank",
@@ -1594,7 +1594,7 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
         "spoken-equivalent",
         "metalinguistic",
     )
-    assert tuesday["targetNonDefinitionRate"] == 0.56
+    assert tuesday["targetNonDefinitionRate"] == 0.64
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] == 75
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] > private_generation._DIFFICULTY["monday"]["candidates"]
     assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
@@ -1613,8 +1613,8 @@ def test_tuesday_gentle_stretch_feedback_raises_only_clue_variety_target():
 
     assert "difficultyVariant" not in base
     assert stretch["difficultyVariant"] == "gentle-stretch"
-    assert stretch["minimumNonDefinitionCount"] == 32
-    assert stretch["targetNonDefinitionRate"] == 0.64
+    assert stretch["minimumNonDefinitionCount"] == 36
+    assert stretch["targetNonDefinitionRate"] == 0.72
     assert other_day == private_generation._weekday_recipe("wednesday")
 
 
@@ -2267,8 +2267,8 @@ def test_tuesday_recipe_reports_a_bounded_floor_shortfall(monkeypatch):
     assert len(report["nonDefinitionFamilies"]) >= 5
     assert report["status"] == "varied-below-recipe-floor"
     assert report["nonDefinitionCount"] >= 20
-    assert report["targetNonDefinitionClues"] == 17
-    assert report["requiredNonDefinitionClues"] == 28
+    assert report["targetNonDefinitionClues"] == 20
+    assert report["requiredNonDefinitionClues"] == 32
     assert report["floorMet"] is False
 
 
@@ -2282,9 +2282,9 @@ def test_tuesday_surface_floor_scales_to_full_board_target(monkeypatch):
     _, repair = private_generation._repair_clue_diversity(
         "gemma4:26b", entries, clues, {}, "tuesday", {}
     )
-    assert repair["minimumClueCount"] == 28
-    assert repair["targetNonDefinitionRate"] == 0.56
-    assert repair["targetNonDefinitionClues"] == 44
+    assert repair["minimumClueCount"] == 32
+    assert repair["targetNonDefinitionRate"] == 0.64
+    assert repair["targetNonDefinitionClues"] == 50
 
 
 def test_tuesday_floor_reports_missing_required_surface_family():
@@ -2330,7 +2330,7 @@ def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
             "length": 2 if index == 6 else 4,
             "theme": False,
         }
-        for index in range(1, 31)
+        for index in range(1, 36)
     ]
     calls = []
     def fake_chat(_model, messages, schema, **_kwargs):
@@ -2374,7 +2374,7 @@ def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )
-    assert report["nonDefinitionCount"] >= 28
+    assert report["nonDefinitionCount"] >= 32
     assert report["floorMet"] is True
 
 
@@ -2434,7 +2434,7 @@ def test_tuesday_surface_floor_allows_one_additional_bounded_repair_batch(monkey
             "length": 4,
             "theme": False,
         }
-        for index in range(1, 31)
+        for index in range(1, 36)
     ]
     calls = []
     initial_surfaces = [
@@ -2472,7 +2472,7 @@ def test_tuesday_surface_floor_allows_one_additional_bounded_repair_batch(monkey
             "title": "A Tuesday board",
             "clues": [
                 {"id": item["id"], "text": surfaces[item["desiredFamily"]]}
-                for item in requested[:6]
+                for item in requested[:8]
             ],
         }
 
@@ -2493,7 +2493,7 @@ def test_tuesday_surface_floor_allows_one_additional_bounded_repair_batch(monkey
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )
-    assert report["nonDefinitionCount"] >= 28
+    assert report["nonDefinitionCount"] >= 32
     assert report["floorMet"] is True
 
 
