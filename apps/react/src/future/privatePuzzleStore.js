@@ -5,6 +5,7 @@ export const PRIVATE_PUZZLE_STORAGE_PREFIX = STORAGE_PREFIX;
 const HISTORY_SUFFIX = ':history';
 export const PRIVATE_PUZZLE_HISTORY_SUFFIX = HISTORY_SUFFIX;
 const LOCAL_SOURCE = 'local-ollama-xfill';
+const REVIEWED_SAMPLE_SOURCE = 'reviewed-sample';
 const MAX_RECORD_BYTES = 512 * 1024;
 const MAX_HISTORY_RECORDS = 3;
 const WEEKDAYS = new Set([
@@ -37,7 +38,9 @@ function validRecord(value, profileId) {
     value.puzzle.puzzleManifest.schemaVersion !== 1 ||
     value.puzzle.puzzleManifest.integrity?.algorithm !== 'sha256' ||
     !/^[a-f0-9]{64}$/i.test(value.puzzle.puzzleManifest.integrity?.value || '') ||
-    value.puzzle.provenance?.source !== LOCAL_SOURCE ||
+    ![LOCAL_SOURCE, REVIEWED_SAMPLE_SOURCE].includes(
+      value.puzzle.provenance?.source,
+    ) ||
     value.puzzle.provenance?.seed !== value.seed ||
     value.puzzle.provenance?.weekday !== value.weekday
   ) {
@@ -128,6 +131,8 @@ export function compactPuzzleForStorage(puzzle) {
     'generatedAt',
     'engine',
     'experimental',
+    'sampleId',
+    'version',
   ];
   for (const field of scalarFields) {
     if (provenance[field] !== undefined) storedProvenance[field] = provenance[field];

@@ -776,3 +776,38 @@ it('rejects a response without the local Ollama provenance marker', async () => 
   expect(app.currentPuzzleMetadata).toEqual({ date: '260927', title: 'Daily' });
   expect(app.init).not.toHaveBeenCalled();
 });
+
+it('opens the reviewed warm-up when the local model is unavailable', async () => {
+  const app = appState();
+  const payload = privatePuzzlePayload();
+  payload.provenance = {
+    source: 'reviewed-sample',
+    version: 'reviewed-sample-v1',
+    sampleId: 'sator-square-v1',
+    weekday: 'thursday',
+    seed: 0,
+  };
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => payload,
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  mount(app);
+
+  await act(async () => {
+    host
+      .querySelector('.future-private-puzzle-sample-button')
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await Promise.resolve();
+  });
+
+  expect(fetchMock.mock.calls[0][0]).toContain(
+    '/api/future/reviewed-samples/sator-square-v1',
+  );
+  expect(app.currentPuzzleProvenance).toMatchObject({
+    source: 'reviewed-sample',
+    sampleId: 'sator-square-v1',
+  });
+  expect(app.init).toHaveBeenCalledOnce();
+  expect(host.textContent).toContain('Reviewed authored sample');
+});

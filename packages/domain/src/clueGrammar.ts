@@ -621,9 +621,9 @@ function validateAnswerSafety(
   }
 
   const answer = clue.answer.toLocaleUpperCase().replace(/[^A-Z]/gu, '');
-  const pluralMarker = /[\[(]\s*pl\.?\s*[\])]/iu.test(clue.clueText);
+  const pluralMarker = /[[(]\s*pl\.?\s*[\])]/iu.test(clue.clueText);
   const pastMarker =
-    /\bpast(?:\s+tense)?\b|[\[(]\s*past(?:\s+tense)?\s*[\])]/iu.test(
+    /\bpast(?:\s+tense)?\b|[[(]\s*past(?:\s+tense)?\s*[\])]/iu.test(
       clue.clueText,
     );
   const irregularPlurals = new Set([

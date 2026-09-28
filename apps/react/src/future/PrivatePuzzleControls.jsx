@@ -11,6 +11,8 @@ import {
 } from './tokenManifest';
 
 const LOCAL_OLLAMA_SOURCE = 'local-ollama-xfill';
+const REVIEWED_SAMPLE_SOURCE = 'reviewed-sample';
+const REVIEWED_SAMPLE_ID = 'sator-square-v1';
 const PENDING_JOB_STORAGE_PREFIX = 'crossword.future.private-job.v1:';
 const WEEKDAYS = new Set([
   'monday',
@@ -38,6 +40,7 @@ const JOB_STAGE_COPY = {
   'clue-generation': 'Writing and checking the clues…',
   'clue-challenge': 'Giving the clue surfaces a second local pass…',
   finalizing: 'Freezing the finished board…',
+  sample: 'Opening the reviewed warm-up…',
   generating: 'Building your theme, grid, and clues locally…',
   filling: 'Fitting the crossings locally…',
 };
@@ -491,7 +494,9 @@ export default function PrivatePuzzleControls({
       solverPuzzle &&
       solverPuzzle.metadata &&
       Array.isArray(solverPuzzle.metadata.authors) &&
-      solverPuzzle.provenance?.source === LOCAL_OLLAMA_SOURCE &&
+      [LOCAL_OLLAMA_SOURCE, REVIEWED_SAMPLE_SOURCE].includes(
+        solverPuzzle.provenance?.source,
+      ) &&
       typeof app.isValidPuzzle === 'function' &&
       app.isValidPuzzle(solverPuzzle);
     if (!validPuzzle) {
@@ -567,6 +572,8 @@ export default function PrivatePuzzleControls({
   const weekday = String(targetWeekday || '').toLowerCase();
   const locallyMade =
     app.currentPuzzleProvenance?.source === LOCAL_OLLAMA_SOURCE;
+  const reviewedSample =
+    app.currentPuzzleProvenance?.source === REVIEWED_SAMPLE_SOURCE;
   const playCalibrationNote = describePlayCalibration(
     app.currentPuzzleProvenance?.playCalibration,
   );
@@ -584,6 +591,7 @@ export default function PrivatePuzzleControls({
   );
   const canCreate =
     Boolean(profileId) && profileSaved && requestState !== 'loading';
+  const canOpenSample = Boolean(profileId) && requestState !== 'loading';
 
   async function makePuzzle() {
     if (
@@ -666,6 +674,57 @@ export default function PrivatePuzzleControls({
           cause instanceof Error
             ? cause.message
             : 'A personal crossword could not be made right now.',
+        );
+      }
+    } finally {
+      if (requestRef.current === operation) requestRef.current = null;
+    }
+  }
+
+  async function openReviewedSample() {
+    if (
+      requestRef.current ||
+      !canOpenSample ||
+      !catalog.days.some((day) => day.id === weekday)
+    )
+      return;
+    if (
+      hasProgress(app) &&
+      !window.confirm(
+        'Opening the reviewed warm-up will replace your current letters. Continue?',
+      )
+    ) {
+      return;
+    }
+    const abort = new AbortController();
+    const operation = { abort, jobId: null };
+    requestRef.current = operation;
+    setRequestState('loading');
+    setJobStage('sample');
+    setJobStageElapsed(null);
+    setError('');
+    try {
+      const response = await fetch(
+        `/api/future/reviewed-samples/${REVIEWED_SAMPLE_ID}?weekday=${encodeURIComponent(weekday)}`,
+        { headers: { Accept: 'application/json' }, signal: abort.signal },
+      );
+      const payload = await readResponse(response);
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.error === 'string'
+            ? payload.error
+            : 'The reviewed warm-up could not be opened.',
+        );
+      }
+      await applyPuzzlePayload(payload, weekday, 0, operation);
+    } catch (cause) {
+      if (!abort.signal.aborted) {
+        setRequestState('error');
+        setJobStage('failed');
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : 'The reviewed warm-up could not be opened.',
         );
       }
     } finally {
@@ -830,9 +889,29 @@ export default function PrivatePuzzleControls({
           ? 'Making your crossword…'
           : 'Make a new personal crossword'}
       </button>
+      <button
+        type="button"
+        className="future-private-puzzle-sample-button"
+        onClick={openReviewedSample}
+        disabled={!canOpenSample}
+      >
+        <span aria-hidden="true">◇</span>
+        {requestState === 'loading' && jobStage === 'sample'
+          ? 'Opening reviewed warm-up…'
+          : 'Open a reviewed warm-up'}
+      </button>
+      <p className="future-private-puzzle-note future-private-puzzle-sample-note">
+        If Ollama is unavailable, this small authored sample keeps the solver
+        playable while the local model is set up. It is not personalized.
+      </p>
       {locallyMade && (
         <span className="future-local-ollama-badge">
           <span aria-hidden="true" /> Locally made with Ollama
+        </span>
+      )}
+      {reviewedSample && (
+        <span className="future-local-ollama-badge future-reviewed-sample-badge">
+          <span aria-hidden="true" /> Reviewed authored sample
         </span>
       )}
       {themeThreadNote && (

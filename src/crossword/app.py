@@ -26,6 +26,7 @@ from .profile_narrative_api import profile_narrative_api
 from .future_puzzles import future_puzzle_candidates_api, register_legacy_puzzle
 from .future_grid_jobs import future_grid_jobs_api
 from .private_puzzle_generation import private_puzzle_api
+from .reviewed_samples import reviewed_samples_api
 from .profile_export import profile_export_api
 from .profile_import import profile_import_api
 from .profile_lifecycle import profile_lifecycle_api
@@ -70,6 +71,7 @@ app.register_blueprint(postgame_associations_api)
 app.register_blueprint(profile_narrative_api)
 app.register_blueprint(future_grid_jobs_api)
 app.register_blueprint(private_puzzle_api)
+app.register_blueprint(reviewed_samples_api)
 app.register_blueprint(future_puzzle_candidates_api)
 app.register_blueprint(admitted_retrieval_api)
 app.register_blueprint(publication_evidence_api)

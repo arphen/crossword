@@ -55,6 +55,24 @@ it('does not restore another profile’s puzzle or malformed storage', () => {
   expect(loadPrivatePuzzle('bad', storage)).toBeNull();
 });
 
+it('persists the reviewed warm-up through the same local recovery shelf', () => {
+  const sample = {
+    ...puzzle,
+    provenance: {
+      source: 'reviewed-sample',
+      version: 'reviewed-sample-v1',
+      sampleId: 'sator-square-v1',
+      seed: 0,
+      weekday: 'monday',
+    },
+  };
+  expect(savePrivatePuzzle(profileId, sample, storage)).toBe(true);
+  expect(loadPrivatePuzzle(profileId, storage)?.puzzle.provenance).toMatchObject({
+    source: 'reviewed-sample',
+    sampleId: 'sator-square-v1',
+  });
+});
+
 it('keeps a valid record but refuses to initialize an unsupported solver puzzle', () => {
   expect(savePrivatePuzzle(profileId, puzzle, storage)).toBe(true);
   const app = { isValidPuzzle: vi.fn(() => false), init: vi.fn() };
