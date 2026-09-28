@@ -1303,6 +1303,25 @@ def test_private_clue_safety_catches_explicit_plural_marker_mismatch():
     )["1A"] == "Entry supported by its crossings (3 letters)"
 
 
+def test_private_clue_safety_catches_explicit_past_tense_marker_mismatch():
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "RAN"}, "Past tense"
+        )
+        is None
+    )
+    mismatch = private_generation._clue_grounding(
+        {"answer": "RUN", "needsFoothold": False}, "Past tense"
+    )
+
+    assert mismatch["status"] == "morphology-check-failed"
+    assert mismatch["morphologyIssue"] == "past-tense-marker-with-nonpast-shape"
+    assert private_generation._enforce_private_clue_safety(
+        [{"id": "1A", "answer": "RUN", "length": 3, "needsFoothold": False}],
+        {"1A": "Past tense"},
+    )["1A"] == "Entry supported by its crossings (3 letters)"
+
+
 def test_clue_grounding_exposes_risk_flags_for_local_inspection():
     grounding = private_generation._clue_grounding(
         {"id": "1A", "answer": "EVAN", "needsFoothold": False},

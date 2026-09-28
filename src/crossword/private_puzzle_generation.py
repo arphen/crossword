@@ -268,6 +268,14 @@ _SAFE_CLUE_RELATIONS = (
         re.compile(r"[\[(]\s*pl\.?\s*[\])]", re.IGNORECASE),
         "surface",
     ),
+    (
+        "tense-label",
+        re.compile(
+            r"\bpast(?:\s+tense)?\b|[\[(]\s*past(?:\s+tense)?\s*[\])]",
+            re.IGNORECASE,
+        ),
+        "surface",
+    ),
 )
 
 _CLUE_FAMILY_LANGUAGE_RE = re.compile(
@@ -305,6 +313,10 @@ _CLUE_PROPER_NAME_RE = re.compile(
     re.IGNORECASE,
 )
 _PLURAL_MARKER_RE = re.compile(r"[\[(]\s*pl\.?\s*[\])]", re.IGNORECASE)
+_PAST_TENSE_MARKER_RE = re.compile(
+    r"\bpast(?:\s+tense)?\b|[\[(]\s*past(?:\s+tense)?\s*[\])]",
+    re.IGNORECASE,
+)
 _COMMON_IRREGULAR_PLURALS = frozenset(
     {
         "CHILDREN",
@@ -316,6 +328,61 @@ _COMMON_IRREGULAR_PLURALS = frozenset(
         "TEETH",
         "WOMEN",
         "OXEN",
+    }
+)
+_COMMON_PAST_FORMS = frozenset(
+    {
+        "ATE",
+        "BEGAN",
+        "BENT",
+        "BOUGHT",
+        "BROUGHT",
+        "BUILT",
+        "CAME",
+        "DID",
+        "DREW",
+        "DRANK",
+        "DROVE",
+        "FELT",
+        "FLEW",
+        "FOUND",
+        "GAVE",
+        "GOT",
+        "GREW",
+        "HAD",
+        "HEARD",
+        "HELD",
+        "KEPT",
+        "KNEW",
+        "LEFT",
+        "LOST",
+        "MADE",
+        "MET",
+        "PAID",
+        "PUT",
+        "RAN",
+        "READ",
+        "ROSE",
+        "SAID",
+        "SAW",
+        "SANG",
+        "SENT",
+        "SLEPT",
+        "SOLD",
+        "SPENT",
+        "STOOD",
+        "SWAM",
+        "TAKEN",
+        "TAUGHT",
+        "THOUGHT",
+        "TOOK",
+        "TOLD",
+        "WAS",
+        "WERE",
+        "WENT",
+        "WON",
+        "WORE",
+        "WROTE",
     }
 )
 
@@ -2260,26 +2327,33 @@ def _clue_wordplay_issue(entry, clue):
 
 
 def _clue_morphology_issue(entry, clue):
-    """Catch an explicit plural marker attached to an obvious singular fill.
+    """Catch explicit plural/past markers attached to an obvious mismatch.
 
     Private clues do not carry a reviewed part-of-speech record, so this is
-    intentionally narrow. It only checks the crossword convention the player
-    can see directly: ``(pl.)`` or ``[pl.]``. Irregular plural forms are kept
-    in a small allow-list; all other morphology remains explicitly unknown.
+    intentionally narrow. It checks the crossword conventions the player can
+    see directly: ``(pl.)``/``[pl.]`` and an explicit past-tense marker.
+    Irregular plural and past forms are kept in small allow-lists; all other
+    morphology remains explicitly unknown.
     """
     if not isinstance(entry, dict) or not isinstance(clue, str):
         return "invalid-clue"
     answer = _letters_only(entry.get("answer", ""))
-    if not answer or not _PLURAL_MARKER_RE.search(clue):
+    if not answer:
+        return "invalid-clue"
+    has_plural_marker = _PLURAL_MARKER_RE.search(clue) is not None
+    has_past_marker = _PAST_TENSE_MARKER_RE.search(clue) is not None
+    if not has_plural_marker and not has_past_marker:
         return None
-    if answer in _COMMON_IRREGULAR_PLURALS:
-        return None
-    # A terminal S is only a weak shape signal, but it is enough to avoid
-    # replacing ordinary plural entries such as CATS. Do not assert that it
-    # proves number; this helper only flags the obvious opposite case.
-    if answer.endswith("S") and not answer.endswith(("SS", "US", "IS")):
-        return None
-    return "plural-marker-with-singular-shape"
+    if has_plural_marker and answer not in _COMMON_IRREGULAR_PLURALS:
+        # A terminal S is only a weak shape signal, but it is enough to avoid
+        # replacing ordinary plural entries such as CATS. Do not assert that
+        # it proves number; this helper only flags the obvious opposite case.
+        if not answer.endswith("S") or answer.endswith(("SS", "US", "IS")):
+            return "plural-marker-with-singular-shape"
+    if has_past_marker:
+        if not answer.endswith("ED") and answer not in _COMMON_PAST_FORMS:
+            return "past-tense-marker-with-nonpast-shape"
+    return None
 
 
 def _answer_structure(entry):
@@ -2443,6 +2517,12 @@ def _clue_grounding(entry, clue, *, model_response=None, reviewed_content=None):
                     "plural-marker-mismatch"
                     if morphology_issue
                     else "plural-marker-present; answer morphology unverified"
+                )
+            elif label == "tense-label":
+                morphology = (
+                    "past-tense-marker-mismatch"
+                    if morphology_issue
+                    else "past-tense-marker-present; answer tense unverified"
                 )
             break
 
@@ -3256,7 +3336,10 @@ def _enforce_private_clue_safety(
             "language-answer-mismatch",
         }:
             reason_codes.append(mechanical_issue)
-        if morphology_issue == "plural-marker-with-singular-shape":
+        if morphology_issue in {
+            "plural-marker-with-singular-shape",
+            "past-tense-marker-with-nonpast-shape",
+        }:
             reason_codes.append(morphology_issue)
         if (
             reason_codes

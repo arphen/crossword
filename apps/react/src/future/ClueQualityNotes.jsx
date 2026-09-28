@@ -9,6 +9,7 @@ const FLAG_COPY = {
   'anagram-mismatch': 'anagram needs repair',
   'reversal-mismatch': 'reversal needs repair',
   'language-answer-mismatch': 'language relation needs repair',
+  'past-tense-marker-with-nonpast-shape': 'past-tense marker does not match answer shape',
   'unbalanced-quotation': 'quotation mark was normalized',
   'unbalanced-brackets': 'brackets were normalized',
   'bracket-scope': 'bracket scope was normalized',
