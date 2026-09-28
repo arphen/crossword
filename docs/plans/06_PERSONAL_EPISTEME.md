@@ -120,6 +120,11 @@ if they survive it, an answer-free crossing scaffold; the guard is explicitly
 Tuesday-only so other weekday voices and exact reviewed clue text keep their
 existing behavior. Its `low-information-surface` reason is retained in the
 quality summary and fallback receipt.
+The same mechanical guard now rejects anchored noun-only templates such as
+“Common abbreviation,” “Usual synonym,” and “Standard answer” across private
+weekday recipes, while preserving a specific referent such as “Common
+abbreviation for New York.” These remain `generic-clue` repairs with no
+semantic claim about the answer.
 Tuesday has an explicit recipe between Monday and Wednesday: a bounded increase
 in fill search/time plus alternate senses and fair second readings, while still
 requiring approachable footholds. The domain-wordlist direction in
