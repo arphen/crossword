@@ -118,7 +118,7 @@ def main() -> int:
                 "requiredNonDefinitionFamilies": len(required_families),
                 "requiredNonDefinitionFamilySet": required_families,
                 "missingNonDefinitionFamilies": required_families,
-                "requiredNonDefinitionClues": 28 if args.weekday == "tuesday" else 0,
+                "requiredNonDefinitionClues": 32 if args.weekday == "tuesday" else 0,
                 "signalCounts": {},
                 "issueCounts": {},
                 "semanticChallenge": {},
