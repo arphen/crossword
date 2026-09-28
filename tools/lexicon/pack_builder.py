@@ -43,7 +43,10 @@ import { validateClueGrammar } from './packages/domain/src/clueGrammar.ts';
 const items = JSON.parse(readFileSync(0, 'utf8'));
 const results = items.map(({ annotation, context }) => {
   try {
-    const value = validateClueGrammar(annotation, context ?? {});
+    const value = validateClueGrammar(annotation, {
+      ...(context ?? {}),
+      enforceAnswerSafety: true,
+    });
     return {
       valid: value.valid,
       issues: value.issues.map(({ code }) => code).sort(),

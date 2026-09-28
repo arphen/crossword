@@ -219,6 +219,8 @@ export type ClueGrammarContext = Readonly<{
   mechanics?: readonly PuzzleMechanic[];
   licensedAbbreviationExceptions?: readonly string[];
   punQuestionMarkPolicy?: 'required' | 'optional' | 'forbidden';
+  /** Admission-mode safety for answer leakage and dead-end clue templates. */
+  enforceAnswerSafety?: boolean;
 }>;
 
 export type ClueGrammarIssueCode =
@@ -254,7 +256,10 @@ export type ClueGrammarIssueCode =
   | 'mechanic-not-applicable'
   | 'missing-mechanic-signal'
   | 'missing-mechanic-explanation'
-  | 'missing-register-signal';
+  | 'missing-register-signal'
+  | 'answer-giveaway'
+  | 'answer-form-in-clue'
+  | 'generic-clue';
 
 export type ClueGrammarIssue = Readonly<{
   code: ClueGrammarIssueCode;
@@ -531,6 +536,98 @@ function hasWholeSpeechQuotes(text: string): boolean {
 
 function hasWholeSquareBrackets(text: string): boolean {
   return /^\[[^\]]+\]$/u.test(text) && !text.slice(1, -1).includes('[');
+}
+
+function answerLexicalForms(answer: string): readonly string[] {
+  const normalized = answer.toLocaleUpperCase().replace(/[^A-Z]/gu, '');
+  if (!normalized) return [];
+  const forms = new Set([normalized]);
+  if (normalized.length < 3) return [...forms];
+  if (normalized.endsWith('IES') && normalized.length > 3) {
+    forms.add(`${normalized.slice(0, -3)}Y`);
+  }
+  if (normalized.endsWith('ES') && normalized.length > 4) {
+    forms.add(normalized.slice(0, -2));
+  }
+  if (normalized.endsWith('S') && !normalized.endsWith('SS') && normalized.length > 3) {
+    forms.add(normalized.slice(0, -1));
+  }
+  if (!normalized.endsWith('S')) forms.add(`${normalized}S`);
+  if (!normalized.endsWith('ES')) forms.add(`${normalized}ES`);
+  if (normalized.endsWith('ING') && normalized.length > 5) {
+    forms.add(normalized.slice(0, -3));
+  }
+  if (normalized.endsWith('ED') && normalized.length > 4) {
+    forms.add(normalized.slice(0, -2));
+  }
+  if (normalized.endsWith('E') && normalized.length > 3) {
+    forms.add(`${normalized.slice(0, -1)}ED`);
+  } else {
+    forms.add(`${normalized}ED`);
+  }
+  if (!normalized.endsWith('ING')) forms.add(`${normalized}ING`);
+  return [...forms].filter((form) => form.length >= 3);
+}
+
+function validateAnswerSafety(
+  clue: ClueGrammarAnnotation,
+  issues: ClueGrammarIssue[],
+): void {
+  const upperText = clue.clueText.toLocaleUpperCase();
+  const tokens = [...upperText.matchAll(/[A-Z]+/gu)].map((match) => ({
+    value: match[0],
+    start: match.index ?? 0,
+    end: (match.index ?? 0) + match[0].length,
+  }));
+  const quotedRanges = [
+    ...upperText.matchAll(/“[^”]*”|‘[^’]*’|"[^"]*"/gu),
+  ].map((match) => ({
+    start: match.index ?? 0,
+    end: (match.index ?? 0) + match[0].length,
+  }));
+  const isAllowedMention = (start: number, end: number) =>
+    quotedRanges.some((range) => start >= range.start && end <= range.end) ||
+    clue.signalSpans.some(
+      (span) =>
+        span.kind === 'quote' &&
+        (span.role === 'title' || span.role === 'mentioned-word') &&
+        start >= span.start &&
+        end <= span.end,
+    );
+  const overlap = answerLexicalForms(clue.answer).reduce<string | null>((found, form) => {
+    if (found) return found;
+    const token = tokens.find(
+      (item) => item.value === form && !isAllowedMention(item.start, item.end),
+    );
+    return token ? form : null;
+  }, null);
+  if (overlap) {
+    issue(
+      issues,
+      overlap === clue.answer.toLocaleUpperCase().replace(/[^A-Z]/gu, '')
+        ? 'answer-giveaway'
+        : 'answer-form-in-clue',
+      'A clue must not repeat the answer or an obvious lexical form of it.',
+      'clueText',
+    );
+  }
+
+  const normalized = clue.clueText.trim().replace(/\s+/gu, ' ');
+  if (
+    /^(?:(?:a|an|the)\s+)?(?:common|usual|ordinary|generic|standard)\s+(?:name|term|word|designation|label)(?:\s+(?:for|of))?[?.]?$/iu.test(
+      normalized,
+    ) ||
+    /^(?:(?:a|an|the)\s+)?(?:(?:famous|well[- ]known|notable|popular|renowned|celebrated|italian|french|german|spanish|japanese|portuguese|dutch)\s+)?(?:actor|actress|author|band|character|director|king|queen|singer|surname|writer|person|president|saint|celebrity)(?:'s|’s)?\s+name(?:\s*,?\s*perhaps)?[?.]?$/iu.test(
+      normalized,
+    )
+  ) {
+    issue(
+      issues,
+      'generic-clue',
+      'A generic name or term template does not give the player a route into the answer.',
+      'clueText',
+    );
+  }
 }
 
 function issue(
@@ -1240,6 +1337,7 @@ export function validateClueGrammar(
     );
     return { valid: false, issues, semanticStatus: 'not-established' };
   }
+  if (context.enforceAnswerSafety) validateAnswerSafety(clue, issues);
   validateSpanBounds(clue, issues);
   if (CLUE_FAMILIES.includes(clue.primaryFamily)) {
     validateMorphology(clue, issues);

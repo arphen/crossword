@@ -108,9 +108,11 @@ uses `resolutionStatus: "resolved"` with a gloss to support a clue, or
 admitted `lexemeId` and a reviewed statement. A clue needs its own pinned
 `sourceId`, its own review metadata, exactly one `senseId` or `factId`, and a
 `grammar` annotation using the repository's `clue-grammar-v1` schema. Clues
-must agree with the linked lexeme's answer and pass the actual TypeScript clue
-grammar validator through Node. If Node or the validator is unavailable, the
-clue is quarantined while otherwise admissible fill records remain available.
+must agree with the linked lexeme's answer, pass the actual TypeScript clue
+grammar validator through Node, and survive its admission-mode answer-safety
+checks for answer roots and dead-end generic templates. If Node or the
+validator is unavailable, the clue is quarantined while otherwise admissible
+fill records remain available.
 
 Run it from the repository root:
 

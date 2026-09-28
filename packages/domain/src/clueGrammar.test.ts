@@ -69,6 +69,35 @@ describe('clue grammar v1', () => {
     expect(result.semanticStatus).toBe('not-established');
   });
 
+  it('rejects an answer and its obvious lexical form in the clue text', () => {
+    const result = validateClueGrammar(
+      definition({
+        clueText: 'Shades of red',
+        answer: 'REDS',
+        morphology: {
+          clue: nounPlural,
+          answer: nounPlural,
+          substitutionWitness: {
+            frame: 'We compared {0}.',
+            cluePhrase: 'Shades of red',
+            answerPhrase: 'REDS',
+            editorialNote: 'The fixture intentionally repeats the answer root.',
+            reviewerId: 'editor-1',
+          },
+        },
+      }),
+      { enforceAnswerSafety: true },
+    );
+
+    expect(result.valid).toBe(false);
+    expect(result.issues.map(({ code }) => code)).toContain('answer-form-in-clue');
+  });
+
+  it('rejects dead-end generic name and term templates', () => {
+    expect(codes(definition({ clueText: 'common name' }), { enforceAnswerSafety: true })).toContain('generic-clue');
+    expect(codes(definition({ clueText: "singer's name" }), { enforceAnswerSafety: true })).toContain('generic-clue');
+  });
+
   it('accepts an irregular plural when both annotated readings are plural', () => {
     const clueText = 'More than one goose';
     const result = validateClueGrammar(

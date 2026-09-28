@@ -267,6 +267,25 @@ def test_existing_clue_grammar_validator_is_a_hard_admission_gate(tmp_path: Path
     assert "morphology-mismatch" in invalid["details"]
 
 
+def test_pack_admission_rejects_answer_roots_and_generic_clue_templates(
+    tmp_path: Path,
+) -> None:
+    manifest = _manifest(tmp_path)
+    clue = manifest["records"]["clues"][0]
+    clue["text"] = "Shades of cat"
+    clue["grammar"]["clueText"] = clue["text"]
+    clue["grammar"]["morphology"]["substitutionWitness"]["cluePhrase"] = clue[
+        "text"
+    ]
+
+    pack = build_pack(manifest, tmp_path)
+
+    assert pack["clues"] == []
+    invalid = next(row for row in pack["quarantine"] if row["recordType"] == "clue")
+    assert invalid["reasonCode"] == "clue-grammar-invalid"
+    assert "answer-form-in-clue" in invalid["details"]
+
+
 def test_clue_can_be_grounded_in_a_reviewed_fact(tmp_path: Path) -> None:
     manifest = _manifest(tmp_path)
     manifest["records"]["facts"].append(
