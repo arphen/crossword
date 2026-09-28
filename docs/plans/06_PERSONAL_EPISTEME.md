@@ -173,6 +173,13 @@ adds a spoken-utterance-specific instruction, prevents still-missing families
 from being consumed by the ordinary rotation, and records bounded exhaustion
 as answer-free `unavailableFamilies` metadata. This preserves the honest floor
 instead of manufacturing a family with a scaffold.
+The first live run after that change (seed `205002`) produced six
+spoken-equivalent clues, 76 grammar-clean entries, and two answer-free
+fallbacks in 321.119 seconds, but its bounded retries left `pun` unavailable;
+the family floor therefore remained unmet. The retry receipt is
+[`private-tuesday-clue-quality-study-live-smoke-retry.gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-live-smoke-retry.gemma4-26b-20260928.json), digest `sha256:7fc7f90665ab809f6427a52379f126cf1c84188fd8b2691ccb50417c8d88195b`.
+This is progress on family reach, not proof that a single bounded run can
+always satisfy every family or that the clues are semantically fair.
 
 The surface observer now retains a quote signal when a quoted fill-in or
 spoken phrase carries a trailing `(Fill-in)` or similar annotation. An explicit
