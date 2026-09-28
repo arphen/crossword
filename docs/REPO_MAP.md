@@ -275,6 +275,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/live-model-holdout.py` — `_Response:33`, `_Response.__init__:34`, `_Response.raise_for_status:38`, `_Response.json:42`, `_Session:46`, `_Session.request:47`, `_Session.get:62`, `_Session.post:65`, `_canonical:69`, `_sha256:79`, `_text:83`, `_shape_gate:87`, `_tags:142`, `_observation:156`, `main:229`
 - `scripts/mobile-browser-parity.mjs` — `capture:40`, `walk:48`, `activeCell:66`
 - `scripts/model-evaluation-report.py` — `main:18`
+- `scripts/private-clue-review-export.py` — `main:26`
 - `scripts/private-clue-study.py` — `_base_url:30`, `_request:41`, `main:68`
 - `scripts/private-fill-study.py` — `_request_puzzle:31`, `_validate_local_base_url:62`, `_case_from_response:73`, `main:93`
 - `scripts/private-weekday-mechanic-study.py` — `_canonical:34`, `_digest:44`, `_validate_loopback:48`, `_request:59`, `_evaluate:88`, `main:140`
@@ -301,6 +302,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `src/crossword/clue_grammar_bridge.py` — `_issue:67`, `_signals:74`, `_surface_signal_present:81`, `_signal_matches_literal:100`, `validate_surface_clue_family:119`, `summarize_surface_clue_families:223`
 - `src/crossword/clue_grounding_validators.py` — `_letters_only:57`, `_span:61`, `_validator_base:84`, `_mechanical_validator:100`, `validate_private_clue_witnesses:153`
 - `src/crossword/clue_quality_evaluation.py` — `canonical_clue_quality_json:29`, `_digest:39`, `_seed:45`, `_count:51`, `_text:57`, `_mapping:63`, `_counts:69`, `_number:81`, `clue_case_from_provenance:87`, `evaluate_clue_quality_study:187`
+- `src/crossword/clue_review_bundle.py` — `canonical_review_json:26`, `_digest:36`, `_text:42`, `_mapping:51`, `_json_copy:57`, `build_clue_review_bundle:64`, `verify_clue_review_bundle:176`
 - `src/crossword/clue_semantic_challenger.py` — `_codes:41`, `_mechanical_statuses:47`, `_model_projection:60`, `challenge_private_clue_pair:109`, `summarize_challenge_classifications:208`
 - `src/crossword/construction_evidence.py` — `_canonical:24`, `_digest:28`, `_entry_id:32`, `_entry_cells:40`, `_board_projection:58`, `_round:74`, `_foothold_seed_plan:78`, `evaluate_private_board:211`
 - `src/crossword/construction_runtime.py` — `FullSizeRuntimeUnavailable:45`, `FullSizeDraftRejected:49`, `FullSizeDraftCancelled:53`, `_validated_options:57`, `_validate_result:97`, `_validate_admitted_wordlist:137`, `_stop_process:190`, `_run_cancellable:223`, `generate_full_size_draft:264`
@@ -372,6 +374,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `tests/test_clue_grounding_validators.py`
 - `tests/test_clue_numbering.py`
 - `tests/test_clue_quality_evaluation.py`
+- `tests/test_clue_review_bundle.py`
 - `tests/test_clue_semantic_challenger.py`
 - `tests/test_construction_evidence.py`
 - `tests/test_construction_runtime.py`
