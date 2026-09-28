@@ -57,9 +57,11 @@ The private safety pass now treats an unsupported factual relation as unsafe for
 an ordinary non-theme entry even when its fill score is strong. It keeps exact
 clue text from a configured reviewed pack and preserves intentional theme
 surfaces, while replacing the unresolved ordinary relation with an answer-free
-crossing scaffold. The quality receipt and `/future` clue panel report the
-fallback count and retain the source/semantic uncertainty; private play remains
-fail-open and no source-free text is promoted to a truth claim.
+crossing scaffold. The quality receipt now binds each scaffold to answer-free
+structural crossing counts and support-entry IDs, and the `/future` clue panel
+explains how many fallback surfaces still have a crossing route after reload.
+The receipt and panel retain the source/semantic uncertainty; private play
+remains fail-open and no source-free text is promoted to a truth claim.
 The same detector now covers source-free identity/domain surfaces such as
 representative, city, director, team, agency, and middle-name prompts, so an
 obscure proper-name route is not treated as grounded merely because it sounds
