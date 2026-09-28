@@ -5,13 +5,14 @@
 **Prepared and revised:** 28 September 2026. Continue from the player-focused implementation handoff in [§22](#22-private-game-implementation-handoff-for-luna).
 
 **Latest live checkpoint:** the current source tree and installed `gemma4:26b`
-completed a fresh loopback Tuesday job on seed `20470389` through
-`theme-proposal → native-xfill → clue-generation → ready`. It returned a
-playable 78-entry board; the selected local-anchor fill retained two themed
-entries with zero iffy and zero weak entries, and the final clue receipt met the
-tightened four-family/eighteen-surface floor with 20 signalled surfaces and zero
-deterministic grammar issues. The answer-free receipt is
-[`private-tuesday-clue-study-v3.real-gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-study-v3.real-gemma4-26b-20260928.json).
+completed a fresh loopback Tuesday job on seed `20470391` through
+`theme-proposal → native-xfill → clue-generation → ready` in 231.738 seconds.
+It returned a playable 78-entry board; the selected local-anchor fill retained
+two themed entries with zero iffy and zero weak entries, and the final clue
+receipt met the stronger five-family/24-surface recipe with 36 signalled
+surfaces (46.2%), one answer-free fallback, and zero deterministic grammar
+issues. The answer-free receipt is
+[`private-tuesday-clue-quality-study-v2.real-gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-v2.real-gemma4-26b-20260928.json).
 
 The clue gate now rejects answer lexical leakage, including exact multiword
 surfaces and obvious roots and inflections (`REDS` cannot receive “shades of
@@ -34,42 +35,33 @@ requiring approachable footholds. The domain-wordlist direction in
 slice; this change deliberately improves the private clue contract without
 pretending an unreviewed corpus is production content.
 
-The Tuesday recipe now lets the model propose up to five theme locks, then
-submits at most four to the native runtime, and asks the bounded diversity
-repair pass for at least four safe non-definition clue families and
-eighteen signalled clue surfaces. Each pass can consider ten ordinary entries;
-the writer gets up to three follow-up batches, plus one final post-safety pass
-when cleanup lowers the visible count. A fresh Gemma 4 26B loopback Tuesday run on 28 September 2026 produced a
-playable 78-entry board, zero deterministic clue issues, 20 signalled surfaces,
-and four safe non-definition families after the safety pass. Its measured fill
-had zero iffy and zero weak entries, with an 84.66 mean score; the local
-theme-anchor retry retained two themed entries. The answer-free receipt is
-preserved at
-`docs/evidence/private-tuesday-clue-study-v3.real-gemma4-26b-20260928.json`.
-That floor is a visible generation requirement, not a claim that clue semantics
-are reviewed: the receipt retains three answer-free safety fallbacks and marks
-semantic status `not-established`. Model failure still leaves the board
-playable and records the repair status. The receipt records
-`requiredNonDefinitionFamilies`, `requiredNonDefinitionClues`, and `floorMet`,
-and the clue-notes panel distinguishes a varied board from one that remained
-playable but fell below its weekday surface floor. Fill retries also try the
-shortest model-proposed theme answer already present in the local xfill
-dictionary before releasing the theme and using an open grid.
+The Tuesday recipe lets the model propose up to five theme locks, then submits
+at most four to the native runtime. The current bounded diversity repair asks
+for at least five safe non-definition clue families and 24 signalled clue
+surfaces, targets 42% on a full board, and can consider eighteen ordinary
+entries per batch; the writer gets up to three follow-up batches plus one final
+post-safety pass when cleanup lowers the visible count. The earlier v3 Gemma
+receipt remains a useful pre-change baseline; the current v2 receipt above
+shows the stronger recipe reaching 36 surfaces across five families. This is a
+visible generation requirement, not a claim that clue semantics are reviewed:
+every receipt retains fallback and `semanticStatus=not-established` fields.
+Model failure still leaves the board playable and records the repair status.
+The receipt records `requiredNonDefinitionFamilies`,
+`requiredNonDefinitionClues`, the proportional target, and `floorMet`, and the
+clue-notes panel distinguishes a varied board from one that remained playable
+but fell below its weekday surface floor. Fill retries also try the shortest
+model-proposed theme answer already present in the local xfill dictionary
+before releasing the theme and using an open grid.
 
-The Tuesday calibration is now tightened after the earlier live study: the native
-search stays at its runtime-compatible 75-candidate budget while the time budget
-rises from 2.0 to 2.5 seconds, and the visible clue-language floor rises from
-fourteen to eighteen safe non-definition surfaces while retaining the four-family
-requirement. The fresh receipt showed the two-entry local-theme anchor surviving
-the 75-candidate path; it also exposed the installed runtime's four-theme input
-limit. The retry adapter now caps primary and reseeded submissions at four locks
-while keeping the full proposal available to the local-anchor retry, so a
-five-lock model proposal no longer creates an avoidable invalid native request.
-The repair remains bounded and fail-open; it can use at most fourteen ordinary entries
-per pass and three follow-up batches plus the existing post-safety check. Focused
-generation tests and the fresh real-model receipt cover the revised floor and
-exact answer-leakage cases; a post-cap live receipt remains a later calibration
-checkpoint.
+The Tuesday calibration keeps the runtime-compatible 75-candidate search and
+2.5-second native budget, while the current clue recipe requires a five-family,
+24-surface floor and a 42% full-board target. The retry adapter caps primary and
+reseeded native submissions at four theme locks while keeping the full proposal
+available to the local-anchor retry, so a five-lock model proposal cannot create
+an avoidable invalid native request. The repair remains bounded and fail-open:
+it can use at most eighteen ordinary entries per pass and three follow-up batches
+plus the existing post-safety check. Focused generation tests and the fresh
+real-model receipt cover the stronger floor and exact answer-leakage cases.
 
 A fresh loopback Gemma 4 26B run after the earlier proportional-target change used seed
 `20470390` and produced a 74-entry Tuesday board in 231.36 seconds. It reached
