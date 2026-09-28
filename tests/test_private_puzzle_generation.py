@@ -1400,6 +1400,16 @@ def test_clue_morphology_guard_reads_plain_language_plural_and_tense_markers():
     )
 
 
+def test_clue_morphology_guard_accepts_common_invariant_plural_answers():
+    for answer in ("SHEEP", "DEER", "FISH", "MOOSE", "SALMON"):
+        assert (
+            private_generation._clue_morphology_issue(
+                {"answer": answer}, "Animals (plural)"
+            )
+            is None
+        )
+
+
 def test_clue_guard_rejects_exact_multiword_answer_surfaces():
     assert (
         private_generation._clue_wordplay_issue(

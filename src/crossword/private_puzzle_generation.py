@@ -382,6 +382,23 @@ _COMMON_IRREGULAR_PLURALS = frozenset(
         "OXEN",
     }
 )
+_COMMON_INVARIANT_PLURALS = frozenset(
+    {
+        "AIRCRAFT",
+        "BISON",
+        "COD",
+        "DEER",
+        "FISH",
+        "MOOSE",
+        "OFFSPRING",
+        "REINDEER",
+        "SALMON",
+        "SHEEP",
+        "SHRIMP",
+        "SWINE",
+        "TROUT",
+    }
+)
 _COMMON_PAST_FORMS = frozenset(
     {
         "ATE",
@@ -2548,7 +2565,9 @@ def _clue_morphology_issue(entry, clue):
         and not has_future_marker
     ):
         return None
-    if has_plural_marker and answer not in _COMMON_IRREGULAR_PLURALS:
+    if has_plural_marker and answer not in (
+        _COMMON_IRREGULAR_PLURALS | _COMMON_INVARIANT_PLURALS
+    ):
         # A terminal S is only a weak shape signal, but it is enough to avoid
         # replacing ordinary plural entries such as CATS. Do not assert that
         # it proves number; this helper only flags the obvious opposite case.

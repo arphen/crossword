@@ -1799,6 +1799,8 @@ The latest pushed slice (`15335fa`) makes the optional private-domain bridge dis
 
 The current full local gate also passes: `make test` selected 872 Python tests (three live-provider tests deselected), 11 legacy Jest tests, 146 domain tests, 8 persistence tests, 243 React tests, and 8 application tests. The only output requiring follow-up is the existing SQLAlchemy UTC deprecation warning and React `act(...)` warnings in tests; neither failed the gate.
 
+The private clue morphology guard now also preserves valid invariant plural answers (`SHEEP`, `DEER`, `FISH`, `MOOSE`, `SALMON`) when a clue explicitly marks a plural, while continuing to replace singular-shaped answers such as `CAT` under the same marker.
+
 ### Existing foundations and archived implementation notes
 
 The following 26 September assessment describes the system before private generation was connected. Its statements that `/future` still loads a daily puzzle or that no playable path exists are historical and superseded by the current status above. The opening records offers and reversible choices; the host replays solve events against frozen manifests; profile controls, reflection responses, and calibration hypotheses enter a revisioned ledger. Continue to preserve these working foundations and `/` parity.
