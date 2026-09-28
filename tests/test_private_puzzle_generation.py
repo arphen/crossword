@@ -863,6 +863,7 @@ def test_theme_prompt_allows_invited_proper_names_with_fair_support(monkeypatch)
 def test_clue_token_budget_is_bounded_and_host_overridable(monkeypatch):
     monkeypatch.delenv("CROSSWORD_PRIVATE_CLUE_TOKENS_PER_ENTRY", raising=False)
     assert private_generation._clue_token_budget(74) == 4144
+    assert private_generation._clue_token_budget(74, per_entry=48) == 3552
 
     monkeypatch.setenv("CROSSWORD_PRIVATE_CLUE_TOKENS_PER_ENTRY", "120")
     assert private_generation._clue_token_budget(74) == 5200
@@ -876,6 +877,7 @@ def test_model_runtime_policy_bounds_slow_qwen_advisory_passes():
     qwen = private_generation._model_runtime_policy_receipt("qwen3.8:27b")
 
     assert gemma["interpretation"] == "execution-budget-only"
+    assert gemma["clueTokensPerEntry"] == 48
     assert gemma["tuesdayDiversityAttempts"] == 4
     assert qwen["primaryClueTimeoutSeconds"] == 120
     assert qwen["diversityTimeoutSeconds"] == 60

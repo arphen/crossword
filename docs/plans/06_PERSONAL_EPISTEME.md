@@ -30,6 +30,14 @@ This confirms the tightened surface contract on the live route; the 270-second
 runtime remains an explicit local-latency observation, not a semantic or
 player-difficulty claim.
 
+The live latency follow-up now gives the installed `gemma4:26b` route its own
+bounded structured-clue decode budget of 48 tokens per entry (the generic and
+Qwen policies retain their prior budgets). The host still runs the same exact
+id, answer-leakage, morphology, surface-family, safety, and Tuesday repair
+checks; this is an execution optimization rather than a quality shortcut, and
+the runtime receipt records the selected budget so later model comparisons can
+separate speed from clue quality.
+
 The current non-live verification gate also passes: `make test` reports 886
 selected Python tests (three live-provider tests deselected), 11 legacy Jest
 tests, 146 domain tests, 8 persistence tests, 249 React tests, and 8

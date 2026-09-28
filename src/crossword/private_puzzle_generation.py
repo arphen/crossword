@@ -830,8 +830,9 @@ _EXPLICIT_MODEL_TAGS = (
     "gemma3:27b",
 )
 
-# Large local models do not have the same useful latency envelope.  Keep the
-# default Gemma path unchanged, but make Qwen's optional repair passes bounded
+# Large local models do not have the same useful latency envelope. Keep the
+# generic policy conservative, give the installed Gemma path a shorter
+# structured-output budget, and make Qwen's optional repair passes bounded
 # enough that a slow decode cannot turn a playable private board into a
 # multi-minute request. Tuesday's required surface-family pass remains an
 # exception even after batching. These are execution budgets, never quality
@@ -840,6 +841,28 @@ _MODEL_GENERATION_POLICIES = {
     "default": {
         "themeTimeout": 90,
         "primaryClueTimeout": 180,
+        "clueTokensPerEntry": 56,
+        "repairTimeout": 90,
+        "diversityTimeout": 90,
+        "challengeTimeout": 90,
+        "tuesdayDiversityAttempts": 4,
+        "tuesdayPostSafetyRepair": True,
+        "qwenClueBatchThreshold": 48,
+        "qwenClueBatchSize": 24,
+        "qwenClueBatchTimeout": 60,
+        "qwenClueBatchTokensPerEntry": 40,
+        "qwenClueBatchMaxTokens": 1400,
+        "qwenSkipOptionalRepairsAfterBatch": True,
+    },
+    "gemma4:26b": {
+        "themeTimeout": 90,
+        "primaryClueTimeout": 180,
+        # Gemma's structured decoder spends a noticeable tail on unused
+        # output budget for full boards. Keep enough room for concise
+        # crossword surfaces and the exact id envelope; the same host
+        # validators and bounded Tuesday repair still decide what reaches
+        # the player.
+        "clueTokensPerEntry": 48,
         "repairTimeout": 90,
         "diversityTimeout": 90,
         "challengeTimeout": 90,
@@ -855,6 +878,7 @@ _MODEL_GENERATION_POLICIES = {
     "qwen3.8:27b": {
         "themeTimeout": 75,
         "primaryClueTimeout": 120,
+        "clueTokensPerEntry": 56,
         "repairTimeout": 60,
         "diversityTimeout": 60,
         "challengeTimeout": 60,
@@ -875,8 +899,12 @@ _MODEL_GENERATION_POLICIES = {
 
 def _model_generation_policy(model):
     """Return a bounded local execution policy for a selected model tag."""
-    if isinstance(model, str) and model.casefold() == "qwen3.8:27b":
-        return dict(_MODEL_GENERATION_POLICIES["qwen3.8:27b"])
+    if isinstance(model, str):
+        normalized = model.casefold()
+        if normalized == "qwen3.8:27b":
+            return dict(_MODEL_GENERATION_POLICIES["qwen3.8:27b"])
+        if normalized == "gemma4:26b":
+            return dict(_MODEL_GENERATION_POLICIES["gemma4:26b"])
     return dict(_MODEL_GENERATION_POLICIES["default"])
 
 
@@ -888,6 +916,7 @@ def _model_runtime_policy_receipt(model):
         "model": model,
         "themeTimeoutSeconds": policy["themeTimeout"],
         "primaryClueTimeoutSeconds": policy["primaryClueTimeout"],
+        "clueTokensPerEntry": policy["clueTokensPerEntry"],
         "repairTimeoutSeconds": policy["repairTimeout"],
         "diversityTimeoutSeconds": policy["diversityTimeout"],
         "challengeTimeoutSeconds": policy["challengeTimeout"],
@@ -1794,7 +1823,7 @@ def _chat(model, messages, schema, *, timeout, tokens, temperature):
     return _response_json(response)
 
 
-def _clue_token_budget(entry_count):
+def _clue_token_budget(entry_count, *, per_entry=None):
     """Bound clue output without making the model's budget a hidden gate.
 
     Clues are deliberately short and the structured response repeats the entry
@@ -1802,15 +1831,21 @@ def _clue_token_budget(entry_count):
     on full-size boards. Keep a host override for unusual local models, but
     clamp it to a range that still leaves enough room for a concise clue set.
     """
-    try:
-        per_entry = int(
-            os.environ.get(
-                "CROSSWORD_PRIVATE_CLUE_TOKENS_PER_ENTRY",
-                DEFAULT_CLUE_TOKENS_PER_ENTRY,
+    if per_entry is None:
+        try:
+            per_entry = int(
+                os.environ.get(
+                    "CROSSWORD_PRIVATE_CLUE_TOKENS_PER_ENTRY",
+                    DEFAULT_CLUE_TOKENS_PER_ENTRY,
+                )
             )
-        )
-    except (TypeError, ValueError):
-        per_entry = DEFAULT_CLUE_TOKENS_PER_ENTRY
+        except (TypeError, ValueError):
+            per_entry = DEFAULT_CLUE_TOKENS_PER_ENTRY
+    else:
+        try:
+            per_entry = int(per_entry)
+        except (TypeError, ValueError):
+            per_entry = DEFAULT_CLUE_TOKENS_PER_ENTRY
     per_entry = max(32, min(96, per_entry))
     return min(5200, max(1800, entry_count * per_entry))
 
@@ -4412,7 +4447,9 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
                 base_messages,
                 schema,
                 timeout=policy["primaryClueTimeout"],
-                tokens=_clue_token_budget(len(entries)),
+                tokens=_clue_token_budget(
+                    len(entries), per_entry=policy["clueTokensPerEntry"]
+                ),
                 temperature=0.65,
             )
     except (
