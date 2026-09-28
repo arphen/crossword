@@ -62,6 +62,7 @@ def reseal_case(api):
 
 def _enable_synthetic_residual_gate(monkeypatch):
     import src.crossword.publication_review as review_module
+    import src.crossword.publication_attestation as attestation_module
 
     def synthetic_unresolved_gate(candidate, _packet):
         return {
@@ -79,6 +80,14 @@ def _enable_synthetic_residual_gate(monkeypatch):
 
     monkeypatch.setattr(
         review_module, "evaluate_puzzle_v2_publication_gate", synthetic_unresolved_gate
+    )
+    # The receipt resolver independently re-runs the same shared gate. Keep
+    # the synthetic fixture unresolved at both composition boundaries rather
+    # than accidentally exercising the real gate in only one of them.
+    monkeypatch.setattr(
+        attestation_module,
+        "evaluate_puzzle_v2_publication_gate",
+        synthetic_unresolved_gate,
     )
 
 
