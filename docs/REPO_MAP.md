@@ -290,7 +290,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/mobile-browser-parity.mjs` — `capture:40`, `walk:48`, `activeCell:66`
 - `scripts/model-evaluation-report.py` — `main:18`
 - `scripts/private-clue-review-export.py` — `main:26`
-- `scripts/private-clue-study.py` — `_base_url:30`, `_request:41`, `main:68`
+- `scripts/private-clue-study.py` — `_base_url:37`, `_request:48`, `main:75`
 - `scripts/private-fill-study.py` — `_request_puzzle:31`, `_validate_local_base_url:62`, `_case_from_response:73`, `main:93`
 - `scripts/private-weekday-mechanic-study.py` — `_canonical:34`, `_digest:44`, `_validate_loopback:48`, `_request:59`, `_evaluate:88`, `main:140`
 - `scripts/react-browser-parity.mjs` — `character:18`, `snapshot:71`, `normalize:73`, `walk:74`, `checkpoint:78`, `cell:105`, `focusIs:107`, `selected:124`, `coordinates:130`

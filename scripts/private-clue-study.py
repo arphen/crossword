@@ -27,6 +27,13 @@ from src.crossword.clue_quality_evaluation import (  # noqa: E402
 )
 
 
+# Keep the answer-free error case aligned with the live Tuesday recipe. A
+# failed request must not silently create a receipt that claims the former
+# 32-surface contract while successful jobs report the current 40-surface
+# target from their provenance.
+_TUESDAY_REQUIRED_NON_DEFINITION_CLUES = 40
+
+
 def _base_url(value: str) -> str:
     parsed = urlparse(value)
     if parsed.scheme not in {"http", "https"} or parsed.hostname not in {
@@ -118,7 +125,11 @@ def main() -> int:
                 "requiredNonDefinitionFamilies": len(required_families),
                 "requiredNonDefinitionFamilySet": required_families,
                 "missingNonDefinitionFamilies": required_families,
-                "requiredNonDefinitionClues": 32 if args.weekday == "tuesday" else 0,
+                "requiredNonDefinitionClues": (
+                    _TUESDAY_REQUIRED_NON_DEFINITION_CLUES
+                    if args.weekday == "tuesday"
+                    else 0
+                ),
                 "signalCounts": {},
                 "issueCounts": {},
                 "semanticChallenge": {},
