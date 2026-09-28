@@ -266,9 +266,9 @@ it('explains answer-free scaffolds created for ungrounded factual surfaces', asy
     'Structural crossings are available for 1 of 2 scaffolded clues',
   );
   expect(host.textContent).toContain('Scaffolded clues with measured footholds');
-  expect(host.textContent).toContain('1A2 crossing squares');
+  expect(host.textContent).toContain('1A · 2 crossing squares');
   expect(host.textContent).toContain('Try a filled crossing from 1D, 2D.');
-  expect(host.textContent).toContain('2Ano measured crossing squares');
+  expect(host.textContent).toContain('2A · no measured crossing squares');
   expect(host.textContent).toContain('Use another filled entry or the assistance ladder.');
 });
 

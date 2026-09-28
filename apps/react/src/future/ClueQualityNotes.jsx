@@ -244,6 +244,7 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
                   <li key={entry.entryId}>
                     <strong>{entry.entryId}</strong>
                     <span>
+                      {' · '}
                       {crossingCount > 0
                         ? `${crossingCount} crossing square${crossingCount === 1 ? '' : 's'}`
                         : 'no measured crossing squares'}
