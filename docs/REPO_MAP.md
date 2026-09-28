@@ -166,6 +166,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/model-evaluation-holdout-v1.structural.json`
 - `docs/evidence/private-current-source-live-smoke-v1.20260928.json`
 - `docs/evidence/private-current-source-live-smoke-v2.20260928.json`
+- `docs/evidence/private-current-source-live-smoke-v3.20260928.json`
 - `docs/evidence/private-fill-quality-comparison-v1.synthetic.json`
 - `docs/evidence/private-fill-quality-study-v1.real-gemma4-26b-wednesday-20260928.json`
 - `docs/evidence/private-fill-quality-study-v1.real-gemma4-26b-wednesday-recovery-20260928.json`
