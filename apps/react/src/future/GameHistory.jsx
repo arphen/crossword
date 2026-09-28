@@ -38,6 +38,9 @@ export function personalizationHistorySummary(item) {
   }
   const clueDiversity = personalization.clueDiversity;
   if (clueDiversity?.status === 'varied') lanes.push('varied clue surfaces');
+  if (clueDiversity?.status === 'varied-below-recipe-floor') {
+    lanes.push('partial clue variety');
+  }
   if (Number.isInteger(clueDiversity?.repairRewrittenCount) && clueDiversity.repairRewrittenCount > 0) {
     lanes.push(`${clueDiversity.repairRewrittenCount} surface repair${clueDiversity.repairRewrittenCount === 1 ? '' : 's'}`);
   }

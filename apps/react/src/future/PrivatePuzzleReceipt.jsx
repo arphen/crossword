@@ -10,6 +10,16 @@ function score(value) {
     : '—';
 }
 
+function surfaceMixLabel(diversity) {
+  const familyCount = integer(diversity?.nonDefinitionFamilies?.length) ?? 0;
+  if (diversity?.status === 'varied') return `varied (${familyCount})`;
+  if (diversity?.status === 'varied-below-recipe-floor') {
+    return `partial (${familyCount})`;
+  }
+  if (diversity?.status === 'definition-heavy') return 'definition-heavy';
+  return '—';
+}
+
 function receiptStats(provenance) {
   const fill = provenance?.fillQuality || {};
   const clues = provenance?.clueQuality || {};
@@ -36,12 +46,7 @@ function receiptStats(provenance) {
     },
     {
       label: 'surface mix',
-      value:
-        diversity.status === 'varied'
-          ? `varied (${integer(diversity.nonDefinitionFamilies?.length) ?? 0})`
-          : diversity.status === 'definition-heavy'
-            ? 'definition-heavy'
-            : '—',
+      value: surfaceMixLabel(diversity),
     },
   ];
   if (String(provenance?.weekday).toLowerCase() === 'thursday') {

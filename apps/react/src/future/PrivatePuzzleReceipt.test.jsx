@@ -97,6 +97,33 @@ it('surfaces the Thursday mechanic receipt without calling it a quality grade', 
   expect(host.textContent).toContain('does not grade the solver');
 });
 
+it('labels a below-floor surface mix as partial', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        version: 'private-puzzle-provenance-v1',
+        provenance: {
+          model: 'gemma4:26b',
+          weekday: 'tuesday',
+          clueDiversity: {
+            status: 'varied-below-recipe-floor',
+            nonDefinitionFamilies: ['pun', 'fill-blank'],
+          },
+        },
+      }),
+    })),
+  );
+  host = document.createElement('div');
+  document.body.append(host);
+  root = createRoot(host);
+  await act(async () =>
+    root.render(<PrivatePuzzleReceipt sessionId="session-3" profileId="profile-1" />),
+  );
+  await vi.waitFor(() => expect(host.textContent).toContain('partial (2)surface mix'));
+});
+
 it('keeps missing receipts fail-open for private play', async () => {
   vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, json: async () => ({}) })));
   host = document.createElement('div');

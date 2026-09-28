@@ -96,7 +96,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/FutureApp.test.jsx`
 - `apps/react/src/future/FutureSolver.jsx` — `reflectionStorageKey:26`, `reflectionStorageValue:30`, `savedReflectionSessionId:40`, `futureOptions:58`, `FutureSolver:125`, `handlePuzzleRestored:185`, `enableHostSync:205`, `onEntryFocused:416`, `onCellChanged:418`, `onCheckAll:420`, `onRevealAll:421`, `onCellRevealed:434`, `onHintShown:436`
 - `apps/react/src/future/FutureSolver.test.js`
-- `apps/react/src/future/GameHistory.jsx` — `dayLabel:3`, `dateLabel:8`, `gameHistoryStats:14`, `personalizationHistorySummary:22`, `playtestHistorySummary:48`, `calibrationSummary:71`, `GameHistory:93`, `body:114`, `downloadCalibration:132`, `body:144`
+- `apps/react/src/future/GameHistory.jsx` — `dayLabel:3`, `dateLabel:8`, `gameHistoryStats:14`, `personalizationHistorySummary:22`, `playtestHistorySummary:51`, `calibrationSummary:74`, `GameHistory:96`, `body:117`, `downloadCalibration:135`, `body:147`
 - `apps/react/src/future/GameHistory.test.jsx`
 - `apps/react/src/future/LearningReview.jsx` — `LearningReview:13`, `body:40`, `showMore:63`, `body:70`, `merged:74`, `reveal:90`, `body:95`, `respond:105`, `body:122`
 - `apps/react/src/future/LearningReview.test.jsx`
@@ -106,7 +106,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/PostgameAssociations.test.jsx`
 - `apps/react/src/future/PrivatePuzzleControls.jsx` — `pendingJobStorageKey:73`, `validPendingJob:77`, `loadPendingPrivateJob:93`, `savePendingPrivateJob:114`, `clearPendingPrivateJob:133`, `describeJobStage:151`, `describeStageElapsed:155`, `describeWeekdayRecipe:161`, `describePlayCalibration:168`, `describeThemeThread:173`, `describeLanguageTokenThread:185`, `describeLanguageRecurrence:196`, `overdue:205`, `describeLanguageTaskSources:216`, `describePersonalizationReceipt:233`, `personalizationReceiptFacts:252` (+16 more)
 - `apps/react/src/future/PrivatePuzzleControls.test.jsx`
-- `apps/react/src/future/PrivatePuzzleReceipt.jsx` — `integer:3`, `score:7`, `receiptStats:13`, `PrivatePuzzleReceipt:79`, `body:96`
+- `apps/react/src/future/PrivatePuzzleReceipt.jsx` — `integer:3`, `score:7`, `surfaceMixLabel:13`, `receiptStats:23`, `PrivatePuzzleReceipt:84`, `body:101`
 - `apps/react/src/future/PrivatePuzzleReceipt.test.jsx`
 - `apps/react/src/future/ProfileNarrativePanel.jsx` — `ProfileNarrativePanel:4`, `writeFieldNote:33`, `keepSuggestion:47`
 - `apps/react/src/future/ProfileNarrativePanel.test.jsx`

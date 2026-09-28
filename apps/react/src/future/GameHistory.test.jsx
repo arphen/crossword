@@ -68,6 +68,18 @@ it('renders an answer-free route summary for saved games', async () => {
   );
 });
 
+it('labels a below-floor clue mix as partial in history', () => {
+  expect(
+    personalizationHistorySummary({
+      personalization: {
+        version: 'private-history-personalization-v1',
+        epistemeRevision: 3,
+        clueDiversity: { status: 'varied-below-recipe-floor' },
+      },
+    }),
+  ).toBe('Episteme revision 3 · partial clue variety');
+});
+
 it('keeps incomplete history explicit and bounded', () => {
   expect(gameHistoryStats({ finished: false })).toBe('In progress');
   expect(gameHistoryStats({ finished: true })).toBe('Replay saved · analysis pending');
