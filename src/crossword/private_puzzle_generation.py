@@ -4309,6 +4309,17 @@ def _fallback_private_clues(entries, weekday, context, reason):
 
 def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
     recipe = _effective_weekday_recipe(weekday, context)
+    clue_timing = {
+        "version": "private-clue-generation-timing-v1",
+        "primaryWriter": 0.0,
+        "riskRepair": 0.0,
+        "diversityRepair": 0.0,
+        "safetyNormalization": 0.0,
+    }
+
+    def publish_timing():
+        context["_clue_generation_timing"] = dict(clue_timing)
+
     theme_mechanic = context.get("_weekday_theme_mechanic")
     mechanic_direction = _theme_mechanic_direction(theme_mechanic)
     voice = _DIFFICULTY[weekday]["voice"]
@@ -4320,6 +4331,7 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         and isinstance(reviewed_pack.get("byId"), dict)
         else {}
     )
+    primary_started = monotonic()
     try:
         base_messages = [
             {
@@ -4455,6 +4467,9 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
                 ),
                 temperature=0.65,
             )
+        clue_timing["primaryWriter"] = round(
+            max(0.0, monotonic() - primary_started), 3
+        )
     except (
         requests.RequestException,
         ValueError,
@@ -4462,16 +4477,22 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         KeyError,
         RecursionError,
     ) as error:
+        clue_timing["primaryWriter"] = round(
+            max(0.0, monotonic() - primary_started), 3
+        )
+        publish_timing()
         return _fallback_private_clues(
             entries, weekday, context, f"{type(error).__name__}: {error}"
         )
     if not isinstance(value, dict) or not isinstance(value.get("clues"), list):
+        publish_timing()
         return _fallback_private_clues(
             entries, weekday, context, "Local model returned an incomplete clue set"
         )
     clues = {}
     for clue in value["clues"]:
         if not isinstance(clue, dict) or set(clue) != {"id", "text"}:
+            publish_timing()
             return _fallback_private_clues(
                 entries, weekday, context, "Local model returned malformed clues"
             )
@@ -4485,20 +4506,25 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
             or clue_id in clues
             or "\n" in text
         ):
+            publish_timing()
             return _fallback_private_clues(
                 entries, weekday, context, "Local model returned invalid clue text"
             )
         clues[clue_id] = text
     if set(clues) != set(entry_ids):
+        publish_timing()
         return _fallback_private_clues(
             entries, weekday, context, "Local model did not clue every entry"
         )
     title = value.get("title")
     if not isinstance(title, str) or not 2 <= len(title.strip()) <= 64:
+        publish_timing()
         return _fallback_private_clues(
             entries, weekday, context, "Local model returned an invalid title"
         )
+    repair_started = monotonic()
     repaired = _repair_risky_clues(model, entries, clues, context, weekday)
+    clue_timing["riskRepair"] = round(max(0.0, monotonic() - repair_started), 3)
     learning = context.get("language_learning") if isinstance(context, dict) else None
     language = learning.get("language") if isinstance(learning, dict) else None
     eligible_forms = {
@@ -4535,6 +4561,7 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         text = record.get("text") if isinstance(record, dict) else None
         if isinstance(text, str) and text:
             repaired[clue_id] = text
+    diversity_started = monotonic()
     repaired, diversity_repair = _repair_clue_diversity(
         model,
         entries,
@@ -4543,6 +4570,7 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         weekday,
         reviewed_by_id,
     )
+    clue_timing["diversityRepair"] += max(0.0, monotonic() - diversity_started)
     # Tuesday's visible variety floor is a real step-up target. If the first
     # bounded pass lands below it, give the writer one more fresh set of
     # ordinary entries. This remains fail-open: the final receipt records both
@@ -4562,6 +4590,7 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
             )
             if report.get("floorMet") is not False:
                 break
+            diversity_started = monotonic()
             next_repaired, next_report = _repair_clue_diversity(
                 model,
                 entries,
@@ -4569,6 +4598,9 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
                 context,
                 weekday,
                 reviewed_by_id,
+            )
+            clue_timing["diversityRepair"] += max(
+                0.0, monotonic() - diversity_started
             )
             repaired = next_repaired
             attempts.append(next_report)
@@ -4586,12 +4618,14 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
             }
     context["_clue_diversity_repair"] = diversity_repair
     safety_fallbacks = {}
+    safety_started = monotonic()
     safe_clues = _enforce_private_clue_safety(
         entries,
         repaired,
         reviewed_by_id=reviewed_by_id,
         fallback_reasons=safety_fallbacks,
     )
+    clue_timing["safetyNormalization"] += max(0.0, monotonic() - safety_started)
     # Safety normalization can conservatively replace a generated surface
     # after the diversity pass (for example when a model's language signal is
     # mechanically false).  Give Tuesday one final bounded repair opportunity
@@ -4612,6 +4646,7 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
             post_safety.get("floorMet") is False
             and (allow_post_safety_repair or len(attempts) < max_diversity_attempts)
         ):
+            diversity_started = monotonic()
             post_repaired, post_report = _repair_clue_diversity(
                 model,
                 entries,
@@ -4620,12 +4655,19 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
                 weekday,
                 reviewed_by_id,
             )
+            clue_timing["diversityRepair"] += max(
+                0.0, monotonic() - diversity_started
+            )
             post_fallbacks = {}
+            safety_started = monotonic()
             safe_clues = _enforce_private_clue_safety(
                 entries,
                 post_repaired,
                 reviewed_by_id=reviewed_by_id,
                 fallback_reasons=post_fallbacks,
+            )
+            clue_timing["safetyNormalization"] += max(
+                0.0, monotonic() - safety_started
             )
             safety_fallbacks.update(post_fallbacks)
             if not attempts:
@@ -4645,6 +4687,12 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
             }
             context["_clue_diversity_repair"] = diversity_repair
     context["_clue_safety_fallbacks"] = safety_fallbacks
+    clue_timing = {
+        **clue_timing,
+        "diversityRepair": round(clue_timing["diversityRepair"], 3),
+        "safetyNormalization": round(clue_timing["safetyNormalization"], 3),
+    }
+    context["_clue_generation_timing"] = clue_timing
     return title.strip(), safe_clues
 
 
@@ -5828,6 +5876,7 @@ def _generate(
         "siblingEvaluatorAdapter": sibling_evaluator_adapter,
         "clueQuality": clue_quality,
         "clueGenerationBatches": context.get("_clue_generation_batches"),
+        "clueGenerationTiming": context.get("_clue_generation_timing"),
         "clueGenerationFallback": (
             {
                 "status": "answer-free-scaffold",

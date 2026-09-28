@@ -2052,6 +2052,7 @@ def test_make_clues_uses_the_local_task_pair_source_text(monkeypatch):
 
 def test_make_clues_passes_bounded_reviewed_context(monkeypatch):
     captured = {}
+    context = {}
 
     def fake_chat(*args, **kwargs):
         captured["messages"] = args[1]
@@ -2069,7 +2070,7 @@ def test_make_clues_passes_bounded_reviewed_context(monkeypatch):
     private_generation._make_clues(
         "gemma4:26b",
         [{"id": "1A", "answer": "CAT", "length": 3, "theme": False}],
-        {},
+        context,
         "wednesday",
         reviewed_pack={
             "byId": {
@@ -2107,6 +2108,10 @@ def test_make_clues_passes_bounded_reviewed_context(monkeypatch):
             "facts": [{"factId": "fact-cat", "statement": "Cats are mammals"}],
         }
     ]
+    assert context["_clue_generation_timing"]["version"] == (
+        "private-clue-generation-timing-v1"
+    )
+    assert context["_clue_generation_timing"]["primaryWriter"] >= 0
 
 
 def test_make_clues_receives_the_answer_free_foothold_seed_plan(monkeypatch):
