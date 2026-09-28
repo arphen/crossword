@@ -1429,6 +1429,19 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
 
 
+def test_friday_and_saturday_use_explicit_private_recipes_instead_of_generic_fallback():
+    friday = private_generation._weekday_recipe("friday")
+    saturday = private_generation._weekday_recipe("saturday")
+
+    assert friday["id"] == "friday-private-v1"
+    assert friday["themeMode"] == "long-form-cluster"
+    assert "indirect" in friday["clueDirection"]
+    assert saturday["id"] == "saturday-private-v1"
+    assert saturday["themeMode"] == "dense-cluster"
+    assert "oblique" in saturday["clueDirection"]
+    assert friday["id"] != saturday["id"]
+
+
 def test_clue_quality_summary_keeps_semantic_review_separate_from_mechanical_checks():
     summary = private_generation._clue_quality_summary(
         [

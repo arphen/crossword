@@ -615,6 +615,22 @@ _WEEKDAY_RECIPES = {
         "clueDirection": "Use layered, lateral clues for the shared theme while keeping ordinary clues trustworthy and the pattern inferable from multiple entries.",
         "themeMode": "shared-affix-when-validated",
     },
+    "friday": {
+        "id": "friday-private-v1",
+        "intent": "A fluent, less literal private Friday uses expressive entries and precise misdirection while keeping a few clean ways in.",
+        "themeAnswerCount": 3,
+        "themeDirection": "Choose a loose cluster of three or four expressive, clueable answers with a light connection; let the entries feel fresh without requiring specialist trivia or a hidden theme rule.",
+        "clueDirection": "Use indirect but precise wording, alternate parts of speech, collocations, and clean question-mark wordplay. Keep several direct footholds and generous crossings so the difficulty comes from language, not inaccessible facts.",
+        "themeMode": "long-form-cluster",
+    },
+    "saturday": {
+        "id": "saturday-private-v1",
+        "intent": "The most demanding private day uses economical, layered clues and patient crossings while preserving fair routes into the grid.",
+        "themeAnswerCount": 3,
+        "themeDirection": "Choose a compact cluster of clueable answers whose connection is optional rather than a required trick; favor vivid language over obscure names or unsupported facts.",
+        "clueDirection": "Use the most oblique fair wording in the weekday set: compact surfaces, layered second readings, and restrained wordplay. Preserve a small set of direct footholds and never make a clue difficult by repeating an answer or inventing trivia.",
+        "themeMode": "dense-cluster",
+    },
     "sunday": {
         "id": "sunday-private-v1",
         "intent": "A larger, roomy themed journey keeps midweek clue density while giving the theme space to breathe.",
