@@ -1310,6 +1310,27 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
     )
 
 
+def test_clue_guard_rejects_exact_multiword_answer_surfaces():
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NO WAY"}, "No way!"
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NEW YORK"}, "New York, perhaps"
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NO WAY"}, "A refusal"
+        )
+        is None
+    )
+
+
 def test_malformed_clue_model_response_falls_back_to_answer_free_scaffolds(monkeypatch):
     def malformed_chat(*_args, **_kwargs):
         raise ValueError("invalid clue text")

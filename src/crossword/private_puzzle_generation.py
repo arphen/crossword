@@ -2321,6 +2321,15 @@ def _clue_answer_overlap(entry, clue):
         return None
     answer = entry.get("answer", "")
     text = clue.upper()
+    # Preserve word boundaries for multiword answers. Joining ``NO WAY`` to
+    # ``NOWAY`` before matching would miss the exact phrase in ``No way!``.
+    # Punctuation and whitespace may vary, but every answer word must remain
+    # present in order.
+    answer_words = re.findall(r"[A-Z]+", str(answer).upper())
+    if len(answer_words) > 1:
+        phrase = r"[^A-Z]+".join(re.escape(word) for word in answer_words)
+        if re.search(rf"(?<![A-Z]){phrase}(?![A-Z])", text):
+            return _letters_only(answer)
     for form in sorted(_answer_lexical_forms(answer), key=len, reverse=True):
         if re.search(rf"(?<![A-Z]){re.escape(form)}(?![A-Z])", text):
             return form

@@ -544,6 +544,14 @@ function normalizedAnswerSurface(answer: string): string {
   return answer.toLocaleUpperCase().replace(/[^\p{L}]/gu, '');
 }
 
+function answerSurfaceAppearsInClue(answer: string, clueText: string): boolean {
+  const words = answer.toLocaleUpperCase().match(/[\p{L}]+/gu) ?? [];
+  if (words.length < 2) return false;
+  const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const phrase = words.map(escape).join('[^\\p{L}]+');
+  return new RegExp(`(?<!\\p{L})${phrase}(?!\\p{L})`, 'iu').test(clueText);
+}
+
 function answerLexicalForms(answer: string): readonly string[] {
   const normalized = normalizedAnswerSurface(answer);
   if (!normalized) return [];
@@ -583,11 +591,13 @@ function validateAnswerSafety(
   const tokens = [...upperText.matchAll(/[\p{L}]+/gu)].map((match) => ({
     value: match[0],
   }));
-  const overlap = answerLexicalForms(clue.answer).reduce<string | null>((found, form) => {
-    if (found) return found;
-    const token = tokens.find((item) => item.value === form);
-    return token ? form : null;
-  }, null);
+  const overlap = answerSurfaceAppearsInClue(clue.answer, clue.clueText)
+    ? normalizedAnswerSurface(clue.answer)
+    : answerLexicalForms(clue.answer).reduce<string | null>((found, form) => {
+        if (found) return found;
+        const token = tokens.find((item) => item.value === form);
+        return token ? form : null;
+      }, null);
   if (overlap) {
     issue(
       issues,

@@ -102,6 +102,15 @@ describe('clue grammar v1', () => {
     ).toContain('answer-giveaway');
   });
 
+  it('rejects an exact multiword answer surface in the clue', () => {
+    expect(
+      codes(
+        definition({ clueText: 'No way!', answer: 'NO WAY' }),
+        { enforceAnswerSafety: true },
+      ),
+    ).toContain('answer-giveaway');
+  });
+
   it('rejects dead-end generic name and term templates', () => {
     expect(codes(definition({ clueText: 'common name' }), { enforceAnswerSafety: true })).toContain('generic-clue');
     expect(codes(definition({ clueText: 'Common male name' }), { enforceAnswerSafety: true })).toContain('generic-clue');
