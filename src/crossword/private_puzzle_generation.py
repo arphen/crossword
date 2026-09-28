@@ -4391,9 +4391,12 @@ def _fill_retry_options(seed, options):
             for theme in themes
             if isinstance(theme, str) and theme in local_words
         ]
-        local_anchor = min(local_candidates, key=lambda theme: (len(theme), theme)) if local_candidates else None
+        local_anchor = sorted(
+            local_candidates,
+            key=lambda theme: (len(theme), theme),
+        )[:2]
         theme_relief = (
-            [("local-theme-anchor", seed, [local_anchor])]
+            [("local-theme-anchor", seed, local_anchor)]
             if local_anchor
             else [("reduced-theme-fallback", seed, list(themes[:1]))]
         )

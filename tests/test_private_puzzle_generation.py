@@ -1068,7 +1068,9 @@ def test_fill_retry_options_are_bounded_and_reproducible():
 
 def test_fill_retry_options_try_a_local_model_theme_anchor(monkeypatch):
     monkeypatch.setattr(
-        private_generation, "_local_fill_word_set", lambda: frozenset({"ECHO"})
+        private_generation,
+        "_local_fill_word_set",
+        lambda: frozenset({"ECHO", "MOSS"}),
     )
     options = {
         "seed": 42,
@@ -1077,7 +1079,7 @@ def test_fill_retry_options_try_a_local_model_theme_anchor(monkeypatch):
         "keepMean": 50,
         "minScore": 40,
         "maxIffy": 20,
-        "themes": ["RESONANCE", "ECHO", "PITCH"],
+        "themes": ["RESONANCE", "ECHO", "MOSS", "PITCH"],
     }
 
     attempts = private_generation._fill_retry_options(42, options)
@@ -1088,7 +1090,29 @@ def test_fill_retry_options_try_a_local_model_theme_anchor(monkeypatch):
         "theme-locked-reseed",
         "open-grid-reseed",
     ]
-    assert attempts[1]["options"]["themes"] == ["ECHO"]
+    assert attempts[1]["options"]["themes"] == ["ECHO", "MOSS"]
+
+
+def test_local_theme_anchor_keeps_at_most_two_shortest_placeable_invitations(monkeypatch):
+    monkeypatch.setattr(
+        private_generation,
+        "_local_fill_word_set",
+        lambda: frozenset({"RESONANCE", "ECHO", "MOSS", "TONE"}),
+    )
+    options = {
+        "seed": 42,
+        "candidates": 75,
+        "time": 2,
+        "keepMean": 50,
+        "minScore": 40,
+        "maxIffy": 20,
+        "themes": ["RESONANCE", "ECHO", "MOSS", "TONE"],
+    }
+
+    attempts = private_generation._fill_retry_options(42, options)
+
+    assert attempts[1]["label"] == "local-theme-anchor"
+    assert attempts[1]["options"]["themes"] == ["ECHO", "MOSS"]
 
 
 def test_crossing_support_summary_reports_structural_access_and_uncertainty():
