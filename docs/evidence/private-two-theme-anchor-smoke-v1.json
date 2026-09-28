@@ -1,0 +1,30 @@
+{
+  "version": "private-two-theme-anchor-smoke-v1",
+  "generatedAt": "2026-09-28",
+  "runtime": "native-xfill-loopback",
+  "themesRequested": 2,
+  "seeds": [20260930, 20260931],
+  "runs": [
+    {
+      "seed": 20260930,
+      "entryCount": 72,
+      "meanScore": 71.3,
+      "iffyCount": 11,
+      "weakCount": 29,
+      "themeEntries": 2
+    },
+    {
+      "seed": 20260931,
+      "entryCount": 78,
+      "meanScore": 77.86,
+      "iffyCount": 0,
+      "weakCount": 19,
+      "themeEntries": 2
+    }
+  ],
+  "uncertainty": [
+    "xfill-heuristic-not-human-quality",
+    "player-support-unmeasured",
+    "theme-meaning-unreviewed"
+  ]
+}

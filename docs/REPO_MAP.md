@@ -173,6 +173,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/private-foothold-seed-plan-smoke-v1.20260928.json`
 - `docs/evidence/private-tuesday-clue-study-v1.real-gemma4-26b-20260928.json`
 - `docs/evidence/private-tuesday-clue-study-v2.real-gemma4-26b-20260928.json`
+- `docs/evidence/private-two-theme-anchor-smoke-v1.json`
 - `docs/evidence/private-weekday-mechanic-study-v1.real-gemma4-26b-20260928.json`
 - `docs/evidence/private-weekday-mechanic-study-v1.real-gemma4-26b-fallback-20260928.json`
 - `docs/evidence/private-weekday-mechanic-study-v1.real-gemma4-26b-floor-20260928.json`
