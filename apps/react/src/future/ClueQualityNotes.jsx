@@ -311,6 +311,13 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
             this private board is still not a publication claim.
           </p>
         )}
+        {reviewedCluePack?.status === 'unavailable' && (
+          <p className="future-clue-quality-reviewed">
+            A configured reviewed source pack was unavailable for this game, so
+            no source-backed clue was substituted. Model-written surfaces remain
+            explicitly unverified.
+          </p>
+        )}
         {reviewedSourceCount > 0 && (
           <p className="future-clue-quality-reviewed">
             {reviewedSourceCount} exact visible clue
