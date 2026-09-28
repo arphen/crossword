@@ -11,6 +11,7 @@ import CrosswordView from '../CrosswordView';
 import { catalog } from './episteme';
 import { describeLegacyPuzzle, FutureSessionRecorder } from './sessionJournal';
 import ReflectionCards from './ReflectionCards';
+import PlaytestPulse from './PlaytestPulse';
 import PostgameAssociations from './PostgameAssociations';
 import { loadPostgameAssociations } from './postgame_associations';
 import PrivatePuzzleControls from './PrivatePuzzleControls';
@@ -338,6 +339,7 @@ export default function FutureSolver({
           ...result.deck,
           responses: Array.isArray(result.responses) ? result.responses : [],
           analysisSummary: result.analysisSummary || null,
+          playtestPulse: result.playtestPulse || null,
         };
         if (!abort.signal.aborted) {
           setReflectionDeck(deck);
@@ -477,7 +479,14 @@ export default function FutureSolver({
         </div>
       )}
       {reflectionState === 'ready' && reflectionDeck && (
-        <ReflectionCards key={reflectionDeck.sessionId} deck={reflectionDeck} />
+        <>
+          <ReflectionCards key={reflectionDeck.sessionId} deck={reflectionDeck} />
+          <PlaytestPulse
+            key={`pulse-${reflectionDeck.sessionId}`}
+            sessionId={reflectionDeck.sessionId}
+            savedPulse={reflectionDeck.playtestPulse}
+          />
+        </>
       )}
       {finishedSessionId && profileId && (
         <PrivatePuzzleReceipt

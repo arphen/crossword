@@ -103,7 +103,14 @@ export type PerformanceEvidenceV1 = Readonly<{
   recordedAt: string;
   type: 'performance';
   sessionId: string;
-  measure: 'correctness' | 'speed' | 'completion' | 'hint-use';
+  measure:
+    | 'correctness'
+    | 'speed'
+    | 'completion'
+    | 'hint-use'
+    | 'playtest-worth'
+    | 'playtest-return'
+    | 'playtest-rough-edge';
   value: number | string;
 }>;
 
@@ -458,7 +465,7 @@ export function validateEpistemeEvidence(value: unknown): value is EpistemeEvide
           (value.userText === undefined || (typeof value.userText === 'string' && value.userText.length <= 2_000));
       case 'performance':
         if (!hasExactKeys(value, ['evidenceId', 'recordedAt', 'type', 'sessionId', 'measure', 'value'])) return false;
-        return nonEmpty(value.sessionId) && ['correctness', 'speed', 'completion', 'hint-use'].includes(value.measure as string) &&
+        return nonEmpty(value.sessionId) && ['correctness', 'speed', 'completion', 'hint-use', 'playtest-worth', 'playtest-return', 'playtest-rough-edge'].includes(value.measure as string) &&
           (typeof value.value === 'string' ? value.value.length <= 500 : finite(value.value));
       case 'association-proposal': {
         const baseKeys = ['evidenceId', 'recordedAt', 'type', 'associationId', 'phrase', 'language', 'relation', 'parentConceptIds', 'explanation', 'origin'];

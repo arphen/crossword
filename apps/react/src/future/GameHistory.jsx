@@ -45,6 +45,29 @@ export function personalizationHistorySummary(item) {
   return `Episteme revision ${personalization.epistemeRevision}${laneText}`;
 }
 
+export function playtestHistorySummary(item) {
+  const pulse = item?.playtest;
+  if (
+    !pulse ||
+    pulse.schemaVersion !== 1 ||
+    !['yes', 'maybe', 'no'].includes(pulse.worth) ||
+    typeof pulse.returnIntent !== 'string' ||
+    typeof pulse.roughEdge !== 'string'
+  ) {
+    return '';
+  }
+  const worth = { yes: 'worth another', maybe: 'uncertain', no: 'not this time' }[pulse.worth];
+  const direction = {
+    'another-like-this': 'another like this',
+    'same-world-new-angle': 'a new angle',
+    'more-footholds': 'more footholds',
+    'harder-stretch': 'a harder stretch',
+    'let-it-rest': 'a pause',
+  }[pulse.returnIntent];
+  if (!direction) return '';
+  return `Playtest: ${worth} · next: ${direction}${pulse.roughEdge === 'none' ? '' : ` · edge: ${pulse.roughEdge.replaceAll('-', ' ')}`}`;
+}
+
 export function calibrationSummary(report) {
   if (
     !report ||
@@ -172,6 +195,9 @@ export default function GameHistory({ profileId, open }) {
                 </small>
                 {personalizationHistorySummary(item) && (
                   <small>{personalizationHistorySummary(item)}</small>
+                )}
+                {playtestHistorySummary(item) && (
+                  <small>{playtestHistorySummary(item)}</small>
                 )}
               </div>
               <span>{gameHistoryStats(item)}</span>

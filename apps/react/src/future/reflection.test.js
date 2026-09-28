@@ -1,5 +1,9 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { submitReflectionAction, submitReflectionResponse } from './reflection';
+import {
+  submitPlaytestPulse,
+  submitReflectionAction,
+  submitReflectionResponse,
+} from './reflection';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -104,4 +108,34 @@ it('retracts and restores a saved signal without replacing its response evidence
     expect.objectContaining({ method: 'POST' }),
   );
   expect(result.revision).toBe(7);
+});
+
+it('binds the playtest pulse to the finished session and keeps the signal bounded', async () => {
+  const fetchImpl = vi.fn(async () => ({
+    ok: true,
+    json: async () => ({ revision: 8, replayed: false }),
+  }));
+  const { payload, result } = await submitPlaytestPulse({
+    sessionId: '22222222-2222-4222-8222-222222222222',
+    worth: 'yes',
+    returnIntent: 'more-footholds',
+    roughEdge: 'too-opaque',
+    fetchImpl,
+    cryptoApi: { randomUUID: () => '11111111-1111-4111-8111-111111111111' },
+    now: () => new Date('2026-09-28T12:00:00.000Z'),
+  });
+  expect(payload).toEqual({
+    schemaVersion: 1,
+    pulseId: '11111111-1111-4111-8111-111111111111',
+    sessionId: '22222222-2222-4222-8222-222222222222',
+    recordedAt: '2026-09-28T12:00:00.000Z',
+    worth: 'yes',
+    returnIntent: 'more-footholds',
+    roughEdge: 'too-opaque',
+  });
+  expect(fetchImpl).toHaveBeenCalledWith(
+    '/api/future/sessions/22222222-2222-4222-8222-222222222222/playtest-pulse',
+    expect.objectContaining({ method: 'POST', credentials: 'same-origin' }),
+  );
+  expect(result.revision).toBe(8);
 });

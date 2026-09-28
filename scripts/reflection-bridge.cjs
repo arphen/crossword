@@ -17,6 +17,7 @@ require.extensions['.ts'] = (module, filename) => {
 
 const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 const reflection = require('../packages/domain/src/reflection.ts');
+const playtest = require('../packages/domain/src/playtest.ts');
 
 try {
   if (input.operation === 'convert-response') {
@@ -30,6 +31,11 @@ try {
       throw new Error('Reflection deck contains an invalid or unapproved card');
     }
     process.stdout.write(JSON.stringify({ valid: true }));
+  } else if (input.operation === 'validate-playtest-pulse') {
+    if (!playtest.validatePlaytestPulse(input.pulse)) {
+      throw new Error('Playtest pulse is invalid');
+    }
+    process.stdout.write(JSON.stringify({ pulse: input.pulse }));
   } else {
     throw new Error('Unsupported operation');
   }

@@ -97,3 +97,57 @@ export async function submitReflectionAction({
     throw new Error(body?.error || 'This revision could not be saved.');
   return { payload, result: body };
 }
+
+export async function submitPlaytestPulse({
+  sessionId,
+  worth,
+  returnIntent,
+  roughEdge,
+  fetchImpl = globalThis.fetch?.bind(globalThis),
+  cryptoApi = globalThis.crypto,
+  now = () => new Date(),
+}) {
+  if (!fetchImpl) throw new Error('The local crossword host is unavailable.');
+  if (
+    !sessionId ||
+    !['yes', 'maybe', 'no'].includes(worth) ||
+    ![
+      'another-like-this',
+      'same-world-new-angle',
+      'more-footholds',
+      'harder-stretch',
+      'let-it-rest',
+    ].includes(returnIntent) ||
+    ![
+      'none',
+      'too-opaque',
+      'too-obscure',
+      'too-easy',
+      'crossings-unhelpful',
+    ].includes(roughEdge)
+  ) {
+    throw new Error('This playtest signal is incomplete.');
+  }
+  const payload = {
+    schemaVersion: 1,
+    pulseId: uuid(cryptoApi),
+    sessionId,
+    recordedAt: now().toISOString(),
+    worth,
+    returnIntent,
+    roughEdge,
+  };
+  const result = await fetchImpl(
+    `/api/future/sessions/${sessionId}/playtest-pulse`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
+    },
+  );
+  const body = await result.json();
+  if (!result.ok)
+    throw new Error(body?.error || 'This playtest signal could not be saved.');
+  return { payload, result: body };
+}

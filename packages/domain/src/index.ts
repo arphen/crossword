@@ -148,6 +148,19 @@ export type {
   SessionAnalysisEvidenceV1
 } from './episteme';
 export {
+  PLAYTEST_PULSE_VERSION,
+  PLAYTEST_WORTH_VALUES,
+  PLAYTEST_RETURN_VALUES,
+  PLAYTEST_ROUGH_EDGE_VALUES,
+  validatePlaytestPulse
+} from './playtest';
+export type {
+  PlaytestPulseV1,
+  PlaytestWorthV1,
+  PlaytestReturnIntentV1,
+  PlaytestRoughEdgeV1
+} from './playtest';
+export {
   compileEpistemeBrief,
   EPISTEME_BRIEF_CANDIDATE_MAX,
   EPISTEME_BRIEF_LIMIT_DEFAULT,

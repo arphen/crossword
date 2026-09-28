@@ -1530,6 +1530,113 @@
   font: 10px var(--future-mono);
   text-align: right;
 }
+
+.future-root .future-playtest-pulse {
+  margin: 2rem 0 0;
+  padding: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--future-ink) 14%, transparent);
+  border-radius: 1.1rem;
+  background: color-mix(in srgb, var(--future-surface) 88%, var(--future-amber) 12%);
+  box-shadow: 0 1rem 2rem color-mix(in srgb, var(--future-ink) 7%, transparent);
+}
+
+.future-root .future-playtest-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.future-root .future-playtest-heading h2 {
+  margin: 0.15rem 0 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.2rem, 2.4vw, 1.65rem);
+  font-weight: 500;
+}
+
+.future-root .future-playtest-heading > p {
+  max-width: 20rem;
+  margin: 0.2rem 0 0;
+  color: var(--future-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.future-root .future-playtest-choice-group {
+  min-width: 0;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.future-root .future-playtest-choice-group legend {
+  margin-bottom: 0.45rem;
+  color: var(--future-muted);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.future-root .future-playtest-choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.future-root .future-playtest-choice-row button,
+.future-root .future-playtest-submit {
+  border: 1px solid color-mix(in srgb, var(--future-ink) 18%, transparent);
+  border-radius: 999px;
+  padding: 0.5rem 0.75rem;
+  background: color-mix(in srgb, var(--future-surface) 84%, white 16%);
+  color: var(--future-ink);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.future-root .future-playtest-choice-row button:hover:not(:disabled),
+.future-root .future-playtest-choice-row button.is-selected {
+  border-color: var(--future-amber);
+  background: color-mix(in srgb, var(--future-amber) 18%, var(--future-surface));
+  transform: translateY(-1px);
+}
+
+.future-root .future-playtest-submit {
+  margin-top: 1.1rem;
+  border-color: var(--future-amber);
+  background: var(--future-amber);
+  color: var(--future-bg);
+}
+
+.future-root .future-playtest-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.future-root .future-playtest-saved,
+.future-root .future-playtest-error {
+  margin: 0.8rem 0 0;
+  color: var(--future-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.future-root .future-playtest-error {
+  color: var(--future-danger, #9a4f48);
+}
+
+@media (max-width: 700px) {
+  .future-root .future-playtest-heading {
+    display: block;
+  }
+
+  .future-root .future-playtest-heading > p {
+    margin-top: 0.6rem;
+  }
+}
 :root[style*='color-scheme: dark'] .future-root .future-journal-status {
   color: #9ba1a8;
 }

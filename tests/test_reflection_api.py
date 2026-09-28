@@ -111,6 +111,88 @@ def post_response(client, session_id, card, position, value):
     )
 
 
+def pulse_body(session_id, *, pulse_id=None, worth="yes"):
+    return {
+        "schemaVersion": 1,
+        "pulseId": pulse_id or str(uuid4()),
+        "sessionId": session_id,
+        "recordedAt": "2026-09-28T12:00:00.000Z",
+        "worth": worth,
+        "returnIntent": "same-world-new-angle",
+        "roughEdge": "none",
+    }
+
+
+def test_playtest_pulse_is_bounded_idempotent_and_answer_free(reflection_app):
+    client, profile_id, session_id = finished_session(reflection_app)
+    value = pulse_body(session_id)
+    url = f"/api/future/sessions/{session_id}/playtest-pulse"
+    first = client.post(url, json=value, headers={"Origin": "http://localhost"})
+    assert first.status_code == 200, first.json
+    assert first.json["pulse"] == value
+    assert first.json["replayed"] is False
+    assert first.json["revision"] == 1
+    assert len(first.json["evidenceIds"]) == 3
+
+    replay = client.post(url, json=value, headers={"Origin": "http://localhost"})
+    assert replay.status_code == 200
+    assert replay.json["replayed"] is True
+    assert replay.json["revision"] == 1
+
+    conflicting = {**value, "worth": "no"}
+    assert (
+        client.post(url, json=conflicting, headers={"Origin": "http://localhost"}).status_code
+        == 409
+    )
+    deck = client.get(f"/api/future/sessions/{session_id}/reflections")
+    assert deck.status_code == 200
+    assert deck.json["playtestPulse"]["worth"] == "yes"
+    assert deck.json["playtestPulse"]["sessionId"] == session_id
+    assert "answer" not in json.dumps(deck.json["playtestPulse"]).casefold()
+    history = client.get(f"/api/future/profile/{profile_id}/history?limit=1")
+    assert history.status_code == 200
+    assert history.json["history"][0]["playtest"]["returnIntent"] == (
+        "same-world-new-angle"
+    )
+
+    api = reflection_app[0]
+    with api.app.app_context():
+        profile = api.db.session.get(EpistemeProfileRecord, profile_id)
+        performance = [
+            item
+            for item in profile.profile_json["evidence"]
+            if item.get("type") == "performance"
+        ]
+        assert {item["measure"] for item in performance} == {
+            "playtest-worth",
+            "playtest-return",
+            "playtest-rough-edge",
+        }
+
+
+def test_playtest_pulse_requires_finished_session_and_exact_contract(reflection_app):
+    client, _, session_id = finished_session(reflection_app, finished=False)
+    url = f"/api/future/sessions/{session_id}/playtest-pulse"
+    assert (
+        client.post(
+            url,
+            json=pulse_body(session_id),
+            headers={"Origin": "http://localhost"},
+        ).status_code
+        == 409
+    )
+
+    client, _, session_id = finished_session(reflection_app)
+    malformed = pulse_body(session_id)
+    malformed["extra"] = "ignored"
+    response = client.post(
+        f"/api/future/sessions/{session_id}/playtest-pulse",
+        json=malformed,
+        headers={"Origin": "http://localhost"},
+    )
+    assert response.status_code == 422
+
+
 def test_reflections_require_finished_finalized_host_replay(reflection_app):
     unfinished_client, _, session_id = finished_session(reflection_app, finished=False)
     response = unfinished_client.get(f"/api/future/sessions/{session_id}/reflections")

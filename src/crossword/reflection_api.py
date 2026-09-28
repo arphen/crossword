@@ -39,6 +39,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BRIDGE_SCRIPT = PROJECT_ROOT / "scripts" / "reflection-bridge.cjs"
 MAX_BODY_BYTES = 32 * 1024
 MAX_DECK_BYTES = 128 * 1024
+MAX_PLAYTEST_BODY_BYTES = 16 * 1024
 DECK_VERSION = 1
 REFLECTION_MODEL_ENV = "CROSSWORD_REFLECTION_MODEL_CARDS"
 REFLECTION_MODEL_VERSION = "private-reflection-model-card-v1"
@@ -597,6 +598,48 @@ def _analysis_summary(analysis):
     }
 
 
+def _playtest_pulse_from_profile(profile_id, session_id):
+    """Project the latest bounded pulse without exposing the full episteme."""
+    profile = db.session.get(EpistemeProfileRecord, profile_id)
+    evidence = profile.profile_json.get("evidence", []) if profile else []
+    grouped = {}
+    for item in evidence if isinstance(evidence, list) else []:
+        if not isinstance(item, dict) or item.get("type") != "performance":
+            continue
+        if item.get("sessionId") != session_id:
+            continue
+        evidence_id = item.get("evidenceId")
+        if not isinstance(evidence_id, str) or not evidence_id.startswith("playtest-pulse:"):
+            continue
+        parts = evidence_id.split(":")
+        if len(parts) != 3 or parts[2] not in {"worth", "return", "rough-edge"}:
+            continue
+        pulse_id = parts[1]
+        if not _valid_uuid(pulse_id):
+            continue
+        grouped.setdefault(pulse_id, {})[parts[2]] = item.get("value")
+    candidates = []
+    for pulse_id, values in grouped.items():
+        if set(values) != {"worth", "return", "rough-edge"}:
+            continue
+        if not all(isinstance(value, str) for value in values.values()):
+            continue
+        candidates.append((pulse_id, values))
+    if not candidates:
+        return None
+    pulse_id, values = sorted(candidates)[-1]
+    return {
+        "schemaVersion": 1,
+        "pulseId": pulse_id,
+        "sessionId": session_id,
+        "worth": values["worth"],
+        "returnIntent": values["return"],
+        "roughEdge": values["rough-edge"],
+        "source": "episteme-performance-ledger",
+        "interpretation": "game-specific-playtest-signal-only",
+    }
+
+
 def _history_limit(value):
     """Parse the small, owner-facing history window without widening the route."""
     try:
@@ -725,6 +768,9 @@ def _profile_game_history(profile_id, limit):
             else None,
             "analysis": summary,
         }
+        pulse = _playtest_pulse_from_profile(profile_id, session.id)
+        if pulse is not None:
+            item["playtest"] = pulse
         personalization = _history_personalization(provenance)
         if personalization is not None:
             item["personalization"] = personalization
@@ -1389,6 +1435,23 @@ def _response_body(value, session_id, deck):
     return value, card
 
 
+def _validate_playtest_pulse(value, session_id):
+    """Validate the pulse with the shared domain contract and bind its session."""
+    if not isinstance(value, dict):
+        raise ValueError("Playtest pulse must be an object")
+    try:
+        pulse = _run_reflection_bridge(
+            "validate-playtest-pulse", {"pulse": value}, "pulse"
+        )
+    except ReflectionRuntimeUnavailable:
+        raise
+    except ReflectionConversionRejected as error:
+        raise ValueError(str(error)) from error
+    if not isinstance(pulse, dict) or pulse.get("sessionId") != session_id:
+        raise ValueError("Playtest pulse session does not match the finished game")
+    return pulse
+
+
 def _response_result(record, *, replayed):
     return jsonify(
         response=record.response_json,
@@ -1660,7 +1723,7 @@ def _repairable_legacy_action(
 def get_reflections(session_id):
     if not _valid_uuid(session_id):
         return _error("Invalid session id", 400)
-    _, analysis, error = _finished_session(session_id)
+    session, analysis, error = _finished_session(session_id)
     if error:
         return error
     try:
@@ -1677,6 +1740,120 @@ def get_reflections(session_id):
         deck=record.deck_json,
         responses=_saved_response_state(session_id, record.deck_json),
         analysisSummary=_analysis_summary(analysis.analysis_json),
+        playtestPulse=_playtest_pulse_from_profile(session.profile_id, session_id),
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@reflection_api.post("/api/future/sessions/<session_id>/playtest-pulse")
+def post_playtest_pulse(session_id):
+    """Store one bounded, game-specific pulse for later playtest calibration."""
+    if not _same_origin():
+        return _error("Same-origin playtest writes are required", 403)
+    if not _valid_uuid(session_id):
+        return _error("Invalid session id", 400)
+    request.max_content_length = MAX_PLAYTEST_BODY_BYTES
+    if (request.content_length or 0) > MAX_PLAYTEST_BODY_BYTES:
+        return _error("Playtest pulse is too large", 413)
+    try:
+        body = request.get_data(cache=True)
+    except RequestEntityTooLarge:
+        return _error("Playtest pulse is too large", 413)
+    if len(body) > MAX_PLAYTEST_BODY_BYTES:
+        return _error("Playtest pulse is too large", 413)
+    value = request.get_json(silent=True)
+    session, _, error = _finished_session(session_id)
+    if error:
+        return error
+    try:
+        pulse = _validate_playtest_pulse(value, session_id)
+    except ReflectionRuntimeUnavailable:
+        db.session.rollback()
+        return _error("The local playtest validator is unavailable", 503)
+    except (ValueError, TypeError, KeyError) as error:
+        return _error(str(error), 422)
+
+    existing = _playtest_pulse_from_profile(session.profile_id, session_id)
+    if existing is not None:
+        same = all(
+            existing.get(key) == pulse.get(key)
+            for key in ("pulseId", "worth", "returnIntent", "roughEdge")
+        )
+        if not same:
+            return _error("A different playtest pulse already exists for this game", 409)
+        response = jsonify(
+            pulse=pulse,
+            evidenceIds=[
+                f"playtest-pulse:{pulse['pulseId']}:{suffix}"
+                for suffix in ("worth", "return", "rough-edge")
+            ],
+            revision=get_or_create_episteme_profile(
+                session.profile_id, session.created_at
+            ).revision,
+            replayed=True,
+        )
+        response.headers["Cache-Control"] = "no-store"
+        return response
+
+    evidence = [
+        {
+            "evidenceId": f"playtest-pulse:{pulse['pulseId']}:worth",
+            "recordedAt": pulse["recordedAt"],
+            "type": "performance",
+            "sessionId": session_id,
+            "measure": "playtest-worth",
+            "value": pulse["worth"],
+        },
+        {
+            "evidenceId": f"playtest-pulse:{pulse['pulseId']}:return",
+            "recordedAt": pulse["recordedAt"],
+            "type": "performance",
+            "sessionId": session_id,
+            "measure": "playtest-return",
+            "value": pulse["returnIntent"],
+        },
+        {
+            "evidenceId": f"playtest-pulse:{pulse['pulseId']}:rough-edge",
+            "recordedAt": pulse["recordedAt"],
+            "type": "performance",
+            "sessionId": session_id,
+            "measure": "playtest-rough-edge",
+            "value": pulse["roughEdge"],
+        },
+    ]
+    update_id = str(
+        uuid5(
+            NAMESPACE_URL,
+            f"crossword-playtest-pulse:{session_id}:v1",
+        )
+    )
+    try:
+        result, _ = _apply_reflection_update_with_cas_retry(
+            session.profile_id,
+            session.created_at,
+            update_id,
+            pulse["recordedAt"],
+            evidence,
+            [],
+        )
+        updated_profile = result["profile"]
+        if episteme_profile_size(updated_profile) > MAX_PROFILE_BYTES:
+            raise EpistemeCommandRejected("Episteme profile exceeds the storage limit")
+    except EpistemeRuntimeUnavailable:
+        db.session.rollback()
+        return _error("The local profile reducer is unavailable", 503)
+    except EpistemeRevisionConflict as error:
+        db.session.rollback()
+        return _error(str(error), 409)
+    except EpistemeCommandRejected as error:
+        db.session.rollback()
+        return _error(str(error), 422)
+    response = jsonify(
+        pulse=pulse,
+        evidenceIds=[item["evidenceId"] for item in evidence],
+        revision=updated_profile["revision"],
+        replayed=bool(result.get("replayed")),
     )
     response.headers["Cache-Control"] = "no-store"
     return response

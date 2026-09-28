@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import GameHistory, {
   calibrationSummary,
   gameHistoryStats,
+  playtestHistorySummary,
   personalizationHistorySummary,
 } from './GameHistory';
 
@@ -89,6 +90,20 @@ it('keeps malformed personalization history silent', () => {
       personalization: { version: 'wrong', epistemeRevision: 2 },
     }),
   ).toBe('');
+});
+
+it('summarizes the bounded game-specific pulse without interpreting the player', () => {
+  expect(
+    playtestHistorySummary({
+      playtest: {
+        schemaVersion: 1,
+        worth: 'yes',
+        returnIntent: 'more-footholds',
+        roughEdge: 'too-opaque',
+      },
+    }),
+  ).toBe('Playtest: worth another · next: more footholds · edge: too opaque');
+  expect(playtestHistorySummary({ playtest: { schemaVersion: 1, worth: 'yes' } })).toBe('');
 });
 
 it('describes observed calibration without calling it a probability', () => {

@@ -55,7 +55,7 @@ function clueReading(clue) {
       'The clue signals a shortened form. Look for a compact answer rather than spelling out the whole phrase.',
     );
   }
-  if (/[\[(]\s*pl\.?\s*[\])]/i.test(clue)) {
+  if (/(?:\[|\()\s*pl\.?\s*(?:\]|\))/i.test(clue)) {
     notes.push(
       'The plural marker is a contract: the answer should name more than one thing. Let the crossings confirm the number.',
     );
