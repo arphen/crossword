@@ -116,6 +116,60 @@ def test_profile_narrative_model_failure_is_available_without_mutating_episteme(
     assert response.json["narrative"] is None
 
 
+def test_profile_narrative_becomes_stale_and_rejects_acceptance_after_revision_change(api, monkeypatch):
+    profile_id = _profile(api)
+    narrative = {
+        "version": "private-profile-narrative-v1",
+        "paragraphs": [{"text": "A reversible field note.", "evidenceIds": ["starting-profile"]}],
+        "openQuestions": [],
+        "suggestions": [{
+            "conceptId": "association:en:acoustic",
+            "label": "acoustic",
+            "kind": "taste",
+            "action": "seek",
+            "rationale": "The saved field leaves a sound-adjacent path open.",
+            "evidenceIds": ["starting-profile"],
+        }],
+    }
+    monkeypatch.setattr(
+        "src.crossword.profile_narrative_api._generate",
+        lambda source: (narrative, {"provider": "test", "format": "private-profile-narrative-v1", "digest": "sha256:" + "d" * 64}),
+    )
+    client = api.app.test_client()
+    base = f"/api/future/profile/{profile_id}"
+    created = client.post(f"{base}/narrative", json={}, headers={"Origin": "http://localhost"})
+    assert created.status_code == 200, created.json
+    receipt = created.json["receipt"]
+    update = {
+        "expectedRevision": receipt["epistemeRevision"],
+        "updateId": str(uuid4()),
+        "recordedAt": "2026-09-28T00:00:01.000Z",
+        "evidence": [{
+            "evidenceId": str(uuid4()),
+            "recordedAt": "2026-09-28T00:00:01.000Z",
+            "type": "explicit-preference",
+            "concept": {"conceptId": "acoustic", "label": "acoustic", "language": "en"},
+            "kind": "taste",
+            "action": "seek",
+            "scope": {"mode": "field-note-test", "language": "en"},
+            "supersedesEvidenceIds": [],
+            "userText": "Keep a little more sound-adjacent material",
+        }],
+        "evidenceActions": [],
+    }
+    changed = client.post(f"{base}/episteme/updates", json=update)
+    assert changed.status_code == 200, changed.json
+    loaded = client.get(f"{base}/narrative")
+    assert loaded.status_code == 200
+    assert loaded.json["stale"] is True
+    rejected = client.post(
+        f"{base}/narrative/{receipt['narrativeId']}/suggestions/0/accept",
+        json={"expectedRevision": changed.json["revision"], "updateId": str(uuid4())},
+        headers={"Origin": "http://localhost"},
+    )
+    assert rejected.status_code == 409
+
+
 def test_profile_narrative_suggestion_requires_player_acceptance_and_is_replayable(api):
     profile_id = _profile(api)
     narrative_id = str(uuid4())

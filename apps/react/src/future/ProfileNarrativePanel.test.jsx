@@ -61,3 +61,28 @@ it('loads and renders a field note, then can regenerate it', async () => {
   expect(fetchImpl.mock.calls[1][1]).toMatchObject({ method: 'POST' });
   expect(JSON.parse(fetchImpl.mock.calls[1][1].body).requestId).toMatch(/^[0-9a-f-]{36}$/i);
 });
+
+it('keeps stale suggestions visible but disables acceptance until a fresh note is written', async () => {
+  const stale = {
+    ...body,
+    stale: true,
+    narrative: {
+      ...body.narrative,
+      suggestions: [{
+        conceptId: 'association:en:acoustic',
+        label: 'acoustic',
+        kind: 'taste',
+        action: 'seek',
+        rationale: 'A sound-adjacent path remains open.',
+        evidenceIds: ['starting-profile'],
+      }],
+    },
+  };
+  const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => stale });
+  vi.stubGlobal('fetch', fetchImpl);
+  await act(async () => root.render(<ProfileNarrativePanel profileId="profile-1" open />));
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+  const suggestionButton = [...host.querySelectorAll('button')].find((button) => button.textContent.includes('Keep this path'));
+  expect(suggestionButton?.disabled).toBe(true);
+  expect(host.textContent).toContain('The evidence has changed since this note');
+});
