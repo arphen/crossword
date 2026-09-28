@@ -261,7 +261,9 @@ export type ClueGrammarIssueCode =
   | 'answer-form-in-clue'
   | 'generic-clue'
   | 'plural-marker-mismatch'
-  | 'past-tense-marker-mismatch';
+  | 'past-tense-marker-mismatch'
+  | 'present-tense-marker-mismatch'
+  | 'future-tense-marker-mismatch';
 
 export type ClueGrammarIssue = Readonly<{
   code: ClueGrammarIssueCode;
@@ -644,9 +646,20 @@ function validateAnswerSafety(
   }
 
   const answer = clue.answer.toLocaleUpperCase().replace(/[^A-Z]/gu, '');
-  const pluralMarker = /[[(]\s*pl\.?\s*[\])]/iu.test(clue.clueText);
+  const pluralMarker =
+    /\bplural(?:\s+(?:form|of))?\b|[[(]\s*pl\.?\s*[\])]/iu.test(
+      clue.clueText,
+    );
   const pastMarker =
     /\bpast(?:\s+tense)?\b|[[(]\s*past(?:\s+tense)?\s*[\])]/iu.test(
+      clue.clueText,
+    );
+  const presentMarker =
+    /\bpresent(?:\s+tense)?\b|[[(]\s*present(?:\s+tense)?\s*[\])]/iu.test(
+      clue.clueText,
+    );
+  const futureMarker =
+    /\bfuture(?:\s+tense)?\b|[[(]\s*future(?:\s+tense)?\s*[\])]/iu.test(
       clue.clueText,
     );
   const irregularPlurals = new Set([
@@ -728,6 +741,22 @@ function validateAnswerSafety(
       issues,
       'past-tense-marker-mismatch',
       'An explicit past-tense marker must accompany an obviously past answer form.',
+      'clueText',
+    );
+  }
+  if (presentMarker && looksPast) {
+    issue(
+      issues,
+      'present-tense-marker-mismatch',
+      'An explicit present-tense marker must not accompany an obviously past answer form.',
+      'clueText',
+    );
+  }
+  if (futureMarker && looksPast) {
+    issue(
+      issues,
+      'future-tense-marker-mismatch',
+      'An explicit future-tense marker must not accompany an obviously past answer form.',
       'clueText',
     );
   }

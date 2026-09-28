@@ -28,11 +28,11 @@ root while avoiding an exact or regular inflection match.
 The generic-template guard also rejects those phrases when they appear inside a
 longer surface (for example, “a common name for a gas”), so padding the template
 with a weak qualifier cannot bypass the same rule.
-Explicit `(pl.)` markers still receive the narrow plural-shape check, and
-explicit past-tense markers now accept common irregular past forms (such as
-`RAN` and `SLEPT`) or regular `-ED` answers while replacing an obvious
-present-shaped mismatch. This is a visible-convention guard, not a general
-part-of-speech or semantic parser.
+Explicit `(pl.)` and plain-language plural markers now receive the narrow
+plural-shape check. Past-tense markers accept common irregular past forms (such
+as `RAN` and `SLEPT`) or regular `-ED` answers, while present- and
+future-tense markers reject an obviously past-shaped answer. This is a
+visible-convention guard, not a general part-of-speech or semantic parser.
 Tuesday has an explicit recipe between Monday and Wednesday: a bounded increase
 in fill search/time plus alternate senses and fair second readings, while still
 requiring approachable footholds. The domain-wordlist direction in

@@ -1376,6 +1376,30 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
     )
 
 
+def test_clue_morphology_guard_reads_plain_language_plural_and_tense_markers():
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "CAT"}, "Felines (plural)"
+        )
+        == "plural-marker-with-singular-shape"
+    )
+    assert private_generation._clue_morphology_issue(
+        {"answer": "CATS"}, "Felines, plural form"
+    ) is None
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "RAN"}, "Move (present tense)"
+        )
+        == "present-tense-marker-with-past-shape"
+    )
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "RAN"}, "Move (future tense)"
+        )
+        == "future-tense-marker-with-past-shape"
+    )
+
+
 def test_clue_guard_rejects_exact_multiword_answer_surfaces():
     assert (
         private_generation._clue_wordplay_issue(

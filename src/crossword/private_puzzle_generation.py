@@ -350,9 +350,20 @@ _CLUE_PROPER_NAME_RE = re.compile(
     r"surname|writer|person|president|saint|celebrity)\b",
     re.IGNORECASE,
 )
-_PLURAL_MARKER_RE = re.compile(r"[\[(]\s*pl\.?\s*[\])]", re.IGNORECASE)
+_PLURAL_MARKER_RE = re.compile(
+    r"\bplural(?:\s+(?:form|of))?\b|[\[(]\s*pl\.?\s*[\])]",
+    re.IGNORECASE,
+)
 _PAST_TENSE_MARKER_RE = re.compile(
     r"\bpast(?:\s+tense)?\b|[\[(]\s*past(?:\s+tense)?\s*[\])]",
+    re.IGNORECASE,
+)
+_PRESENT_TENSE_MARKER_RE = re.compile(
+    r"\bpresent(?:\s+tense)?\b|[\[(]\s*present(?:\s+tense)?\s*[\])]",
+    re.IGNORECASE,
+)
+_FUTURE_TENSE_MARKER_RE = re.compile(
+    r"\bfuture(?:\s+tense)?\b|[\[(]\s*future(?:\s+tense)?\s*[\])]",
     re.IGNORECASE,
 )
 _COMMON_IRREGULAR_PLURALS = frozenset(
@@ -2525,7 +2536,14 @@ def _clue_morphology_issue(entry, clue):
         return "invalid-clue"
     has_plural_marker = _PLURAL_MARKER_RE.search(clue) is not None
     has_past_marker = _PAST_TENSE_MARKER_RE.search(clue) is not None
-    if not has_plural_marker and not has_past_marker:
+    has_present_marker = _PRESENT_TENSE_MARKER_RE.search(clue) is not None
+    has_future_marker = _FUTURE_TENSE_MARKER_RE.search(clue) is not None
+    if (
+        not has_plural_marker
+        and not has_past_marker
+        and not has_present_marker
+        and not has_future_marker
+    ):
         return None
     if has_plural_marker and answer not in _COMMON_IRREGULAR_PLURALS:
         # A terminal S is only a weak shape signal, but it is enough to avoid
@@ -2536,6 +2554,11 @@ def _clue_morphology_issue(entry, clue):
     if has_past_marker:
         if not answer.endswith("ED") and answer not in _COMMON_PAST_FORMS:
             return "past-tense-marker-with-nonpast-shape"
+    looks_past = answer.endswith("ED") or answer in _COMMON_PAST_FORMS
+    if has_present_marker and looks_past:
+        return "present-tense-marker-with-past-shape"
+    if has_future_marker and looks_past:
+        return "future-tense-marker-with-past-shape"
     return None
 
 

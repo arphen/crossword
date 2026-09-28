@@ -158,6 +158,27 @@ describe('clue grammar v1', () => {
     ).not.toContain('past-tense-marker-mismatch');
   });
 
+  it('recognizes plain-language plural and present/future tense markers', () => {
+    expect(
+      codes(
+        definition({ clueText: 'Felines, plural form', answer: 'CAT' }),
+        { enforceAnswerSafety: true },
+      ),
+    ).toContain('plural-marker-mismatch');
+    expect(
+      codes(
+        definition({ clueText: 'Move (present tense)', answer: 'RAN' }),
+        { enforceAnswerSafety: true },
+      ),
+    ).toContain('present-tense-marker-mismatch');
+    expect(
+      codes(
+        definition({ clueText: 'Move (future tense)', answer: 'RAN' }),
+        { enforceAnswerSafety: true },
+      ),
+    ).toContain('future-tense-marker-mismatch');
+  });
+
   it('accepts an irregular plural when both annotated readings are plural', () => {
     const clueText = 'More than one goose';
     const result = validateClueGrammar(
