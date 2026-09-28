@@ -1818,6 +1818,59 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
     assert report["floorMet"] is True
 
 
+def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
+    entries = [
+        {"id": f"{index}A", "answer": "BARK", "length": 4, "theme": False}
+        for index in range(1, 31)
+    ]
+    calls = []
+    surfaces = [
+        "Branch, perhaps?",
+        "Safe and ___",
+        "[Sound heard nearby]",
+        "“Not a chance!”",
+        "Briefly, perhaps",
+    ]
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append(messages)
+        ids = schema["properties"]["clues"]["items"]["properties"]["id"]["enum"]
+        if len(calls) == 1:
+            return {
+                "title": "A Tuesday board",
+                "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
+            }
+        batch_size = {2: 3, 3: 3, 4: 5}[len(calls)]
+        return {
+            "title": "A Tuesday board",
+            "clues": [
+                {"id": clue_id, "text": surfaces[index % len(surfaces)]}
+                for index, clue_id in enumerate(ids[:batch_size])
+            ],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    context = {}
+
+    _, clues = private_generation._make_clues(
+        "gemma4:26b", entries, context, "tuesday"
+    )
+
+    assert len(calls) == 4
+    assert context["_clue_diversity_repair"]["attemptCount"] == 3
+    assert len(context["_clue_diversity_repair"]["attempts"]) == 3
+    report = private_generation._clue_diversity_report(
+        entries, clues, repair=context["_clue_diversity_repair"]
+    )
+    assert report["nonDefinitionCount"] == 11
+    assert report["floorMet"] is True
+
+
 def test_clue_surface_checks_and_normalization_preserve_the_answer_free_surface():
     assert private_generation._clue_surface_issues("[Sound? that bounces back") == [
         "unbalanced-brackets",

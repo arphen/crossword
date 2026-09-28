@@ -3819,9 +3819,18 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
     # attempts and the board stays playable even when the second pass is
     # unavailable or still below the floor.
     if weekday == "tuesday":
-        first_report = _clue_diversity_report(entries, repaired, repair=diversity_repair)
-        if first_report.get("floorMet") is False:
-            second_repaired, second_report = _repair_clue_diversity(
+        attempts = [diversity_repair]
+        # A local writer may return only the subset of requested rewrites that
+        # it can make safe. Give it at most two follow-up batches so the ten
+        # clue floor has a chance to be reached without turning generation
+        # into an unbounded retry loop.
+        for _ in range(2):
+            report = _clue_diversity_report(
+                entries, repaired, repair=attempts[-1]
+            )
+            if report.get("floorMet") is not False:
+                break
+            next_repaired, next_report = _repair_clue_diversity(
                 model,
                 entries,
                 repaired,
@@ -3829,11 +3838,13 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
                 weekday,
                 reviewed_by_id,
             )
-            repaired = second_repaired
+            repaired = next_repaired
+            attempts.append(next_report)
+        if len(attempts) > 1:
             diversity_repair = {
-                **second_report,
-                "attemptCount": 2,
-                "attempts": [diversity_repair, second_report],
+                **attempts[-1],
+                "attemptCount": len(attempts),
+                "attempts": attempts,
             }
     context["_clue_diversity_repair"] = diversity_repair
     safety_fallbacks = {}

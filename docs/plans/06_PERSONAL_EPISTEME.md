@@ -26,7 +26,8 @@ pretending an unreviewed corpus is production content.
 
 The Tuesday recipe now retains up to five theme locks and asks the bounded
 diversity repair pass for at least five safe non-definition clue families and
-ten signalled clue surfaces, with six rewrite slots per pass. A real Gemma 4 26B
+ten signalled clue surfaces, with six rewrite slots per pass and up to three
+repair batches when the model returns fewer safe rewrites. A real Gemma 4 26B
 loopback Tuesday run on 28 September 2026 produced 74 entries, zero
 mechanical clue issues, 12 signalled surfaces, and four safe non-definition
 families after one source-free factual surface was replaced. That floor is a
