@@ -59,6 +59,19 @@ whose digest is `sha256:9833c5bee04e41b44a1ec09b136619a1d54c28f97619711253b9db11
 This identifies the repair passes as the next bounded latency target while
 preserving the same grammar and Tuesday floor.
 
+The first narrowed-repair live check on seed `20470414` kept the Tuesday
+contract intact: 78 entries, zero deterministic grammar issues, three
+answer-free fallbacks, 65 signalled surfaces (83.3%), all five required
+families, and `floorMet=true`. Runtime fell to 252.391 seconds. The breakdown
+was 96.560 seconds for the primary writer, 43.238 seconds for risk repair,
+44.210 seconds for diversity repair, and 0.005 seconds for safety
+normalization. The answer-free receipt is
+[`private-tuesday-clue-quality-study-v12.gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-v12.gemma4-26b-20260928.json),
+whose digest is `sha256:23804fd1cbaf7337ba1241dc2becf1410958eee37966008f2e8ba2628aab9dae`.
+This is a bounded sample rather than a benchmark claim, but it supports
+keeping the narrower candidate policy and focusing the next optimization on
+the still-expensive risk-repair pass.
+
 The current non-live verification gate also passes: `make test` reports 886
 selected Python tests (three live-provider tests deselected), 11 legacy Jest
 tests, 146 domain tests, 8 persistence tests, 249 React tests, and 8
