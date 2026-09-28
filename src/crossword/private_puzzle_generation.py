@@ -589,15 +589,15 @@ _WEEKDAY_RECIPES = {
         "intent": "Familiar material with a visible layer of fair second readings makes Tuesday a clear step beyond Monday while preserving dependable footholds.",
         "themeAnswerCount": 5,
         "themeDirection": "Choose a coherent cluster of up to five approachable answers whose connection is discoverable after one or two entries; let the pattern add a little lift without requiring specialist trivia.",
-        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but make at least eighteen clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least four distinct surface families so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
+        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but make at least twenty-four clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least five distinct surface families so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
         "themeMode": "approachable-cluster-with-a-turn",
-        "minimumNonDefinitionFamilies": 4,
-        "minimumNonDefinitionCount": 18,
+        "minimumNonDefinitionFamilies": 5,
+        "minimumNonDefinitionCount": 24,
         # The count floor protects small fixture boards.  On a full 15x15,
-        # the editorial contract also asks for roughly one third of the
+        # the editorial contract also asks for roughly two fifths of the
         # visible surfaces to carry a fair convention or second reading so
         # Tuesday does not collapse into Monday-style direct definitions.
-        "targetNonDefinitionRate": 0.35,
+        "targetNonDefinitionRate": 0.42,
     },
     "wednesday": {
         "id": "wednesday-private-v1",
@@ -3238,7 +3238,7 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
     # rewrite bounded, but give the local writer a wider candidate batch so
     # safe surfaces are not lost when one answer cannot support a requested
     # convention.
-    repair_limit = 14 if weekday == "tuesday" else 4
+    repair_limit = 18 if weekday == "tuesday" else 4
     candidates = candidates[:repair_limit]
     if not candidates:
         return clues, {**base, "status": "not-needed", "reason": "no-eligible-entries"}
@@ -3257,6 +3257,10 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         "fill-blank",
         "nonverbal-expression",
         "spoken-equivalent",
+        "metalinguistic",
+        "pun",
+        "fill-blank",
+        "nonverbal-expression",
     ]
     selected = [
         {
@@ -3916,7 +3920,7 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         attempts = [diversity_repair]
         # A local writer may return only the subset of requested rewrites that
         # it can make safe. Give it at most three follow-up batches so the
-        # Tuesday fourteen-surface floor has a chance to be reached without
+        # Tuesday twenty-four-surface floor has a chance to be reached without
         # turning generation into an unbounded retry loop.
         for _ in range(3):
             report = _clue_diversity_report(
