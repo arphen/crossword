@@ -13,8 +13,9 @@ tightened four-family/eighteen-surface floor with 20 signalled surfaces and zero
 deterministic grammar issues. The answer-free receipt is
 [`private-tuesday-clue-study-v3.real-gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-study-v3.real-gemma4-26b-20260928.json).
 
-The clue gate now rejects answer lexical leakage, including obvious roots and
-inflections (`REDS` cannot receive “shades of red”), and rejects short generic
+The clue gate now rejects answer lexical leakage, including exact multiword
+surfaces and obvious roots and inflections (`REDS` cannot receive “shades of
+red”; `NO WAY` cannot receive “No way!”), and rejects short generic
 templates such as “common name,” “common term,” or an unspecified “famous
 writer's name.” Unresolved cases fall back to
 an answer-free crossing scaffold and remain visible in clue-quality provenance.
