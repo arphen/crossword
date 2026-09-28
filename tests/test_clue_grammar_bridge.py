@@ -18,6 +18,8 @@ def test_bridge_accepts_observer_signals_and_preserves_semantic_boundary():
         "'___ the knot' (Spoken equivalent)": "spoken-equivalent",
         "[Sigh of relief]": "nonverbal-expression",
         "Safe and ___": "fill-blank",
+        "Once upon a …": "fill-blank",
+        "Ready, set, ...": "fill-blank",
         "Estimated arrival, briefly": "metalinguistic",
         "Branch specialist?": "pun",
         "Purring pets": "definition",
@@ -49,6 +51,18 @@ def test_bridge_reports_surface_drift_without_blocking_or_claiming_meaning():
         "surface-family-mismatch",
     }
     assert result["semanticStatus"] == "not-established"
+
+
+def test_bridge_rejects_short_underscore_fill_markers():
+    observation = {
+        "family": "fill-blank",
+        "confidence": "surface-signal-only",
+        "uncertainty": ["semantic-family-unverified"],
+        "signals": [{"kind": "fill-blank", "start": 9, "end": 11}],
+    }
+    result = validate_surface_clue_family("Safe and __", observation)
+    assert result["valid"] is False
+    assert "surface-family-mismatch" in {issue["code"] for issue in result["issues"]}
 
 
 def test_bridge_checks_optional_surface_spans_and_summarizes_diagnostics():

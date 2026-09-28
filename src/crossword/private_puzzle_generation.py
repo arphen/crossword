@@ -333,7 +333,7 @@ _CLUE_FAMILY_LANGUAGE_RE = re.compile(
     re.IGNORECASE,
 )
 _CLUE_FAMILY_FILL_RE = re.compile(
-    r"(?:_{2,}|\b(?:and|or|to|of)\s+___\b)", re.IGNORECASE
+    r"(?:_{3,}|\.{3,}|…+|\b(?:and|or|to|of)\s+_{3,}\b)", re.IGNORECASE
 )
 _CLUE_FAMILY_ABBR_RE = re.compile(r"[\[(]\s*abbr\.?\s*[\])]|\bbriefly\b", re.IGNORECASE)
 _CLUE_FAMILY_SPOKEN_RE = re.compile(

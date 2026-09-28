@@ -7,7 +7,7 @@ export function displayedPuzzleWeekday(app, displayWeekday) {
     return displayWeekday || app.getCurrentDayName();
 }
 
-const CLUE_SIGNAL_PATTERN = /("[^"\n]+"|“[^”\n]+”|'[^'\n]+'|‘[^’\n]+’|(?:\[|\()\s*pl\.?\s*(?:\]|\))|(?:\[|\()\s*(?:past|present|future)(?:\s+tense)?\s*(?:\]|\))|\b(?:past|present|future)\s+tense\b|\[[^\n]+\]|\?+|_{2,}|\b(?:abbr\.?|briefly|initially)\b)/gi;
+const CLUE_SIGNAL_PATTERN = /("[^"\n]+"|“[^”\n]+”|'[^'\n]+'|‘[^’\n]+’|(?:\[|\()\s*pl\.?\s*(?:\]|\))|(?:\[|\()\s*(?:past|present|future)(?:\s+tense)?\s*(?:\]|\))|\b(?:past|present|future)\s+tense\b|\[[^\n]+\]|\?+|_{3,}|\.{3,}|…+|\b(?:abbr\.?|briefly|initially)\b)/gi;
 
 const CLUE_SIGNAL_COPY = {
     quote: 'Quotation marks signal something that can be said aloud.',
@@ -25,7 +25,7 @@ function clueSignalKind(value) {
   if (/^(?:(?:\[|\()\s*)?(?:past|present|future)(?:\s+tense)?\s*(?:(?:\]|\))?)$|\btense\b/i.test(value)) return 'tense';
     if (value.startsWith('[')) return 'bracket';
     if (/^\?+$/.test(value)) return 'question';
-    if (/^_+$/.test(value)) return 'blank';
+    if (/^(?:_+|\.{3,}|…+)$/.test(value)) return 'blank';
     return 'abbreviation';
 }
 

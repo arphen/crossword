@@ -2510,6 +2510,13 @@ def test_clue_surface_checks_and_normalization_preserve_the_answer_free_surface(
     assert grounding["surfaceIssues"] == ["bracket-scope"]
 
 
+def test_fill_family_requires_house_blank_marker_shape():
+    assert private_generation._clue_family_observation("Safe and __")["family"] == "definition"
+    assert private_generation._clue_family_observation("Safe and ___")["family"] == "fill-blank"
+    assert private_generation._clue_family_observation("Once upon a …")["family"] == "fill-blank"
+    assert private_generation._clue_family_observation("Ready, set, ...")["family"] == "fill-blank"
+
+
 def test_clue_risk_flags_only_specific_factual_surfaces_and_tracks_footholds():
     weak_entry = {"id": "1A", "answer": "EVAN", "needsFoothold": True}
     assert private_generation._clue_risk_flags(

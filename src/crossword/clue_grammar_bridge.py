@@ -64,7 +64,7 @@ _ANNOTATED_SPOKEN_RE = re.compile(
     r"^[\"“'‘].+[\"”'’]\s*[\[(]\s*(?:spoken(?:\s+equivalent)?|utterance|said\s+aloud)\s*[\])]$",
     re.I,
 )
-_FILL_MARKER_RE = re.compile(r"(?:_{2,}|\b(?:and|or|to|of)\s+___\b)", re.I)
+_FILL_MARKER_RE = re.compile(r"(?:_{3,}|\.{3,}|…+|\b(?:and|or|to|of)\s+_{3,}\b)", re.I)
 _ABBREVIATION_RE = re.compile(r"[\[(]\s*abbr\.?\s*[\])] |\bbriefly\b", re.I | re.X)
 
 

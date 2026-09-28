@@ -43,6 +43,14 @@ it('annotates straight and curly single-quote clue surfaces', () => {
   expect(signals[1].props.children).toBe('‘A sugary ___’');
 });
 
+it('annotates the shared ellipsis fill markers as blanks', () => {
+  const parts = renderClueSurface('Once upon a … · Ready, set, ...', true);
+  const signals = parts.filter(part => React.isValidElement(part));
+
+  expect(signals.map(part => part.props['data-clue-signal'])).toEqual(['blank', 'blank']);
+  expect(signals.map(part => part.props.children)).toEqual(['…', '...']);
+});
+
 it('leaves daily clue text untouched when annotation is disabled', () => {
   const text = 'Capital of Ghana?';
   expect(renderClueSurface(text)).toBe(text);
