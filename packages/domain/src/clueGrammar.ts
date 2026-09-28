@@ -540,8 +540,12 @@ function hasWholeSquareBrackets(text: string): boolean {
   return /^\[[^\]]+\]$/u.test(text) && !text.slice(1, -1).includes('[');
 }
 
+function normalizedAnswerSurface(answer: string): string {
+  return answer.toLocaleUpperCase().replace(/[^\p{L}]/gu, '');
+}
+
 function answerLexicalForms(answer: string): readonly string[] {
-  const normalized = answer.toLocaleUpperCase().replace(/[^A-Z]/gu, '');
+  const normalized = normalizedAnswerSurface(answer);
   if (!normalized) return [];
   const forms = new Set([normalized]);
   if (normalized.length < 3) return [...forms];
@@ -576,7 +580,7 @@ function validateAnswerSafety(
   issues: ClueGrammarIssue[],
 ): void {
   const upperText = clue.clueText.toLocaleUpperCase();
-  const tokens = [...upperText.matchAll(/[A-Z]+/gu)].map((match) => ({
+  const tokens = [...upperText.matchAll(/[\p{L}]+/gu)].map((match) => ({
     value: match[0],
   }));
   const overlap = answerLexicalForms(clue.answer).reduce<string | null>((found, form) => {
@@ -587,7 +591,7 @@ function validateAnswerSafety(
   if (overlap) {
     issue(
       issues,
-      overlap === clue.answer.toLocaleUpperCase().replace(/[^A-Z]/gu, '')
+      overlap === normalizedAnswerSurface(clue.answer)
         ? 'answer-giveaway'
         : 'answer-form-in-clue',
       'A clue must not repeat the answer or an obvious lexical form of it.',

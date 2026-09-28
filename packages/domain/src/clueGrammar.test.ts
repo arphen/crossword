@@ -93,6 +93,15 @@ describe('clue grammar v1', () => {
     expect(result.issues.map(({ code }) => code)).toContain('answer-form-in-clue');
   });
 
+  it('keeps answer-safety tokenization aware of accented letters', () => {
+    expect(
+      codes(
+        definition({ clueText: 'Café, perhaps', answer: 'CAFÉ' }),
+        { enforceAnswerSafety: true },
+      ),
+    ).toContain('answer-giveaway');
+  });
+
   it('rejects dead-end generic name and term templates', () => {
     expect(codes(definition({ clueText: 'common name' }), { enforceAnswerSafety: true })).toContain('generic-clue');
     expect(codes(definition({ clueText: "singer's name" }), { enforceAnswerSafety: true })).toContain('generic-clue');
