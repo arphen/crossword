@@ -5876,7 +5876,7 @@ def _generate(
         "siblingEvaluatorAdapter": sibling_evaluator_adapter,
         "clueQuality": clue_quality,
         "clueGenerationBatches": context.get("_clue_generation_batches"),
-        "clueGenerationTiming": context.get("_clue_generation_timing"),
+        "clueGenerationTiming": clue_context.get("_clue_generation_timing"),
         "clueGenerationFallback": (
             {
                 "status": "answer-free-scaffold",
