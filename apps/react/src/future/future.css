@@ -993,6 +993,13 @@
   color: #78848f;
   font: 8px/1.4 var(--future-mono);
 }
+.future-root .future-private-puzzle-stage-recovery,
+.future-root .future-private-puzzle-stage-long {
+  grid-column: 1 / -1;
+  margin: -4px 0 0;
+  color: #78848f;
+  font-size: 10px;
+}
 .future-root .future-private-puzzle-error {
   color: #e0a38d;
 }

@@ -6,6 +6,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import PrivatePuzzleControls, {
   describeJobStage,
   describeStageElapsed,
+  isLongRunningStage,
   describePlayCalibration,
   describeThemeThread,
   describeLanguageTokenThread,
@@ -208,6 +209,9 @@ it('formats only measured stage time for the wait status', () => {
   expect(describeStageElapsed(1)).toBe('1 second in this step');
   expect(describeStageElapsed(12.8)).toBe('12 seconds in this step');
   expect(describeStageElapsed('12')).toBe('');
+  expect(isLongRunningStage(119.9)).toBe(false);
+  expect(isLongRunningStage(120)).toBe(true);
+  expect(isLongRunningStage('120')).toBe(false);
 });
 
 it('describes the selected weekday recipe honestly', () => {

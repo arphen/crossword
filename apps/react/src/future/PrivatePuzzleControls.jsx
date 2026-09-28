@@ -158,6 +158,10 @@ export function describeStageElapsed(seconds) {
   return `${rounded} second${rounded === 1 ? '' : 's'} in this step`;
 }
 
+export function isLongRunningStage(seconds) {
+  return Number.isFinite(seconds) && seconds >= 120;
+}
+
 export function describeWeekdayRecipe(weekday) {
   return (
     WEEKDAY_RECIPE_COPY[weekday] ||
@@ -1050,6 +1054,11 @@ export default function PrivatePuzzleControls({
           {jobRecovered && (
             <small className="future-private-puzzle-stage-recovery">
               The local maker resumed this job after an interruption.
+            </small>
+          )}
+          {isLongRunningStage(jobStageElapsed) && (
+            <small className="future-private-puzzle-stage-long">
+              This local job is durable; you can leave and return while it finishes.
             </small>
           )}
           <button type="button" className="future-private-puzzle-cancel" onClick={cancelRequest}>
