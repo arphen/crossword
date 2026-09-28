@@ -27,6 +27,9 @@ clue semantics are reviewed; model failure still leaves the board playable and
 records the repair status.
 The aggregate, answer-free receipt for that run is preserved at
 `docs/evidence/private-tuesday-clue-study-v1.real-gemma4-26b-20260928.json`.
+The receipt now also records `requiredNonDefinitionFamilies` and `floorMet`,
+and the clue-notes panel distinguishes a varied board from one that remained
+playable but fell below its weekday surface floor.
 
 The private safety pass now treats an unsupported factual relation as unsafe for
 an ordinary non-theme entry even when its fill score is strong. It keeps exact
