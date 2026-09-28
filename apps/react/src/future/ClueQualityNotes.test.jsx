@@ -107,6 +107,31 @@ it('labels an optional local challenger as advisory evidence', async () => {
   expect(host.textContent).toContain('advisory and unverified');
 });
 
+it('reports when a weekday surface floor was attempted but not met', async () => {
+  host = document.createElement('div');
+  document.body.append(host);
+  root = createRoot(host);
+  await act(async () =>
+    root.render(
+      <ClueQualityNotes
+        provenance={{
+          ...provenance,
+          clueDiversity: {
+            status: 'varied-below-recipe-floor',
+            nonDefinitionFamilies: ['pun', 'fill-blank'],
+            requiredNonDefinitionFamilies: 5,
+            repair: { status: 'repaired', rewrittenCount: 2 },
+          },
+        }}
+      />,
+    ),
+  );
+
+  await act(async () => host.querySelector('summary').click());
+  expect(host.textContent).toContain('The writer reached 2 of 5 requested clue families');
+  expect(host.textContent).toContain("recipe's visible variety target was not met");
+});
+
 it('surfaces non-keep challenger recommendations without turning them into profile controls', async () => {
   host = document.createElement('div');
   document.body.append(host);

@@ -2980,6 +2980,13 @@ def _clue_diversity_report(entries, clues, *, repair=None):
     }
     if isinstance(repair, Mapping):
         result["repair"] = dict(repair)
+        required = repair.get("minimumFamilies")
+        if isinstance(required, int) and required >= 0:
+            result["requiredNonDefinitionFamilies"] = required
+            floor_met = len(non_definition) >= required
+            result["floorMet"] = floor_met
+            if not floor_met and result["status"] == "varied":
+                result["status"] = "varied-below-recipe-floor"
     return result
 
 
@@ -3000,6 +3007,7 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         "attempted": False,
         "selectedCount": 0,
         "rewrittenCount": 0,
+        "minimumFamilies": minimum_families,
         "reason": "sufficient-surface-variety",
     }
     if len(entries) < 24:
@@ -3133,6 +3141,13 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
             "attempted": True,
             "selectedCount": len(selected),
             "rewrittenCount": len(by_id),
+            "achievedFamilies": len(
+                {
+                    _clue_family_observation(text).get("family")
+                    for text in {**clues, **by_id}.values()
+                    if _clue_family_observation(text).get("family") != "definition"
+                }
+            ),
                 "reason": (
                     "definition-heavy-board"
                     if minimum_families <= 2

@@ -1646,6 +1646,8 @@ def test_large_definition_heavy_board_gets_bounded_surface_diversity_repair(monk
         "attempted": True,
         "selectedCount": 4,
         "rewrittenCount": 4,
+        "minimumFamilies": 2,
+        "achievedFamilies": 4,
         "reason": "definition-heavy-board",
     }
     report = private_generation._clue_diversity_report(entries, clues)
@@ -1703,7 +1705,12 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
     assert len(calls) == 2
     assert context["_clue_diversity_repair"]["reason"] == "weekday-surface-floor"
     assert context["_clue_diversity_repair"]["selectedCount"] == 6
-    assert len(private_generation._clue_diversity_report(entries, clues)["nonDefinitionFamilies"]) >= 3
+    report = private_generation._clue_diversity_report(
+        entries, clues, repair=context["_clue_diversity_repair"]
+    )
+    assert len(report["nonDefinitionFamilies"]) >= 3
+    assert report["status"] == "varied-below-recipe-floor"
+    assert report["floorMet"] is False
 
 
 def test_clue_surface_checks_and_normalization_preserve_the_answer_free_surface():
