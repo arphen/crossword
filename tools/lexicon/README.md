@@ -110,7 +110,8 @@ admitted `lexemeId` and a reviewed statement. A clue needs its own pinned
 `grammar` annotation using the repository's `clue-grammar-v1` schema. Clues
 must agree with the linked lexeme's answer, pass the actual TypeScript clue
 grammar validator through Node, and survive its admission-mode answer-safety
-checks for answer roots and dead-end generic templates. If Node or the
+checks for answer roots, dead-end generic templates, and explicit plural/past
+markers. If Node or the
 validator is unavailable, the clue is quarantined while otherwise admissible
 fill records remain available.
 

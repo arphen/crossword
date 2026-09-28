@@ -98,6 +98,27 @@ describe('clue grammar v1', () => {
     expect(codes(definition({ clueText: "singer's name" }), { enforceAnswerSafety: true })).toContain('generic-clue');
   });
 
+  it('rejects visible plural and past-tense markers that contradict the answer shape', () => {
+    expect(
+      codes(
+        definition({ clueText: 'Felines (pl.)', answer: 'CAT' }),
+        { enforceAnswerSafety: true },
+      ),
+    ).toContain('plural-marker-mismatch');
+    expect(
+      codes(
+        definition({ clueText: 'Move (past tense)', answer: 'RUN' }),
+        { enforceAnswerSafety: true },
+      ),
+    ).toContain('past-tense-marker-mismatch');
+    expect(
+      codes(
+        definition({ clueText: 'Move (past tense)', answer: 'RAN' }),
+        { enforceAnswerSafety: true },
+      ),
+    ).not.toContain('past-tense-marker-mismatch');
+  });
+
   it('accepts an irregular plural when both annotated readings are plural', () => {
     const clueText = 'More than one goose';
     const result = validateClueGrammar(

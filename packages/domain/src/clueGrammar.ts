@@ -259,7 +259,9 @@ export type ClueGrammarIssueCode =
   | 'missing-register-signal'
   | 'answer-giveaway'
   | 'answer-form-in-clue'
-  | 'generic-clue';
+  | 'generic-clue'
+  | 'plural-marker-mismatch'
+  | 'past-tense-marker-mismatch';
 
 export type ClueGrammarIssue = Readonly<{
   code: ClueGrammarIssueCode;
@@ -606,6 +608,95 @@ function validateAnswerSafety(
       issues,
       'generic-clue',
       'A generic name or term template does not give the player a route into the answer.',
+      'clueText',
+    );
+  }
+
+  const answer = clue.answer.toLocaleUpperCase().replace(/[^A-Z]/gu, '');
+  const pluralMarker = /[\[(]\s*pl\.?\s*[\])]/iu.test(clue.clueText);
+  const pastMarker =
+    /\bpast(?:\s+tense)?\b|[\[(]\s*past(?:\s+tense)?\s*[\])]/iu.test(
+      clue.clueText,
+    );
+  const irregularPlurals = new Set([
+    'CHILDREN',
+    'FEET',
+    'GEESE',
+    'MEN',
+    'MICE',
+    'PEOPLE',
+    'TEETH',
+    'WOMEN',
+    'OXEN',
+  ]);
+  const looksPlural =
+    irregularPlurals.has(answer) ||
+    (answer.length > 3 &&
+      answer.endsWith('S') &&
+      !answer.endsWith('SS') &&
+      !answer.endsWith('US') &&
+      !answer.endsWith('IS'));
+  const irregularPast = new Set([
+    'ATE',
+    'BEGAN',
+    'BENT',
+    'BOUGHT',
+    'BROUGHT',
+    'BUILT',
+    'CAME',
+    'DID',
+    'DREW',
+    'DRANK',
+    'DROVE',
+    'FELT',
+    'FLEW',
+    'FOUND',
+    'GAVE',
+    'GOT',
+    'GREW',
+    'HAD',
+    'HEARD',
+    'HELD',
+    'KEPT',
+    'KNEW',
+    'LEFT',
+    'LOST',
+    'MADE',
+    'MET',
+    'PAID',
+    'PUT',
+    'RAN',
+    'READ',
+    'ROSE',
+    'SAID',
+    'SAW',
+    'SANG',
+    'SENT',
+    'SLEPT',
+    'SPOKE',
+    'STOOD',
+    'SWAM',
+    'TOOK',
+    'WAS',
+    'WENT',
+    'WERE',
+    'WORE',
+    'WROTE',
+  ]);
+  const looksPast = irregularPast.has(answer) || answer.endsWith('ED');
+  if (pluralMarker && !looksPlural) {
+    issue(
+      issues,
+      'plural-marker-mismatch',
+      'An explicit plural marker must accompany an obviously plural answer form.',
+      'clueText',
+    );
+  }
+  if (pastMarker && !looksPast) {
+    issue(
+      issues,
+      'past-tense-marker-mismatch',
+      'An explicit past-tense marker must accompany an obviously past answer form.',
       'clueText',
     );
   }
