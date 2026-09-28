@@ -328,6 +328,30 @@ def test_projects_only_reviewed_content_with_exact_immutable_provenance(tmp_path
     assert lexeme.facts[0].statement == "A synthetic fact for projection testing."
 
 
+def test_content_projection_preserves_explicit_personalization_links(tmp_path: Path) -> None:
+    pack, pins = _fixture(tmp_path)
+    pack["lexemes"][0]["personalization"] = {
+        "conceptIds": ["topic:animals", "topic:zoology"],
+        "knowledgeTaskIds": ["task:taxonomy"],
+        "associationIds": ["assoc:field-notes"],
+        "pool": "exploration",
+    }
+    _resign(pack)
+
+    content = project_admitted_pack_content(
+        pack,
+        expected_pack_id="synthetic-resolver-pack",
+        expected_artifact_sha256=pack["artifactSha256"],
+        expected_sources=pins,
+    )
+
+    lexeme = content.lexemes[0]
+    assert lexeme.concept_ids == ("topic:animals", "topic:zoology")
+    assert lexeme.knowledge_task_ids == ("task:taxonomy",)
+    assert lexeme.association_ids == ("assoc:field-notes",)
+    assert lexeme.pool == "exploration"
+
+
 def test_content_projection_rejects_unpinned_and_malformed_content(tmp_path: Path) -> None:
     pack, pins = _fixture(tmp_path)
     wrong_pins = {

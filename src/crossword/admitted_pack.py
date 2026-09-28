@@ -94,6 +94,10 @@ class AdmittedLexemeContent:
     senses: tuple[AdmittedSenseContent, ...]
     facts: tuple[AdmittedFactContent, ...]
     clues: tuple[AdmittedClueContent, ...]
+    concept_ids: tuple[str, ...] = ()
+    knowledge_task_ids: tuple[str, ...] = ()
+    association_ids: tuple[str, ...] = ()
+    pool: str = "broad"
 
 
 @dataclass(frozen=True)
@@ -512,12 +516,13 @@ def project_admitted_pack_content(
 
     This performs the same complete artifact, source-pin, cross-reference, and
     clue-grammar validation as :func:`resolve_admitted_pack`. It exposes only
-    answer identity plus reviewed senses, facts, and clues; their exact record
-    provenance, clue evidence links, and validated grammar annotations remain
-    attached. Raw manifests, pack-level sources, quarantine entries, and other
-    input fields are not copied. Surface collisions under NFC/strip/casefold
-    are rejected because a downstream crossword could not safely disambiguate
-    which lexeme a filled answer represents.
+    answer identity, explicit personalization IDs, and reviewed senses, facts,
+    and clues; their exact record provenance, clue evidence links, and validated
+    grammar annotations remain attached. Raw manifests, pack-level sources,
+    quarantine entries, and other input fields are not copied. Surface
+    collisions under NFC/strip/casefold are rejected because a downstream
+    crossword could not safely disambiguate which lexeme a filled answer
+    represents.
 
     The return value asserts structural admission against the supplied pins;
     it does not assert that the underlying source is authentic or that clue
@@ -590,6 +595,10 @@ def project_admitted_pack_content(
             senses=tuple(sorted(senses_by_lexeme[lexeme_id], key=lambda row: row.sense_id)),
             facts=tuple(sorted(facts_by_lexeme[lexeme_id], key=lambda row: row.fact_id)),
             clues=tuple(sorted(clues_by_lexeme[lexeme_id], key=lambda row: row.clue_id)),
+            concept_ids=tuple(_personalization(lexeme.get("personalization"))[0]),
+            knowledge_task_ids=tuple(_personalization(lexeme.get("personalization"))[1]),
+            association_ids=tuple(_personalization(lexeme.get("personalization"))[2]),
+            pool=_personalization(lexeme.get("personalization"))[3],
         )
         for lexeme_id, lexeme in sorted(lexemes.items())
     )
