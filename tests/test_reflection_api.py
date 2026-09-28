@@ -22,6 +22,7 @@ from src.crossword.reflection_api import (
     _authored_cards,
     _analysis_summary,
     _hash,
+    _history_generation_runtime,
     _reflection_model_cards,
     reflection_api,
     validate_authored_cards,
@@ -297,6 +298,64 @@ def test_profile_history_projects_finished_games_without_answers(reflection_app)
     assert response.json["calibration"]["sessionCount"] == 1
     assert client.get(f"/api/future/profile/{profile_id}/history?limit=0").status_code == 400
     assert client.get(f"/api/future/profile/{uuid4()}/history").status_code == 404
+
+
+def test_history_projects_bounded_durable_generation_receipt_without_answers(reflection_app):
+    client, profile_id, _ = finished_session(reflection_app)
+    api = reflection_app[0]
+    now = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+    with api.app.app_context():
+        manifest = FuturePuzzleManifestRecord(
+            puzzle_hash="a" * 64,
+            puzzle_id="private-history-runtime-fixture",
+            manifest_json={
+                "metadata": {"title": "A durable thread"},
+                "provenance": {
+                    "jobRuntime": {
+                        "version": "private-job-runtime-v1",
+                        "durable": True,
+                        "attempt": 2,
+                        "recovery": "reclaimed",
+                        "elapsedSeconds": 142.7894,
+                        "profileId": profile_id,
+                        "request": {"answers": ["SECRET"]},
+                    }
+                },
+                "entries": [{"id": "1A", "answer": "SECRET", "clue": "Hidden word"}],
+            },
+            created_at=now,
+        )
+        api.db.session.add(manifest)
+        api.db.session.commit()
+
+    response = client.get(f"/api/future/profile/{profile_id}/history?limit=1")
+    assert response.status_code == 200
+    assert response.json["history"][0]["generation"] == {
+        "version": "private-history-generation-v1",
+        "durable": True,
+        "attempt": 2,
+        "recovery": "reclaimed",
+        "elapsedSeconds": 142.789,
+        "interpretation": "answer-free-durable-generation-summary",
+    }
+    body = response.get_data(as_text=True)
+    assert "SECRET" not in body
+    assert profile_id not in json.dumps(response.json["history"][0]["generation"])
+
+
+@pytest.mark.parametrize(
+    "runtime",
+    [
+        None,
+        {"version": "private-job-runtime-v0", "durable": True, "attempt": 1, "recovery": "first-attempt"},
+        {"version": "private-job-runtime-v1", "durable": True, "attempt": 0, "recovery": "first-attempt"},
+        {"version": "private-job-runtime-v1", "durable": True, "attempt": 1, "recovery": "reclaimed"},
+        {"version": "private-job-runtime-v1", "durable": True, "attempt": 9, "recovery": "reclaimed"},
+        {"version": "private-job-runtime-v1", "durable": False, "attempt": 1, "recovery": "first-attempt"},
+    ],
+)
+def test_history_generation_projection_fails_open_for_invalid_receipts(runtime):
+    assert _history_generation_runtime({"jobRuntime": runtime}) is None
 
 
 def test_profile_calibration_export_is_bounded_and_content_free(reflection_app):

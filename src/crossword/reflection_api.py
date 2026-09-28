@@ -729,6 +729,48 @@ def _history_personalization(provenance):
     }
 
 
+def _history_generation_runtime(provenance):
+    """Project the durable private-job receipt without exposing puzzle data.
+
+    The worker stores this small operational receipt beside the private
+    provenance after a ready result.  The history route is intentionally
+    stricter than the worker's internal response: it accepts one version,
+    clamps the attempt count, and carries no request, profile, model, clue, or
+    answer material across the replay boundary.
+    """
+    runtime = provenance.get("jobRuntime") if isinstance(provenance, dict) else None
+    if (
+        not isinstance(runtime, dict)
+        or runtime.get("version") != "private-job-runtime-v1"
+        or runtime.get("durable") is not True
+    ):
+        return None
+    attempt = runtime.get("attempt")
+    recovery = runtime.get("recovery")
+    if (
+        not isinstance(attempt, int)
+        or isinstance(attempt, bool)
+        or not 1 <= attempt <= 8
+        or recovery not in {"first-attempt", "reclaimed"}
+        or (attempt == 1 and recovery != "first-attempt")
+        or (attempt > 1 and recovery != "reclaimed")
+    ):
+        return None
+
+    projection = {
+        "version": "private-history-generation-v1",
+        "durable": True,
+        "attempt": attempt,
+        "recovery": recovery,
+        "interpretation": "answer-free-durable-generation-summary",
+    }
+    elapsed = runtime.get("elapsedSeconds")
+    if isinstance(elapsed, (int, float)) and not isinstance(elapsed, bool):
+        if 0 <= elapsed <= 3600:
+            projection["elapsedSeconds"] = round(float(elapsed), 3)
+    return projection
+
+
 def _profile_game_history(profile_id, limit):
     """Project finished/private play into an answer-free profile timeline."""
     sessions = (
@@ -786,6 +828,9 @@ def _profile_game_history(profile_id, limit):
         personalization = _history_personalization(provenance)
         if personalization is not None:
             item["personalization"] = personalization
+        generation = _history_generation_runtime(provenance)
+        if generation is not None:
+            item["generation"] = generation
         history.append(item)
     return history
 
