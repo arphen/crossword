@@ -495,6 +495,7 @@ def test_private_manifest_links_exposure_only_answer_tasks():
                     "direction": "clue-to-answer",
                     "language": "en",
                     "clueFamily": "private-local-generated",
+                    "surfaceFamily": "definition",
                     "contentReview": "unreviewed",
                 }
             ],
@@ -510,6 +511,21 @@ def test_private_manifest_links_exposure_only_answer_tasks():
         )
         == []
     )
+
+
+@pytest.mark.parametrize(
+    ("clue", "surface_family"),
+    [
+        ('"No way!"', "spoken-equivalent"),
+        ("[Sigh of relief]", "nonverbal-expression"),
+        ("Safe and ___", "fill-blank"),
+        ("Estimated arrival, briefly", "metalinguistic"),
+        ("Branch specialist?", "pun"),
+        ("Felines (pl.)", "definition"),
+    ],
+)
+def test_private_surface_family_tracks_visible_conventions_only(clue, surface_family):
+    assert journal_module._private_surface_clue_family(clue) == surface_family
 
 
 @pytest.mark.parametrize("clue", ["German for hello", "Hello in German"])

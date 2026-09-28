@@ -60,6 +60,34 @@ _LANGUAGE_CODES = {
 }
 
 
+def _private_surface_clue_family(clue):
+    """Classify only visible clue conventions for local fatigue accounting.
+
+    This deliberately mirrors the private observer's surface boundary rather
+    than claiming that a clue really means a particular thing. The value is
+    stored beside the historical task family so older evidence remains
+    readable and language recurrence stays its own explicit lane.
+    """
+    text = clue.strip() if isinstance(clue, str) else ""
+    if len(text) >= 2 and text[0] in {'"', "“", "'", "‘"} and text[-1] in {
+        '"', "”", "'", "’"
+    }:
+        return "spoken-equivalent"
+    if re.search(r"(?:_{2,}|\b(?:and|or|to|of)\s+___\b)", text, re.IGNORECASE):
+        return "fill-blank"
+    if re.search(r"(?:\[\s*abbr\.?\s*\]|\(\s*abbr\.?\s*\)|\bbriefly\b)", text, re.IGNORECASE):
+        return "metalinguistic"
+    if (
+        text.startswith("[")
+        and text.endswith("]")
+        and not re.fullmatch(r"\[\s*(?:pl|plural)\.?\s*\]", text, re.IGNORECASE)
+    ):
+        return "nonverbal-expression"
+    if text.endswith("?"):
+        return "pun"
+    return "definition"
+
+
 class PersonalSolveSession(db.Model):
     __tablename__ = "future_solve_sessions"
 
@@ -325,6 +353,13 @@ def _private_task_links(manifest, analysis):
             "language": clue_language,
             "clueFamily": (
                 "language-recurrence" if is_language_task else "private-local-generated"
+            ),
+            # Literal surface observation for reversible rotation hints. Keep
+            # it separate from clueFamily, which identifies the learning lane.
+            "surfaceFamily": (
+                "language-recurrence"
+                if is_language_task
+                else _private_surface_clue_family(clue)
             ),
             "contentReview": "unreviewed",
         }

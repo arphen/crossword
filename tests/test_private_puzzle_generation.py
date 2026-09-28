@@ -76,6 +76,60 @@ def test_model_context_uses_soft_opening_associations_and_current_episteme():
     assert context["active_associations"][0]["phrase"] == "afterglow"
 
 
+def test_recent_clue_family_exposures_are_bounded_surface_only_rotation_hints():
+    evidence = [
+        {
+            "type": "session-analysis",
+            "taskLinks": [
+                {"tasks": [{"surfaceFamily": "pun"}, {"surfaceFamily": "pun"}]},
+                {"tasks": [{"surfaceFamily": "definition"}]},
+            ],
+        },
+        {
+            "type": "session-analysis",
+            "taskLinks": [
+                # Older evidence only has the historical lane. It remains
+                # readable without becoming a semantic claim.
+                {"tasks": [{"clueFamily": "language-recurrence"}]},
+            ],
+        },
+    ]
+
+    projection = private_generation._recent_clue_family_exposures(evidence)
+
+    assert projection == {
+        "version": "private-clue-family-fatigue-v1",
+        "source": "finished-session-analysis",
+        "sessions": 2,
+        "taskCount": 4,
+        "counts": {"definition": 1, "language-recurrence": 1, "pun": 2},
+        "policy": "rotation-hint-only",
+        "reversible": True,
+        "uncertainty": ["surface-family-only", "not-a-preference-claim"],
+    }
+
+
+def test_model_context_includes_recent_clue_family_rotation_hint_without_answers():
+    starting = SimpleNamespace(profile={"associations": []}, draft={})
+    context = private_generation._profile_context(
+        starting,
+        {
+            "projection": {"claims": [], "associations": [], "knowledge": []},
+            "evidence": [
+                {
+                    "type": "session-analysis",
+                    "taskLinks": [
+                        {"tasks": [{"surfaceFamily": "pun"}]},
+                    ],
+                }
+            ],
+        },
+    )
+
+    assert context["recent_clue_family_exposures"]["counts"] == {"pun": 1}
+    assert "answer" not in str(context["recent_clue_family_exposures"]).casefold()
+
+
 def test_association_steering_receipt_excludes_expired_or_rejected_paths():
     starting = SimpleNamespace(profile={"associations": [], "observations": []}, draft={})
     context = private_generation._profile_context(

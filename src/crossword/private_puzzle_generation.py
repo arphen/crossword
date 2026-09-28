@@ -1038,6 +1038,58 @@ def _play_calibration(evidence):
     return result
 
 
+def _recent_clue_family_exposures(evidence):
+    """Count recent literal clue-family surfaces for gentle rotation.
+
+    Finished-session task links are already profile-owned evidence. This
+    projection only counts their bounded surface labels, never answers,
+    meanings, or inferred taste. It is a construction hint so a run of
+    question-mark or bracketed clues can cool temporarily; explicit authored
+    clue-family targets still outrank it and no family is ever suppressed.
+    """
+    counts = {}
+    session_count = 0
+    task_count = 0
+    if not isinstance(evidence, list):
+        evidence = []
+    for item in reversed(evidence):
+        if not isinstance(item, dict) or item.get("type") != "session-analysis":
+            continue
+        links = item.get("taskLinks")
+        if not isinstance(links, list):
+            continue
+        seen_in_session = False
+        for link in links:
+            tasks = link.get("tasks", []) if isinstance(link, dict) else []
+            for task in tasks if isinstance(tasks, list) else []:
+                if not isinstance(task, dict):
+                    continue
+                family = task.get("surfaceFamily") or task.get("clueFamily")
+                if not isinstance(family, str) or not family:
+                    continue
+                counts[family] = counts.get(family, 0) + 1
+                task_count += 1
+                seen_in_session = True
+                if task_count >= 48:
+                    break
+            if task_count >= 48:
+                break
+        if seen_in_session:
+            session_count += 1
+        if session_count >= 8 or task_count >= 48:
+            break
+    return {
+        "version": "private-clue-family-fatigue-v1",
+        "source": "finished-session-analysis",
+        "sessions": session_count,
+        "taskCount": task_count,
+        "counts": dict(sorted(counts.items())),
+        "policy": "rotation-hint-only",
+        "reversible": True,
+        "uncertainty": ["surface-family-only", "not-a-preference-claim"],
+    }
+
+
 def _profile_context(starting, episteme):
     """Give the model a bounded word-field, not a personality diagnosis."""
     projection = episteme.get("projection", {}) if isinstance(episteme, dict) else {}
@@ -1293,6 +1345,7 @@ def _profile_context(starting, episteme):
         )
         language_learning["eligibleReviewForms"] = eligible_review_forms[:4]
     play_calibration = _play_calibration(evidence)
+    clue_family_fatigue = _recent_clue_family_exposures(evidence)
     association_steering = _association_steering_receipt(associations)
     return {
         "opening_associations": seed_profile.get("associations", [])[:24],
@@ -1326,6 +1379,7 @@ def _profile_context(starting, episteme):
         "preference_tensions": preference_tensions,
         "avoid_topics": avoid_topics,
         "clue_family_targets": clue_family_targets[:8],
+        "recent_clue_family_exposures": clue_family_fatigue,
         "recent_private_answers": recent_private_answers,
         "play_calibration": play_calibration,
         "recent_word_exposures": [
@@ -1548,6 +1602,7 @@ def _make_themes(model, context, weekday):
                     "Do not use accidental slang variants or sexualized fill unless the player's word-field explicitly calls for that register. "
                     "Treat preference tensions as steering: avoid topics listed with an avoid/dislike/turn-away stance, while using seek/keep topics as invitations rather than proof of identity. "
                     "Use clue_family_targets as explicit, reversible editorial steering from authored reflection responses or direct clue feedback: include targets should shape a visible minority of clue surfaces, and avoid targets should reduce that family. Do not invent targets from behavior or silence. "
+                    "Use recent_clue_family_exposures only as a small rotation hint: cool a heavily repeated visible surface family when several equally fair options exist, never suppress a family, and never infer that repetition means dislike. Explicit clue-family targets outrank this hint. "
                     "Do not infer a preference from silence, and do not turn the avoid list into a personality diagnosis. "
                     "If language_interest is set, let a small minority of entries or clue surfaces invite that language with an explicit language signal; keep the rest in clear English so the crossword remains playable. "
                     "When language_learning.reviewDue is true, gently revisit no more than two candidateForms when they fit the word-field; dueForms are the first optional candidates, followed by notYetForms, assistedForms, and pendingForms. A remembered form may re-enter candidateForms only after the host scheduler marks it due. This is spaced exposure only and never evidence that the player has mastered them. When reviewDue is false, introduce at most two clearly signalled language moments. "
@@ -3762,6 +3817,7 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
                     "Treat fill score as a support signal: a low-scoring entry needs a generous foothold and must not be made difficult by obscure trivia. "
                     "Use the personal word-field as a source of motifs, never as a basis for claims about the player. "
                     "Honor clue_family_targets when present: they are explicit, reversible steering from prior reflection responses or direct clue feedback, so an include target may shape a small visible set of clue mechanisms and an avoid target should be downweighted. Do not infer a target from solve behavior. "
+                    "Use recent_clue_family_exposures only for gentle rotation across visible clue mechanisms; it is exposure history, not taste, and must never override a fair clue or an explicit target. "
                     "If uncertain about a proper name or fact, clue the word through a reliable wordplay/definition instead. "
                     "Never repeat the answer, its obvious stem, or an inflected form in the clue, and never emit a vague "
                     "template such as 'common name' or 'common term' as the whole clue. "
@@ -5133,6 +5189,7 @@ def _generate(
         "languageLearning": language_learning,
         "playCalibration": context.get("play_calibration"),
         "clueFamilyTargets": context.get("clue_family_targets", []),
+        "clueFamilyFatigue": context.get("recent_clue_family_exposures"),
         "themeAnswers": [item["answer"] for item in clue_entries if item["theme"]],
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "experimental": True,
