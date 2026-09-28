@@ -1181,6 +1181,12 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
         )
         == "generic-clue"
     )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "SAJAK"}, "Name that might follow 'Pat ...'"
+        )
+        == "generic-clue"
+    )
 
 
 def test_malformed_clue_model_response_falls_back_to_answer_free_scaffolds(monkeypatch):

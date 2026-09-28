@@ -194,6 +194,12 @@ _GENERIC_NAME_OF_CLUE_RE = re.compile(
     r"celebrity)\s*[?.]?\s*$",
     re.IGNORECASE,
 )
+_GENERIC_NAME_CONTEXT_RE = re.compile(
+    r"^\s*(?:a\s+)?name\s+(?:that|which)\s+"
+    r"(?:(?:might|could|would|can)\s+)?"
+    r"(?:follow|precede|come\s+(?:after|before))\b.*[?.]?\s*$",
+    re.IGNORECASE,
+)
 _LANGUAGE_YES = {
     "dutch": {"JA"},
     "french": {"OUI"},
@@ -2341,6 +2347,7 @@ def _clue_wordplay_issue(entry, clue):
         or _GENERIC_CLUE_RE.fullmatch(text)
         or _GENERIC_NAME_CLUE_RE.fullmatch(text)
         or _GENERIC_NAME_OF_CLUE_RE.fullmatch(text)
+        or _GENERIC_NAME_CONTEXT_RE.fullmatch(text)
     ):
         return "generic-clue"
 

@@ -608,6 +608,9 @@ function validateAnswerSafety(
     /^\s*name\s+of\s+(?:(?:a|an|the)\s+)?(?:(?:famous|well[- ]known|notable|popular|renowned|celebrated|classic|italian|french|german|spanish|japanese|portuguese|dutch)\s+)?(?:actor|actress|artist|author|comedian|composer|director|king|queen|singer|scientist|scholar|writer|novelist|poet|person|president|saint|celebrity)\s*[?.]?$/iu.test(
       normalized,
     )
+    || /^\s*(?:a\s+)?name\s+(?:that|which)\s+(?:(?:might|could|would|can)\s+)?(?:follow|precede|come\s+(?:after|before))\b.*[?.]?\s*$/iu.test(
+      normalized,
+    )
   ) {
     issue(
       issues,
