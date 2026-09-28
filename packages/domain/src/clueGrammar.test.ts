@@ -137,6 +137,29 @@ describe('clue grammar v1', () => {
     expect(codes(definition({ clueText: "Name that might follow 'Pat ...'" }), { enforceAnswerSafety: true })).toContain('generic-clue');
   });
 
+  it('rejects other noun-only generic templates but preserves a specific referent', () => {
+    for (const clueText of [
+      'Common abbreviation',
+      'A common acronym',
+      'Usual synonym',
+      'The generic response',
+      'Standard answer',
+      'Some ordinary phrase?',
+      'Any common title',
+    ]) {
+      expect(
+        codes(definition({ clueText }), { enforceAnswerSafety: true }),
+        clueText,
+      ).toContain('generic-clue');
+    }
+    expect(
+      codes(
+        definition({ clueText: 'Common abbreviation for New York', answer: 'NY' }),
+        { enforceAnswerSafety: true },
+      ),
+    ).not.toContain('generic-clue');
+  });
+
   it('rejects visible plural and past-tense markers that contradict the answer shape', () => {
     expect(
       codes(

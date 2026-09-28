@@ -636,6 +636,9 @@ function validateAnswerSafety(
     || /^\s*(?:a\s+)?name\s+(?:that|which)\s+(?:(?:might|could|would|can)\s+)?(?:follow|precede|come\s+(?:after|before))\b.*[?.]?\s*$/iu.test(
       normalized,
     )
+    || /^\s*(?:(?:a|an|the|one|some|any)\s+)?(?:common|usual|ordinary|generic|standard)\s+(?:abbreviations?|acronyms?|initialisms?|synonyms?|nicknames?|responses?|replies?|answers?|entries?|examples?|expressions?|phrases?|symbols?|titles?|slogans?|spellings?|forms?)\s*[?.]?\s*$/iu.test(
+      normalized,
+    )
   ) {
     issue(
       issues,
