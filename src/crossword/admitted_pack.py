@@ -6,10 +6,10 @@ source IDs, versions, and artifact digests out of band. This module never
 turns raw fill vocabulary into admitted content and never invents profile or
 evidence links.
 
-The current pack builder does not emit ``personalization`` metadata. When a
-future, explicitly reviewed pack does, each lexeme may include the narrow
-object documented by :func:`_personalization`; absent metadata always maps to
-a broad candidate with empty links.
+The pack builder preserves optional, explicitly reviewed ``personalization``
+metadata. Each lexeme may include the narrow object documented by
+:func:`_personalization`; absent metadata always maps to a broad candidate with
+empty links.
 """
 
 from __future__ import annotations

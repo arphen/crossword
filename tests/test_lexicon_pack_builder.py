@@ -112,6 +112,7 @@ def test_admits_grounded_clue_with_complete_pinned_provenance(tmp_path: Path) ->
     pack = build_pack(_manifest(tmp_path), tmp_path)
 
     assert [item["id"] for item in pack["lexemes"]] == ["lexeme-cats"]
+    assert "personalization" not in pack["lexemes"][0]
     assert [item["id"] for item in pack["senses"]] == ["sense-cats-plural"]
     assert [item["id"] for item in pack["clues"]] == ["clue-cats"]
     clue = pack["clues"][0]
@@ -132,6 +133,51 @@ def test_admits_grounded_clue_with_complete_pinned_provenance(tmp_path: Path) ->
     ]
     assert clue["provenance"]["semanticTruthStatus"] == "not-established-by-grammar-validator"
     assert pack["quarantine"] == []
+
+
+def test_preserves_explicit_personalization_links_in_canonical_order(tmp_path: Path) -> None:
+    manifest = _manifest(tmp_path)
+    manifest["records"]["lexemes"][0]["personalization"] = {
+        "conceptIds": ["domain:zoology", "domain:animals"],
+        "knowledgeTaskIds": ["task:taxonomy"],
+        "associationIds": ["assoc:field-notes"],
+        "pool": "exploration",
+    }
+
+    pack = build_pack(manifest, tmp_path)
+
+    assert pack["lexemes"][0]["personalization"] == {
+        "conceptIds": ["domain:animals", "domain:zoology"],
+        "knowledgeTaskIds": ["task:taxonomy"],
+        "associationIds": ["assoc:field-notes"],
+        "pool": "exploration",
+    }
+    assert pack["quarantine"] == []
+
+
+@pytest.mark.parametrize(
+    ("personalization", "reason"),
+    [
+        ({"conceptIds": ["domain:animals", "domain:animals"]}, "personalization-conceptIds-invalid"),
+        ({"pool": "private"}, "personalization-pool-invalid"),
+        ({"unexpected": ["domain:animals"]}, "personalization-tags-unknown-field"),
+    ],
+)
+def test_invalid_personalization_links_quarantine_the_lexeme(
+    tmp_path: Path, personalization: dict[str, Any], reason: str
+) -> None:
+    manifest = _manifest(tmp_path)
+    manifest["records"]["lexemes"][0]["personalization"] = personalization
+
+    pack = build_pack(manifest, tmp_path)
+
+    assert pack["lexemes"] == []
+    assert pack["senses"] == []
+    assert pack["clues"] == []
+    assert ("lexeme", "lexeme-cats", reason) in {
+        (row["recordType"], row["recordId"], row["reasonCode"])
+        for row in pack["quarantine"]
+    }
 
 
 def test_build_hash_and_serialized_output_are_repeatable(tmp_path: Path) -> None:

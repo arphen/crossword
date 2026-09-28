@@ -34,6 +34,8 @@ ALLOWED_SPDX = frozenset(
 )
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_MAX_PERSONALIZATION_IDS = 32
+_MAX_PERSONALIZATION_ID_LENGTH = 200
 
 _CLUE_GRAMMAR_PROGRAM = r"""
 import { readFileSync } from 'node:fs';
@@ -95,6 +97,48 @@ def _date(value: Any) -> bool:
 
 def _normalize_surface(value: str) -> str:
     return unicodedata.normalize("NFC", value).strip().casefold()
+
+
+def _personalization_tags(value: Any) -> tuple[dict[str, Any] | None, str | None]:
+    """Validate and deterministically project optional reviewed profile links.
+
+    The builder only carries explicit IDs forward. It never turns prose,
+    source terms, or a model suggestion into a profile link. A missing or null
+    field means broad eligibility; a present object must use the same narrow
+    shape enforced by the admitted-pack resolver.
+    """
+
+    if value is None:
+        return None, None
+    if not _is_record(value):
+        return None, "personalization-tags-invalid"
+    allowed = {"conceptIds", "knowledgeTaskIds", "associationIds", "pool"}
+    unknown = set(value) - allowed
+    if unknown:
+        return None, "personalization-tags-unknown-field"
+
+    projected: dict[str, Any] = {}
+    for key in ("conceptIds", "knowledgeTaskIds", "associationIds"):
+        items = value.get(key, [])
+        if (
+            not isinstance(items, list)
+            or len(items) > _MAX_PERSONALIZATION_IDS
+            or any(
+                not isinstance(item, str)
+                or not item.strip()
+                or len(item) > _MAX_PERSONALIZATION_ID_LENGTH
+                for item in items
+            )
+            or len(items) != len(set(items))
+        ):
+            return None, f"personalization-{key}-invalid"
+        projected[key] = sorted(items)
+
+    pool = value.get("pool", "broad")
+    if not isinstance(pool, str) or pool not in {"broad", "exploration"}:
+        return None, "personalization-pool-invalid"
+    projected["pool"] = pool
+    return projected, None
 
 
 def _record_id(record: Any) -> str:
@@ -401,7 +445,13 @@ def build_pack(manifest: Any, manifest_directory: Path) -> dict[str, Any]:
         if not _review_metadata_valid(lexeme):
             _quarantine(quarantine, "lexeme", lexeme_id, "lexeme-review-evidence-incomplete")
             continue
-        admitted_lexemes[lexeme_id] = {
+        personalization, personalization_error = _personalization_tags(
+            lexeme.get("personalization")
+        )
+        if personalization_error:
+            _quarantine(quarantine, "lexeme", lexeme_id, personalization_error)
+            continue
+        admitted_lexeme: dict[str, Any] = {
             "id": lexeme_id,
             "headword": unicodedata.normalize("NFC", headword),
             "language": language,
@@ -412,6 +462,9 @@ def build_pack(manifest: Any, manifest_directory: Path) -> dict[str, Any]:
                 "reviewedAt": lexeme["reviewedAt"],
             },
         }
+        if personalization is not None:
+            admitted_lexeme["personalization"] = personalization
+        admitted_lexemes[lexeme_id] = admitted_lexeme
 
     admitted_senses: dict[str, dict[str, Any]] = {}
     for sense in record_lists["senses"]:

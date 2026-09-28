@@ -98,7 +98,11 @@ SPDX identifiers with approved rights fields can contribute records.
 The manifest includes `sources` plus `records.lexemes`, `records.senses`,
 `records.facts`, and `records.clues`. Record rows carry `sourceId`,
 `admissionStatus: "reviewed"`, `reviewerId`, an ISO `reviewedAt` date, and
-nonempty `evidenceRefs`. A lexeme needs a reviewed surface and language. A sense
+nonempty `evidenceRefs`. A lexeme needs a reviewed surface and language. It may
+also carry an explicit `personalization` object with bounded, unique
+`conceptIds`, `knowledgeTaskIds`, and `associationIds`, plus an optional `pool`
+of `broad` or `exploration`; these IDs are preserved in sorted order and never
+inferred from prose. Invalid tags quarantine the lexeme. A sense
 uses `resolutionStatus: "resolved"` with a gloss to support a clue, or
 `resolutionStatus: "unresolved"` to remain fill-only. Facts must name an
 admitted `lexemeId` and a reviewed statement. A clue needs its own pinned
