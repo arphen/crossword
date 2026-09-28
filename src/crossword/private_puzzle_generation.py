@@ -4343,13 +4343,23 @@ def _fill_retry_options(seed, options):
             ),
         ]
     else:
+        local_words = _local_fill_word_set()
+        local_anchor = next(
+            (
+                theme
+                for theme in themes
+                if isinstance(theme, str) and theme in local_words
+            ),
+            None,
+        )
+        theme_relief = (
+            [("local-theme-anchor", seed, [local_anchor])]
+            if local_anchor
+            else [("reduced-theme-fallback", seed, list(themes[:1]))]
+        )
         specs = [
             ("theme-locked-primary", seed, list(themes)),
-            (
-                "reduced-theme-fallback",
-                seed,
-                list(themes[:1]),
-            ),
+            *theme_relief,
             (
                 "theme-locked-reseed",
                 (seed + _FILL_RETRY_SEED_STEP) % 2_147_483_648,

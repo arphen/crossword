@@ -1066,6 +1066,31 @@ def test_fill_retry_options_are_bounded_and_reproducible():
     assert first[-1]["options"]["themes"] == []
 
 
+def test_fill_retry_options_try_a_local_model_theme_anchor(monkeypatch):
+    monkeypatch.setattr(
+        private_generation, "_local_fill_word_set", lambda: frozenset({"ECHO"})
+    )
+    options = {
+        "seed": 42,
+        "candidates": 75,
+        "time": 2,
+        "keepMean": 50,
+        "minScore": 40,
+        "maxIffy": 20,
+        "themes": ["RESONANCE", "ECHO", "PITCH"],
+    }
+
+    attempts = private_generation._fill_retry_options(42, options)
+
+    assert [attempt["label"] for attempt in attempts] == [
+        "theme-locked-primary",
+        "local-theme-anchor",
+        "theme-locked-reseed",
+        "open-grid-reseed",
+    ]
+    assert attempts[1]["options"]["themes"] == ["ECHO"]
+
+
 def test_crossing_support_summary_reports_structural_access_and_uncertainty():
     summary = private_generation._crossing_support_summary(
         {
