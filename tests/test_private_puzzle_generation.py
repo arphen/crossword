@@ -2549,6 +2549,71 @@ def test_tuesday_surface_floor_allows_one_additional_bounded_repair_batch(monkey
     assert report["floorMet"] is True
 
 
+def test_tuesday_missing_family_retries_rotate_fresh_candidates_and_record_exhaustion(monkeypatch):
+    entries = [
+        {"id": f"{index}A", "answer": "BARK", "length": 4, "theme": False}
+        for index in range(1, 37)
+    ]
+    calls = []
+    spoken_batches = []
+    surfaces = {
+        "pun": "Branch, perhaps?",
+        "fill-blank": "Safe and ___",
+        "nonverbal-expression": "[Sound heard nearby]",
+        "metalinguistic": "Estimated arrival, briefly",
+    }
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append(messages)
+        if len(calls) == 1:
+            return {
+                "title": "A Tuesday board",
+                "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
+            }
+        requested = json.loads(messages[-1]["content"])["entries"]
+        spoken_batches.append(
+            [item["id"] for item in requested if item["desiredFamily"] == "spoken-equivalent"]
+        )
+        # Deliberately leave the requested family unavailable. Every other
+        # accepted surface remains valid, so the test proves that retries do
+        # not fake the missing family with answer-bearing fallback text.
+        return {
+            "title": "A Tuesday board",
+            "clues": [
+                {"id": item["id"], "text": surfaces[item["desiredFamily"]]}
+                for item in requested
+                if item["desiredFamily"] in surfaces
+            ],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    context = {}
+
+    _, clues = private_generation._make_clues(
+        "gemma4:26b", entries, context, "tuesday"
+    )
+
+    assert len(calls) <= 6
+    non_empty_spoken_batches = [batch for batch in spoken_batches if batch]
+    assert len(non_empty_spoken_batches) >= 2
+    assert len(non_empty_spoken_batches[0]) >= 2
+    assert set(non_empty_spoken_batches[0]).isdisjoint(non_empty_spoken_batches[1]), spoken_batches
+    repair = context["_clue_diversity_repair"]
+    assert repair["unavailableFamilies"] == ["spoken-equivalent"]
+    assert repair["familyRetryStatus"] == "bounded-exhausted"
+    report = private_generation._clue_diversity_report(
+        entries, clues, repair=repair
+    )
+    assert report["missingNonDefinitionFamilies"] == ["spoken-equivalent"]
+    assert report["floorMet"] is False
+    assert not any("Entry supported by" in clue for clue in clues.values())
+
+
 def test_clue_surface_checks_and_normalization_preserve_the_answer_free_surface():
     assert private_generation._clue_surface_issues("[Sound? that bounces back") == [
         "unbalanced-brackets",

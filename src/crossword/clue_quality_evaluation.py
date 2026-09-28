@@ -173,6 +173,27 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
                     repair_projection[key] = value
                 else:
                     repair_projection[key] = _count(value, f"provenance.clueQuality.diversity.repair.{key}")
+        unavailable = repair.get("unavailableFamilies")
+        if unavailable is not None:
+            if (
+                not isinstance(unavailable, list)
+                or not unavailable
+                or not all(isinstance(item, str) and item for item in unavailable)
+                or len(set(unavailable)) != len(unavailable)
+            ):
+                raise ValueError(
+                    "provenance.clueQuality.diversity.repair.unavailableFamilies "
+                    "must be a non-empty list of unique names"
+                )
+            repair_projection["unavailableFamilies"] = sorted(unavailable)
+        retry_status = repair.get("familyRetryStatus")
+        if retry_status is not None:
+            if retry_status != "bounded-exhausted":
+                raise ValueError(
+                    "provenance.clueQuality.diversity.repair.familyRetryStatus "
+                    "must be bounded-exhausted"
+                )
+            repair_projection["familyRetryStatus"] = retry_status
     return {
         "seed": _seed(seed, "seed"),
         "entryCount": entry_count,

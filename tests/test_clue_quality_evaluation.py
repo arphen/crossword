@@ -92,6 +92,20 @@ def test_case_projection_derives_and_checks_required_family_gaps():
         clue_case_from_provenance(value, 9)
 
 
+def test_case_projection_preserves_unavailable_family_receipt_without_clue_text():
+    value = _provenance()
+    value["clueQuality"]["diversity"]["repair"].update(
+        {
+            "unavailableFamilies": ["spoken-equivalent"],
+            "familyRetryStatus": "bounded-exhausted",
+        }
+    )
+    case = clue_case_from_provenance(value, 10)
+    assert case["repair"]["unavailableFamilies"] == ["spoken-equivalent"]
+    assert case["repair"]["familyRetryStatus"] == "bounded-exhausted"
+    assert not {"answer", "clueText", "entries", "clues"}.intersection(case["repair"])
+
+
 def test_study_digest_is_stable_and_reports_missing_requested_seed():
     case = clue_case_from_provenance(_provenance(), 7)
     report = evaluate_clue_quality_study(

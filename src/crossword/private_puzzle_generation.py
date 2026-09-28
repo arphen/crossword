@@ -3908,13 +3908,72 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
     missing_families = [
         family for family in target_families if family not in existing_families
     ]
-    desired_families = (
-        missing_families
-        + [
-            _DIVERSITY_FAMILY_ORDER[index % len(_DIVERSITY_FAMILY_ORDER)]
-            for index in range(max(0, len(candidates) - len(missing_families)))
+    # A missing family used to receive only the first slot in each retry
+    # batch.  On a large Tuesday board that gave Gemma one spoken-equivalent
+    # opportunity per pass while the remaining slots were spent on families
+    # already present.  Give every missing family a small bounded run of fresh
+    # candidates first, then spend the remainder on the ordinary rotation.
+    # This changes only the request shape; every returned clue still has to
+    # pass the exact visible-family and answer-safety validators below.
+    attempted_by_family = (
+        context.setdefault("_clue_diversity_attempted_ids", {})
+        if isinstance(context, dict)
+        else {}
+    )
+    if not isinstance(attempted_by_family, dict) and isinstance(context, dict):
+        attempted_by_family = {}
+        context["_clue_diversity_attempted_ids"] = attempted_by_family
+    selected_entries = []
+    desired_families = []
+    missing_family_quota = min(
+        4,
+        max(1, len(candidates) // max(1, len(missing_families)))
+        if missing_families
+        else 0,
+    )
+    for family in missing_families:
+        used_ids = {
+            item_id
+            for item_id in attempted_by_family.get(family, [])
+            if isinstance(item_id, str)
+        }
+        fresh = [
+            entry
+            for entry in candidates
+            if entry.get("id") not in used_ids
+            and entry.get("id") not in {item.get("id") for item in selected_entries}
         ]
-    )[: len(candidates)]
+        chosen = fresh[:missing_family_quota]
+        # Once the fresh pool is exhausted, reuse an eligible entry rather
+        # than silently pretending that the family was satisfied. The receipt
+        # will report the family as unresolved if no safe rewrite is returned.
+        if len(chosen) < missing_family_quota:
+            reusable = [
+                entry
+                for entry in candidates
+                if entry.get("id") not in {item.get("id") for item in selected_entries}
+            ]
+            chosen.extend(reusable[: missing_family_quota - len(chosen)])
+        selected_entries.extend(chosen)
+        desired_families.extend([family] * len(chosen))
+    remaining = [
+        entry
+        for entry in candidates
+        if entry.get("id") not in {item.get("id") for item in selected_entries}
+    ]
+    remaining_slots = max(0, len(candidates) - len(selected_entries))
+    selected_entries.extend(remaining[:remaining_slots])
+    rotation_families = [
+        family
+        for family in _DIVERSITY_FAMILY_ORDER
+        if family not in missing_families
+    ] or list(missing_families) or list(_DIVERSITY_FAMILY_ORDER)
+    desired_families.extend(
+        rotation_families[index % len(rotation_families)]
+        for index in range(remaining_slots)
+    )
+    candidates = selected_entries[:repair_limit]
+    desired_families = desired_families[: len(candidates)]
     selected = [
         {
             "id": entry["id"],
@@ -3932,6 +3991,13 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         }
         for index, entry in enumerate(candidates)
     ]
+    for item in selected:
+        family = item.get("desiredFamily")
+        entry_id = item.get("id")
+        if isinstance(family, str) and isinstance(entry_id, str):
+            ids = attempted_by_family.setdefault(family, [])
+            if isinstance(ids, list) and entry_id not in ids:
+                ids.append(entry_id)
     schema = _clue_schema([item["id"] for item in selected])
     try:
         target_instruction = (
@@ -3940,6 +4006,14 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
             if isinstance(target_clue_count, int)
             and isinstance(target_rate, (int, float))
             and not isinstance(target_rate, bool)
+            else ""
+        )
+        missing_family_instruction = (
+            "The board is currently missing these required visible families: "
+            f"{', '.join(missing_families)}. Spend the first requested entries on those families. "
+            "For spoken-equivalent, the entire clue must be one natural quoted utterance: begin and end with matching quotation marks; an optional (Spoken equivalent) annotation may follow. "
+            "Do not add an unquoted label or explanatory prefix, and do not use a quotation merely to repeat the answer. "
+            if missing_families
             else ""
         )
         value = _chat(
@@ -3952,6 +4026,7 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
                         f"Keep the {weekday.title()} voice and the supplied answers. "
                         f"The selected recipe asks for at least {minimum_families} distinct non-definition clue families. "
                         f"{target_instruction}"
+                        f"{missing_family_instruction}"
                         f"{recipe['clueDirection']} "
                         "Rewrite only the selected entries, preserving fair grammar and answer shape. "
                         "The requested desiredFamily is mandatory for each selected id; do not silently substitute another family. "
@@ -4783,7 +4858,25 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
                 **diversity_repair,
                 "maxAttempts": max_diversity_attempts,
             }
-            context["_clue_diversity_repair"] = diversity_repair
+        # Keep an explicit answer-free receipt when the bounded retry budget
+        # still cannot produce one of the required visible families. This is
+        # an honest availability signal, not a reason to synthesize a clue or
+        # lower the family floor in the report.
+        final_diversity = _clue_diversity_report(entries, safe_clues)
+        unresolved_families = [
+            family
+            for family in _effective_weekday_recipe(weekday, context).get(
+                "requiredNonDefinitionFamilySet", ()
+            )
+            if family not in final_diversity.get("nonDefinitionFamilies", [])
+        ]
+        if unresolved_families:
+            diversity_repair = {
+                **diversity_repair,
+                "unavailableFamilies": unresolved_families,
+                "familyRetryStatus": "bounded-exhausted",
+            }
+        context["_clue_diversity_repair"] = diversity_repair
     context["_clue_safety_fallbacks"] = safety_fallbacks
     clue_timing = {
         **clue_timing,
