@@ -4641,14 +4641,10 @@ def _generate(
     last_fill_error = None
     fill_attempts = []
     successful_fills = []
-    # Tuesday keeps one surviving theme lock when the native fill can support
-    # it. This gives the recipe a discoverable turn without making a failed
-    # multi-lock proposal erase personalization from the board.
-    theme_floor = (
-        1
-        if weekday == "tuesday" and options.get("themes")
-        else min(2, len(options.get("themes", [])))
-    )
+    # Tuesday keeps up to two surviving theme locks when the native fill can
+    # support them. A single invitation still receives a one-theme floor, and
+    # an unplaceable pair releases to the ordinary fallback candidates.
+    theme_floor = min(2, len(options.get("themes", [])))
     # A validated Thursday proposal is only meaningful when at least three
     # instances survive the fill. Prefer that stronger floor during candidate
     # selection; if no candidate meets it, the ordinary open-grid fallback
