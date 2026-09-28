@@ -70,6 +70,12 @@ This is useful runtime evidence: the stronger count target is reachable, while
 family diversity still needs better model steering and remains an honest
 editorial shortfall rather than a reason to block private play.
 
+The surface observer now retains a quote signal when a quoted fill-in or
+spoken phrase carries a trailing `(Fill-in)` or similar annotation, while
+keeping the primary family as fill-blank when the blank is the stronger
+convention. This keeps the renderer's explanation and answer-free study counts
+faithful to the literal clue surface.
+
 The Tuesday recipe lets the model propose up to five theme locks, then submits
 at most four to the native runtime. The current bounded diversity repair asks
 for at least five safe non-definition clue families and 28 signalled clue

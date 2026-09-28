@@ -510,6 +510,19 @@ def _clue_family_observation(clue):
         )
         family = "nonverbal-expression"
     else:
+        # A quoted phrase may carry a trailing editorial annotation such as
+        # ``(Fill-in)``. Preserve the quote signal before choosing the primary
+        # family so the renderer and answer-free receipts can explain both
+        # visible conventions.
+        if _leading_quoted_surface(stripped):
+            signals.append(
+                {
+                    "kind": "quote",
+                    "start": 0,
+                    "end": _leading_quoted_surface(stripped),
+                    "role": "spoken-equivalent",
+                }
+            )
         plural = _PLURAL_MARKER_RE.search(stripped)
         language = _CLUE_FAMILY_LANGUAGE_RE.search(stripped)
         fill = _CLUE_FAMILY_FILL_RE.search(stripped)
@@ -577,6 +590,23 @@ def _clue_family_observation(clue):
         "signals": signals,
         "uncertainty": ["semantic-family-unverified"],
     }
+
+
+def _leading_quoted_surface(text):
+    """Return the end offset of a leading quoted span with an annotation."""
+    if not isinstance(text, str) or len(text) < 3:
+        return None
+    opening = text[0]
+    closing = {"'": "'", '"': '"', "“": "”", "‘": "’"}.get(opening)
+    if closing is None:
+        return None
+    end = text.rfind(closing)
+    if end <= 1:
+        return None
+    suffix = text[end + 1 :].strip()
+    if suffix and not re.fullmatch(r"(?:\([^\n)]*\)|\[[^\n]]*\])", suffix):
+        return None
+    return end + 1
 
 
 _DIFFICULTY = {

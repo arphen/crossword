@@ -21,6 +21,7 @@ import src.crossword.private_puzzle_generation as private_generation
     ("clue", "family", "signal"),
     [
         ("“Not a chance!”", "spoken-equivalent", "quote"),
+        ("‘A sugary ___’ (Fill-in)", "fill-blank", "quote"),
         ("[Sigh of relief]", "nonverbal-expression", "brackets"),
         ("Safe and ___", "fill-blank", "fill-blank"),
         ("Thank you, in German", "factual-relation", "language-indicator"),
