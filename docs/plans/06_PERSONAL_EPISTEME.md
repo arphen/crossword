@@ -162,6 +162,18 @@ editorial shortfall rather than a reason to block private play.
 
 The v2 family contract was then exercised against a fresh local Gemma Tuesday run (seed `20470407`). The 74-entry board completed in 243.571 seconds with zero deterministic grammar issues and one answer-free fallback. It produced 46 signalled surfaces (62.2%) across five non-definition families (`factual-relation`, `fill-blank`, `metalinguistic`, `nonverbal-expression`, and `pun`), meeting both the 28-clue/56% target and the five-family floor. The answer-free receipt is [`private-tuesday-clue-quality-study-v6.real-gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-v6.real-gemma4-26b-20260928.json), digest `sha256:b317f0ee0a3a9cb488f61fcc81d45b2b5a0c33fd8d5c0db0da8e11268939195a`. The run demonstrates that strict family acceptance fixes the prior fill-in collapse; it remains a surface receipt, not semantic or player-difficulty evidence.
 
+The current exact-tag loopback smoke (seed `205001`) confirms the private route is
+serving a real 74-entry Tuesday board through Gemma 4 26B and native `xfill`:
+272.456 seconds, 74/74 grammar checks clean, zero fallbacks, and 69/74
+non-definition surfaces (93.2%). It still lacked the required
+`spoken-equivalent` family after the bounded retry budget, so `floorMet=false`;
+the answer-free receipt is [`private-tuesday-clue-quality-study-live-smoke.gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-live-smoke.gemma4-26b-20260928.json), digest `sha256:0e306043be53a8b9f89d72934ccb3dffe5356c3e3d3d5067b4a1f1f6aec78903`.
+The repair now gives each missing family up to four fresh entries per retry,
+adds a spoken-utterance-specific instruction, prevents still-missing families
+from being consumed by the ordinary rotation, and records bounded exhaustion
+as answer-free `unavailableFamilies` metadata. This preserves the honest floor
+instead of manufacturing a family with a scaffold.
+
 The surface observer now retains a quote signal when a quoted fill-in or
 spoken phrase carries a trailing `(Fill-in)` or similar annotation. An explicit
 `(Spoken equivalent)` marker is classified as spoken-equivalent, while a
