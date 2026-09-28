@@ -72,6 +72,18 @@ This is a bounded sample rather than a benchmark claim, but it supports
 keeping the narrower candidate policy and focusing the next optimization on
 the still-expensive risk-repair pass.
 
+The Gemma risk-repair cap was then exercised on seed `20470415`: the 74-entry
+board had zero deterministic grammar issues, zero answer-free fallbacks, 66
+signalled surfaces (89.2%), all five required families, and `floorMet=true`.
+Runtime was 247.296 seconds. The clue breakdown was 89.205 seconds for the
+primary writer, 14.411 seconds for risk repair, 78.564 seconds for diversity
+repair, and 0.007 seconds for safety normalization. The answer-free receipt
+is [`private-tuesday-clue-quality-study-v13.gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-v13.gemma4-26b-20260928.json),
+whose digest is `sha256:428d005a88465fbc9d736016338998ee5250a90f5441761cec56da3c8fbc0080`.
+This confirms the cap preserves the current surface contract while reducing
+the optional risk pass; diversity retry count remains model-output dependent
+and is the next generation-side cost to bound.
+
 The current non-live verification gate also passes: `make test` reports 886
 selected Python tests (three live-provider tests deselected), 11 legacy Jest
 tests, 146 domain tests, 8 persistence tests, 249 React tests, and 8
