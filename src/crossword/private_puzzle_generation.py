@@ -584,9 +584,9 @@ _WEEKDAY_RECIPES = {
         "intent": "Familiar material with a visible layer of fair second readings makes Tuesday a clear step beyond Monday while preserving dependable footholds.",
         "themeAnswerCount": 5,
         "themeDirection": "Choose a coherent cluster of up to five approachable answers whose connection is discoverable after one or two entries; let the pattern add a little lift without requiring specialist trivia.",
-        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but make at least fourteen clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least five distinct surface families so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
+        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but make at least fourteen clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least four distinct surface families so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
         "themeMode": "approachable-cluster-with-a-turn",
-        "minimumNonDefinitionFamilies": 5,
+        "minimumNonDefinitionFamilies": 4,
         "minimumNonDefinitionCount": 14,
     },
     "wednesday": {
@@ -4344,14 +4344,12 @@ def _fill_retry_options(seed, options):
         ]
     else:
         local_words = _local_fill_word_set()
-        local_anchor = next(
-            (
-                theme
-                for theme in themes
-                if isinstance(theme, str) and theme in local_words
-            ),
-            None,
-        )
+        local_candidates = [
+            theme
+            for theme in themes
+            if isinstance(theme, str) and theme in local_words
+        ]
+        local_anchor = min(local_candidates, key=lambda theme: (len(theme), theme)) if local_candidates else None
         theme_relief = (
             [("local-theme-anchor", seed, [local_anchor])]
             if local_anchor
