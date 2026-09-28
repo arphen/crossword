@@ -996,6 +996,48 @@
 .future-root .future-private-puzzle-error {
   color: #e0a38d;
 }
+.future-root .future-one-more {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 4px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid #ffffff0c;
+}
+.future-root .future-one-more .future-eyebrow {
+  color: var(--future-blue);
+}
+.future-root .future-one-more p {
+  max-width: 500px;
+  margin: 4px 0 0;
+  color: var(--future-muted);
+  font: 10px/1.5 var(--future-mono);
+}
+.future-root .future-one-more-button {
+  flex: 0 0 auto;
+  min-height: 35px;
+  padding: 7px 12px;
+  border: 1px solid #8dc7ff66;
+  border-radius: 3px;
+  background: #8dc7ff0d;
+  color: var(--future-blue);
+  font-size: 10px;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease;
+}
+.future-root .future-one-more-button:hover:not(:disabled) {
+  border-color: var(--future-blue);
+  background: #8dc7ff18;
+  color: var(--future-ink);
+}
+.future-root .future-one-more-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.54;
+}
 .future-root .future-first-puzzle {
   display: grid;
   justify-items: center;
@@ -3224,6 +3266,13 @@
     max-width: 190px;
     line-height: 1.35;
     text-align: left;
+  }
+  .future-root .future-one-more {
+    display: grid;
+    gap: 10px;
+  }
+  .future-root .future-one-more-button {
+    justify-self: start;
   }
   .future-root .future-first-puzzle {
     width: calc(100% - 24px);

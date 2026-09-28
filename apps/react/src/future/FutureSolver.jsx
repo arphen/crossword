@@ -426,6 +426,7 @@ export default function FutureSolver({
         modelPreference={modelPreference}
         onModelPreferenceChange={onModelPreferenceChange}
         onPuzzleRestored={() => controller.flush()}
+        postgameReady={Boolean(finishedSessionId)}
       />
       {puzzleIsCurrent ? (
         <CrosswordView

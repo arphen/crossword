@@ -152,6 +152,12 @@ test('future carries a finished solve through a saved, revisable reflection', as
   await page.locator('.future-solver #check-all').click();
   await expect(page.locator('.future-reflections')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('.future-reflection-card')).toHaveCount(3);
+  await expect(
+    page.getByRole('button', {
+      name: 'Make one more personal crossword',
+      exact: true,
+    }),
+  ).toBeVisible();
 
   const firstCard = page.locator('.future-reflection-card').first();
   await firstCard.getByRole('button', { name: 'Keep this impression' }).click();

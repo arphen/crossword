@@ -517,6 +517,28 @@ it('uses the durable response body exactly once before applying a ready board', 
   expect(host.textContent).toContain('Locally made with Ollama');
 });
 
+it('offers a contextual one-more action after a finished game', async () => {
+  const app = appState();
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    status: 202,
+    json: async () => privateJobPayload(),
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  mount(app, { postgameReady: true });
+
+  const button = host.querySelector('.future-one-more-button');
+  expect(button).not.toBeNull();
+  expect(button.textContent).toContain('one more personal crossword');
+  await act(async () => {
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  });
+
+  expect(fetchMock).toHaveBeenCalledOnce();
+  expect(app.init).toHaveBeenCalledOnce();
+});
+
 it('retries an interrupted durable job request with the same idempotency key', async () => {
   const app = appState();
   const fetchMock = vi

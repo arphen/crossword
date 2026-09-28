@@ -405,6 +405,7 @@ export default function PrivatePuzzleControls({
   modelPreference = 'automatic',
   onModelPreferenceChange,
   onPuzzleRestored,
+  postgameReady = false,
 }) {
   const [requestState, setRequestState] = useState('idle');
   const [error, setError] = useState('');
@@ -902,6 +903,25 @@ export default function PrivatePuzzleControls({
         If Ollama is unavailable, this small authored sample keeps the solver
         playable while the local model is set up. It is not personalized.
       </p>
+      {postgameReady && (
+        <section className="future-one-more" aria-label="Next personal crossword">
+          <div>
+            <span className="future-eyebrow">The next turn is waiting</span>
+            <p>
+              Carry the signals you kept into another local crossword, or
+              change the day above before it begins.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="future-one-more-button"
+            onClick={makePuzzle}
+            disabled={!canCreate}
+          >
+            Make one more personal crossword
+          </button>
+        </section>
+      )}
       {locallyMade && (
         <span className="future-local-ollama-badge">
           <span aria-hidden="true" /> Locally made with Ollama
