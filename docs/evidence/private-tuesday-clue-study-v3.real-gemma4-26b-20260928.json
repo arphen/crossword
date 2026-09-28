@@ -1,0 +1,140 @@
+{
+  "clueDiversity": {
+    "entryCount": 78,
+    "familyCounts": {
+      "definition": 58,
+      "factual-relation": 3,
+      "fill-blank": 14,
+      "pun": 2,
+      "spoken-equivalent": 1
+    },
+    "floorMet": true,
+    "nonDefinitionCount": 20,
+    "nonDefinitionFamilies": [
+      "factual-relation",
+      "fill-blank",
+      "pun",
+      "spoken-equivalent"
+    ],
+    "playPolicy": "never-gates-private-play",
+    "policy": "visible-convention-diversity-only",
+    "requiredNonDefinitionClues": 18,
+    "requiredNonDefinitionFamilies": 4,
+    "status": "varied"
+  },
+  "clueQuality": {
+    "checkedCount": 78,
+    "fallbackCount": 3,
+    "grammarVersion": "private-clue-grammar-bridge-v1",
+    "issueCount": 0,
+    "semanticStatus": "not-established"
+  },
+  "fillQuality": {
+    "attemptCount": 4,
+    "attempts": [
+      {
+        "attempt": 1,
+        "candidates": 75,
+        "entryCount": null,
+        "iffyCount": null,
+        "label": "theme-locked-primary",
+        "meanScore": null,
+        "reason": "Construction options are outside the local runtime limits",
+        "status": "failed",
+        "themeCount": 5,
+        "timeSeconds": 2.5,
+        "weakCount": null
+      },
+      {
+        "attempt": 2,
+        "candidates": 75,
+        "entryCount": 78,
+        "iffyCount": 0,
+        "label": "local-theme-anchor",
+        "meanScore": 84.66,
+        "reason": null,
+        "status": "candidate",
+        "themeCount": 2,
+        "timeSeconds": 2.5,
+        "weakCount": 0
+      },
+      {
+        "attempt": 3,
+        "candidates": 75,
+        "entryCount": null,
+        "iffyCount": null,
+        "label": "theme-locked-reseed",
+        "meanScore": null,
+        "reason": "Construction options are outside the local runtime limits",
+        "status": "failed",
+        "themeCount": 5,
+        "timeSeconds": 2.5,
+        "weakCount": null
+      },
+      {
+        "attempt": 4,
+        "candidates": 75,
+        "entryCount": 74,
+        "iffyCount": 4,
+        "label": "open-grid-reseed",
+        "meanScore": 74.92,
+        "reason": null,
+        "status": "candidate",
+        "themeCount": 0,
+        "timeSeconds": 2.5,
+        "weakCount": 24
+      }
+    ],
+    "entryCount": 78,
+    "footholdCount": 0,
+    "iffyCount": 0,
+    "meanScore": 84.66,
+    "minimumScore": 70,
+    "selectedAttempt": 2,
+    "selectionBasis": "fewest-iffy-then-theme-floor-then-weak-then-mean-then-min",
+    "themeFloor": 2,
+    "weakCount": 0
+  },
+  "generatedAt": "2026-09-28",
+  "model": "gemma4:26b",
+  "recipe": {
+    "candidates": 75,
+    "gridMechanic": "ordinary-letter-grid",
+    "id": "tuesday-private-v1",
+    "intent": "Familiar material with a visible layer of fair second readings makes Tuesday a clear step beyond Monday while preserving dependable footholds.",
+    "minimumNonDefinitionCount": 18,
+    "minimumNonDefinitionFamilies": 4,
+    "themeAnswerTarget": 5,
+    "themeEntriesUsed": 2,
+    "themeLocksUsed": 2,
+    "themeMode": "approachable-cluster-with-a-turn",
+    "timeSeconds": 2.5
+  },
+  "repair": {
+    "followUpBatches": 3,
+    "maxEntriesPerPass": 10,
+    "minimumClueCount": 18,
+    "minimumFamilies": 4,
+    "postSafetyRepair": true,
+    "reason": "weekday-surface-floor",
+    "status": "bounded"
+  },
+  "responseDigest": "sha256:dd30553f7e824d3e0a983f457a4eeaef6fa0321ecf64c26b61beb21637fa2b0b",
+  "seed": 20470389,
+  "timingsSeconds": {
+    "clueChallenge": 0.007,
+    "clueGeneration": 157.118,
+    "nativeXfill": 18.032,
+    "themeProposal": 2.875,
+    "total": 178.234
+  },
+  "transport": "loopback-http",
+  "uncertainty": [
+    "local-model-output",
+    "xfill-heuristic-not-human-quality",
+    "clue-semantics-unreviewed",
+    "player-support-unmeasured"
+  ],
+  "version": "private-tuesday-clue-study-v3",
+  "weekday": "tuesday"
+}
