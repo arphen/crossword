@@ -1369,6 +1369,7 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     assert tuesday["themeAnswerCount"] == 5
     assert tuesday["minimumNonDefinitionFamilies"] == 4
     assert tuesday["minimumNonDefinitionCount"] == 18
+    assert tuesday["targetNonDefinitionRate"] == 0.35
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] == 75
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] > private_generation._DIFFICULTY["monday"]["candidates"]
     assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
@@ -1974,14 +1975,31 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
 
     assert len(calls) == 5
     assert context["_clue_diversity_repair"]["reason"] == "weekday-surface-floor"
-    assert context["_clue_diversity_repair"]["selectedCount"] <= 10
+    assert context["_clue_diversity_repair"]["selectedCount"] <= 14
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )
     assert len(report["nonDefinitionFamilies"]) >= 6
     assert report["status"] == "varied"
     assert report["nonDefinitionCount"] >= 18
+    assert report["targetNonDefinitionClues"] == 11
+    assert report["requiredNonDefinitionClues"] == 18
     assert report["floorMet"] is True
+
+
+def test_tuesday_surface_floor_scales_to_full_board_target(monkeypatch):
+    monkeypatch.setenv("CROSSWORD_PRIVATE_CLUE_DIVERSITY_REPAIR", "0")
+    entries = [
+        {"id": f"{index}A", "answer": "BARK", "length": 4, "theme": False}
+        for index in range(1, 79)
+    ]
+    clues = {entry["id"]: "A thing" for entry in entries}
+    _, repair = private_generation._repair_clue_diversity(
+        "gemma4:26b", entries, clues, {}, "tuesday", {}
+    )
+    assert repair["minimumClueCount"] == 18
+    assert repair["targetNonDefinitionRate"] == 0.35
+    assert repair["targetNonDefinitionClues"] == 28
 
 
 def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):

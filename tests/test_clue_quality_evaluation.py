@@ -22,6 +22,7 @@ def _provenance():
                 "entryCount": 4,
                 "familyCounts": {"definition": 2, "fill-blank": 1, "pun": 1},
                 "nonDefinitionCount": 2,
+                "nonDefinitionRate": 0.5,
                 "nonDefinitionFamilies": ["fill-blank", "pun"],
                 "floorMet": True,
                 "requiredNonDefinitionFamilies": 2,
@@ -46,6 +47,7 @@ def test_case_projection_is_answer_free_and_preserves_surface_receipts():
     case = clue_case_from_provenance(_provenance(), 7)
     assert case["entryCount"] == 4
     assert case["familyCounts"] == {"definition": 2, "fill-blank": 1, "pun": 1}
+    assert case["nonDefinitionRate"] == 0.5
     assert case["issueCounts"] == {"answer-form-in-clue": 1}
     assert case["semanticChallenge"] == {"needs-review": 3, "safe-fallback": 1}
     assert case["timingsSeconds"]["total"] == 12.5

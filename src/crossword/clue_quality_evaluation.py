@@ -114,6 +114,14 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
         raise ValueError("clue family counts must add up to entryCount")
     if non_definition > entry_count:
         raise ValueError("nonDefinitionCount cannot exceed entryCount")
+    observed_rate = (
+        _number(
+            diversity.get("nonDefinitionRate"),
+            "provenance.clueQuality.diversity.nonDefinitionRate",
+        )
+        if "nonDefinitionRate" in diversity
+        else round(non_definition / entry_count, 3) if entry_count else 0.0
+    )
     families = diversity.get("nonDefinitionFamilies", [])
     if not isinstance(families, list) or not all(isinstance(item, str) and item for item in families):
         raise ValueError("nonDefinitionFamilies must be a list of names")
@@ -144,10 +152,27 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
         "semanticStatus": _text(quality.get("diversity", {}).get("semanticStatus", "not-established"), "diversity.semanticStatus"),
         "familyCounts": family_counts,
         "nonDefinitionCount": non_definition,
+        "nonDefinitionRate": observed_rate,
         "nonDefinitionFamilies": sorted(set(families)),
         "floorMet": diversity.get("floorMet") is True,
         "requiredNonDefinitionFamilies": _count(diversity.get("requiredNonDefinitionFamilies", 0), "diversity.requiredNonDefinitionFamilies"),
         "requiredNonDefinitionClues": _count(diversity.get("requiredNonDefinitionClues", 0), "diversity.requiredNonDefinitionClues"),
+        "targetNonDefinitionRate": (
+            _number(
+                diversity.get("targetNonDefinitionRate"),
+                "provenance.clueQuality.diversity.targetNonDefinitionRate",
+            )
+            if "targetNonDefinitionRate" in diversity
+            else None
+        ),
+        "targetNonDefinitionClues": (
+            _count(
+                diversity.get("targetNonDefinitionClues"),
+                "provenance.clueQuality.diversity.targetNonDefinitionClues",
+            )
+            if "targetNonDefinitionClues" in diversity
+            else None
+        ),
         "signalCounts": _counts(quality.get("signalCounts", {}), "clueQuality.signalCounts"),
         "issueCounts": _counts(quality.get("issueCounts", {}), "clueQuality.issueCounts"),
         "semanticChallenge": _counts(

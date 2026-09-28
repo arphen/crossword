@@ -593,6 +593,11 @@ _WEEKDAY_RECIPES = {
         "themeMode": "approachable-cluster-with-a-turn",
         "minimumNonDefinitionFamilies": 4,
         "minimumNonDefinitionCount": 18,
+        # The count floor protects small fixture boards.  On a full 15x15,
+        # the editorial contract also asks for roughly one third of the
+        # visible surfaces to carry a fair convention or second reading so
+        # Tuesday does not collapse into Monday-style direct definitions.
+        "targetNonDefinitionRate": 0.35,
     },
     "wednesday": {
         "id": "wednesday-private-v1",
@@ -3113,6 +3118,11 @@ def _clue_diversity_report(entries, clues, *, repair=None):
         "familyCounts": dict(sorted(family_counts.items())),
         "nonDefinitionFamilies": non_definition,
         "nonDefinitionCount": non_definition_count,
+        "nonDefinitionRate": round(
+            non_definition_count / sum(family_counts.values()), 3
+        )
+        if family_counts
+        else 0.0,
         "status": (
             "varied"
             if len(non_definition) >= 2
@@ -3130,6 +3140,15 @@ def _clue_diversity_report(entries, clues, *, repair=None):
         if isinstance(required, int) and required >= 0:
             result["requiredNonDefinitionFamilies"] = required
             required_count = repair.get("minimumClueCount")
+            target_rate = repair.get("targetNonDefinitionRate")
+            if isinstance(target_rate, (int, float)) and not isinstance(target_rate, bool):
+                target_count = math.ceil(sum(family_counts.values()) * float(target_rate))
+                if isinstance(required_count, int):
+                    required_count = max(required_count, target_count)
+                else:
+                    required_count = target_count
+                result["targetNonDefinitionRate"] = round(float(target_rate), 3)
+                result["targetNonDefinitionClues"] = target_count
             count_met = not isinstance(required_count, int) or non_definition_count >= required_count
             if isinstance(required_count, int):
                 result["requiredNonDefinitionClues"] = required_count
@@ -3159,6 +3178,12 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         "rewrittenCount": 0,
         "minimumFamilies": minimum_families,
         **(
+            {"targetNonDefinitionRate": recipe["targetNonDefinitionRate"]}
+            if isinstance(recipe.get("targetNonDefinitionRate"), (int, float))
+            and not isinstance(recipe.get("targetNonDefinitionRate"), bool)
+            else {}
+        ),
+        **(
             {"minimumClueCount": recipe["minimumNonDefinitionCount"]}
             if isinstance(recipe.get("minimumNonDefinitionCount"), int)
             else {}
@@ -3168,11 +3193,20 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
     if len(entries) < 24:
         return clues, {**base, "reason": "small-board"}
     minimum_clue_count = recipe.get("minimumNonDefinitionCount")
+    target_rate = recipe.get("targetNonDefinitionRate")
+    target_clue_count = minimum_clue_count if isinstance(minimum_clue_count, int) else None
+    if isinstance(target_rate, (int, float)) and not isinstance(target_rate, bool):
+        target_clue_count = max(
+            target_clue_count or 0,
+            math.ceil(len(entries) * float(target_rate)),
+        )
+    if isinstance(target_clue_count, int):
+        base["targetNonDefinitionClues"] = target_clue_count
     if (
         len(initial["nonDefinitionFamilies"]) >= minimum_families
         and (
-            not isinstance(minimum_clue_count, int)
-            or initial.get("nonDefinitionCount", 0) >= minimum_clue_count
+            not isinstance(target_clue_count, int)
+            or initial.get("nonDefinitionCount", 0) >= target_clue_count
         )
     ):
         return clues, base
@@ -3204,7 +3238,7 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
     # rewrite bounded, but give the local writer a wider candidate batch so
     # safe surfaces are not lost when one answer cannot support a requested
     # convention.
-    repair_limit = 10 if weekday == "tuesday" else 4
+    repair_limit = 14 if weekday == "tuesday" else 4
     candidates = candidates[:repair_limit]
     if not candidates:
         return clues, {**base, "status": "not-needed", "reason": "no-eligible-entries"}
@@ -3213,7 +3247,11 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         "fill-blank",
         "nonverbal-expression",
         "spoken-equivalent",
-        "factual-relation",
+        "metalinguistic",
+        "pun",
+        "fill-blank",
+        "nonverbal-expression",
+        "spoken-equivalent",
         "metalinguistic",
         "pun",
         "fill-blank",
@@ -3232,6 +3270,14 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
     ]
     schema = _clue_schema([item["id"] for item in selected])
     try:
+        target_instruction = (
+            f"On this board, target at least {target_clue_count} safe non-definition surfaces "
+            f"({float(target_rate):.0%}); this is a target for repair, never a semantic claim. "
+            if isinstance(target_clue_count, int)
+            and isinstance(target_rate, (int, float))
+            and not isinstance(target_rate, bool)
+            else ""
+        )
         value = _chat(
             model,
             [
@@ -3241,11 +3287,12 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
                         "Increase visible crossword clue variety for this private board. "
                         f"Keep the {weekday.title()} voice and the supplied answers. "
                         f"The selected recipe asks for at least {minimum_families} distinct non-definition clue families. "
+                        f"{target_instruction}"
                         f"{recipe['clueDirection']} "
                         "Rewrite only the selected entries, preserving fair grammar and answer shape. "
                         "Use the requested visible convention when it genuinely fits: a question-mark pun, "
                         "a fill-in-the-blank, a bracketed sound/action cue, or a quoted utterance. "
-                        "Do not invent facts, proper names, translations, or wordplay. Do not put an answer in its clue. "
+                        "Prefer these surface conventions over unsupported factual relations; do not invent facts, proper names, translations, or wordplay. Do not put an answer in its clue. "
                         "Return exactly one clue for every supplied id and no extra keys."
                     ),
                 },
