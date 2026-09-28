@@ -27,6 +27,8 @@ def _provenance():
                 "floorMet": True,
                 "requiredNonDefinitionFamilies": 2,
                 "requiredNonDefinitionClues": 2,
+                "targetNonDefinitionRate": 0.5,
+                "targetNonDefinitionClues": 2,
                 "semanticStatus": "not-established",
                 "repair": {"attempted": True, "attemptCount": 1, "rewrittenCount": 1},
             },
@@ -66,6 +68,12 @@ def test_study_digest_is_stable_and_reports_missing_requested_seed():
     assert report["missingSeeds"] == [8]
     assert report["summary"]["grammarIssueCount"] == 1
     assert report["summary"]["floorMetCases"] == 1
+    assert report["summary"]["floorMetRate"] == 1.0
+    assert report["summary"]["grammarCleanCases"] == 0
+    assert report["summary"]["familyFloorMetCases"] == 1
+    assert report["summary"]["targetRateCases"] == 1
+    assert report["summary"]["targetRateMetCases"] == 1
+    assert report["summary"]["observedNonDefinitionRate"] == 0.5
 
 
 def test_projection_rejects_family_count_mismatch():

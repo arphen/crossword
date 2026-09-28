@@ -76,6 +76,13 @@
     "nonDefinitionCount": 28,
     "caseCount": 1,
     "floorMetCases": 1,
+    "floorMetRate": 1.0,
+    "grammarCleanCases": 1,
+    "grammarCleanRate": 1.0,
+    "familyFloorMetCases": 1,
+    "targetRateCases": 1,
+    "targetRateMetCases": 1,
+    "observedNonDefinitionRate": 0.378,
     "familyCounts": {
       "definition": 46,
       "factual-relation": 1,
@@ -106,5 +113,5 @@
     "player-support-unmeasured",
     "local-model-output"
   ],
-  "studyDigest": "sha256:b64b12d8681e8d93de754a966798a67b0bda130f8183210156874b988162e274"
+  "studyDigest": "sha256:cc1d90cfc1d51795e2eda40d2b957be8a9d07a6aae501867638d2d1b43fecb58"
 }

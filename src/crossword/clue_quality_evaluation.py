@@ -216,12 +216,31 @@ def evaluate_clue_quality_study(
     issue_totals: Counter[str] = Counter()
     totals = Counter()
     total_times: list[float] = []
+    floor_met_cases = 0
+    grammar_clean_cases = 0
+    target_rate_met_cases = 0
+    target_rate_cases = 0
+    family_floor_met_cases = 0
     for item in normalized:
         family_totals.update(item.get("familyCounts", {}))
         signal_totals.update(item.get("signalCounts", {}))
         issue_totals.update(item.get("issueCounts", {}))
         for key in ("entryCount", "grammarCheckedCount", "grammarIssueCount", "fallbackCount", "nonDefinitionCount"):
             totals[key] += int(item.get(key, 0))
+        if item.get("floorMet") is True:
+            floor_met_cases += 1
+        if int(item.get("grammarIssueCount", 0)) == 0:
+            grammar_clean_cases += 1
+        required_families = item.get("requiredNonDefinitionFamilies")
+        observed_families = item.get("nonDefinitionFamilies", [])
+        if isinstance(required_families, int) and isinstance(observed_families, list):
+            if len(observed_families) >= required_families:
+                family_floor_met_cases += 1
+        target_rate = item.get("targetNonDefinitionRate")
+        if isinstance(target_rate, (int, float)) and not isinstance(target_rate, bool):
+            target_rate_cases += 1
+            if float(item.get("nonDefinitionRate", 0.0)) >= float(target_rate):
+                target_rate_met_cases += 1
         total = item.get("timingsSeconds", {}).get("total")
         if total is not None:
             total_times.append(float(total))
@@ -237,7 +256,18 @@ def evaluate_clue_quality_study(
         "summary": {
             **dict(totals),
             "caseCount": len(normalized),
-            "floorMetCases": sum(1 for item in normalized if item.get("floorMet") is True),
+            "floorMetCases": floor_met_cases,
+            "floorMetRate": round(floor_met_cases / len(normalized), 3),
+            "grammarCleanCases": grammar_clean_cases,
+            "grammarCleanRate": round(grammar_clean_cases / len(normalized), 3),
+            "familyFloorMetCases": family_floor_met_cases,
+            "targetRateCases": target_rate_cases,
+            "targetRateMetCases": target_rate_met_cases,
+            "observedNonDefinitionRate": round(
+                totals["nonDefinitionCount"] / totals["entryCount"], 3
+            )
+            if totals["entryCount"]
+            else 0.0,
             "familyCounts": dict(sorted(family_totals.items())),
             "signalCounts": dict(sorted(signal_totals.items())),
             "issueCounts": dict(sorted(issue_totals.items())),
