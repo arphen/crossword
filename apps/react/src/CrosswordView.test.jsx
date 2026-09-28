@@ -29,7 +29,7 @@ it('annotates clue grammar signals without rewriting the source surface', () => 
     'tense',
   ]);
   expect(signals[0].props.children).toBe('"hello"');
-  expect(signals[0].props.tabIndex).toBe('0');
+  expect(signals[0].props.tabIndex).toBe(0);
   expect(signals[0].props['aria-label']).toContain('Quotation');
   expect(signals[0].props.title).toContain('Quotation');
 });
