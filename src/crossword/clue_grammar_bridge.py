@@ -60,6 +60,10 @@ _NO_SURFACE_RULE = frozenset(
 
 _QUOTE_START = frozenset({'"', "“", "'", "‘"})
 _QUOTE_END = frozenset({'"', "”", "'", "’"})
+_ANNOTATED_SPOKEN_RE = re.compile(
+    r"^[\"“'‘].+[\"”'’]\s*[\[(]\s*(?:spoken(?:\s+equivalent)?|utterance|said\s+aloud)\s*[\])]$",
+    re.I,
+)
 _FILL_MARKER_RE = re.compile(r"(?:_{2,}|\b(?:and|or|to|of)\s+___\b)", re.I)
 _ABBREVIATION_RE = re.compile(r"[\[(]\s*abbr\.?\s*[\])] |\bbriefly\b", re.I | re.X)
 
@@ -85,7 +89,11 @@ def _surface_signal_present(
 
     text = clue.strip()
     if family == "spoken-equivalent":
-        return len(text) >= 2 and text[0] in _QUOTE_START and text[-1] in _QUOTE_END
+        return (
+            len(text) >= 2
+            and text[0] in _QUOTE_START
+            and text[-1] in _QUOTE_END
+        ) or bool(_ANNOTATED_SPOKEN_RE.fullmatch(text))
     if family == "nonverbal-expression":
         return bool(re.fullmatch(r"\[[^\]]+\]", text))
     if family == "fill-blank":

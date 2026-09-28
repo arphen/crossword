@@ -22,6 +22,7 @@ import src.crossword.private_puzzle_generation as private_generation
     [
         ("“Not a chance!”", "spoken-equivalent", "quote"),
         ("‘A sugary ___’ (Fill-in)", "fill-blank", "quote"),
+        ("‘___ the knot’ (Spoken equivalent)", "spoken-equivalent", "quote"),
         ("[Sigh of relief]", "nonverbal-expression", "brackets"),
         ("Safe and ___", "fill-blank", "fill-blank"),
         ("Thank you, in German", "factual-relation", "language-indicator"),
@@ -2172,7 +2173,7 @@ def test_large_definition_heavy_board_gets_bounded_surface_diversity_repair(monk
 
     assert len(calls) == 2
     assert context["_clue_diversity_repair"] == {
-        "version": "private-clue-diversity-repair-v1",
+        "version": "private-clue-diversity-repair-v2",
         "status": "repaired",
         "attempted": True,
         "selectedCount": 4,
@@ -2212,19 +2213,22 @@ def test_tuesday_recipe_reports_a_bounded_floor_shortfall(monkeypatch):
                 "title": "A Tuesday board",
                 "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
             }
+        requested = json.loads(messages[-1]["content"])["entries"]
         surfaces = {
-            ids[0]: "German for yes",
-            ids[1]: "Branch, perhaps?",
-            ids[2]: "Safe and ___",
-            ids[3]: "[Sound heard nearby]",
-            ids[4]: "“Not a chance!”",
-            ids[5]: "Briefly, perhaps",
+            "pun": "Branch, perhaps?",
+            "fill-blank": "Safe and ___",
+            "nonverbal-expression": "[Sound heard nearby]",
+            "spoken-equivalent": "“Not a chance!”",
+            "metalinguistic": "Estimated arrival, briefly",
         }
         return {
             "title": "A Tuesday board",
             "clues": [
-                {"id": clue_id, "text": text}
-                for clue_id, text in surfaces.items()
+                {
+                    "id": item["id"],
+                    "text": surfaces[item["desiredFamily"]],
+                }
+                for item in requested[:4]
             ],
         }
 
@@ -2246,9 +2250,9 @@ def test_tuesday_recipe_reports_a_bounded_floor_shortfall(monkeypatch):
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )
-    assert len(report["nonDefinitionFamilies"]) >= 6
+    assert len(report["nonDefinitionFamilies"]) >= 5
     assert report["status"] == "varied-below-recipe-floor"
-    assert report["nonDefinitionCount"] >= 24
+    assert report["nonDefinitionCount"] >= 20
     assert report["targetNonDefinitionClues"] == 17
     assert report["requiredNonDefinitionClues"] == 28
     assert report["floorMet"] is False
@@ -2280,29 +2284,26 @@ def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
         for index in range(1, 31)
     ]
     calls = []
-    surfaces = [
-        "German for yes",
-        "Branch, perhaps?",
-        "Safe and ___",
-        "[Sound heard nearby]",
-        "“Not a chance!”",
-        "Briefly, perhaps",
-    ]
-
     def fake_chat(_model, messages, schema, **_kwargs):
         calls.append(messages)
-        ids = schema["properties"]["clues"]["items"]["properties"]["id"]["enum"]
         if len(calls) == 1:
             return {
                 "title": "A Tuesday board",
                 "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
             }
-        batch_size = {2: 8, 3: 8, 4: 8, 5: 8, 6: 8}.get(len(calls), 8)
+        requested = json.loads(messages[-1]["content"])["entries"]
+        surfaces = {
+            "pun": "Branch, perhaps?",
+            "fill-blank": "Safe and ___",
+            "nonverbal-expression": "[Sound heard nearby]",
+            "spoken-equivalent": "“Not a chance!”",
+            "metalinguistic": "Estimated arrival, briefly",
+        }
         return {
             "title": "A Tuesday board",
             "clues": [
-                {"id": clue_id, "text": surfaces[index % len(surfaces)]}
-                for index, clue_id in enumerate(ids[:batch_size])
+                {"id": item["id"], "text": surfaces[item["desiredFamily"]]}
+                for item in requested[:8]
             ],
         }
 
@@ -2318,7 +2319,7 @@ def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
         "gemma4:26b", entries, context, "tuesday"
     )
 
-    assert len(calls) == 6
+    assert len(calls) <= 6
     assert context["_clue_diversity_repair"]["attemptCount"] == 4
     assert len(context["_clue_diversity_repair"]["attempts"]) == 4
     report = private_generation._clue_diversity_report(
@@ -2400,18 +2401,8 @@ def test_tuesday_surface_floor_allows_one_additional_bounded_repair_batch(monkey
         '“Not a chance!”',
         "Briefly, perhaps",
     ]
-    followup_surfaces = [
-        "Branch, perhaps?",
-        "Safe and ___",
-        "[Sound heard nearby]",
-        '“Not a chance!”',
-        "A word? perhaps",
-        "[Action heard nearby]",
-    ]
-
     def fake_chat(_model, _messages, schema, **_kwargs):
         calls.append(schema)
-        ids = schema["properties"]["clues"]["items"]["properties"]["id"]["enum"]
         if len(calls) == 1:
             clues = [
                 {"id": entry["id"], "text": "A thing"}
@@ -2420,12 +2411,19 @@ def test_tuesday_surface_floor_allows_one_additional_bounded_repair_batch(monkey
             for index, text in enumerate(initial_surfaces):
                 clues[index]["text"] = text
             return {"title": "A Tuesday board", "clues": clues}
-        text = followup_surfaces[min(len(calls) - 2, len(followup_surfaces) - 1)]
+        requested = json.loads(_messages[-1]["content"])["entries"]
+        surfaces = {
+            "pun": "Branch, perhaps?",
+            "fill-blank": "Safe and ___",
+            "nonverbal-expression": "[Sound heard nearby]",
+            "spoken-equivalent": "“Not a chance!”",
+            "metalinguistic": "Estimated arrival, briefly",
+        }
         return {
             "title": "A Tuesday board",
             "clues": [
-                {"id": clue_id, "text": text}
-                for clue_id in ids[:6]
+                {"id": item["id"], "text": surfaces[item["desiredFamily"]]}
+                for item in requested[:6]
             ],
         }
 

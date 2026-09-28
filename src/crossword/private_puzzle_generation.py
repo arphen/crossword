@@ -326,6 +326,10 @@ _CLUE_FAMILY_FILL_RE = re.compile(
     r"(?:_{2,}|\b(?:and|or|to|of)\s+___\b)", re.IGNORECASE
 )
 _CLUE_FAMILY_ABBR_RE = re.compile(r"[\[(]\s*abbr\.?\s*[\])]|\bbriefly\b", re.IGNORECASE)
+_CLUE_FAMILY_SPOKEN_RE = re.compile(
+    r"[\[(]\s*(?:spoken(?:\s+equivalent)?|utterance|said\s+aloud)\s*[\])]",
+    re.IGNORECASE,
+)
 _CLUE_FAMILY_TENSE_RE = re.compile(
     r"(?:\b(?:past|present|future)\s+tense\b|[\[(]\s*(?:past|present|future)(?:\s+tense)?\s*[\])])",
     re.IGNORECASE,
@@ -337,7 +341,9 @@ _CLUE_FAMILY_TENSE_RE = re.compile(
 # unknown, but it cannot certify a sense or a fact.
 GROUNDED_CLUE_BUNDLE_VERSION = "private-grounded-clue-bundle-v1"
 REVIEWED_CLUE_PACK_VERSION = "private-reviewed-clue-pack-v1"
-CLUE_DIVERSITY_REPAIR_VERSION = "private-clue-diversity-repair-v1"
+# v2 makes the requested family a hard visible-surface contract. Older v1
+# receipts remain readable as historical, advisory runs.
+CLUE_DIVERSITY_REPAIR_VERSION = "private-clue-diversity-repair-v2"
 CLUE_DIVERSITY_REPAIR_ENV = "CROSSWORD_PRIVATE_CLUE_DIVERSITY_REPAIR"
 FILL_QUALITY_POLICY_VERSION = "private-fill-quality-policy-v1"
 _NATIVE_THEME_LOCK_LIMIT = 4
@@ -514,15 +520,17 @@ def _clue_family_observation(clue):
         # ``(Fill-in)``. Preserve the quote signal before choosing the primary
         # family so the renderer and answer-free receipts can explain both
         # visible conventions.
-        if _leading_quoted_surface(stripped):
+        quoted_end = _leading_quoted_surface(stripped)
+        if quoted_end:
             signals.append(
                 {
                     "kind": "quote",
                     "start": 0,
-                    "end": _leading_quoted_surface(stripped),
+                    "end": quoted_end,
                     "role": "spoken-equivalent",
                 }
             )
+        spoken_annotation = _CLUE_FAMILY_SPOKEN_RE.search(stripped)
         plural = _PLURAL_MARKER_RE.search(stripped)
         language = _CLUE_FAMILY_LANGUAGE_RE.search(stripped)
         fill = _CLUE_FAMILY_FILL_RE.search(stripped)
@@ -544,7 +552,16 @@ def _clue_family_observation(clue):
                     "end": tense.end(),
                 }
             )
-        if language:
+        if spoken_annotation and quoted_end:
+            signals.append(
+                {
+                    "kind": "spoken-equivalent-marker",
+                    "start": spoken_annotation.start(),
+                    "end": spoken_annotation.end(),
+                }
+            )
+            family = "spoken-equivalent"
+        elif language:
             signals.append(
                 {
                     "kind": "language-indicator",
@@ -3585,6 +3602,27 @@ def _clue_diversity_report(entries, clues, *, repair=None):
     return result
 
 
+_DIVERSITY_FAMILY_ORDER = (
+    "pun",
+    "fill-blank",
+    "nonverbal-expression",
+    "spoken-equivalent",
+    "metalinguistic",
+)
+
+
+def _desired_clue_family_matches(clue, desired_family):
+    """Return whether a repaired clue carries the requested house signal.
+
+    The diversity pass is allowed to fail open, but it must not call a pile of
+    fill-ins a five-family Tuesday.  This check stays at the visible grammar
+    boundary: it does not claim that the clue is semantically fair or true.
+    """
+    if not isinstance(desired_family, str):
+        return False
+    return _clue_family_observation(clue).get("family") == desired_family
+
+
 def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_id):
     """Add a few safe clue surfaces when a large board is definition-only.
 
@@ -3661,14 +3699,23 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         if not isinstance(entry_id, str) or entry_id in reviewed_ids:
             continue
         clue = clues.get(entry_id, "") if isinstance(clues, Mapping) else ""
-        if _clue_family_observation(clue).get("family") != "definition":
-            continue
         # Theme and weak entries already have dedicated clue policies; leave
         # those surfaces to the main writer and foothold repair pass.
         if entry.get("theme") is True or entry.get("needsFoothold") is True:
             continue
-        candidates.append(entry)
-    candidates.sort(key=lambda item: (len(str(item.get("answer", ""))), item.get("id", "")))
+        current_family = _clue_family_observation(clue).get("family")
+        candidates.append((current_family != "definition", entry))
+    # Prefer direct definitions first, then allow the repair pass to rotate an
+    # existing surface into a missing family when a model has already spent
+    # the eligible definition pool on one convention.
+    candidates.sort(
+        key=lambda item: (
+            item[0],
+            len(str(item[1].get("answer", ""))),
+            item[1].get("id", ""),
+        )
+    )
+    candidates = [entry for _, entry in candidates]
     # Tuesday needs a visibly broader clue language than Monday. Give the
     # writer enough eligible entries to reach the full-board target in one
     # bounded response; safety and surface validators still discard anything
@@ -3677,33 +3724,35 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
     candidates = candidates[:repair_limit]
     if not candidates:
         return clues, {**base, "status": "not-needed", "reason": "no-eligible-entries"}
-    desired_families = [
-        "pun",
-        "fill-blank",
-        "nonverbal-expression",
-        "spoken-equivalent",
-        "metalinguistic",
-        "pun",
-        "fill-blank",
-        "nonverbal-expression",
-        "spoken-equivalent",
-        "metalinguistic",
-        "pun",
-        "fill-blank",
-        "nonverbal-expression",
-        "spoken-equivalent",
-        "metalinguistic",
-        "pun",
-        "fill-blank",
-        "nonverbal-expression",
+    existing_families = {
+        _clue_family_observation(clue).get("family")
+        for clue in clues.values()
+        if isinstance(clue, str)
+    }
+    missing_families = [
+        family for family in _DIVERSITY_FAMILY_ORDER if family not in existing_families
     ]
+    desired_families = (
+        missing_families
+        + [
+            _DIVERSITY_FAMILY_ORDER[index % len(_DIVERSITY_FAMILY_ORDER)]
+            for index in range(max(0, len(candidates) - len(missing_families)))
+        ]
+    )[: len(candidates)]
     selected = [
         {
             "id": entry["id"],
             "answer": entry.get("answer"),
             "length": entry.get("length"),
             "draftClue": clues.get(entry["id"], ""),
-            "desiredFamily": desired_families[index % len(desired_families)],
+            "desiredFamily": desired_families[index],
+            "requiredSurface": {
+                "pun": "end with a question mark",
+                "fill-blank": "contain ___ or an ellipsis blank",
+                "nonverbal-expression": "be fully bracketed like [Sound heard nearby]",
+                "spoken-equivalent": "be a whole quoted utterance, optionally followed by (Spoken equivalent)",
+                "metalinguistic": "include (abbr.) or the word briefly",
+            }[desired_families[index]],
         }
         for index, entry in enumerate(candidates)
     ]
@@ -3729,8 +3778,8 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
                         f"{target_instruction}"
                         f"{recipe['clueDirection']} "
                         "Rewrite only the selected entries, preserving fair grammar and answer shape. "
-                        "Use the requested visible convention when it genuinely fits: a question-mark pun, "
-                        "a fill-in-the-blank, a bracketed sound/action cue, or a quoted utterance. "
+                        "The requested desiredFamily is mandatory for each selected id; do not silently substitute another family. "
+                        "Use its requiredSurface literally: a pun ends in ?, a fill-in contains ___ or an ellipsis, a nonverbal cue is fully bracketed, a spoken-equivalent is a whole quoted utterance, and a metalinguistic clue says abbr. or briefly. "
                         "Prefer these surface conventions over unsupported factual relations; do not invent facts, proper names, translations, or wordplay. Do not put an answer in its clue. "
                         "Return exactly one clue for every supplied id and no extra keys."
                     ),
@@ -3770,7 +3819,7 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
             entry = selected_by_id.get(clue_id)
             if entry is None or not 2 <= len(text) <= 180 or "\n" in text:
                 continue
-            if _clue_family_observation(text).get("family") == "definition":
+            if not _desired_clue_family_matches(text, entry.get("desiredFamily")):
                 continue
             if _clue_surface_issues(text) or _clue_wordplay_issue(entry, text) is not None:
                 continue

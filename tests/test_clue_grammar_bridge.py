@@ -15,6 +15,7 @@ def _check(clue: str):
 def test_bridge_accepts_observer_signals_and_preserves_semantic_boundary():
     cases = {
         '"Not a chance!"': "spoken-equivalent",
+        "'___ the knot' (Spoken equivalent)": "spoken-equivalent",
         "[Sigh of relief]": "nonverbal-expression",
         "Safe and ___": "fill-blank",
         "Estimated arrival, briefly": "metalinguistic",

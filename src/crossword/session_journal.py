@@ -58,6 +58,10 @@ _LANGUAGE_CODES = {
     "japanese": "ja",
     "dutch": "nl",
 }
+_ANNOTATED_SPOKEN_SURFACE = re.compile(
+    r'^[\"“\'‘].+[\"”\'’]\s*[\[(]\s*(?:spoken(?:\s+equivalent)?|utterance|said\s+aloud)\s*[\])]$',
+    re.IGNORECASE,
+)
 
 
 def _private_surface_clue_family(clue):
@@ -72,6 +76,8 @@ def _private_surface_clue_family(clue):
     if len(text) >= 2 and text[0] in {'"', "“", "'", "‘"} and text[-1] in {
         '"', "”", "'", "’"
     }:
+        return "spoken-equivalent"
+    if _ANNOTATED_SPOKEN_SURFACE.fullmatch(text):
         return "spoken-equivalent"
     if re.search(r"(?:_{2,}|\b(?:and|or|to|of)\s+___\b)", text, re.IGNORECASE):
         return "fill-blank"
