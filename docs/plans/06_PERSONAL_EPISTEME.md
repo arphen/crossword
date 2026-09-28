@@ -32,7 +32,10 @@ Explicit `(pl.)` and plain-language plural markers now receive the narrow
 plural-shape check. Past-tense markers accept common irregular past forms (such
 as `RAN` and `SLEPT`) or regular `-ED` answers, while present- and
 future-tense markers reject an obviously past-shaped answer. This is a
-visible-convention guard, not a general part-of-speech or semantic parser.
+visible-convention guard, not a general part-of-speech or semantic parser. The
+collapsed `/future` clue-quality panel now projects those deterministic
+morphology and mechanical failures into the same reversible note/flag surface,
+so an issue count cannot be hidden behind an empty “no issue” state.
 Tuesday has an explicit recipe between Monday and Wednesday: a bounded increase
 in fill search/time plus alternate senses and fair second readings, while still
 requiring approachable footholds. The domain-wordlist direction in

@@ -76,6 +76,39 @@ it('keeps local clue warnings collapsed until requested', async () => {
   expect(host.textContent).toContain('do not establish a clue');
 });
 
+it('surfaces deterministic morphology issues as actionable notes', async () => {
+  host = document.createElement('div');
+  document.body.append(host);
+  root = createRoot(host);
+  await act(async () =>
+    root.render(
+      <ClueQualityNotes
+        provenance={{
+          clueQuality: {
+            issueCount: 1,
+            grounding: {
+              entries: [
+                {
+                  id: '1A',
+                  riskFlags: [],
+                  surfaceIssues: [],
+                  morphologyIssue: 'plural-marker-with-singular-shape',
+                },
+              ],
+            },
+          },
+        }}
+        entries={[{ clue_number: 1, direction: 'across', clue_text: 'Felines (plural)' }]}
+      />,
+    ),
+  );
+
+  await act(async () => host.querySelector('summary').click());
+  expect(host.textContent).toContain('plural marker does not match answer shape');
+  expect(host.textContent).toContain('Felines (plural)');
+  expect(host.textContent).not.toContain('No deterministic clue issue was detected');
+});
+
 it('renders nothing when no provenance quality is present', async () => {
   host = document.createElement('div');
   document.body.append(host);

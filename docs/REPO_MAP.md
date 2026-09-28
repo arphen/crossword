@@ -88,7 +88,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/AssistancePanel.test.jsx`
 - `apps/react/src/future/CalibrationHypotheses.jsx` — `getResponse:15`, `initialResponseActivity:20`, `responseActivityKey:30`, `CalibrationHypotheses:45`, `respond:69`, `revise:91`, `startSwipe:112`, `finishSwipe:120`
 - `apps/react/src/future/CalibrationHypotheses.test.jsx`
-- `apps/react/src/future/ClueQualityNotes.jsx` — `legacyEntryId:30`, `labelForFlag:35`, `ClueQualityNotes:39`, `groundedById:95`, `prior:124`, `toggleFlag:178`, `downloadReviewBundle:203`
+- `apps/react/src/future/ClueQualityNotes.jsx` — `legacyEntryId:37`, `labelForFlag:42`, `ClueQualityNotes:46`, `groundedById:111`, `prior:140`, `toggleFlag:194`, `downloadReviewBundle:219`
 - `apps/react/src/future/ClueQualityNotes.test.jsx`
 - `apps/react/src/future/EpistemeSnapshotView.jsx` — `claimLabel:5`, `claimTensionLabel:12`, `associationLabel:20`, `EpistemeSnapshot:33`, `correctClaim:61`, `claims:91`, `tensionClaims:92`, `signalClaims:93`, `renderClaim:96`
 - `apps/react/src/future/EpistemeSnapshotView.test.jsx`

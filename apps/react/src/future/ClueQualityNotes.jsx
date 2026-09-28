@@ -10,6 +10,13 @@ const FLAG_COPY = {
   'reversal-mismatch': 'reversal needs repair',
   'language-answer-mismatch': 'language relation needs repair',
   'past-tense-marker-with-nonpast-shape': 'past-tense marker does not match answer shape',
+  'present-tense-marker-with-past-shape': 'present-tense marker does not match answer shape',
+  'future-tense-marker-with-past-shape': 'future-tense marker does not match answer shape',
+  'plural-marker-with-singular-shape': 'plural marker does not match answer shape',
+  'plural-marker-mismatch': 'plural marker does not match answer shape',
+  'past-tense-marker-mismatch': 'past-tense marker does not match answer shape',
+  'present-tense-marker-mismatch': 'present-tense marker does not match answer shape',
+  'future-tense-marker-mismatch': 'future-tense marker does not match answer shape',
   'unbalanced-quotation': 'quotation mark was normalized',
   'unbalanced-brackets': 'brackets were normalized',
   'bracket-scope': 'bracket scope was normalized',
@@ -87,10 +94,19 @@ export default function ClueQualityNotes({
     entries.map((entry) => [legacyEntryId(entry), entry.clue_text]),
   );
   const flagged = grounding.entries
-    .filter(
-      (entry) =>
-        Array.isArray(entry.riskFlags) && entry.riskFlags.length > 0,
-    )
+    .map((entry) => {
+      const noteFlags = [
+        ...(Array.isArray(entry.riskFlags) ? entry.riskFlags : []),
+        ...(Array.isArray(entry.surfaceIssues) ? entry.surfaceIssues : []),
+        ...(typeof entry.mechanicalIssue === 'string' ? [entry.mechanicalIssue] : []),
+        ...(typeof entry.morphologyIssue === 'string' ? [entry.morphologyIssue] : []),
+      ];
+      return {
+        ...entry,
+        noteFlags: [...new Set(noteFlags)],
+      };
+    })
+    .filter((entry) => entry.noteFlags.length > 0)
     .slice(0, 8);
   const groundedById = new Map(grounding.entries.map((entry) => [entry.id, entry]));
   const challenged =
@@ -118,7 +134,7 @@ export default function ClueQualityNotes({
           })
       : [];
   const noteEntries = [
-    ...flagged.map((entry) => ({ ...entry, noteFlags: entry.riskFlags })),
+    ...flagged,
     ...challenged.map((entry) => ({ ...entry, noteFlags: entry.riskFlags })),
   ].reduce((items, entry) => {
     const prior = items.find((item) => item.id === entry.id);
