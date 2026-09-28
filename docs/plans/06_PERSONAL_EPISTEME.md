@@ -30,6 +30,13 @@ This confirms the tightened surface contract on the live route; the 270-second
 runtime remains an explicit local-latency observation, not a semantic or
 player-difficulty claim.
 
+The current non-live verification gate also passes: `make test` reports 886
+selected Python tests (three live-provider tests deselected), 11 legacy Jest
+tests, 146 domain tests, 8 persistence tests, 249 React tests, and 8
+application tests. The remaining warnings are the existing React `act(...)`
+test-harness notices and one SQLAlchemy UTC deprecation; neither changes the
+private route's result or the daily solver contract.
+
 The clue gate now rejects answer lexical leakage, including exact multiword
 surfaces and obvious roots and inflections (`REDS` cannot receive “shades of
 red”; `NO WAY` cannot receive “No way!”), and rejects short generic
