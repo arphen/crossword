@@ -38,6 +38,16 @@ checks; this is an execution optimization rather than a quality shortcut, and
 the runtime receipt records the selected budget so later model comparisons can
 separate speed from clue quality.
 
+A fresh live check of that policy on seed `20470411` produced 72 entries in
+274.112 seconds, with zero deterministic grammar issues, zero answer-free
+fallbacks, 50 signalled surfaces (69.4%), all five required families, and
+`floorMet=true`. The answer-free receipt is
+[`private-tuesday-clue-quality-study-v9.gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-v9.gemma4-26b-20260928.json),
+whose digest is `sha256:ec1ee15b3d221a55c4197b60880900a29eb10dbf860a7da12180b713423a2106`.
+This sample did not materially beat the earlier 270.744-second run, so the
+budget is retained as a bounded execution control but is not presented as a
+measured latency win; clue generation remains the next profiling target.
+
 The current non-live verification gate also passes: `make test` reports 886
 selected Python tests (three live-provider tests deselected), 11 legacy Jest
 tests, 146 domain tests, 8 persistence tests, 249 React tests, and 8
