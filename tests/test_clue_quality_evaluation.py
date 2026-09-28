@@ -69,6 +69,22 @@ def test_case_projection_accepts_legacy_zero_fallback_receipts():
     assert case["floorMet"] is False
 
 
+def test_case_projection_derives_and_checks_required_family_gaps():
+    value = _provenance()
+    value["clueQuality"]["diversity"].pop("missingNonDefinitionFamilies")
+    value["clueQuality"]["diversity"]["requiredNonDefinitionFamilySet"] = [
+        "fill-blank",
+        "pun",
+        "spoken-equivalent",
+    ]
+    case = clue_case_from_provenance(value, 9)
+    assert case["missingNonDefinitionFamilies"] == ["spoken-equivalent"]
+
+    value["clueQuality"]["diversity"]["missingNonDefinitionFamilies"] = []
+    with pytest.raises(ValueError, match="does not match"):
+        clue_case_from_provenance(value, 9)
+
+
 def test_study_digest_is_stable_and_reports_missing_requested_seed():
     case = clue_case_from_provenance(_provenance(), 7)
     report = evaluate_clue_quality_study(

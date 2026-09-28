@@ -134,13 +134,21 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
         raise ValueError("requiredNonDefinitionFamilySet must be a list of names")
     if len(set(required_family_set)) != len(required_family_set):
         raise ValueError("requiredNonDefinitionFamilySet must not repeat names")
-    missing_families = diversity.get("missingNonDefinitionFamilies", [])
+    raw_missing_families = diversity.get("missingNonDefinitionFamilies")
+    missing_families = raw_missing_families if raw_missing_families is not None else []
     if not isinstance(missing_families, list) or not all(
         isinstance(item, str) and item for item in missing_families
     ):
         raise ValueError("missingNonDefinitionFamilies must be a list of names")
     if len(set(missing_families)) != len(missing_families):
         raise ValueError("missingNonDefinitionFamilies must not repeat names")
+    derived_missing_families = [
+        family for family in required_family_set if family not in families
+    ]
+    if raw_missing_families is None:
+        missing_families = derived_missing_families
+    elif set(missing_families) != set(derived_missing_families):
+        raise ValueError("missingNonDefinitionFamilies does not match the required family set")
     timings = source.get("timingsSeconds", {})
     timing_projection: dict[str, float] = {}
     if isinstance(timings, Mapping):

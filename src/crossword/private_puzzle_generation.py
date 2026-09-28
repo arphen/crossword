@@ -4231,14 +4231,27 @@ def _fallback_private_clues(entries, weekday, context, reason):
         for entry in entries
         if isinstance(entry, dict) and isinstance(entry.get("id"), str)
     }
+    recipe = _effective_weekday_recipe(weekday, context)
+    required_family_set = recipe.get("requiredNonDefinitionFamilySet", ())
+    required_family_set = list(dict.fromkeys(
+        family
+        for family in required_family_set
+        if isinstance(family, str) and family
+    )) if isinstance(required_family_set, (list, tuple)) else []
     context["_clue_diversity_repair"] = {
         "version": CLUE_DIVERSITY_REPAIR_VERSION,
         "status": "not-attempted",
         "attempted": False,
         "selectedCount": 0,
         "rewrittenCount": 0,
-        "minimumFamilies": _weekday_recipe(weekday).get(
-            "minimumNonDefinitionFamilies", 2
+        "minimumFamilies": max(
+            recipe.get("minimumNonDefinitionFamilies", 2),
+            len(required_family_set),
+        ),
+        **(
+            {"requiredNonDefinitionFamilySet": required_family_set}
+            if required_family_set
+            else {}
         ),
         "reason": "model-response-invalid",
     }

@@ -93,6 +93,17 @@ def main() -> int:
             cases.append(clue_case_from_provenance(provenance, seed))
             print(f"seed {seed}: captured", file=sys.stderr)
         except (RuntimeError, ValueError) as error:
+            required_families = (
+                [
+                    "pun",
+                    "fill-blank",
+                    "nonverbal-expression",
+                    "spoken-equivalent",
+                    "metalinguistic",
+                ]
+                if args.weekday == "tuesday"
+                else []
+            )
             cases.append({
                 "seed": seed,
                 "entryCount": 0,
@@ -104,8 +115,10 @@ def main() -> int:
                 "nonDefinitionCount": 0,
                 "nonDefinitionFamilies": [],
                 "floorMet": False,
-                "requiredNonDefinitionFamilies": 0,
-                "requiredNonDefinitionClues": 0,
+                "requiredNonDefinitionFamilies": len(required_families),
+                "requiredNonDefinitionFamilySet": required_families,
+                "missingNonDefinitionFamilies": required_families,
+                "requiredNonDefinitionClues": 28 if args.weekday == "tuesday" else 0,
                 "signalCounts": {},
                 "issueCounts": {},
                 "semanticChallenge": {},
