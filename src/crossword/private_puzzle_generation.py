@@ -636,15 +636,15 @@ _WEEKDAY_RECIPES = {
         "intent": "Familiar material with a visible layer of fair second readings makes Tuesday a clear step beyond Monday while preserving dependable footholds.",
         "themeAnswerCount": 5,
         "themeDirection": "Choose a coherent cluster of up to five approachable answers whose connection is discoverable after one or two entries; let the pattern add a little lift without requiring specialist trivia.",
-        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep a small set of direct footholds, then prefer less literal but precise surfaces so the board does not read like Monday with different answers. Make at least twenty-four clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least five distinct surface families, and aim for roughly half the board to carry one of those signals. Do not rely on obscure trivia.",
+        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep a small set of direct footholds, then prefer less literal but precise surfaces so the board does not read like Monday with different answers. Make at least twenty-eight clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least five distinct surface families, and aim for a little over half the board to carry one of those signals. Do not rely on obscure trivia.",
         "themeMode": "approachable-cluster-with-a-turn",
         "minimumNonDefinitionFamilies": 5,
-        "minimumNonDefinitionCount": 24,
+        "minimumNonDefinitionCount": 28,
         # The count floor protects small fixture boards.  On a full 15x15,
-        # the editorial contract also asks for roughly two fifths of the
+        # the editorial contract asks for slightly more than half of the
         # visible surfaces to carry a fair convention or second reading so
         # Tuesday does not collapse into Monday-style direct definitions.
-        "targetNonDefinitionRate": 0.48,
+        "targetNonDefinitionRate": 0.56,
     },
     "wednesday": {
         "id": "wednesday-private-v1",
@@ -728,10 +728,10 @@ def _effective_weekday_recipe(weekday, context=None):
         "indirect but precise wording while preserving footholds."
     )
     recipe["minimumNonDefinitionCount"] = max(
-        int(recipe.get("minimumNonDefinitionCount", 0)), 28
+        int(recipe.get("minimumNonDefinitionCount", 0)), 32
     )
     recipe["targetNonDefinitionRate"] = max(
-        float(recipe.get("targetNonDefinitionRate", 0.0)), 0.56
+        float(recipe.get("targetNonDefinitionRate", 0.0)), 0.64
     )
     return recipe
 
