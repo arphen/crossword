@@ -31,7 +31,7 @@ letter and solve journal restored after reload. The six Playwright checks pass
 using an isolated synthetic creation fixture and cover the complete solve and
 reflection flow. `/` keeps its daily feed. See
 [implementation notes](../future-onboarding.md) and the
-[current Luna handoff](LUNA_PROMPTS.md#current-prompt--improve-the-private-generated-crossword).
+[current Luna handoff](LUNA_PROMPTS.md).
 
 The next implementation work improves actual theme/clue play and shortens the
 generation wait. The separate admitted-content worker, V2 candidate storage,
@@ -40,7 +40,7 @@ requirements for making or playing a private puzzle.
 
 ## Conceptual correspondence
 
-The following notes develop the product's underlying ideas from the 27 September conversation. They are conceptual arguments and editorial hypotheses, not a new execution backlog or a replacement for the active specification. Read them in order, or start with the subject closest to the current question.
+The following notes develop the product's underlying ideas from the 27 September conversation. They are conceptual arguments and editorial hypotheses, not a new execution backlog or a replacement for the active specification. Read them in order, or start with the subject closest to the current question. Note 13 is the critique of notes 07–12 rather than another note in the sequence; notes 07–12 each carry a closing dialectical postscript recording what that critique changed.
 
 1. [Expertise as a way into the world](07_EXPERTISE_AND_THE_GENERAL_CROSSWORD.md): the studium generale, personal footholds, and how crossings carry knowledge beyond its home discipline.
 2. [An international crossword needs a situated audience](08_AN_INTERNATIONAL_AUDIENCE.md): cultural specificity, language competence, and fairness across different starting points.
@@ -48,7 +48,6 @@ The following notes develop the product's underlying ideas from the 27 September
 4. [The episteme as an evolving relation](10_EPISTEME_AS_AN_EVOLVING_RELATION.md): calibration, contextual knowledge, personal resonance, and the feedback loop created by adaptation.
 5. [Domain lexicons: acquiring material with ways into it](11_DOMAIN_LEXICONS_AND_SOURCES.md): what additional lists should contain, concrete source options, and why names, facts, associations, and fill are different resources.
 6. [Editorial intelligence beyond a valid grid](12_EDITORIAL_INTELLIGENCE_AND_LLMs.md): what LLMs contribute, what a theme must earn, and what quality means in the actual solve.
-
 These six documents are implementation inputs to `06_PERSONAL_EPISTEME.md`, not
 separate features waiting to be ticked off. The active backlog carries their
 operational consequences: E08/E09 cover expertise-aware retrieval and crossing
@@ -65,6 +64,10 @@ the evidence gates in the active plan.
 [Learning to earn the “aha”](13_LEARNING_TO_EARN_THE_AHA.md) develops the conceptual notes into a bounded research direction: Jev-style typed evaluation, candidate generation and ranking, separate solving and answer-aware evaluation, retrospective necessity, crossing support, and a path toward a specialized critic or adapted language model. It proposes an initial comparison study rather than a new implementation mandate.
 
 [Clue grammar, meaning, and the enjoyment of an unyielding world](14_CLUE_GRAMMAR_MEANING_AND_ENJOYMENT.md) catalogs NYT-style American clue conventions and their semantic roles, connects them to the pleasure of stable rules and earned resolution, and specifies how generation and evaluation can preserve those relationships. It distinguishes documented conventions, proposed house commitments, and psychoanalytic interpretation, including the limits of claiming a complete publisher grammar.
+
+## Self-critique
+
+[The self-critique of the concept](15_THE_SELF_CRITIQUE_OF_THE_CONCEPT.md) is an immanent critique of notes 07–12: where each note's own success is its limit, the seams that appear only between them, the two terms the set leaves unthought (production and the unmarked cell), and the proposed result: one realized grid as the unit of generality. It was written against 07–12 as they stand and does not assess the two research proposals above. Read it after whichever note you are working with.
 
 ## Historical/contextual plans
 

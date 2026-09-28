@@ -220,6 +220,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/plans/12_EDITORIAL_INTELLIGENCE_AND_LLMs.md`
 - `docs/plans/13_LEARNING_TO_EARN_THE_AHA.md`
 - `docs/plans/14_CLUE_GRAMMAR_MEANING_AND_ENJOYMENT.md`
+- `docs/plans/15_THE_SELF_CRITIQUE_OF_THE_CONCEPT.md`
 - `docs/plans/LUNA_PROMPTS.md`
 - `docs/plans/README.md`
 - `docs/react-port-parity.md`
