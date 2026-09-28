@@ -809,6 +809,77 @@ def _finish_calibration_bucket(bucket):
     }
 
 
+def _playtest_calibration_report(history):
+    """Aggregate explicit game signals without treating them as preference claims."""
+    worth_counts = {}
+    return_counts = {}
+    rough_edge_counts = {}
+    by_weekday = {}
+    by_model = {}
+    pulse_count = 0
+    for item in history if isinstance(history, list) else []:
+        if not isinstance(item, dict) or item.get("finished") is not True:
+            continue
+        pulse = item.get("playtest")
+        if not isinstance(pulse, dict) or pulse.get("schemaVersion") != 1:
+            continue
+        if not all(
+            isinstance(pulse.get(key), str)
+            for key in ("worth", "returnIntent", "roughEdge")
+        ):
+            continue
+        pulse_count += 1
+        worth_counts[pulse["worth"]] = worth_counts.get(pulse["worth"], 0) + 1
+        return_counts[pulse["returnIntent"]] = return_counts.get(
+            pulse["returnIntent"], 0
+        ) + 1
+        rough_edge_counts[pulse["roughEdge"]] = rough_edge_counts.get(
+            pulse["roughEdge"], 0
+        ) + 1
+        for group, key in (
+            (by_weekday, item.get("weekday") if isinstance(item.get("weekday"), str) else "unknown"),
+            (by_model, item.get("model") if isinstance(item.get("model"), str) else "unknown"),
+        ):
+            bucket = group.setdefault(key, {"pulseCount": 0, "worthCounts": {}, "returnIntentCounts": {}, "roughEdgeCounts": {}})
+            bucket["pulseCount"] += 1
+            for field, target in (
+                ("worth", bucket["worthCounts"]),
+                ("returnIntent", bucket["returnIntentCounts"]),
+                ("roughEdge", bucket["roughEdgeCounts"]),
+            ):
+                value = pulse[field]
+                target[value] = target.get(value, 0) + 1
+    if pulse_count == 0:
+        return None
+
+    def finish(group):
+        return {
+            key: {
+                **value,
+                "worthCounts": dict(sorted(value["worthCounts"].items())),
+                "returnIntentCounts": dict(sorted(value["returnIntentCounts"].items())),
+                "roughEdgeCounts": dict(sorted(value["roughEdgeCounts"].items())),
+            }
+            for key, value in sorted(group.items())
+        }
+
+    return {
+        "version": "private-playtest-calibration-v1",
+        "pulseCount": pulse_count,
+        "worthCounts": dict(sorted(worth_counts.items())),
+        "returnIntentCounts": dict(sorted(return_counts.items())),
+        "roughEdgeCounts": dict(sorted(rough_edge_counts.items())),
+        "byWeekday": finish(by_weekday),
+        "byModel": finish(by_model),
+        "interpretation": "explicit-game-signal-only",
+        "uncertainty": [
+            "not-a-preference-profile",
+            "not-a-puzzle-quality-estimate",
+            "not-human-calibrated",
+        ],
+    }
+
+
 def _profile_calibration_report(history, *, limit):
     """Aggregate observed private play without presenting a solve probability."""
     report = _calibration_bucket()
@@ -845,7 +916,7 @@ def _profile_calibration_report(history, *, limit):
                 value = analysis.get(key, 0)
                 if type(value) is int and value >= 0:
                     bucket[key] += value
-    return {
+    result = {
         "version": "private-play-calibration-report-v1",
         "status": "observational" if finished >= 3 else "insufficient-observations",
         "profileId": None,
@@ -868,6 +939,10 @@ def _profile_calibration_report(history, *, limit):
             "not-human-calibrated",
         ],
     }
+    playtest = _playtest_calibration_report(history)
+    if playtest is not None:
+        result["playtest"] = playtest
+    return result
 
 
 def _profile_calibration_export(profile_id, *, limit):
@@ -895,6 +970,7 @@ def _profile_calibration_export(profile_id, *, limit):
                     "weekday",
                     "model",
                     "analysis",
+                    "playtest",
                 )
                 if key in item
             }

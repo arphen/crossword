@@ -154,6 +154,8 @@ def test_playtest_pulse_is_bounded_idempotent_and_answer_free(reflection_app):
     assert history.json["history"][0]["playtest"]["returnIntent"] == (
         "same-world-new-angle"
     )
+    assert history.json["calibration"]["playtest"]["pulseCount"] == 1
+    assert history.json["calibration"]["playtest"]["worthCounts"] == {"yes": 1}
 
     api = reflection_app[0]
     with api.app.app_context():

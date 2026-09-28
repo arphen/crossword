@@ -125,6 +125,15 @@ it('describes observed calibration without calling it a probability', () => {
   ).toBe(
     'Observed across 3 finished games: 67% completed · 33% used crossings or assistance.',
   );
+  expect(
+    calibrationSummary({
+      version: 'private-play-calibration-report-v1',
+      sessionCount: 3,
+      requiredSessions: 3,
+      totals: { completionRate: 0.667, supportRate: 0.333 },
+      playtest: { pulseCount: 2 },
+    }),
+  ).toContain('2 direct game signals');
 });
 
 it('offers a bounded calibration trace download', async () => {

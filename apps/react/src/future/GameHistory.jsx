@@ -81,7 +81,13 @@ export function calibrationSummary(report) {
   }
   const completion = Math.round(Number(report.totals.completionRate || 0) * 100);
   const support = Math.round(Number(report.totals.supportRate || 0) * 100);
-  return `Observed across ${report.sessionCount} finished games: ${completion}% completed · ${support}% used crossings or assistance.`;
+  const pulseCount = Number.isInteger(report.playtest?.pulseCount)
+    ? report.playtest.pulseCount
+    : 0;
+  const pulseText = pulseCount
+    ? ` · ${pulseCount} direct game signal${pulseCount === 1 ? '' : 's'}`
+    : '';
+  return `Observed across ${report.sessionCount} finished games: ${completion}% completed · ${support}% used crossings or assistance${pulseText}.`;
 }
 
 export default function GameHistory({ profileId, open }) {
