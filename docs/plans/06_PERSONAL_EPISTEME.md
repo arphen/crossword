@@ -108,14 +108,15 @@ than treated as separate promises:
 | [08 — International audience](08_AN_INTERNATIONAL_AUDIENCE.md) | The setup can select a learning language; generated clues use explicit language labels, starter/review forms, delayed recall, and token-aware local rendering. | The current engine is an English ASCII grid with a small reviewed language task bridge. Native-speaker review, broader scripts, and richer transliteration policy remain future work. |
 | [09 — Signification and the aha](09_SIGNIFICATION_AND_THE_AHA.md) | Calibration, reversible association cards, clue-family feedback, crossings, assistance, and postgame reflection let a player mark routes that felt useful without turning them into a diagnosis. | The system records a route into a word, not an “aha” score or a spiritual interpretation. Semantic resonance and long-answer discovery still need player studies. |
 | [10 — Evolving relation](10_EPISTEME_AS_AN_EVOLVING_RELATION.md) | The CAS episteme reducer, revisioned projections, tensions, release/keep controls, evidence rebuilds, profile archives, and session analyses provide a durable reversible history. | Longitudinal calibration, contradiction editing at larger scale, and independent evidence that the profile improves play remain open evaluation work. |
-| [11 — Domain lexicons](11_DOMAIN_LEXICONS_AND_SOURCES.md) | Strict pack loading, source pins, OEWN staging, candidate projection, clue-grammar admission, and retrieval/job contracts are ready as plumbing. | No external corpus is silently active: there is no production domain pack, source-terms attestation, semantic/factual review, or licensed bulk derivative in the private route. Domain wordlists are the next content slice after an explicit local source and review decision. |
+| [11 — Domain lexicons](11_DOMAIN_LEXICONS_AND_SOURCES.md) | Strict pack loading, source pins, OEWN staging, candidate projection, clue-grammar admission, retrieval/job contracts, and an opt-in local `private-domain-hints-v1` bridge are ready as plumbing. The bridge intersects a player-owned hint file with the exact xfill vocabulary and records its digest without admitting its terms. | No external corpus is silently active: there is no production domain pack, source-terms attestation, semantic/factual review, or licensed bulk derivative in the private route. Admitted domain wordlists still require an explicit source, license, sense/fact review, and release receipt. |
 | [12 — Editorial intelligence](12_EDITORIAL_INTELLIGENCE_AND_LLMs.md) | Local Gemma/Qwen generation, weekday recipes, deterministic answer-safety, visible clue-family signals, bounded challenge/repair, and answer-bearing private review bundles are live. | Model fluency is still advisory. A clue is not admitted as true or fair without independent sense/fact evidence and editorial review; private play remains fail-open with uncertainty receipts. |
 
 This audit is the handoff order for the next implementation pass: preserve the
-private generated path and its clue gate, then add a bounded domain selection
-only through an explicit source/pack receipt, followed by human sense/fact
-review and player calibration. None of the six notes authorizes the model to
-invent a source, a user's expertise, or a mastery claim.
+private generated path and its clue gate; the opt-in player-owned domain-hint
+bridge can now invite placeable terms, while an admitted domain selection still
+requires an explicit source/pack receipt, human sense/fact review, and player
+calibration. None of the six notes authorizes the model to invent a source, a
+user's expertise, or a mastery claim.
 
 The private safety pass now treats an unsupported factual relation as unsafe for
 an ordinary non-theme entry even when its fill score is strong. It keeps exact

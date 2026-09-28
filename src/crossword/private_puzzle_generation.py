@@ -52,6 +52,10 @@ from .future_grid_jobs import FutureGridDraftJob, _digest, _response, _stamp
 from .future_puzzles import register_legacy_puzzle, store_private_puzzle_provenance
 from .language_signals import has_explicit_language_signal
 from .language_task_pack import private_display_text_for_review, task_pair_for_review
+from .private_domain_hints import (
+    load_private_domain_hints,
+    private_domain_hint_receipt,
+)
 from .token_construction import (
     construct_native_token_grid,
     emit_single_cell_language_tokens,
@@ -1363,6 +1367,7 @@ def _profile_context(starting, episteme):
     play_calibration = _play_calibration(evidence)
     clue_family_fatigue = _recent_clue_family_exposures(evidence)
     association_steering = _association_steering_receipt(associations)
+    domain_hints = load_private_domain_hints(fill_words=_local_fill_word_set())
     return {
         "opening_associations": seed_profile.get("associations", [])[:24],
         "opening_observations": seed_profile.get("observations", [])[:8],
@@ -1397,6 +1402,7 @@ def _profile_context(starting, episteme):
         "clue_family_targets": clue_family_targets[:8],
         "recent_clue_family_exposures": clue_family_fatigue,
         "recent_private_answers": recent_private_answers,
+        "domain_hints": domain_hints,
         "play_calibration": play_calibration,
         "recent_word_exposures": [
             {
@@ -1489,6 +1495,9 @@ def _personalization_receipt(episteme, context, *, seed, weekday, model):
         if isinstance(context, dict) and isinstance(context.get("association_steering"), dict)
         else _association_steering_receipt(associations)
     )
+    domain_hints = private_domain_hint_receipt(
+        context.get("domain_hints") if isinstance(context, dict) else None
+    )
     return {
         "version": "private-personalization-receipt-v1",
         "profileId": episteme.get("profileId") if isinstance(episteme, dict) else None,
@@ -1499,6 +1508,7 @@ def _personalization_receipt(episteme, context, *, seed, weekday, model):
         "weekday": weekday,
         "model": model,
         "associationSteering": association_steering,
+        "domainHints": domain_hints,
         "inputs": {
             "claimCount": min(len(claims), 24) if isinstance(claims, list) else 0,
             "associationCount": min(len(associations), 24) if isinstance(associations, list) else 0,
@@ -1511,6 +1521,7 @@ def _personalization_receipt(episteme, context, *, seed, weekday, model):
             if isinstance(context, dict) and isinstance(context.get("recent_private_answers"), list)
             else 0,
             "languageThread": bool(language_learning),
+            "domainHintCount": domain_hints.get("placeableCount", 0),
             "difficultyRecommendation": play_calibration.get("recommendation")
             if isinstance(play_calibration, dict)
             else None,
@@ -1626,6 +1637,7 @@ def _make_themes(model, context, weekday):
                     "candidateWeights are bounded host hints (higher means earlier optional consideration); due items may also carry a scheduler-history priority that only orders equally due forms. They never require a form to appear in the grid. "
                     "Avoid repeating exact answer forms listed in recent_private_answers when at least two fresh candidates are available; recent exposure is not mastery and a deliberate review is still allowed when the word-field calls for it. "
                     "Use play_calibration only to tune accessibility: more-footholds means favor ordinary answers and clearer crossings, balanced means keep the recipe as written, and gentle-stretch means allow a small amount of extra misdirection. Never infer taste, identity, intelligence, or mastery from it, and never mention this signal in a clue. "
+                    "If domain_hints.status is loaded, treat its placeableTerms as a small explicit subject invitation: prefer up to two of those terms when they fit the selected weekday, but do not invent a fact, sense, or expertise claim from the domain label. The terms are private and unadmitted; ordinary clues must still use a reliable lexical route or clearly signalled wordplay. Never use a term that is not in placeableTerms. "
                     "Return 3 to 6 distinct, clueable single words, ASCII A-Z only, 3-15 letters, never 12 letters. "
                     "Do not describe the player or claim what they know or desire. Return only the requested JSON."
                 ),
@@ -1637,6 +1649,7 @@ def _make_themes(model, context, weekday):
                         "difficulty": weekday.title(),
                         "weekdayRecipe": recipe["id"],
                         "wordField": context,
+                        "domainHints": context.get("domain_hints", {}),
                     },
                     ensure_ascii=False,
                     separators=(",", ":"),
@@ -1656,6 +1669,22 @@ def _make_themes(model, context, weekday):
         answer = answer.upper() if isinstance(answer, str) else ""
         if _ANSWER.fullmatch(answer) and len(answer) != 12 and answer not in normalized:
             normalized.append(answer)
+    domain_hints = context.get("domain_hints") if isinstance(context, Mapping) else None
+    domain_terms = (
+        [
+            term
+            for term in domain_hints.get("placeableTerms", [])
+            if isinstance(term, str)
+            and _ANSWER.fullmatch(term.upper())
+            and len(term) != 12
+        ][:2]
+        if isinstance(domain_hints, Mapping)
+        and domain_hints.get("status") == "loaded"
+        and isinstance(domain_hints.get("placeableTerms"), list)
+        else []
+    )
+    if domain_terms:
+        normalized = domain_terms + [answer for answer in normalized if answer not in domain_terms]
     recent = {
         answer.upper()
         for answer in context.get("recent_private_answers", [])
@@ -2102,6 +2131,7 @@ def _make_thursday_theme_proposal(model, context):
                     "Prefer ordinary English words with a plausible, inferable relationship. A small, clearly signalled proper-name cluster is allowed when the word-field invites it and the local fill supports it; never invent names, spellings, or biographical trivia. "
                     "Choose a rule that gives solvers a fair pattern to notice from multiple entries. The grid uses ordinary letters only. "
                     "When local fill candidates are supplied, choose every theme answer from one supplied group and copy that group's affix and position exactly. "
+                    "When domain_hints.status is loaded, prefer a placeable domain term only when it fits the shared-affix group; these are private unadmitted invitations, not evidence for a fact or a player's expertise. Never invent a domain relation. "
                     "Use the word-field only as a source of motifs, never to make claims about the player. Return only the requested JSON."
                 ),
             },
@@ -2112,6 +2142,7 @@ def _make_thursday_theme_proposal(model, context):
                         "difficulty": "Thursday",
                         "weekdayRecipe": _weekday_recipe("thursday")["id"],
                         "wordField": context,
+                        "domainHints": context.get("domain_hints", {}),
                         "localFillCandidates": _local_shared_affix_groups(),
                     },
                     ensure_ascii=False,
@@ -5173,6 +5204,13 @@ def _generate(
             "tokenHints": combined_hints[:16],
             "tokenHintSource": "native-constructor",
         }
+    theme_proposal_receipt = {
+        "source": theme_proposal_source,
+        "mechanicRequested": weekday == "thursday" and theme_mechanic is not None,
+    }
+    domain_hint_receipt = private_domain_hint_receipt(context.get("domain_hints"))
+    if domain_hint_receipt.get("status") == "loaded":
+        theme_proposal_receipt["domainHints"] = domain_hint_receipt
     provenance = {
         "source": "local-ollama-xfill",
         "model": model,
@@ -5210,10 +5248,7 @@ def _generate(
             ),
             "gridMechanic": "ordinary-letter-grid",
         },
-        "themeProposal": {
-            "source": theme_proposal_source,
-            "mechanicRequested": weekday == "thursday" and theme_mechanic is not None,
-        },
+        "themeProposal": theme_proposal_receipt,
         "themeExposure": _theme_exposure_receipt(context, clue_entries),
         "languageInterest": context.get("language_interest"),
         "languageLearning": language_learning,

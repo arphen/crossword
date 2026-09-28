@@ -4,6 +4,32 @@ Concept note and source orientation, 27 September 2026. Part of the [conceptual 
 
 You do need more wordlists. But the valuable acquisition is not simply more admissible strings. It is a set of names, concepts, expressions, and reliable relations from which the constructor can offer different kinds of access.
 
+The private route now has a deliberately smaller bridge for local play:
+`CROSSWORD_PRIVATE_DOMAIN_HINTS` may point to a bounded
+`private-domain-hints-v1` JSON file containing a hand-curated domain label and
+ASCII candidate forms. The generator intersects those forms with the exact
+local xfill vocabulary, invites at most two placeable terms into theme
+selection, and records the hint-file digest in an answer-free receipt. The
+receipt is explicitly `private-unadmitted` and `semanticStatus=not-established`;
+the file is a player-owned invitation, not a source ledger, fact collection,
+license decision, or publication pack. Missing, malformed, or unplaceable
+configuration remains an honest no-op.
+
+The minimal file shape is:
+
+```json
+{
+  "version": "private-domain-hints-v1",
+  "domainId": "physics",
+  "label": "Physics",
+  "terms": ["BOHR", "ENTROPY", "QUARK"]
+}
+```
+
+An optional `source` object may carry an operator's `{id, version,
+artifactSha256}` metadata, but that metadata is retained as provenance only;
+the private bridge does not verify or upgrade it into admission.
+
 A domain list answers “what could appear?” A fact collection answers “what can truthfully be said about it?” An association resource answers “what might this bring to mind?” A frequency resource approximates how often a form appears in particular language data. None substitutes for the others. In particular, association is not sufficient justification for a clue answer.
 
 ## What a physics pack should contain

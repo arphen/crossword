@@ -2739,6 +2739,7 @@ def test_personalization_receipt_binds_one_episteme_revision_without_profile_tex
         "clueFamilyTargetCount": 1,
         "recentExposureCount": 1,
         "languageThread": True,
+        "domainHintCount": 0,
         "difficultyRecommendation": "balanced",
     }
     assert "wordplay" not in receipt

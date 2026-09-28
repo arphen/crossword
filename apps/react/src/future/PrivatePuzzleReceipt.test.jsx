@@ -40,6 +40,9 @@ it('reopens a bounded construction receipt after the game', async () => {
           },
           semanticClueChallenge: { enabled: true },
           themeExposure: { freshThemeCount: 4 },
+          personalizationReceipt: {
+            domainHints: { status: 'loaded', placeableCount: 2 },
+          },
         },
       }),
     })),
@@ -56,6 +59,7 @@ it('reopens a bounded construction receipt after the game', async () => {
   expect(host.textContent).toContain('19');
   expect(host.textContent).toContain('bounded');
   expect(host.textContent).toContain('4fresh themes');
+  expect(host.textContent).toContain('2domain hints');
   expect(host.textContent).toContain('varied (2)surface mix');
   expect(host.textContent).toContain('does not grade the solver');
   expect(fetch).toHaveBeenCalledWith(

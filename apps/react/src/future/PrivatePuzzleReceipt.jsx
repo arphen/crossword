@@ -16,6 +16,9 @@ function receiptStats(provenance) {
   const challenge = provenance?.semanticClueChallenge || {};
   const exposure = provenance?.themeExposure || {};
   const diversity = provenance?.clueDiversity || clues.diversity || {};
+  const domainHints =
+    provenance?.personalizationReceipt?.domainHints ||
+    provenance?.themeProposal?.domainHints;
   const stats = [
     { label: 'fill mean', value: score(fill.meanScore) },
     { label: 'minimum fill', value: score(fill.minimumScore) },
@@ -50,6 +53,12 @@ function receiptStats(provenance) {
           : status === 'fallback-safe'
             ? 'ordinary grid'
             : 'unavailable',
+    });
+  }
+  if (domainHints?.status === 'loaded') {
+    stats.push({
+      label: 'domain hints',
+      value: integer(domainHints.placeableCount) ?? 0,
     });
   }
   return stats;
