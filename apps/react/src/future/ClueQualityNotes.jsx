@@ -158,6 +158,16 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
     .map(([signal, count]) => `${SIGNAL_COPY[signal] || signal.replaceAll('-', ' ')} ${count}`)
     .join(' · ');
   const clueDiversity = provenance?.clueDiversity || grounding.diversity;
+  const observedSurfaceRate = Number(clueDiversity?.nonDefinitionRate);
+  const targetSurfaceRate = Number(clueDiversity?.targetNonDefinitionRate);
+  const hasSurfaceTarget =
+    Number.isFinite(observedSurfaceRate) &&
+    Number.isFinite(targetSurfaceRate) &&
+    targetSurfaceRate >= 0 &&
+    targetSurfaceRate <= 1;
+  const surfaceEntryCount = Number(clueDiversity?.entryCount);
+  const surfaceCount = Number(clueDiversity?.nonDefinitionCount);
+  const targetSurfaceCount = Number(clueDiversity?.targetNonDefinitionClues);
   async function toggleFlag(entry, flag) {
     if (!profileId) return;
     const flagKey = `${entry.id}:${flag}`;
@@ -271,6 +281,17 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
           <p className="future-clue-quality-families">
             Literal clue markers observed: {signalSummary}. These counts describe
             the written surface, not the intended sense.
+          </p>
+        )}
+        {hasSurfaceTarget && (
+          <p className="future-clue-quality-families">
+            Visible clue variety reached {Math.round(observedSurfaceRate * 100)}% non-definition
+            surfaces{Number.isFinite(surfaceCount) && Number.isFinite(surfaceEntryCount)
+              ? ` (${surfaceCount} of ${surfaceEntryCount})`
+              : ''}; the recipe target is {Math.round(targetSurfaceRate * 100)}%
+            {Number.isFinite(targetSurfaceCount) ? ` (${targetSurfaceCount} surfaces)` : ''}.
+            {' '}This receipt describes written conventions only; it does not judge clue meaning
+            or player difficulty.
           </p>
         )}
         {clueDiversity?.repair?.status === 'repaired' && (

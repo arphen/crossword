@@ -134,6 +134,33 @@ it('reports when a weekday surface floor was attempted but not met', async () =>
   expect(host.textContent).toContain("recipe's visible variety target was not met");
 });
 
+it('shows the observed versus target surface rate without calling it difficulty', async () => {
+  host = document.createElement('div');
+  document.body.append(host);
+  root = createRoot(host);
+  await act(async () =>
+    root.render(
+      <ClueQualityNotes
+        provenance={{
+          ...provenance,
+          clueDiversity: {
+            entryCount: 74,
+            nonDefinitionCount: 28,
+            nonDefinitionRate: 0.378,
+            targetNonDefinitionRate: 0.35,
+            targetNonDefinitionClues: 26,
+          },
+        }}
+      />,
+    ),
+  );
+
+  await act(async () => host.querySelector('summary').click());
+  expect(host.textContent).toContain('Visible clue variety reached 38% non-definition surfaces (28 of 74)');
+  expect(host.textContent).toContain('the recipe target is 35% (26 surfaces)');
+  expect(host.textContent).toContain('does not judge clue meaning or player difficulty');
+});
+
 it('surfaces non-keep challenger recommendations without turning them into profile controls', async () => {
   host = document.createElement('div');
   document.body.append(host);
