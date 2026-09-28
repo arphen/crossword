@@ -94,7 +94,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/EpistemeSnapshotView.test.jsx`
 - `apps/react/src/future/FutureApp.jsx` — `stimulusById:96`, `stimulusByLegacyId:97`, `hasActiveHypothesisSource:128`, `stimulusCaption:157`, `presentationFor:178`, `draftFromCalibration:183`, `selectedAt:198`, `objectId:217`, `companionId:220`, `stableJson:255`, `isAppendOnlyCalibrationExtension:266`, `Arrow:300`, `Mark:315`, `ObjectChoice:326`, `ProfileField:353`, `FutureApp:490` (+42 more)
 - `apps/react/src/future/FutureApp.test.jsx`
-- `apps/react/src/future/FutureSolver.jsx` — `reflectionStorageKey:26`, `reflectionStorageValue:30`, `savedReflectionSessionId:40`, `futureOptions:58`, `FutureSolver:125`, `enableHostSync:185`, `onEntryFocused:385`, `onCellChanged:387`, `onCheckAll:389`, `onRevealAll:390`, `onCellRevealed:403`, `onHintShown:405`
+- `apps/react/src/future/FutureSolver.jsx` — `reflectionStorageKey:26`, `reflectionStorageValue:30`, `savedReflectionSessionId:40`, `futureOptions:58`, `FutureSolver:125`, `enableHostSync:185`, `onEntryFocused:396`, `onCellChanged:398`, `onCheckAll:400`, `onRevealAll:401`, `onCellRevealed:414`, `onHintShown:416`
 - `apps/react/src/future/FutureSolver.test.js`
 - `apps/react/src/future/GameHistory.jsx` — `dayLabel:3`, `dateLabel:8`, `gameHistoryStats:14`, `personalizationHistorySummary:22`, `playtestHistorySummary:48`, `calibrationSummary:71`, `GameHistory:93`, `body:114`, `downloadCalibration:132`, `body:144`
 - `apps/react/src/future/GameHistory.test.jsx`

@@ -236,6 +236,17 @@ export default function FutureSolver({
     }
   }, [profileId, puzzleIdentity]);
   useEffect(() => {
+    // A new board invalidates every postgame surface from the previous
+    // session. Clear these eagerly when the session binding disappears so a
+    // newly generated crossword never carries stale reflections or
+    // association paths while its journal is opening.
+    if (finishedSessionId) return;
+    setReflectionDeck(null);
+    setReflectionState('idle');
+    setAssociationDeck(null);
+    setAssociationState('idle');
+  }, [finishedSessionId]);
+  useEffect(() => {
     if (!profileId || !puzzle || !puzzleKey) return undefined;
     let active = true;
     let recorder;
