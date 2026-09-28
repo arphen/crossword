@@ -2102,7 +2102,7 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
 
     assert len(calls) == 6
     assert context["_clue_diversity_repair"]["reason"] == "weekday-surface-floor"
-    assert context["_clue_diversity_repair"]["selectedCount"] <= 18
+    assert context["_clue_diversity_repair"]["selectedCount"] <= 36
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )

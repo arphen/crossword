@@ -1,0 +1,119 @@
+{
+  "version": "private-clue-quality-study-v1",
+  "scope": "answer-free-clue-surface-study",
+  "studyId": "private-tuesday-domain-grammar-v2",
+  "recipeId": "private-tuesday-v1",
+  "requestedSeeds": [
+    20470394
+  ],
+  "observedSeeds": [
+    20470394
+  ],
+  "missingSeeds": [],
+  "cases": [
+    {
+      "seed": 20470394,
+      "entryCount": 76,
+      "grammarCheckedCount": 76,
+      "grammarIssueCount": 0,
+      "fallbackCount": 5,
+      "semanticStatus": "not-established",
+      "familyCounts": {
+        "definition": 32,
+        "factual-relation": 1,
+        "fill-blank": 17,
+        "metalinguistic": 13,
+        "nonverbal-expression": 8,
+        "pun": 5
+      },
+      "nonDefinitionCount": 44,
+      "nonDefinitionRate": 0.579,
+      "nonDefinitionFamilies": [
+        "factual-relation",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun"
+      ],
+      "floorMet": true,
+      "requiredNonDefinitionFamilies": 5,
+      "requiredNonDefinitionClues": 37,
+      "targetNonDefinitionRate": 0.48,
+      "targetNonDefinitionClues": 37,
+      "signalCounts": {
+        "abbreviation-indicator": 13,
+        "brackets": 8,
+        "fill-blank": 17,
+        "language-indicator": 1,
+        "question-mark": 5
+      },
+      "issueCounts": {},
+      "semanticChallenge": {
+        "mechanically-supported": 0,
+        "needs-review": 71,
+        "safe-fallback": 5
+      },
+      "repair": {
+        "attempted": true,
+        "selectedCount": 36,
+        "rewrittenCount": 27,
+        "minimumFamilies": 5,
+        "minimumClueCount": 24
+      },
+      "timingsSeconds": {
+        "themeProposal": 1.903,
+        "nativeXfill": 57.6,
+        "clueGeneration": 157.994,
+        "clueChallenge": 10.159,
+        "total": 227.94
+      }
+    }
+  ],
+  "summary": {
+    "entryCount": 76,
+    "grammarCheckedCount": 76,
+    "grammarIssueCount": 0,
+    "fallbackCount": 5,
+    "nonDefinitionCount": 44,
+    "caseCount": 1,
+    "floorMetCases": 1,
+    "floorMetRate": 1.0,
+    "grammarCleanCases": 1,
+    "grammarCleanRate": 1.0,
+    "familyFloorMetCases": 1,
+    "targetRateCases": 1,
+    "targetRateMetCases": 1,
+    "observedNonDefinitionRate": 0.579,
+    "familyCounts": {
+      "definition": 32,
+      "factual-relation": 1,
+      "fill-blank": 17,
+      "metalinguistic": 13,
+      "nonverbal-expression": 8,
+      "pun": 5
+    },
+    "signalCounts": {
+      "abbreviation-indicator": 13,
+      "brackets": 8,
+      "fill-blank": 17,
+      "language-indicator": 1,
+      "question-mark": 5
+    },
+    "issueCounts": {},
+    "totalTimingSeconds": 227.94,
+    "meanTimingSeconds": 227.94
+  },
+  "metadata": {
+    "transport": "loopback-http",
+    "weekday": "tuesday",
+    "model": "gemma4:26b",
+    "seedCount": 1
+  },
+  "interpretation": "surface-and-mechanical-receipts-only; no semantic-or-player-quality-claim",
+  "uncertainty": [
+    "clue-semantics-unreviewed",
+    "player-support-unmeasured",
+    "local-model-output"
+  ],
+  "studyDigest": "sha256:9d6aeef2905ef802b5ffec57258f934be35713c6d64c8e2fb973386a60c48ce6"
+}

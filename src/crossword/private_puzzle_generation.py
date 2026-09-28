@@ -3376,11 +3376,11 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
             continue
         candidates.append(entry)
     candidates.sort(key=lambda item: (len(str(item.get("answer", ""))), item.get("id", "")))
-    # Tuesday needs a visibly broader clue language than Monday. Keep the
-    # rewrite bounded, but give the local writer a wider candidate batch so
-    # safe surfaces are not lost when one answer cannot support a requested
-    # convention.
-    repair_limit = 18 if weekday == "tuesday" else 4
+    # Tuesday needs a visibly broader clue language than Monday. Give the
+    # writer enough eligible entries to reach the full-board target in one
+    # bounded response; safety and surface validators still discard anything
+    # that does not fit.
+    repair_limit = 36 if weekday == "tuesday" else 4
     candidates = candidates[:repair_limit]
     if not candidates:
         return clues, {**base, "status": "not-needed", "reason": "no-eligible-entries"}
@@ -3410,7 +3410,7 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
             "answer": entry.get("answer"),
             "length": entry.get("length"),
             "draftClue": clues.get(entry["id"], ""),
-            "desiredFamily": desired_families[index],
+            "desiredFamily": desired_families[index % len(desired_families)],
         }
         for index, entry in enumerate(candidates)
     ]
@@ -3461,8 +3461,8 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
             ],
             schema,
             timeout=90,
-            tokens=min(1800, max(600, len(selected) * 44)),
-            temperature=0.45,
+            tokens=min(2800, max(800, len(selected) * 52)),
+            temperature=0.6,
         )
         returned = value.get("clues") if isinstance(value, Mapping) else None
         if not isinstance(value, Mapping) or not isinstance(value.get("title"), str) or not isinstance(returned, list):
