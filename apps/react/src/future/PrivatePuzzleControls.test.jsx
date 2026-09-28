@@ -88,6 +88,10 @@ function privateJobPayload(state = 'ready') {
   };
 }
 
+function reclaimedJobPayload(state = 'running') {
+  return { ...privateJobPayload(state), recovery: 'reclaimed', attempt: 2 };
+}
+
 function privateLanguageTokenPayload() {
   return {
     metadata: {
@@ -601,6 +605,26 @@ it('reattaches to a durable job after the solver view mounts again', async () =>
   );
   expect(app.init).toHaveBeenCalledOnce();
   expect(localStorage.getItem('crossword.future.private-job.v1:profile-1')).toBeNull();
+});
+
+it('shows when a durable worker job was reclaimed after an interruption', async () => {
+  const app = appState();
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    status: 202,
+    json: async () => reclaimedJobPayload('running'),
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  mount(app);
+
+  await act(async () => {
+    clickButton();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  });
+
+  expect(host.textContent).toContain(
+    'The local maker resumed this job after an interruption.',
+  );
 });
 
 it('retries a transient durable poll without losing the in-flight puzzle', async () => {

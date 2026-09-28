@@ -175,6 +175,10 @@ def _response(job, status=200):
             )
         ),
         "attempt": job.attempt,
+        # Attempt count is the only durable evidence available here. A
+        # second-or-later claim means the worker reclaimed or replayed the
+        # job after an interruption; it does not identify the cause.
+        "recovery": "reclaimed" if job.attempt > 1 else "first-attempt",
         "cancelRequested": job.cancel_requested,
         "createdAt": job.created_at,
         "updatedAt": job.updated_at,

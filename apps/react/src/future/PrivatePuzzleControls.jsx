@@ -421,6 +421,7 @@ export default function PrivatePuzzleControls({
   const [storageUnavailable, setStorageUnavailable] = useState(false);
   const [jobStage, setJobStage] = useState('');
   const [jobStageElapsed, setJobStageElapsed] = useState(null);
+  const [jobRecovered, setJobRecovered] = useState(false);
   const [recentPuzzles, setRecentPuzzles] = useState([]);
   const [restoreError, setRestoreError] = useState('');
   const requestRef = useRef(null);
@@ -547,6 +548,7 @@ export default function PrivatePuzzleControls({
     let payload = initialPayload;
     operation.jobId = payload.id;
     rememberPendingJob(payload.id, seed, targetWeekday);
+    setJobRecovered(payload.recovery === 'reclaimed');
     setJobStage(payload.stage || payload.state);
     setJobStageElapsed(payload.stageElapsedSeconds);
     while (payload.state === 'queued' || payload.state === 'running') {
@@ -567,6 +569,7 @@ export default function PrivatePuzzleControls({
       }
       setJobStage(payload.stage || payload.state);
       setJobStageElapsed(payload.stageElapsedSeconds);
+      if (payload.recovery === 'reclaimed') setJobRecovered(true);
     }
     if (payload.state === 'failed' || payload.state === 'cancelled') {
       clearPendingPrivateJob(profileId, operation.jobId);
@@ -627,6 +630,7 @@ export default function PrivatePuzzleControls({
     setRequestState('loading');
     setJobStage('queued');
     setJobStageElapsed(null);
+    setJobRecovered(false);
     setError('');
     try {
       const request = {
@@ -712,6 +716,7 @@ export default function PrivatePuzzleControls({
     setRequestState('loading');
     setJobStage('sample');
     setJobStageElapsed(null);
+    setJobRecovered(false);
     setError('');
     try {
       const response = await fetch(
@@ -751,6 +756,7 @@ export default function PrivatePuzzleControls({
     setRequestState('loading');
     setJobStage('queued');
     setJobStageElapsed(null);
+    setJobRecovered(false);
     Promise.resolve()
       .then(async () => {
         const polled = await readPrivateJobWithRetry(
@@ -835,6 +841,7 @@ export default function PrivatePuzzleControls({
     setRequestState('idle');
     setJobStage('cancelled');
     setJobStageElapsed(null);
+    setJobRecovered(false);
     setError('Generation stopped; the current crossword was kept.');
   }
 
@@ -1038,6 +1045,11 @@ export default function PrivatePuzzleControls({
           {describeStageElapsed(jobStageElapsed) && (
             <small className="future-private-puzzle-stage-elapsed">
               {describeStageElapsed(jobStageElapsed)}
+            </small>
+          )}
+          {jobRecovered && (
+            <small className="future-private-puzzle-stage-recovery">
+              The local maker resumed this job after an interruption.
             </small>
           )}
           <button type="button" className="future-private-puzzle-cancel" onClick={cancelRequest}>

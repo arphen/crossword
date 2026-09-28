@@ -482,6 +482,7 @@ def test_private_job_stage_is_reported_only_by_the_current_lease(api):
         query_string={"profileId": profile["id"]},
     )
     assert running.json["stage"] == "native-xfill"
+    assert running.json["recovery"] == "first-attempt"
     assert isinstance(running.json["stageElapsedSeconds"], (int, float))
     assert running.json["stageElapsedSeconds"] >= 0
     with api.app.app_context():
@@ -725,6 +726,7 @@ def test_worker_reclaims_expired_lease_and_persists_runtime_failure(api):
     )
     assert saved.json["state"] == "failed"
     assert saved.json["attempt"] == 2
+    assert saved.json["recovery"] == "reclaimed"
     assert saved.json["error"] == "xfill unavailable"
 
 
