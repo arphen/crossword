@@ -494,6 +494,32 @@ it('requests a puzzle only on click and loads it through the shared app initiali
   expect(host.textContent).toContain('Personal thread: KOFFI · ACCRA');
 });
 
+it('retries an interrupted durable job request with the same idempotency key', async () => {
+  const app = appState();
+  const fetchMock = vi
+    .fn()
+    .mockRejectedValueOnce(new TypeError('offline'))
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 202,
+      json: async () => privateJobPayload(),
+    });
+  vi.stubGlobal('fetch', fetchMock);
+  mount(app);
+
+  await act(async () => {
+    clickButton();
+    await new Promise((resolve) => setTimeout(resolve, 900));
+  });
+
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  const firstRequest = JSON.parse(fetchMock.mock.calls[0][1].body);
+  const retryRequest = JSON.parse(fetchMock.mock.calls[1][1].body);
+  expect(retryRequest.idempotencyKey).toBe(firstRequest.idempotencyKey);
+  expect(app.init).toHaveBeenCalledOnce();
+  expect(host.textContent).not.toContain('offline');
+});
+
 it('reattaches to a durable job after the solver view mounts again', async () => {
   const app = appState();
   const pending = {
@@ -678,7 +704,7 @@ it('keeps the current puzzle and reports a host error', async () => {
 
   await act(async () => {
     clickButton();
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 1100));
   });
 
   expect(host.textContent).toContain('The local model is unavailable.');

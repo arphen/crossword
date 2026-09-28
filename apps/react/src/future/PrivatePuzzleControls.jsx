@@ -358,6 +358,41 @@ async function readPrivateJobWithRetry(profileId, jobId, signal, onRetry) {
   throw lastError || new Error('The local puzzle job could not be read.');
 }
 
+async function createPrivateJobWithRetry(request, signal, onRetry) {
+  let lastError;
+  for (let attempt = 0; attempt <= JOB_POLL_RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      const response = await fetch('/api/future/private-puzzle-jobs', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+        signal,
+      });
+      if (response.status === 404 || response.status === 405) {
+        return { response, payload: null };
+      }
+      const payload = await readResponse(response);
+      const retryableStatus = response.status >= 500 && response.status <= 599;
+      if (!response.ok && retryableStatus && attempt < JOB_POLL_RETRY_DELAYS_MS.length) {
+        onRetry?.();
+        await wait(JOB_POLL_RETRY_DELAYS_MS[attempt]);
+        continue;
+      }
+      return { response, payload };
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      lastError = error;
+      if (attempt >= JOB_POLL_RETRY_DELAYS_MS.length) throw error;
+      onRetry?.();
+      await wait(JOB_POLL_RETRY_DELAYS_MS[attempt]);
+    }
+  }
+  throw lastError || new Error('A personal crossword could not be made right now.');
+}
+
 export default function PrivatePuzzleControls({
   app,
   profileId,
@@ -580,20 +615,17 @@ export default function PrivatePuzzleControls({
         weekday,
       };
       if (modelChoice !== 'automatic') request.model = modelChoice;
-      const jobResponse = await fetch('/api/future/private-puzzle-jobs', {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...request,
-          idempotencyKey: idempotencyKey(),
-        }),
-        signal: abort.signal,
-      });
-      let response = jobResponse;
-      let payload;
+      const jobRequest = {
+        ...request,
+        idempotencyKey: idempotencyKey(),
+      };
+      const durable = await createPrivateJobWithRetry(
+        jobRequest,
+        abort.signal,
+        () => setJobStage('reconnecting'),
+      );
+      let response = durable.response;
+      let payload = durable.payload;
       // Older local hosts and the synthetic browser fixture expose the
       // synchronous compatibility route. Prefer the durable worker when it
       // exists, but keep that compatibility path so an app upgrade never
