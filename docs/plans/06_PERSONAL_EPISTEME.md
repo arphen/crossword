@@ -4,6 +4,14 @@
 
 **Prepared and revised:** 28 September 2026. Continue from the player-focused implementation handoff in [§22](#22-private-game-implementation-handoff-for-luna).
 
+**Latest live checkpoint:** the current source tree and installed `gemma4:26b`
+completed a fresh durable Tuesday job on seed `20260930` through
+`theme-proposal → native-xfill → clue-generation → ready`. It returned a
+playable 78-entry board; the selected local-anchor fill had zero iffy and zero
+weak entries, and the final clue receipt met the four-family/fourteen-surface
+floor with 15 signalled surfaces. The answer-free receipt is
+[`private-tuesday-clue-study-v2.real-gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-study-v2.real-gemma4-26b-20260928.json).
+
 The clue gate now rejects answer lexical leakage, including obvious roots and
 inflections (`REDS` cannot receive “shades of red”), and rejects short generic
 templates such as “common name,” “common term,” or an unspecified “famous
@@ -26,26 +34,24 @@ pretending an unreviewed corpus is production content.
 
 The Tuesday recipe now retains up to five theme locks and asks the bounded
 diversity repair pass for at least four safe non-definition clue families and
-fourteen signalled clue surfaces, with six rewrite slots per pass and up to three
-repair batches when the model returns fewer safe rewrites. A real Gemma 4 26B
-loopback Tuesday run on 28 September 2026 produced 74 entries, zero
-mechanical clue issues, 18 signalled surfaces, and four safe non-definition
-families after source-free factual surfaces were replaced. That floor is a
-visible generation requirement, not a claim that clue semantics are reviewed;
-model failure still leaves the board playable and records the repair status.
-The measured receipt satisfies the four-family/fourteen-surface contract. If the local clue response is malformed or incomplete, the private
-path now preserves the generated grid with answer-free crossing scaffolds and
-records the fallback reason instead of failing the playable job.
-The aggregate, answer-free receipt for that run is preserved at
-`docs/evidence/private-tuesday-clue-study-v1.real-gemma4-26b-20260928.json`.
-The receipt now also records `requiredNonDefinitionFamilies` and `floorMet`,
+fourteen signalled clue surfaces. Each pass can consider ten ordinary entries;
+the writer gets up to three follow-up batches, plus one final post-safety pass
+when cleanup lowers the visible count. A fresh Gemma 4 26B loopback Tuesday run
+on 28 September 2026 produced a playable 78-entry board, zero deterministic
+clue issues, 15 signalled surfaces, and four safe non-definition families after
+the safety pass. Its measured fill had zero iffy and zero weak entries, with a
+84.75 mean score; the local theme-anchor retry retained one themed entry.
+The answer-free receipt is preserved at
+`docs/evidence/private-tuesday-clue-study-v2.real-gemma4-26b-20260928.json`.
+That floor is a visible generation requirement, not a claim that clue semantics
+are reviewed: the receipt retains six answer-free safety fallbacks and marks
+semantic status `not-established`. Model failure still leaves the board
+playable and records the repair status. The receipt records
+`requiredNonDefinitionFamilies`, `requiredNonDefinitionClues`, and `floorMet`,
 and the clue-notes panel distinguishes a varied board from one that remained
-playable but fell below its weekday surface floor.
-When Tuesday remains below that floor after safety cleanup, the local writer
-gets up to two additional bounded passes over fresh ordinary entries; all
-attempts are retained in the receipt and neither pass gates private play. Fill
-retries also try the shortest model-proposed theme answer already present in
-the local xfill dictionary before releasing the theme and using an open grid.
+playable but fell below its weekday surface floor. Fill retries also try the
+shortest model-proposed theme answer already present in the local xfill
+dictionary before releasing the theme and using an open grid.
 
 The private safety pass now treats an unsupported factual relation as unsafe for
 an ordinary non-theme entry even when its fill score is strong. It keeps exact
@@ -1903,7 +1909,7 @@ Do not restart a publication review, license audit, or curator worksheet. The pr
 4. **Keep `/` and solving behavior stable.** Retain regression coverage for the normal daily route, highlighting, keyboard, check/reveal, and completion. The private route should continue through the same solver controller and recover board plus progress after reload.
 5. **Leave public sharing as a separate future goal.** Source, attribution, editorial and publication safeguards matter when puzzles are shared. None belongs in front of local private play.
 
-Current verification: the earlier full-suite baseline passed (**617** Python tests, **3 skipped**, one existing SQLAlchemy datetime deprecation warning; **286** React tests across 38 files). This continuation adds the private clue-safety guard, uncertainty-labeled clue-family observations, collapsed clue-quality notes with reversible player flags, the full assistance ladder (crossing, letter, and entry reveal) with solve-journal events, answer-free contextual convention hints for punctuation, number, abbreviations, language labels, and fill blanks, a first-time private language starter lane with no-exposure/no-mastery semantics, explicit language-signal repair before session linking, explicit Monday/Wednesday/Thursday recipe directions with provenance, a validated Thursday shared-affix mechanic with a safe fallback, a bounded solve-behavior difficulty calibration signal, a calm three/six/twelve-item recall budget, an optional local-fill candidate lane for due language forms with explicit used/unplaced provenance, scheduler-owned due-first candidate ordering without hard locks, structural crossing-access provenance with explicit player-support uncertainty, contiguous-streak recall scheduling with bounded later-streak interval extension, the focused `private-construction-evidence-v1` topology receipt plus the invoked lab-only sibling adapter with caller-attested estimate provenance, the `private-grounded-clue-bundle-v1` and `private-clue-grammar-bridge-v1` provenance contracts, deterministic due-language candidate weighting plus scheduler-history priority, future-only token-aware rebus metadata, canonical SHA-256 profile-archive integrity receipts, preflighted bounded profile export, the advisory runtime-readiness endpoint with privacy-preserving worker heartbeat, the advisory episteme-brief seek/avoid/diversity evaluation report, the read-only runtime doctor, the `make run-personal` launcher, guided calibration branch recovery, the digest-bound structural Qwen/Gemma evaluation snapshot with no-winner status, an original 200-case `clue-grammar-v1` fixture matrix (10 accepted and 10 rejected examples for each of 10 families), `private-fill-quality-policy-v1` bounded retry selection with a bounded two-theme retention floor, `private-clue-semantic-challenger-v1`, the opt-in `private-clue-model-challenge-v1` fail-open advisory pass, `future-token-producer-v1`, six explicit accented language input packs, a 22-pair synthetic delayed-review fixture across seven learning languages, bounded reviewed-pack sense/fact context for uncovered model clues, a corrected 0.1.2 runtime-archive lock/integrity check, and truthful `not-configured` handling for an absent optional reviewed pack. The focused construction/private-generation/learning/adapter/grammar/language/export suite now passes (**142** Python tests); the focused challenger/private-generation slice passes (**72** Python tests, including disabled/enabled/failure model-challenge paths), the runtime-readiness/profile API slice passes (**30** Python tests), the focused learning-review/language-pack slice passes (**15** Python tests) plus the existing **2** React learning-review tests, the focused assistance/solver slice passes (**3** tests), and the focused React token/controls/solver/clue-notes slice passes (**25** tests). `make runtime-doctor` is green on the current machine, `npm ci --ignore-scripts --dry-run` accepts the lockfile, and a real durable Wednesday run produced a playable 15×15/76-entry Gemma board in 168 seconds with measured fill, zero deterministic clue issues, and preserved stage transitions. The durable private worker now preserves the frozen profile ID when rebuilding its starting context, so queued puzzles can resolve scheduler-owned due language forms just like the synchronous path.
+Current verification: the latest `make test` run passed **838** Python tests with **3** deselected and one existing SQLAlchemy datetime deprecation warning, **231** React tests across 35 files, and **8** application-package tests across two files. The focused private-generation slice now passes **123** tests. This continuation adds the private clue-safety guard, uncertainty-labeled clue-family observations, collapsed clue-quality notes with reversible player flags, the full assistance ladder (crossing, letter, and entry reveal) with solve-journal events, answer-free contextual convention hints for punctuation, number, abbreviations, language labels, and fill blanks, a first-time private language starter lane with no-exposure/no-mastery semantics, explicit language-signal repair before session linking, explicit Monday/Wednesday/Thursday recipe directions with provenance, a validated Thursday shared-affix mechanic with a safe fallback, a bounded solve-behavior difficulty calibration signal, a calm three/six/twelve-item recall budget, an optional local-fill candidate lane for due language forms with explicit used/unplaced provenance, scheduler-owned due-first candidate ordering without hard locks, structural crossing-access provenance with explicit player-support uncertainty, contiguous-streak recall scheduling with bounded later-streak interval extension, the focused `private-construction-evidence-v1` topology receipt plus the invoked lab-only sibling adapter with caller-attested estimate provenance, the `private-grounded-clue-bundle-v1` and `private-clue-grammar-bridge-v1` provenance contracts, deterministic due-language candidate weighting plus scheduler-history priority, future-only token-aware rebus metadata, canonical SHA-256 profile-archive integrity receipts, preflighted bounded profile export, the advisory runtime-readiness endpoint with privacy-preserving worker heartbeat, the advisory episteme-brief seek/avoid/diversity evaluation report, the read-only runtime doctor, the `make run-personal` launcher, guided calibration branch recovery, the digest-bound structural Qwen/Gemma evaluation snapshot with no-winner status, an original 200-case `clue-grammar-v1` fixture matrix (10 accepted and 10 rejected examples for each of 10 families), `private-fill-quality-policy-v1` bounded retry selection with a bounded two-theme retention floor, `private-clue-semantic-challenger-v1`, the opt-in `private-clue-model-challenge-v1` fail-open advisory pass, `future-token-producer-v1`, six explicit accented language input packs, a 22-pair synthetic delayed-review fixture across seven learning languages, bounded reviewed-pack sense/fact context for uncovered model clues, a corrected 0.1.2 runtime-archive lock/integrity check, and truthful `not-configured` handling for an absent optional reviewed pack. `make runtime-doctor` is green on the current machine, `npm ci --ignore-scripts --dry-run` accepts the lockfile, and a real durable Wednesday run produced a playable 15×15/76-entry Gemma board in 168 seconds with measured fill, zero deterministic clue issues, and preserved stage transitions. The durable private worker now preserves the frozen profile ID when rebuilding its starting context, so queued puzzles can resolve scheduler-owned due language forms just like the synchronous path.
 
 The constellation panel now exposes editable next-crossword difficulty and learning-thread settings while a game is open; saving them updates the profile for the next generated board without restarting calibration or mutating the current board. The same panel now reads a bounded answer-free history projection from the host, showing saved titles, weekday/model provenance, and replay analysis counts without exposing puzzle answers.
 
