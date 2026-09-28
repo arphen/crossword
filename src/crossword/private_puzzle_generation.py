@@ -3187,9 +3187,10 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         candidates.append(entry)
     candidates.sort(key=lambda item: (len(str(item.get("answer", ""))), item.get("id", "")))
     # Tuesday needs a visibly broader clue language than Monday. Keep the
-    # rewrite bounded, but give the local writer enough slots to reach its
-    # five-family floor instead of stopping after four cosmetic variants.
-    repair_limit = 6 if weekday == "tuesday" else 4
+    # rewrite bounded, but give the local writer a wider candidate batch so
+    # safe surfaces are not lost when one answer cannot support a requested
+    # convention.
+    repair_limit = 10 if weekday == "tuesday" else 4
     candidates = candidates[:repair_limit]
     if not candidates:
         return clues, {**base, "status": "not-needed", "reason": "no-eligible-entries"}
@@ -3200,6 +3201,10 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         "spoken-equivalent",
         "factual-relation",
         "metalinguistic",
+        "pun",
+        "fill-blank",
+        "nonverbal-expression",
+        "spoken-equivalent",
     ]
     selected = [
         {
@@ -3849,10 +3854,10 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
     if weekday == "tuesday":
         attempts = [diversity_repair]
         # A local writer may return only the subset of requested rewrites that
-        # it can make safe. Give it at most two follow-up batches so the ten
-        # clue floor has a chance to be reached without turning generation
-        # into an unbounded retry loop.
-        for _ in range(2):
+        # it can make safe. Give it at most three follow-up batches so the
+        # Tuesday fourteen-surface floor has a chance to be reached without
+        # turning generation into an unbounded retry loop.
+        for _ in range(3):
             report = _clue_diversity_report(
                 entries, repaired, repair=attempts[-1]
             )
@@ -3882,6 +3887,43 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         reviewed_by_id=reviewed_by_id,
         fallback_reasons=safety_fallbacks,
     )
+    # Safety normalization can conservatively replace a generated surface
+    # after the diversity pass (for example when a model's language signal is
+    # mechanically false).  Give Tuesday one final bounded repair opportunity
+    # against the actually safe clue set, so the recorded floor describes the
+    # clues the player will see rather than the pre-safety draft.
+    if weekday == "tuesday":
+        post_safety = _clue_diversity_report(
+            entries, safe_clues, repair=diversity_repair
+        )
+        if post_safety.get("floorMet") is False:
+            post_repaired, post_report = _repair_clue_diversity(
+                model,
+                entries,
+                safe_clues,
+                context,
+                weekday,
+                reviewed_by_id,
+            )
+            post_fallbacks = {}
+            safe_clues = _enforce_private_clue_safety(
+                entries,
+                post_repaired,
+                reviewed_by_id=reviewed_by_id,
+                fallback_reasons=post_fallbacks,
+            )
+            safety_fallbacks.update(post_fallbacks)
+            attempts = list(diversity_repair.get("attempts", []))
+            if not attempts:
+                attempts = [diversity_repair]
+            attempts.append(post_report)
+            diversity_repair = {
+                **post_report,
+                "attemptCount": len(attempts),
+                "attempts": attempts,
+                "postSafetyRepair": True,
+            }
+            context["_clue_diversity_repair"] = diversity_repair
     context["_clue_safety_fallbacks"] = safety_fallbacks
     return title.strip(), safe_clues
 

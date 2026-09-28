@@ -1856,7 +1856,7 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
 
     assert len(calls) == 4
     assert context["_clue_diversity_repair"]["reason"] == "weekday-surface-floor"
-    assert context["_clue_diversity_repair"]["selectedCount"] == 6
+    assert context["_clue_diversity_repair"]["selectedCount"] == 10
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )
@@ -1918,6 +1918,75 @@ def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
     assert len(calls) == 4
     assert context["_clue_diversity_repair"]["attemptCount"] == 3
     assert len(context["_clue_diversity_repair"]["attempts"]) == 3
+    report = private_generation._clue_diversity_report(
+        entries, clues, repair=context["_clue_diversity_repair"]
+    )
+    assert report["nonDefinitionCount"] >= 14
+    assert report["floorMet"] is True
+
+
+def test_tuesday_surface_floor_allows_one_additional_bounded_repair_batch(monkeypatch):
+    entries = [
+        {
+            "id": f"{index}A",
+            "answer": "BARK",
+            "length": 4,
+            "theme": False,
+        }
+        for index in range(1, 31)
+    ]
+    calls = []
+    initial_surfaces = [
+        "Branch, perhaps?",
+        "Safe and ___",
+        "[Sound heard nearby]",
+        '“Not a chance!”',
+        "Briefly, perhaps",
+        "German for yes",
+        "Branch, perhaps?",
+        "Safe and ___",
+        "[Sound heard nearby]",
+        '“Not a chance!”',
+        "Briefly, perhaps",
+    ]
+    followup_surfaces = [
+        "Branch, perhaps?",
+        "Safe and ___",
+        "[Sound heard nearby]",
+        '“Not a chance!”',
+    ]
+
+    def fake_chat(_model, _messages, schema, **_kwargs):
+        calls.append(schema)
+        ids = schema["properties"]["clues"]["items"]["properties"]["id"]["enum"]
+        if len(calls) == 1:
+            clues = [
+                {"id": entry["id"], "text": "A thing"}
+                for entry in entries
+            ]
+            for index, text in enumerate(initial_surfaces):
+                clues[index]["text"] = text
+            return {"title": "A Tuesday board", "clues": clues}
+        text = followup_surfaces[len(calls) - 2]
+        return {
+            "title": "A Tuesday board",
+            "clues": [{"id": ids[0], "text": text}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    context = {}
+
+    _, clues = private_generation._make_clues(
+        "gemma4:26b", entries, context, "tuesday"
+    )
+
+    assert len(calls) == 5
+    assert context["_clue_diversity_repair"]["attemptCount"] == 4
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )
