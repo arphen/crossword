@@ -878,7 +878,77 @@ def test_model_runtime_policy_bounds_slow_qwen_advisory_passes():
     assert qwen["primaryClueTimeoutSeconds"] == 120
     assert qwen["diversityTimeoutSeconds"] == 60
     assert qwen["tuesdayDiversityAttempts"] == 2
+    assert qwen["qwenClueBatchSize"] == 24
+    assert qwen["qwenClueBatchThreshold"] == 48
+    assert qwen["qwenClueBatchTokensPerEntry"] == 40
+    assert qwen["qwenClueBatchMaxTokens"] == 1400
+    assert qwen["qwenSkipOptionalRepairsAfterBatch"] is True
     assert qwen["qualityClaim"] == "none"
+
+
+def test_qwen_large_clue_batches_combine_exact_entry_ids(monkeypatch):
+    entries = [
+        {"id": f"{index}A", "answer": "BARK", "length": 4}
+        for index in range(1, 61)
+    ]
+    messages = [
+        {"role": "system", "content": "clue writer"},
+        {
+            "role": "user",
+            "content": json.dumps(
+                {
+                    "difficulty": "Tuesday",
+                    "entries": entries,
+                    "groundingBundle": {},
+                    "reviewedClues": [],
+                    "reviewedContent": [],
+                }
+            ),
+        },
+    ]
+    batch_sizes = []
+
+    def fake_chat(_model, _messages, schema, **_kwargs):
+        payload = json.loads(_messages[1]["content"])
+        ids = [entry["id"] for entry in payload["entries"]]
+        batch_sizes.append(len(ids))
+        return {
+            "title": "A Tuesday board",
+            "clues": [{"id": clue_id, "text": "A thing"} for clue_id in ids],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    result = private_generation._qwen_batched_clue_value(
+        "qwen3.8:27b", messages, entries, {}, {}
+    )
+
+    assert batch_sizes == [24, 24, 12]
+    assert result["title"] == "A Tuesday board"
+    assert [item["id"] for item in result["clues"]] == [entry["id"] for entry in entries]
+
+
+def test_qwen_batch_receipt_skips_extra_model_repairs(monkeypatch):
+    entries = [
+        {"id": f"{index}A", "answer": "BARK", "length": 4}
+        for index in range(1, 31)
+    ]
+    clues = {entry["id"]: "A thing" for entry in entries}
+    context = {"_clue_generation_batches": {"version": "private-qwen-clue-batching-v1"}}
+
+    assert private_generation._repair_risky_clues(
+        "qwen3.8:27b", entries, clues, context, "tuesday"
+    ) is clues
+    _, diversity = private_generation._repair_clue_diversity(
+        "qwen3.8:27b", entries, clues, context, "tuesday", {}
+    )
+    assert diversity["status"] == "skipped-model-batch"
+
+    monkeypatch.setenv("CROSSWORD_PRIVATE_CLUE_CHALLENGE", "1")
+    challenge = private_generation._challenge_private_clues(
+        "qwen3.8:27b", entries, clues, context, "tuesday"
+    )
+    assert challenge["status"] == "skipped-model-batch"
+    assert challenge["enabled"] is False
 
 
 def test_private_fill_violations_only_reject_known_construction_artefacts():

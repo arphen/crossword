@@ -2048,6 +2048,24 @@ runtime evidence only and does not claim clue quality, fairness, or player
 support; the zero-surface-diversity result is retained as the next Qwen clue
 optimization target.
 
+The follow-up `private-qwen-clue-batching-v1` slice now bounds large Qwen clue
+requests to 24-entry light-schema batches (1,400 output tokens maximum per
+batch) and records attempted, completed, or failed batch status in provenance.
+The host still applies the exact entry-id, length, answer-leakage, morphology,
+and clue-family guards after a successful batch; optional model repair and
+challenger passes are skipped only for a batched writer because they would
+duplicate the same slow decode. A failed batch never contributes partial text:
+the whole board falls back to the answer-free crossing scaffold. On this host,
+the first 24-entry Qwen batch still reached its 60-second timeout on full
+74–76-entry Tuesday boards, so long Qwen generation remains a documented
+runtime limitation rather than a quality success. A small eight-entry probe
+returned structured clues, but took roughly 95 seconds including the bounded
+post-processing path; that result is useful for profiling only and does not
+establish semantic or editorial quality. Gemma remains the practical default
+for complete local boards while this Qwen path is optimized further.
+The batching slice's focused Python suite passes **140** tests, including
+exact-batch composition and failed-batch provenance coverage.
+
 The latest replay-boundary slice adds **2** Python provenance tests and **2** React receipt tests. The focused Python command covering postgame associations, provenance, fill-study evaluation, and private generation passes **104 tests**; the focused React solver/app/reflection/history/receipt command passes **23 tests**. The receipt is owner-scoped, canonical-digest checked, and fail-open when storage is absent. A browser gate initially found that the durable response body was being consumed twice, which prevented a ready job from reaching the solver; the client now reuses the already parsed `202` payload, and `CROSSWORD_E2E_BACKEND_PORT=5015 npm run test:e2e` passes all **6** tests through calibration, worker polling, private play, reflection, reload, and the unchanged daily routes.
 
 The E12 narrative lifecycle slice adds one Python API regression and one React

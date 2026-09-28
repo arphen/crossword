@@ -781,6 +781,12 @@ _MODEL_GENERATION_POLICIES = {
         "challengeTimeout": 90,
         "tuesdayDiversityAttempts": 4,
         "tuesdayPostSafetyRepair": True,
+        "qwenClueBatchThreshold": 48,
+        "qwenClueBatchSize": 24,
+        "qwenClueBatchTimeout": 60,
+        "qwenClueBatchTokensPerEntry": 40,
+        "qwenClueBatchMaxTokens": 1400,
+        "qwenSkipOptionalRepairsAfterBatch": True,
     },
     "qwen3.8:27b": {
         "themeTimeout": 75,
@@ -793,6 +799,12 @@ _MODEL_GENERATION_POLICIES = {
         # call three more times.
         "tuesdayDiversityAttempts": 2,
         "tuesdayPostSafetyRepair": False,
+        "qwenClueBatchThreshold": 48,
+        "qwenClueBatchSize": 24,
+        "qwenClueBatchTimeout": 60,
+        "qwenClueBatchTokensPerEntry": 40,
+        "qwenClueBatchMaxTokens": 1400,
+        "qwenSkipOptionalRepairsAfterBatch": True,
     },
 }
 
@@ -817,6 +829,14 @@ def _model_runtime_policy_receipt(model):
         "challengeTimeoutSeconds": policy["challengeTimeout"],
         "tuesdayDiversityAttempts": policy["tuesdayDiversityAttempts"],
         "tuesdayPostSafetyRepair": policy["tuesdayPostSafetyRepair"],
+        "qwenClueBatchThreshold": policy["qwenClueBatchThreshold"],
+        "qwenClueBatchSize": policy["qwenClueBatchSize"],
+        "qwenClueBatchTimeoutSeconds": policy["qwenClueBatchTimeout"],
+        "qwenClueBatchTokensPerEntry": policy["qwenClueBatchTokensPerEntry"],
+        "qwenClueBatchMaxTokens": policy["qwenClueBatchMaxTokens"],
+        "qwenSkipOptionalRepairsAfterBatch": policy[
+            "qwenSkipOptionalRepairsAfterBatch"
+        ],
         "interpretation": "execution-budget-only",
         "qualityClaim": "none",
     }
@@ -1728,6 +1748,110 @@ def _clue_token_budget(entry_count):
         per_entry = DEFAULT_CLUE_TOKENS_PER_ENTRY
     per_entry = max(32, min(96, per_entry))
     return min(5200, max(1800, entry_count * per_entry))
+
+
+def _qwen_batched_clue_value(model, base_messages, entries, reviewed_by_id, context):
+    """Write a large Qwen clue set in bounded structured batches.
+
+    Qwen's long-board response can spend its whole context/decode budget before
+    returning any JSON. Smaller batches preserve exact entry ids and let the
+    existing outer validator, repair pass, and answer-safety guard treat the
+    combined result exactly like a single response. A failed batch raises so
+    the caller uses the established answer-free scaffold for the whole board;
+    partial model text is never mixed into a playable clue set.
+    """
+    policy = _model_generation_policy(model)
+    batch_size = policy["qwenClueBatchSize"]
+    raw_user = base_messages[1].get("content") if len(base_messages) > 1 else None
+    payload = json.loads(raw_user) if isinstance(raw_user, str) else None
+    if not isinstance(payload, dict):
+        raise ValueError("qwen-clue-batch-prompt-invalid")
+    system = base_messages[0]
+    combined = []
+    title = None
+    for offset in range(0, len(entries), batch_size):
+        batch = entries[offset : offset + batch_size]
+        batch_ids = [
+            entry.get("id")
+            for entry in batch
+            if isinstance(entry, Mapping) and isinstance(entry.get("id"), str)
+        ]
+        ids = set(batch_ids)
+        if not batch_ids:
+            continue
+        batch_payload = dict(payload)
+        batch_payload["entries"] = batch
+        batch_payload["groundingBundle"] = _clue_generation_bundle(batch)
+        for key in ("reviewedClues", "reviewedContent"):
+            records = batch_payload.get(key)
+            if isinstance(records, list):
+                batch_payload[key] = [
+                    record
+                    for record in records
+                    if isinstance(record, Mapping) and record.get("id") in ids
+                ]
+        value = _chat(
+            model,
+            [
+                system,
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        batch_payload,
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ),
+                },
+            ],
+            _qwen_clue_batch_schema(),
+            timeout=policy["qwenClueBatchTimeout"],
+            tokens=min(
+                policy["qwenClueBatchMaxTokens"],
+                max(600, len(batch) * policy["qwenClueBatchTokensPerEntry"]),
+            ),
+            temperature=0.65,
+        )
+        if not isinstance(value, dict) or not isinstance(value.get("clues"), list):
+            raise ValueError("qwen-clue-batch-response-invalid")
+        if title is None:
+            title = value.get("title")
+        returned = value["clues"]
+        if len(returned) != len(ids):
+            raise ValueError("qwen-clue-batch-incomplete")
+        combined.extend(returned)
+    if title is None:
+        raise ValueError("qwen-clue-batch-empty")
+    return {"title": title, "clues": combined}
+
+
+def _qwen_clue_batch_schema():
+    """Use a light schema for Qwen batches; host validation stays strict.
+
+    Enumerating every entry id and exact array length in Ollama's constrained
+    decoder makes this particular model spend its budget before producing any
+    response. The host still enforces the exact id set, text bounds, grammar,
+    and answer-safety checks immediately after the batch returns.
+    """
+    return {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string"},
+            "clues": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "text": {"type": "string"},
+                    },
+                    "required": ["id", "text"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "required": ["title", "clues"],
+        "additionalProperties": False,
+    }
 
 
 def _make_themes(model, context, weekday):
@@ -3272,6 +3396,10 @@ def _theme_mechanic_direction(mechanic):
 
 def _repair_risky_clues(model, entries, clues, context, weekday):
     """Repair likely factual hallucinations without blocking private play."""
+    if isinstance(context, Mapping) and isinstance(
+        context.get("_clue_generation_batches"), Mapping
+    ):
+        return clues
     risky = _risky_clue_entries(entries, clues)
     if not risky:
         return clues
@@ -3471,6 +3599,15 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
         )
     if isinstance(target_clue_count, int):
         base["targetNonDefinitionClues"] = target_clue_count
+    if isinstance(context, Mapping) and isinstance(
+        context.get("_clue_generation_batches"), Mapping
+    ):
+        return clues, {
+            **base,
+            "status": "skipped-model-batch",
+            "reason": "qwen-batched-clue-writer",
+            "playPolicy": "deterministic-safety-still-runs",
+        }
     if (
         len(initial["nonDefinitionFamilies"]) >= minimum_families
         and (
@@ -4007,9 +4144,7 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         else {}
     )
     try:
-        value = _chat(
-            model,
-        [
+        base_messages = [
             {
                 "role": "system",
                 "content": (
@@ -4095,12 +4230,52 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
                     separators=(",", ":"),
                 ),
             },
-        ],
-        schema,
-        timeout=_model_generation_policy(model)["primaryClueTimeout"],
-        tokens=_clue_token_budget(len(entries)),
-        temperature=0.65,
-    )
+        ]
+        policy = _model_generation_policy(model)
+        if (
+            isinstance(model, str)
+            and model.casefold() == "qwen3.8:27b"
+            and len(entries) > policy["qwenClueBatchThreshold"]
+        ):
+            batch_receipt = {
+                "version": "private-qwen-clue-batching-v1",
+                "status": "attempted",
+                "batchSize": policy["qwenClueBatchSize"],
+                "batchCount": math.ceil(len(entries) / policy["qwenClueBatchSize"]),
+                "timeoutSeconds": policy["qwenClueBatchTimeout"],
+                "tokensPerEntry": policy["qwenClueBatchTokensPerEntry"],
+                "maxTokens": policy["qwenClueBatchMaxTokens"],
+                "interpretation": "execution-optimization-only",
+            }
+            context["_clue_generation_batches"] = batch_receipt
+            try:
+                value = _qwen_batched_clue_value(
+                    model,
+                    base_messages,
+                    entries,
+                    reviewed_by_id,
+                    context,
+                )
+            except Exception as error:
+                context["_clue_generation_batches"] = {
+                    **batch_receipt,
+                    "status": "failed",
+                    "reason": f"{type(error).__name__}: {error}"[:240],
+                }
+                raise
+            context["_clue_generation_batches"] = {
+                **batch_receipt,
+                "status": "completed",
+            }
+        else:
+            value = _chat(
+                model,
+                base_messages,
+                schema,
+                timeout=policy["primaryClueTimeout"],
+                tokens=_clue_token_budget(len(entries)),
+                temperature=0.65,
+            )
     except (
         requests.RequestException,
         ValueError,
@@ -4317,6 +4492,15 @@ def _challenge_private_clues(model, entries, clues, context, weekday):
     }
     if enabled not in {"1", "true", "yes", "on"}:
         return base
+    if isinstance(context, Mapping) and isinstance(
+        context.get("_clue_generation_batches"), Mapping
+    ):
+        return {
+            **base,
+            "status": "skipped-model-batch",
+            "requested": True,
+            "reason": "qwen-batched-clue-writer",
+        }
     if not isinstance(entries, list) or not isinstance(clues, dict):
         return {**base, "status": "invalid-input", "enabled": True}
     all_entry_ids = [
@@ -5461,6 +5645,7 @@ def _generate(
         # ``failed``; neither state affects playable private generation.
         "siblingEvaluatorAdapter": sibling_evaluator_adapter,
         "clueQuality": clue_quality,
+        "clueGenerationBatches": context.get("_clue_generation_batches"),
         "clueGenerationFallback": (
             {
                 "status": "answer-free-scaffold",
