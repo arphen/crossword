@@ -786,6 +786,27 @@ def _claim_next_job():
     return claimed.id, token, dict(claimed.request_json)
 
 
+def _private_job_runtime_receipt(attempt, started_at):
+    """Return the bounded, answer-free receipt for one durable private job.
+
+    The generated puzzle's provenance remains the model/content receipt.  This
+    sibling object records only how the durable host job reached completion so
+    postgame history can explain a reclaimed wait without carrying request,
+    profile, clue, or answer material across the private boundary.
+    """
+    recovery = "reclaimed" if attempt > 1 else "first-attempt"
+    receipt = {
+        "version": "private-job-runtime-v1",
+        "durable": True,
+        "attempt": attempt,
+        "recovery": recovery,
+    }
+    elapsed = _elapsed_seconds(started_at)
+    if elapsed is not None:
+        receipt["elapsedSeconds"] = round(elapsed, 3)
+    return receipt
+
+
 def _set_runtime_stage(app, job_id, token, stage):
     """Publish a truthful private-generation stage behind the current lease.
 
@@ -1510,7 +1531,14 @@ def _remove_public_manifest_candidate(serialized, rejection_code):
 
 
 def _finalize_grid_result(
-    job_id, token, frozen, state, serialized, error, private_selection
+    job_id,
+    token,
+    frozen,
+    state,
+    serialized,
+    error,
+    private_selection,
+    private_runtime=None,
 ):
     """Atomically stage optional candidate/private evidence and fence the job write."""
     common = (
@@ -1543,6 +1571,14 @@ def _finalize_grid_result(
         )
         if isinstance(private_manifest, dict) and isinstance(private_provenance, dict):
             try:
+                if isinstance(private_runtime, dict):
+                    # Keep the response-scoped generator provenance stable for
+                    # existing clients while persisting the operational
+                    # receipt beside it for owner-scoped replay/history.
+                    private_provenance = {
+                        **private_provenance,
+                        "jobRuntime": private_runtime,
+                    }
                 stage_private_puzzle_provenance(
                     profile_id=frozen["profileId"],
                     manifest=private_manifest,
@@ -1597,6 +1633,12 @@ def process_next_grid_draft(
         if claim is None:
             return False
         job_id, token, frozen = claim
+        claimed = db.session.get(FutureGridDraftJob, job_id)
+        # Read the lease facts before removing this session.  They are
+        # operational metadata, not part of the frozen profile request, and
+        # preserve the historical three-item _claim_next_job contract.
+        attempt = claimed.attempt
+        claim_started_at = claimed.updated_at
         db.session.remove()
 
     def cancelled():
@@ -1674,12 +1716,18 @@ def process_next_grid_draft(
                 )
         error = None
         state = "ready"
+        private_runtime = (
+            _private_job_runtime_receipt(attempt, claim_started_at)
+            if private_play
+            else None
+        )
     except Exception as exc:  # Persist failure for the UI; worker remains available.
         serialized = None
         error = str(exc).strip()[:240] or "Full-size answer-grid construction failed"
         if frozen.get("mode") == "personalized" and ("/" in error or "\\" in error):
             error = "The personalized answer-grid draft failed local validation"
         state = "failed"
+        private_runtime = None
 
     with app.app_context():
         if shutdown_requested():
@@ -1687,7 +1735,14 @@ def process_next_grid_draft(
             return True
         try:
             if _finalize_grid_result(
-                job_id, token, frozen, state, serialized, error, private_selection
+                job_id,
+                token,
+                frozen,
+                state,
+                serialized,
+                error,
+                private_selection,
+                private_runtime,
             ):
                 return True
         except PersonalizedV2CandidateRejected:
@@ -1698,7 +1753,14 @@ def process_next_grid_draft(
             private_selection = None
             try:
                 if _finalize_grid_result(
-                    job_id, token, frozen, state, serialized, error, None
+                    job_id,
+                    token,
+                    frozen,
+                    state,
+                    serialized,
+                    error,
+                    None,
+                    private_runtime,
                 ):
                     return True
             except Exception:
@@ -1716,7 +1778,14 @@ def process_next_grid_draft(
                 private_selection = None
                 try:
                     if _finalize_grid_result(
-                        job_id, token, frozen, state, serialized, error, None
+                        job_id,
+                        token,
+                        frozen,
+                        state,
+                        serialized,
+                        error,
+                        None,
+                        private_runtime,
                     ):
                         return True
                 except Exception:

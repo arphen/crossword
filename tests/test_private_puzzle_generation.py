@@ -1,6 +1,7 @@
 """The local experimental puzzle endpoint returns solver-ready puzzles."""
 
 import json
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -10,7 +11,10 @@ from tests.test_api_isolated import api, no_network  # noqa: F401
 from src.crossword.future_grid_jobs import FutureGridDraftJob, process_next_grid_draft
 from src.crossword.database import db
 from src.crossword.future import StartingProfile
-from src.crossword.future_puzzles import register_legacy_puzzle
+from src.crossword.future_puzzles import (
+    FuturePuzzleProvenanceRecord,
+    register_legacy_puzzle,
+)
 from src.crossword.learning_review import FutureLearningReviewRecord, _review_task_id
 from src.crossword.models import Crossword
 import src.crossword.learning_review as learning_review
@@ -4109,7 +4113,74 @@ def test_private_generation_job_freezes_profile_and_returns_playable_result(
         f"/api/future/sessions/{durable_session_id}/private-provenance?profileId={saved_profile['id']}"
     )
     assert receipt.status_code == 200, receipt.json
-    assert receipt.json["provenance"] == provenance
+    assert {
+        key: value
+        for key, value in receipt.json["provenance"].items()
+        if key != "jobRuntime"
+    } == provenance
+    assert receipt.json["provenance"]["jobRuntime"] == {
+        "version": "private-job-runtime-v1",
+        "durable": True,
+        "attempt": 1,
+        "recovery": "first-attempt",
+        "elapsedSeconds": pytest.approx(0.0, abs=0.1),
+    }
+
+
+def test_private_generation_job_records_reclaimed_runtime_receipt(
+    api, monkeypatch, saved_profile
+):
+    crossword = _crossword()
+    with api.app.app_context():
+        manifest = register_legacy_puzzle(crossword)
+    provenance = {
+        "source": "local-ollama-xfill",
+        "model": "gemma4:26b",
+        "engine": "xfill",
+    }
+
+    def fake_generate(*_args, **_kwargs):
+        return crossword, manifest, provenance
+
+    monkeypatch.setattr(private_generation, "_generate", fake_generate)
+    client = api.app.test_client()
+    created = client.post(
+        "/api/future/private-puzzle-jobs",
+        json={
+            "profileId": saved_profile["id"],
+            "idempotencyKey": str(uuid4()),
+            "seed": 42,
+            "weekday": "thursday",
+        },
+        headers={"Origin": "http://localhost"},
+    )
+    assert created.status_code == 202, created.json
+
+    expired = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat(
+        timespec="milliseconds"
+    )
+    with api.app.app_context():
+        job = api.db.session.get(FutureGridDraftJob, created.json["id"])
+        job.state = "running"
+        job.attempt = 1
+        job.lease_token = str(uuid4())
+        job.lease_until = expired
+        api.db.session.commit()
+
+    assert process_next_grid_draft(api.app) is True
+    with api.app.app_context():
+        stored = api.db.session.get(
+            FuturePuzzleProvenanceRecord,
+            (manifest["integrity"]["value"].removeprefix("sha256:"), saved_profile["id"]),
+        )
+        assert stored is not None
+        assert stored.provenance_json["jobRuntime"]["version"] == (
+            "private-job-runtime-v1"
+        )
+        assert stored.provenance_json["jobRuntime"]["durable"] is True
+        assert stored.provenance_json["jobRuntime"]["attempt"] == 2
+        assert stored.provenance_json["jobRuntime"]["recovery"] == "reclaimed"
+        assert stored.provenance_json["jobRuntime"]["elapsedSeconds"] >= 0
 
 
 def test_private_generation_passes_a_selected_local_model_to_sync_generator(
