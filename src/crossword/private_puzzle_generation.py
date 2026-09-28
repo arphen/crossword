@@ -1831,16 +1831,19 @@ def _clue_token_budget(entry_count, *, per_entry=None):
     on full-size boards. Keep a host override for unusual local models, but
     clamp it to a range that still leaves enough room for a concise clue set.
     """
-    if per_entry is None:
+    override = os.environ.get("CROSSWORD_PRIVATE_CLUE_TOKENS_PER_ENTRY")
+    if isinstance(override, str) and override.strip():
         try:
-            per_entry = int(
-                os.environ.get(
-                    "CROSSWORD_PRIVATE_CLUE_TOKENS_PER_ENTRY",
-                    DEFAULT_CLUE_TOKENS_PER_ENTRY,
-                )
-            )
+            per_entry = int(override)
         except (TypeError, ValueError):
-            per_entry = DEFAULT_CLUE_TOKENS_PER_ENTRY
+            # An invalid host override should leave the model-specific policy
+            # intact when one was supplied, while the direct helper retains
+            # its historical generic default.
+            per_entry = (
+                per_entry if per_entry is not None else DEFAULT_CLUE_TOKENS_PER_ENTRY
+            )
+    elif per_entry is None:
+        per_entry = DEFAULT_CLUE_TOKENS_PER_ENTRY
     else:
         try:
             per_entry = int(per_entry)
