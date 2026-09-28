@@ -108,6 +108,8 @@ describe('clue grammar v1', () => {
     expect(codes(definition({ clueText: 'A common name for a bird' }), { enforceAnswerSafety: true })).toContain('generic-clue');
     expect(codes(definition({ clueText: 'Usually a common term' }), { enforceAnswerSafety: true })).toContain('generic-clue');
     expect(codes(definition({ clueText: "singer's name" }), { enforceAnswerSafety: true })).toContain('generic-clue');
+    expect(codes(definition({ clueText: "Artist's name" }), { enforceAnswerSafety: true })).toContain('generic-clue');
+    expect(codes(definition({ clueText: 'Name of a classic novelist' }), { enforceAnswerSafety: true })).toContain('generic-clue');
   });
 
   it('rejects visible plural and past-tense markers that contradict the answer shape', () => {

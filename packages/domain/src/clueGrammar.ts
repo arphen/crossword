@@ -602,7 +602,10 @@ function validateAnswerSafety(
   const normalized = clue.clueText.trim().replace(/\s+/gu, ' ');
   if (
     /\b(?:common|usual|ordinary|generic|standard)\s+(?:(?:[\p{L}\p{N}][\p{L}\p{N}'’/-]*|\d+)\s+){0,3}(?:name|term|word|designation|label)\b/iu.test(normalized) ||
-    /^(?:(?:a|an|the)\s+)?(?:(?:famous|well[- ]known|notable|popular|renowned|celebrated|italian|french|german|spanish|japanese|portuguese|dutch)\s+)?(?:actor|actress|author|band|character|director|king|queen|singer|surname|writer|person|president|saint|celebrity)(?:'s|’s)?\s+name(?:\s*,?\s*perhaps)?[?.]?$/iu.test(
+    /^(?:(?:a|an|the)\s+)?(?:(?:famous|well[- ]known|notable|popular|renowned|celebrated|italian|french|german|spanish|japanese|portuguese|dutch)\s+)?(?:actor|actress|artist|author|band|character|comedian|composer|director|king|queen|singer|scientist|scholar|surname|writer|novelist|poet|person|president|saint|celebrity)(?:'s|’s)?\s+name(?:\s*,?\s*perhaps)?[?.]?$/iu.test(
+      normalized,
+    ) ||
+    /^\s*name\s+of\s+(?:(?:a|an|the)\s+)?(?:(?:famous|well[- ]known|notable|popular|renowned|celebrated|classic|italian|french|german|spanish|japanese|portuguese|dutch)\s+)?(?:actor|actress|artist|author|comedian|composer|director|king|queen|singer|scientist|scholar|writer|novelist|poet|person|president|saint|celebrity)\s*[?.]?$/iu.test(
       normalized,
     )
   ) {

@@ -173,10 +173,20 @@ _GENERIC_NAME_CLUE_RE = re.compile(
     r"^\s*(?:(?:a|an|the)\s+)?"
     r"(?:(?:famous|well[- ]known|notable|popular|renowned|celebrated|"
     r"italian|french|german|spanish|japanese|portuguese|dutch)\s+)?"
-    r"(?:actor|actress|author|band|character|director|king|queen|singer|"
-    r"surname|writer|person|president|saint|celebrity)"
+    r"(?:actor|actress|artist|author|band|character|comedian|composer|"
+    r"director|king|queen|singer|scientist|scholar|surname|writer|"
+    r"novelist|poet|person|president|saint|celebrity)"
     r"(?:'s|’s)?\s+name"
     r"(?:\s*,?\s*perhaps)?\s*[?.]?\s*$",
+    re.IGNORECASE,
+)
+_GENERIC_NAME_OF_CLUE_RE = re.compile(
+    r"^\s*name\s+of\s+(?:(?:a|an|the)\s+)?"
+    r"(?:(?:famous|well[- ]known|notable|popular|renowned|celebrated|"
+    r"classic|italian|french|german|spanish|japanese|portuguese|dutch)\s+)?"
+    r"(?:actor|actress|artist|author|comedian|composer|director|king|queen|"
+    r"singer|scientist|scholar|writer|novelist|poet|person|president|saint|"
+    r"celebrity)\s*[?.]?\s*$",
     re.IGNORECASE,
 )
 _LANGUAGE_YES = {
@@ -2320,6 +2330,7 @@ def _clue_wordplay_issue(entry, clue):
         _GENERIC_TEMPLATE_PHRASE_RE.search(text)
         or _GENERIC_CLUE_RE.fullmatch(text)
         or _GENERIC_NAME_CLUE_RE.fullmatch(text)
+        or _GENERIC_NAME_OF_CLUE_RE.fullmatch(text)
     ):
         return "generic-clue"
 
