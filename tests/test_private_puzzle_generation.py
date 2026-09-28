@@ -1423,7 +1423,7 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     assert tuesday["themeAnswerCount"] == 5
     assert tuesday["minimumNonDefinitionFamilies"] == 5
     assert tuesday["minimumNonDefinitionCount"] == 24
-    assert tuesday["targetNonDefinitionRate"] == 0.42
+    assert tuesday["targetNonDefinitionRate"] == 0.48
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] == 75
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] > private_generation._DIFFICULTY["monday"]["candidates"]
     assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
@@ -2049,7 +2049,7 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
     assert len(report["nonDefinitionFamilies"]) >= 6
     assert report["status"] == "varied"
     assert report["nonDefinitionCount"] >= 24
-    assert report["targetNonDefinitionClues"] == 13
+    assert report["targetNonDefinitionClues"] == 15
     assert report["requiredNonDefinitionClues"] == 24
     assert report["floorMet"] is True
 
@@ -2065,8 +2065,8 @@ def test_tuesday_surface_floor_scales_to_full_board_target(monkeypatch):
         "gemma4:26b", entries, clues, {}, "tuesday", {}
     )
     assert repair["minimumClueCount"] == 24
-    assert repair["targetNonDefinitionRate"] == 0.42
-    assert repair["targetNonDefinitionClues"] == 33
+    assert repair["targetNonDefinitionRate"] == 0.48
+    assert repair["targetNonDefinitionClues"] == 38
 
 
 def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):

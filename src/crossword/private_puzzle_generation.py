@@ -541,7 +541,7 @@ _DIFFICULTY = {
         # native runner reject every themed attempt before it can be measured.
         "candidates": 75,
         "time": 2.5,
-        "voice": "playful, with alternate senses, fair second readings, and a little more lift",
+        "voice": "playful, with alternate senses, fair second readings, and a clear step beyond literal definitions",
     },
     "wednesday": {
         "candidates": 75,
@@ -589,7 +589,7 @@ _WEEKDAY_RECIPES = {
         "intent": "Familiar material with a visible layer of fair second readings makes Tuesday a clear step beyond Monday while preserving dependable footholds.",
         "themeAnswerCount": 5,
         "themeDirection": "Choose a coherent cluster of up to five approachable answers whose connection is discoverable after one or two entries; let the pattern add a little lift without requiring specialist trivia.",
-        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but make at least twenty-four clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least five distinct surface families so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
+        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep a small set of direct footholds, then prefer less literal but precise surfaces so the board does not read like Monday with different answers. Make at least twenty-four clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least five distinct surface families, and aim for roughly half the board to carry one of those signals. Do not rely on obscure trivia.",
         "themeMode": "approachable-cluster-with-a-turn",
         "minimumNonDefinitionFamilies": 5,
         "minimumNonDefinitionCount": 24,
@@ -597,7 +597,7 @@ _WEEKDAY_RECIPES = {
         # the editorial contract also asks for roughly two fifths of the
         # visible surfaces to carry a fair convention or second reading so
         # Tuesday does not collapse into Monday-style direct definitions.
-        "targetNonDefinitionRate": 0.42,
+        "targetNonDefinitionRate": 0.48,
     },
     "wednesday": {
         "id": "wednesday-private-v1",
