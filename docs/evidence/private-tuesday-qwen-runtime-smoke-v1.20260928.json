@@ -1,0 +1,51 @@
+{
+  "version": "private-tuesday-qwen-runtime-smoke-v1",
+  "scope": "answer-free-local-runtime-receipt",
+  "model": "qwen3.8:27b",
+  "weekday": "tuesday",
+  "seed": 20470403,
+  "httpStatus": 200,
+  "playableBoard": true,
+  "entryCount": 76,
+  "elapsedSeconds": 201.32,
+  "timingsSeconds": {
+    "themeProposal": 34.231,
+    "nativeXfill": 46.575,
+    "clueGeneration": 120.008,
+    "total": 201.044
+  },
+  "modelRuntimePolicy": {
+    "version": "private-model-runtime-policy-v1",
+    "themeTimeoutSeconds": 75,
+    "primaryClueTimeoutSeconds": 120,
+    "repairTimeoutSeconds": 60,
+    "diversityTimeoutSeconds": 60,
+    "challengeTimeoutSeconds": 60,
+    "tuesdayDiversityAttempts": 2,
+    "tuesdayPostSafetyRepair": false,
+    "interpretation": "execution-budget-only",
+    "qualityClaim": "none"
+  },
+  "clueGenerationFallback": {
+    "status": "answer-free-scaffold",
+    "reason": "ReadTimeout: local clue response exceeded the 120-second Qwen primary-clue budget",
+    "playPolicy": "fail-open-private-play"
+  },
+  "clueDiversity": {
+    "entryCount": 76,
+    "familyCounts": {
+      "definition": 76
+    },
+    "nonDefinitionCount": 0,
+    "floorMet": false,
+    "semanticStatus": "not-established",
+    "playPolicy": "visible-convention-diversity-only"
+  },
+  "interpretation": "runtime-and-fallback-receipt-only; no semantic, fairness, player-support, or model-quality claim",
+  "uncertainty": [
+    "local-model-timeout",
+    "clue-semantics-unreviewed",
+    "player-support-unmeasured"
+  ],
+  "studyDigest": "sha256:6c1227a7d675b1850f168900b4b3193931c7ab27b2bb1d4a07f7b105ca33823b"
+}

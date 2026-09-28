@@ -2038,6 +2038,16 @@ other weekdays, and the no-history path remain unchanged. This makes a player's
 `harder-stretch` pulse causally visible in the next board while keeping the
 signal reversible and difficulty-only.
 
+A real Qwen 3.8 27B Tuesday request now confirms the bounded failure behavior:
+seed `20470403` returned a playable 76-entry board in 201.32 seconds. Theme
+proposal and native xfill completed; the primary clue call reached its
+120-second Qwen budget and the board used answer-free crossing scaffolds rather
+than hanging or exposing an unverified clue. The answer-free receipt is
+`docs/evidence/private-tuesday-qwen-runtime-smoke-v1.20260928.json`. It is
+runtime evidence only and does not claim clue quality, fairness, or player
+support; the zero-surface-diversity result is retained as the next Qwen clue
+optimization target.
+
 The latest replay-boundary slice adds **2** Python provenance tests and **2** React receipt tests. The focused Python command covering postgame associations, provenance, fill-study evaluation, and private generation passes **104 tests**; the focused React solver/app/reflection/history/receipt command passes **23 tests**. The receipt is owner-scoped, canonical-digest checked, and fail-open when storage is absent. A browser gate initially found that the durable response body was being consumed twice, which prevented a ready job from reaching the solver; the client now reuses the already parsed `202` payload, and `CROSSWORD_E2E_BACKEND_PORT=5015 npm run test:e2e` passes all **6** tests through calibration, worker polling, private play, reflection, reload, and the unchanged daily routes.
 
 The E12 narrative lifecycle slice adds one Python API regression and one React
