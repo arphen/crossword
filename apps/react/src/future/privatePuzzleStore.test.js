@@ -106,6 +106,38 @@ it('keeps large clue diagnostics out of the browser recovery record', () => {
   expect(loadPrivatePuzzle(profileId, storage)?.puzzle.provenance.clueBundle).toBeUndefined();
 });
 
+it('keeps the bounded Qwen clue-batch outcome through reload', () => {
+  const batchedPuzzle = {
+    ...puzzle,
+    provenance: {
+      ...puzzle.provenance,
+      clueGenerationBatches: {
+        version: 'private-qwen-clue-batching-v1',
+        status: 'failed',
+        batchSize: 24,
+        batchCount: 4,
+        timeoutSeconds: 60,
+        reason: 'ReadTimeout: clue batch exceeded host budget',
+        interpretation: 'execution-optimization-only',
+      },
+    },
+  };
+
+  const compact = compactPuzzleForStorage(batchedPuzzle);
+  expect(compact.provenance.clueGenerationBatches).toEqual(
+    batchedPuzzle.provenance.clueGenerationBatches,
+  );
+  expect(savePrivatePuzzle(profileId, batchedPuzzle, storage)).toBe(true);
+  expect(
+    loadPrivatePuzzle(profileId, storage)?.puzzle.provenance
+      .clueGenerationBatches,
+  ).toMatchObject({
+    version: 'private-qwen-clue-batching-v1',
+    status: 'failed',
+    batchCount: 4,
+  });
+});
+
 it('keeps a bounded shelf and restores an older exact manifest', () => {
   const makePuzzle = (seed, digest) => ({
     ...puzzle,

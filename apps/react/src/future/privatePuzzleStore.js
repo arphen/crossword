@@ -153,6 +153,7 @@ export function compactPuzzleForStorage(puzzle) {
     'fillQuality',
     'crossingSupport',
     'clueDiversity',
+    'clueGenerationBatches',
     'semanticClueChallenge',
     'weekdayRecipe',
     'reviewedCluePack',

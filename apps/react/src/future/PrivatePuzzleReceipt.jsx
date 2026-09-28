@@ -16,6 +16,7 @@ function receiptStats(provenance) {
   const challenge = provenance?.semanticClueChallenge || {};
   const exposure = provenance?.themeExposure || {};
   const diversity = provenance?.clueDiversity || clues.diversity || {};
+  const clueBatches = provenance?.clueGenerationBatches || {};
   const domainHints =
     provenance?.personalizationReceipt?.domainHints ||
     provenance?.themeProposal?.domainHints;
@@ -59,6 +60,17 @@ function receiptStats(provenance) {
     stats.push({
       label: 'domain hints',
       value: integer(domainHints.placeableCount) ?? 0,
+    });
+  }
+  if (clueBatches.version === 'private-qwen-clue-batching-v1') {
+    stats.push({
+      label: 'clue batches',
+      value:
+        clueBatches.status === 'completed'
+          ? `${integer(clueBatches.batchCount) ?? 0} complete`
+          : clueBatches.status === 'failed'
+            ? 'fallback'
+            : clueBatches.status || 'attempted',
     });
   }
   return stats;

@@ -2065,6 +2065,10 @@ establish semantic or editorial quality. Gemma remains the practical default
 for complete local boards while this Qwen path is optimized further.
 The batching slice's focused Python suite passes **140** tests, including
 exact-batch composition and failed-batch provenance coverage.
+The browser recovery shelf now preserves this bounded batch receipt as well,
+and the board receipt labels a completed batch versus a safe answer-free
+fallback after reload; it never stores the model transcript or answer-bearing
+batch prompt.
 
 The latest replay-boundary slice adds **2** Python provenance tests and **2** React receipt tests. The focused Python command covering postgame associations, provenance, fill-study evaluation, and private generation passes **104 tests**; the focused React solver/app/reflection/history/receipt command passes **23 tests**. The receipt is owner-scoped, canonical-digest checked, and fail-open when storage is absent. A browser gate initially found that the durable response body was being consumed twice, which prevented a ready job from reaching the solver; the client now reuses the already parsed `202` payload, and `CROSSWORD_E2E_BACKEND_PORT=5015 npm run test:e2e` passes all **6** tests through calibration, worker polling, private play, reflection, reload, and the unchanged daily routes.
 
