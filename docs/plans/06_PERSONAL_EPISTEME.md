@@ -2104,6 +2104,20 @@ Current verification: the latest focused private-generation slice passes **132**
 
 The constellation panel now exposes editable next-crossword difficulty and learning-thread settings while a game is open; saving them updates the profile for the next generated board without restarting calibration or mutating the current board. The same panel now reads a bounded answer-free history projection from the host, showing saved titles, weekday/model provenance, and replay analysis counts without exposing puzzle answers.
 
+The saved-game history contract now also recognizes the durable private-job
+receipt `private-job-runtime-v1`. When a ready private manifest carries the
+bounded `jobRuntime` fields, the host projects them as an answer-free
+`private-history-generation-v1` `generation` record: `durable`, attempt number
+(`1` through `8`), consistent `first-attempt` or `reclaimed` state, and an
+optional elapsed-seconds value capped at one hour. Request/profile data,
+answers, clues, and model material are discarded at this replay boundary.
+This gives the history UI enough state to explain that a saved board resumed
+after a reclaimed local job without presenting an internal queue dump or
+claiming why the interruption occurred. Malformed, stale, inconsistent, or
+out-of-range receipts fail open and leave the history item unchanged. The
+focused reflection/history suite now passes 32 tests, including route-level
+answer-redaction and invalid-receipt coverage.
+
 The history panel now also offers a `private-play-calibration-export-v1`
 download. It is intentionally narrower than the profile archive: it contains
 bounded session metadata, aggregate replay analysis, and the observational
