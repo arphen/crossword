@@ -206,11 +206,15 @@ it('formats only measured stage time for the wait status', () => {
   expect(describeStageElapsed('12')).toBe('');
 });
 
-it('describes the selected Monday, Wednesday, or Thursday recipe honestly', () => {
+it('describes the selected weekday recipe honestly', () => {
   expect(describeWeekdayRecipe('monday')).toContain('early footholds');
+  expect(describeWeekdayRecipe('tuesday')).toContain('alternate senses');
   expect(describeWeekdayRecipe('wednesday')).toContain('fair misdirection');
   expect(describeWeekdayRecipe('thursday')).toContain('shared prefix or suffix');
   expect(describeWeekdayRecipe('thursday')).toContain('standard letter grid');
+  expect(describeWeekdayRecipe('friday')).toContain('stronger long entries');
+  expect(describeWeekdayRecipe('saturday')).toContain('densest fair challenge');
+  expect(describeWeekdayRecipe('sunday')).toContain('21×21');
 });
 
 it('keeps play calibration copy limited to the three difficulty recommendations', () => {

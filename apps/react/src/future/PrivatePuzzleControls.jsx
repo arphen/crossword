@@ -50,10 +50,16 @@ const JOB_POLL_RETRY_DELAYS_MS = [100, 250, 500];
 const WEEKDAY_RECIPE_COPY = {
   monday:
     'Monday aims for clear clues and approachable theme entries, with several early footholds shaped by your saved word history.',
+  tuesday:
+    'Tuesday steps beyond Monday with alternate senses, fair second readings, and a visible mix of clue conventions across the board.',
   wednesday:
     'Wednesday aims for a satisfying middle-distance solve: varied clues, fair misdirection, and dependable crossings shaped by your saved word history.',
   thursday:
     'Thursday can reward spotting a checked shared prefix or suffix across theme entries, with layered clues on a standard letter grid shaped by your saved word history.',
+  friday:
+    'Friday opens into fluent language play: stronger long entries, deceptive ordinary words, and fewer obvious footholds without specialist trivia.',
+  saturday:
+    'Saturday is the densest fair challenge: economical clues, sustained misdirection, and crossings that reward a patient solve.',
   sunday:
     'Sunday gives the theme room to breathe in a 21×21 grid while keeping the clue voice around a satisfying midweek level.',
 };
