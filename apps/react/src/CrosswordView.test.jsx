@@ -34,6 +34,15 @@ it('annotates clue grammar signals without rewriting the source surface', () => 
   expect(signals[0].props.title).toContain('Quotation');
 });
 
+it('annotates straight and curly single-quote clue surfaces', () => {
+  const parts = renderClueSurface("'___ the knot' (Spoken equivalent) · ‘A sugary ___’", true);
+  const signals = parts.filter(part => React.isValidElement(part));
+
+  expect(signals.map(part => part.props['data-clue-signal'])).toEqual(['quote', 'quote']);
+  expect(signals[0].props.children).toBe("'___ the knot'");
+  expect(signals[1].props.children).toBe('‘A sugary ___’');
+});
+
 it('leaves daily clue text untouched when annotation is disabled', () => {
   const text = 'Capital of Ghana?';
   expect(renderClueSurface(text)).toBe(text);
