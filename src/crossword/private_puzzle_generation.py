@@ -2705,7 +2705,12 @@ def _risky_clue_entries(entries, clues):
         answer = entry["answer"]
         risk_flags = _clue_risk_flags(entry, clues.get(clue_id, ""))
         factual_surface = "unsupported-factual-surface" in risk_flags
-        short_or_iffy = len(answer) <= 4 or entry.get("needsFoothold") is True
+        # Short answers are not automatically risky: the deterministic
+        # answer-safety and morphology guards already cover leakage, while a
+        # high-scoring short fill often has a perfectly ordinary clue. Keep
+        # the model repair pass for actual foothold requests and explicit
+        # factual/mechanical/surface signals.
+        short_or_iffy = entry.get("needsFoothold") is True
         wordplay_issue = _clue_wordplay_issue(entry, clues.get(clue_id, ""))
         morphology_issue = _clue_morphology_issue(entry, clues.get(clue_id, ""))
         surface_issues = _clue_surface_issues(clues.get(clue_id, ""))

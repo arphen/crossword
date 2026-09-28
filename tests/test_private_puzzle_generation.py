@@ -3798,6 +3798,20 @@ def test_risky_clue_repair_replaces_an_unverified_factual_surface(monkeypatch):
     assert repaired["2D"] == "Vibrational continuity"
 
 
+def test_risky_clue_selection_does_not_repair_a_clean_short_fill():
+    entries = [
+        {
+            "id": "1A",
+            "answer": "CAT",
+            "length": 3,
+            "fillScore": 92,
+            "needsFoothold": False,
+        }
+    ]
+
+    assert private_generation._risky_clue_entries(entries, {"1A": "Small pet"}) == []
+
+
 def test_generation_provenance_reports_monotonic_stage_timings(monkeypatch):
     clock_values = iter([10.0, 10.1, 10.6, 11.0, 13.5, 14.0, 17.25, 17.5])
     monkeypatch.setattr(private_generation, "monotonic", lambda: next(clock_values))
