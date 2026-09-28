@@ -735,6 +735,59 @@ _EXPLICIT_MODEL_TAGS = (
     "gemma3:27b",
 )
 
+# Large local models do not have the same useful latency envelope.  Keep the
+# default Gemma path unchanged, but make Qwen's optional repair passes bounded
+# enough that a slow decode cannot turn a playable private board into a
+# multi-minute request.  These are execution budgets, never quality scores.
+_MODEL_GENERATION_POLICIES = {
+    "default": {
+        "themeTimeout": 90,
+        "primaryClueTimeout": 180,
+        "repairTimeout": 90,
+        "diversityTimeout": 90,
+        "challengeTimeout": 90,
+        "tuesdayDiversityAttempts": 4,
+        "tuesdayPostSafetyRepair": True,
+    },
+    "qwen3.8:27b": {
+        "themeTimeout": 75,
+        "primaryClueTimeout": 120,
+        "repairTimeout": 60,
+        "diversityTimeout": 60,
+        "challengeTimeout": 60,
+        # One initial diversity pass plus one follow-up is enough to preserve
+        # a chance at the Tuesday floor without replaying the same slow model
+        # call three more times.
+        "tuesdayDiversityAttempts": 2,
+        "tuesdayPostSafetyRepair": False,
+    },
+}
+
+
+def _model_generation_policy(model):
+    """Return a bounded local execution policy for a selected model tag."""
+    if isinstance(model, str) and model.casefold() == "qwen3.8:27b":
+        return dict(_MODEL_GENERATION_POLICIES["qwen3.8:27b"])
+    return dict(_MODEL_GENERATION_POLICIES["default"])
+
+
+def _model_runtime_policy_receipt(model):
+    """Expose execution limits without implying a model-quality ranking."""
+    policy = _model_generation_policy(model)
+    return {
+        "version": "private-model-runtime-policy-v1",
+        "model": model,
+        "themeTimeoutSeconds": policy["themeTimeout"],
+        "primaryClueTimeoutSeconds": policy["primaryClueTimeout"],
+        "repairTimeoutSeconds": policy["repairTimeout"],
+        "diversityTimeoutSeconds": policy["diversityTimeout"],
+        "challengeTimeoutSeconds": policy["challengeTimeout"],
+        "tuesdayDiversityAttempts": policy["tuesdayDiversityAttempts"],
+        "tuesdayPostSafetyRepair": policy["tuesdayPostSafetyRepair"],
+        "interpretation": "execution-budget-only",
+        "qualityClaim": "none",
+    }
+
 
 def _saved_model_override(starting):
     """Return a validated profile model preference, if one was saved.
@@ -1700,7 +1753,7 @@ def _make_themes(model, context, weekday):
             },
         ],
         schema,
-        timeout=90,
+        timeout=_model_generation_policy(model)["themeTimeout"],
         tokens=240,
         temperature=0.8,
     )
@@ -2194,7 +2247,7 @@ def _make_thursday_theme_proposal(model, context):
             },
         ],
         schema,
-        timeout=90,
+        timeout=_model_generation_policy(model)["themeTimeout"],
         tokens=300,
         temperature=0.8,
     )
@@ -3251,7 +3304,7 @@ def _repair_risky_clues(model, entries, clues, context, weekday):
                 },
             ],
             schema,
-            timeout=90,
+            timeout=_model_generation_policy(model)["repairTimeout"],
             tokens=min(2600, max(600, len(risky) * 42)),
             temperature=0.35,
         )
@@ -3501,7 +3554,7 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
                 },
             ],
             schema,
-            timeout=90,
+            timeout=_model_generation_policy(model)["diversityTimeout"],
             tokens=min(2800, max(800, len(selected) * 52)),
             temperature=0.6,
         )
@@ -4011,7 +4064,7 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
             },
         ],
         schema,
-        timeout=180,
+        timeout=_model_generation_policy(model)["primaryClueTimeout"],
         tokens=_clue_token_budget(len(entries)),
         temperature=0.65,
     )
@@ -4109,12 +4162,14 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
     # attempts and the board stays playable even when the second pass is
     # unavailable or still below the floor.
     if weekday == "tuesday":
+        model_policy = _model_generation_policy(model)
+        max_diversity_attempts = model_policy["tuesdayDiversityAttempts"]
         attempts = [diversity_repair]
         # A local writer may return only the subset of requested rewrites that
-        # it can make safe. Give it at most three follow-up batches so the
-        # Tuesday twenty-four-surface floor has a chance to be reached without
-        # turning generation into an unbounded retry loop.
-        for _ in range(3):
+        # it can make safe. Give it a model-specific number of follow-up
+        # batches so a slow local model cannot turn a playable board into an
+        # unbounded retry loop.
+        for _ in range(max(0, max_diversity_attempts - 1)):
             report = _clue_diversity_report(
                 entries, repaired, repair=attempts[-1]
             )
@@ -4135,6 +4190,12 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
                 **attempts[-1],
                 "attemptCount": len(attempts),
                 "attempts": attempts,
+                "maxAttempts": max_diversity_attempts,
+            }
+        else:
+            diversity_repair = {
+                **diversity_repair,
+                "maxAttempts": max_diversity_attempts,
             }
     context["_clue_diversity_repair"] = diversity_repair
     safety_fallbacks = {}
@@ -4153,7 +4214,17 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         post_safety = _clue_diversity_report(
             entries, safe_clues, repair=diversity_repair
         )
-        if post_safety.get("floorMet") is False:
+        max_diversity_attempts = _model_generation_policy(model)[
+            "tuesdayDiversityAttempts"
+        ]
+        allow_post_safety_repair = _model_generation_policy(model)[
+            "tuesdayPostSafetyRepair"
+        ]
+        attempts = list(diversity_repair.get("attempts", []))
+        if (
+            post_safety.get("floorMet") is False
+            and (allow_post_safety_repair or len(attempts) < max_diversity_attempts)
+        ):
             post_repaired, post_report = _repair_clue_diversity(
                 model,
                 entries,
@@ -4170,7 +4241,6 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
                 fallback_reasons=post_fallbacks,
             )
             safety_fallbacks.update(post_fallbacks)
-            attempts = list(diversity_repair.get("attempts", []))
             if not attempts:
                 attempts = [diversity_repair]
             attempts.append(post_report)
@@ -4178,7 +4248,13 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
                 **post_report,
                 "attemptCount": len(attempts),
                 "attempts": attempts,
+                "maxAttempts": max_diversity_attempts,
                 "postSafetyRepair": True,
+            }
+        elif attempts and "maxAttempts" not in diversity_repair:
+            diversity_repair = {
+                **diversity_repair,
+                "maxAttempts": max_diversity_attempts,
             }
             context["_clue_diversity_repair"] = diversity_repair
     context["_clue_safety_fallbacks"] = safety_fallbacks
@@ -4303,7 +4379,7 @@ def _challenge_private_clues(model, entries, clues, context, weekday):
                 },
             ],
             schema,
-            timeout=90,
+            timeout=_model_generation_policy(model)["challengeTimeout"],
             tokens=min(2400, max(600, len(entry_ids) * 32)),
             temperature=0.2,
         )
@@ -5292,6 +5368,7 @@ def _generate(
         "engine": "xfill",
         "seed": seed,
         "weekday": weekday,
+        "modelRuntimePolicy": _model_runtime_policy_receipt(model),
         "personalizationReceipt": _personalization_receipt(
             episteme.profile_json,
             context,

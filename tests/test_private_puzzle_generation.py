@@ -869,6 +869,18 @@ def test_clue_token_budget_is_bounded_and_host_overridable(monkeypatch):
     assert private_generation._clue_token_budget(1) == 1800
 
 
+def test_model_runtime_policy_bounds_slow_qwen_advisory_passes():
+    gemma = private_generation._model_runtime_policy_receipt("gemma4:26b")
+    qwen = private_generation._model_runtime_policy_receipt("qwen3.8:27b")
+
+    assert gemma["interpretation"] == "execution-budget-only"
+    assert gemma["tuesdayDiversityAttempts"] == 4
+    assert qwen["primaryClueTimeoutSeconds"] == 120
+    assert qwen["diversityTimeoutSeconds"] == 60
+    assert qwen["tuesdayDiversityAttempts"] == 2
+    assert qwen["qualityClaim"] == "none"
+
+
 def test_private_fill_violations_only_reject_known_construction_artefacts():
     assert private_generation._private_fill_violations(
         {"entries": [{"answer": "FUCCBOIS"}, {"answer": "OREO"}]}
@@ -2225,6 +2237,54 @@ def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
     )
     assert report["nonDefinitionCount"] >= 24
     assert report["floorMet"] is True
+
+
+def test_tuesday_qwen_repair_budget_stops_after_one_followup(monkeypatch):
+    entries = [
+        {
+            "id": f"{index}A",
+            "answer": "BARK",
+            "length": 4,
+            "theme": False,
+        }
+        for index in range(1, 31)
+    ]
+    calls = []
+
+    def fake_chat(_model, _messages, schema, **_kwargs):
+        calls.append(schema)
+        ids = schema["properties"]["clues"]["items"]["properties"]["id"]["enum"]
+        if len(calls) == 1:
+            return {
+                "title": "A Tuesday board",
+                "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
+            }
+        return {
+            "title": "A Tuesday board",
+            "clues": [
+                {"id": clue_id, "text": "Branch, perhaps?"}
+                for clue_id in ids[:4]
+            ],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    context = {}
+
+    _, clues = private_generation._make_clues(
+        "qwen3.8:27b", entries, context, "tuesday"
+    )
+
+    assert len(calls) == 3  # initial writer + initial diversity + one follow-up
+    repair = context["_clue_diversity_repair"]
+    assert repair["maxAttempts"] == 2
+    assert repair["attemptCount"] == 2
+    assert len(repair["attempts"]) == 2
+    assert "Branch, perhaps?" in clues.values()
 
 
 def test_tuesday_surface_floor_allows_one_additional_bounded_repair_batch(monkeypatch):
