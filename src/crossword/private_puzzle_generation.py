@@ -4642,9 +4642,22 @@ def _generate(
     fill_attempts = []
     successful_fills = []
     # Tuesday keeps up to two surviving theme locks when the native fill can
-    # support them. A single invitation still receives a one-theme floor, and
-    # an unplaceable pair releases to the ordinary fallback candidates.
-    theme_floor = min(2, len(options.get("themes", [])))
+    # support them. Base that floor on locally placeable invitations: a model
+    # may propose five words while only one is available to the native list.
+    # A single placeable invitation still receives a one-theme floor, and an
+    # unplaceable set releases to the ordinary fallback candidates.
+    local_fill_words = _local_fill_word_set()
+    theme_candidates = [
+        theme
+        for theme in options.get("themes", [])
+        if isinstance(theme, str) and theme in local_fill_words
+    ]
+    if weekday == "tuesday":
+        theme_floor = min(2, len(theme_candidates)) or min(
+            1, len(options.get("themes", []))
+        )
+    else:
+        theme_floor = min(2, len(options.get("themes", [])))
     # A validated Thursday proposal is only meaningful when at least three
     # instances survive the fill. Prefer that stronger floor during candidate
     # selection; if no candidate meets it, the ordinary open-grid fallback
