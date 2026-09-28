@@ -30,6 +30,20 @@ This confirms the tightened surface contract on the live route; the 270-second
 runtime remains an explicit local-latency observation, not a semantic or
 player-difficulty claim.
 
+**Current Tuesday floor receipt:** after raising the default to 40 surfaces and
+72%, a fresh Gemma 4 26B loopback run on seed `20470420` completed in 205.852
+seconds with 72 entries, zero deterministic grammar issues, one answer-free
+fallback, and 68 signalled surfaces (94.4%) across all five required families:
+fill-in (21), pun (19), bracketed nonverbal cue (10), metalinguistic (9), and
+spoken equivalent (9). The 52-surface proportional target and family floor both
+reported `floorMet=true`; the bounded repair selected 48 entries and safely
+rewrote 44. The answer-free receipt is
+[`private-tuesday-clue-quality-study-v14.real-gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-v14.real-gemma4-26b-20260928.json),
+digest `sha256:b647b9ce3b52843724309191a5bbf2e1b71dc2bcf21a721dce63e5c6916a97b9`.
+This validates the stricter construction target on one live run; it remains a
+surface/mechanical receipt and does not establish semantic fairness or player
+difficulty.
+
 The live latency follow-up now gives the installed `gemma4:26b` route its own
 bounded structured-clue decode budget of 48 tokens per entry (the generic and
 Qwen policies retain their prior budgets). The host still runs the same exact
