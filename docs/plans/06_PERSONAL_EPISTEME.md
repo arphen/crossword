@@ -1797,6 +1797,8 @@ Local persistence stores the exact returned board plus a bounded provenance proj
 
 The latest pushed slice (`15335fa`) makes the optional private-domain bridge discoverable at setup time: `make runtime-doctor` reports only the configured label and placeable-term count, never the terms, treats an absent hint file as optional, and fails visibly on a malformed configured file. The focused doctor/domain-hint tests pass, and the existing six-test Playwright browser gate still passes after the change.
 
+The current full local gate also passes: `make test` selected 872 Python tests (three live-provider tests deselected), 11 legacy Jest tests, 146 domain tests, 8 persistence tests, 243 React tests, and 8 application tests. The only output requiring follow-up is the existing SQLAlchemy UTC deprecation warning and React `act(...)` warnings in tests; neither failed the gate.
+
 ### Existing foundations and archived implementation notes
 
 The following 26 September assessment describes the system before private generation was connected. Its statements that `/future` still loads a daily puzzle or that no playable path exists are historical and superseded by the current status above. The opening records offers and reversible choices; the host replays solve events against frozen manifests; profile controls, reflection responses, and calibration hypotheses enter a revisioned ledger. Continue to preserve these working foundations and `/` parity.
