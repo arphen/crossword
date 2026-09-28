@@ -576,29 +576,10 @@ function validateAnswerSafety(
   const upperText = clue.clueText.toLocaleUpperCase();
   const tokens = [...upperText.matchAll(/[A-Z]+/gu)].map((match) => ({
     value: match[0],
-    start: match.index ?? 0,
-    end: (match.index ?? 0) + match[0].length,
   }));
-  const quotedRanges = [
-    ...upperText.matchAll(/“[^”]*”|‘[^’]*’|"[^"]*"/gu),
-  ].map((match) => ({
-    start: match.index ?? 0,
-    end: (match.index ?? 0) + match[0].length,
-  }));
-  const isAllowedMention = (start: number, end: number) =>
-    quotedRanges.some((range) => start >= range.start && end <= range.end) ||
-    clue.signalSpans.some(
-      (span) =>
-        span.kind === 'quote' &&
-        (span.role === 'title' || span.role === 'mentioned-word') &&
-        start >= span.start &&
-        end <= span.end,
-    );
   const overlap = answerLexicalForms(clue.answer).reduce<string | null>((found, form) => {
     if (found) return found;
-    const token = tokens.find(
-      (item) => item.value === form && !isAllowedMention(item.start, item.end),
-    );
+    const token = tokens.find((item) => item.value === form);
     return token ? form : null;
   }, null);
   if (overlap) {
