@@ -1677,11 +1677,18 @@ def test_private_clue_safety_replaces_unresolved_trivia_for_ordinary_entries():
         "2D": "Singer with a hit song?",
     }
 
-    safe = private_generation._enforce_private_clue_safety(entries, clues)
+    fallback_reasons = {}
+    safe = private_generation._enforce_private_clue_safety(
+        entries, clues, fallback_reasons=fallback_reasons
+    )
 
     assert safe["1A"] == "Entry supported by its crossings (4 letters)"
     assert safe["2D"] == "Entry supported by its crossings (9 letters)"
     assert "EVAN" not in safe["1A"]
+    assert fallback_reasons == {
+        "1A": ["unsupported-factual-surface"],
+        "2D": ["unsupported-factual-surface"],
+    }
 
 
 def test_private_clue_safety_preserves_an_exact_reviewed_factual_surface():
@@ -1697,6 +1704,29 @@ def test_private_clue_safety_preserves_an_exact_reviewed_factual_surface():
     )
 
     assert safe == clues
+
+
+def test_grounded_bundle_preserves_the_original_reason_for_a_safety_scaffold():
+    entries = [{"id": "1A", "answer": "ASHE", "length": 4}]
+    clues = {"1A": "Entry supported by its crossings (4 letters)"}
+    safety_fallbacks = {"1A": ["unsupported-factual-surface"]}
+
+    bundle = private_generation._grounded_clue_bundle(
+        entries,
+        clues,
+        safety_fallbacks=safety_fallbacks,
+    )
+
+    assert bundle["safetyFallbacks"] == safety_fallbacks
+    assert bundle["fallbacks"] == [
+        {
+            "id": "1A",
+            "kind": "crossing-scaffold",
+            "reasonCodes": ["unsupported-factual-surface"],
+            "answerDisclosure": "none",
+            "semanticStatus": "not-established",
+        }
+    ]
 
 
 def test_private_clue_safety_keeps_a_repaired_themed_name_surface():

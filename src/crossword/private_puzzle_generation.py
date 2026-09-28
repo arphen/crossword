@@ -2419,7 +2419,7 @@ def _clue_grounding(entry, clue, *, model_response=None, reviewed_content=None):
     }
 
 
-def _source_free_fallback_record(entry, clue, grounding):
+def _source_free_fallback_record(entry, clue, grounding, *, reason_codes=None):
     """Return explicit fallback provenance for an answer-free clue surface."""
     used = isinstance(clue, str) and bool(_SOURCE_FREE_FALLBACK_RE.fullmatch(clue))
     if not used:
@@ -2431,7 +2431,11 @@ def _source_free_fallback_record(entry, clue, grounding):
             "semanticStatus": "not-established",
         }
 
-    reasons = []
+    reasons = [
+        reason
+        for reason in reason_codes or []
+        if isinstance(reason, str) and reason
+    ]
     if isinstance(entry, dict) and entry.get("needsFoothold") is True:
         reasons.append("weak-or-obscure-fill")
     fact_risk = grounding.get("factRisk", {})
@@ -2443,6 +2447,7 @@ def _source_free_fallback_record(entry, clue, grounding):
         reasons.append("morphology-check-failed")
     if not reasons:
         reasons.append("conservative-private-safety-fallback")
+    reasons = list(dict.fromkeys(reasons))
     return {
         "used": True,
         "kind": "crossing-scaffold",
@@ -2475,6 +2480,7 @@ def _grounded_clue_bundle(
     *,
     model_challenges=None,
     reviewed_pack=None,
+    safety_fallbacks=None,
 ):
     """Produce the provenance bundle for the final, visible clue surfaces.
 
@@ -2514,7 +2520,17 @@ def _grounded_clue_bundle(
         )
         if grounding.get("semanticStatus") == "reviewed-source":
             reviewed_count += 1
-        fallback = _source_free_fallback_record(entry, clue, grounding)
+        forced_fallback_reasons = (
+            safety_fallbacks.get(entry_id, [])
+            if isinstance(safety_fallbacks, Mapping)
+            else []
+        )
+        fallback = _source_free_fallback_record(
+            entry,
+            clue,
+            grounding,
+            reason_codes=forced_fallback_reasons,
+        )
         fact_risk = grounding["factRisk"]
         fact_category = fact_risk.get("category") or "none-observed"
         family = grounding["familyObservation"]["family"]
@@ -2575,6 +2591,17 @@ def _grounded_clue_bundle(
         "entryCount": len(records),
         "reviewedCount": reviewed_count,
         "fallbackCount": len(fallback_records),
+        "safetyFallbacks": {
+            entry_id: sorted(
+                {
+                    reason
+                    for reason in reasons
+                    if isinstance(reason, str) and reason
+                }
+            )
+            for entry_id, reasons in (safety_fallbacks or {}).items()
+            if isinstance(entry_id, str) and isinstance(reasons, list) and reasons
+        },
         "factRiskCounts": fact_risk_counts,
         "familyCounts": family_counts,
         "signalCounts": _surface_signal_counts(records),
@@ -2603,6 +2630,7 @@ def _clue_quality_summary(
     *,
     model_challenges=None,
     reviewed_pack=None,
+    safety_fallbacks=None,
 ):
     issue_counts = {}
     fallback_count = 0
@@ -2679,6 +2707,18 @@ def _clue_quality_summary(
             "semanticChallenge": summarize_challenge_classifications(challenge_records),
             "reviewedCount": reviewed_count,
             "semanticStatus": "reviewed-source-present" if reviewed_count else "not-established",
+            "fallbackCount": fallback_count,
+            "safetyFallbacks": {
+                entry_id: sorted(
+                    {
+                        reason
+                        for reason in reasons
+                        if isinstance(reason, str) and reason
+                    }
+                )
+                for entry_id, reasons in (safety_fallbacks or {}).items()
+                if isinstance(entry_id, str) and isinstance(reasons, list) and reasons
+            },
         },
         # Keep a richer, machine-readable bundle beside the older compact
         # grounding projection used by the local UI.  It is still diagnostic:
@@ -2688,6 +2728,7 @@ def _clue_quality_summary(
             clues,
             model_challenges=model_challenges,
             reviewed_pack=reviewed_pack,
+            safety_fallbacks=safety_fallbacks,
         ),
     }
     if fallback_count:
@@ -3028,7 +3069,13 @@ def _normalize_clue_surface(clue):
     return " ".join(text.split())
 
 
-def _enforce_private_clue_safety(entries, clues, *, reviewed_by_id=None):
+def _enforce_private_clue_safety(
+    entries,
+    clues,
+    *,
+    reviewed_by_id=None,
+    fallback_reasons=None,
+):
     """Remove unsupported trivia after the model repair pass.
 
     ``_repair_risky_clues`` asks the model for a conservative rewrite.  This
@@ -3063,15 +3110,14 @@ def _enforce_private_clue_safety(entries, clues, *, reviewed_by_id=None):
             isinstance(exact_reviewed_text, str)
             and exact_reviewed_text.strip() == clue.strip()
         )
+        reason_codes = []
         if (
             "unsupported-factual-surface" in flags
             and not reviewed_surface
             and entry.get("theme") is not True
-        ) or mechanical_issue in {
-            # A private board must never leave a clue that gives away its
-            # answer or asserts a mechanically false relation. If the repair
-            # pass could not produce a safe replacement, keep the crossing
-            # scaffold and let the assistance ladder do the teaching.
+        ):
+            reason_codes.append("unsupported-factual-surface")
+        if mechanical_issue in {
             "answer-giveaway",
             "answer-form-in-clue",
             "generic-clue",
@@ -3079,7 +3125,19 @@ def _enforce_private_clue_safety(entries, clues, *, reviewed_by_id=None):
             "reversal-mismatch",
             "hidden-word-mismatch",
             "language-answer-mismatch",
-        } or morphology_issue == "plural-marker-with-singular-shape":
+        }:
+            reason_codes.append(mechanical_issue)
+        if morphology_issue == "plural-marker-with-singular-shape":
+            reason_codes.append(morphology_issue)
+        if (
+            reason_codes
+        ):
+            if isinstance(fallback_reasons, dict):
+                fallback_reasons[clue_id] = list(dict.fromkeys(reason_codes))
+            # A private board must never leave a clue that gives away its
+            # answer or asserts a mechanically false relation. If the repair
+            # pass could not produce a safe replacement, keep the crossing
+            # scaffold and let the assistance ladder do the teaching.
             safe[clue_id] = _source_free_foothold(entry)
     return safe
 
@@ -3447,11 +3505,15 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         reviewed_by_id,
     )
     context["_clue_diversity_repair"] = diversity_repair
-    return title.strip(), _enforce_private_clue_safety(
+    safety_fallbacks = {}
+    safe_clues = _enforce_private_clue_safety(
         entries,
         repaired,
         reviewed_by_id=reviewed_by_id,
+        fallback_reasons=safety_fallbacks,
     )
+    context["_clue_safety_fallbacks"] = safety_fallbacks
+    return title.strip(), safe_clues
 
 
 def _challenge_private_clues(model, entries, clues, context, weekday):
@@ -4364,6 +4426,7 @@ def _generate(
         clues,
         model_challenges=clue_challenge.get("byId", {}),
         reviewed_pack=reviewed_clue_pack,
+        safety_fallbacks=clue_context.get("_clue_safety_fallbacks"),
     )
     clue_quality["reviewedCluePack"] = _reviewed_clue_pack_summary(
         reviewed_clue_pack

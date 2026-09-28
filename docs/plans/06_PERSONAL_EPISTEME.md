@@ -28,6 +28,9 @@ surfaces, while replacing the unresolved ordinary relation with an answer-free
 crossing scaffold. The quality receipt and `/future` clue panel report the
 fallback count and retain the source/semantic uncertainty; private play remains
 fail-open and no source-free text is promoted to a truth claim.
+The receipt also preserves the original fallback reason (for example,
+`unsupported-factual-surface`) after the visible clue has been replaced, so a
+safe surface does not erase the diagnostic that caused it.
 
 Private generation now applies explicit Monday, Tuesday, Wednesday, and Thursday recipe v1 settings through the existing weekday request. Monday asks for three approachable theme locks and direct footholds; Tuesday adds a bounded search/time increase plus alternate senses and fair second readings; Wednesday uses four inferable theme locks with varied, fair misdirection; Thursday proposes three to five theme answers plus a typed shared-prefix or shared-suffix rule. The host enables that Thursday rule only when every proposed answer and at least three actual filled theme entries match it, then passes the validated rule to clue generation and records it with those answers in provenance. If proposal, validation, or filled-entry matching fails, the maker continues with the ordinary-letter-grid theme path and records the mechanic as unavailable. The chosen recipe ID, intent, requested and used theme counts, actual themed-entry count, and grid mechanic are recorded in provenance. The controls explain each day's aim before generation. These are generation directions, not guarantees of editorial quality; rebus and special-cell mechanics remain unsupported.
 
