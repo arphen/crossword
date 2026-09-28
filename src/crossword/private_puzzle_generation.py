@@ -119,6 +119,11 @@ _CLUE_IDENTITY_SURFACE_RE = re.compile(
     r"university|mayor|governor|minister)\b",
     re.IGNORECASE,
 )
+_CLUE_ROLE_NAME_RE = re.compile(
+    r"\b(?i:actor|actress|artist|author|comedian|composer|director|king|queen|"
+    r"singer|scientist|scholar|writer|novelist|poet|president|saint|celebrity)"
+    r"\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'-]{2,}\b"
+)
 # These verbs and relation words are useful signals, but they are not proof
 # that a model's assertion is true.  The private generator has no source
 # ledger for a generated clue, so a factual-looking surface deserves a second
@@ -2166,9 +2171,14 @@ def _clue_risk_flags(entry, clue):
     """
     text = clue if isinstance(clue, str) else ""
     flags = []
-    if (_contains_clue_fact_term(text) or _CLUE_IDENTITY_SURFACE_RE.search(text)) and (
+    if (
+        _contains_clue_fact_term(text)
+        or _CLUE_IDENTITY_SURFACE_RE.search(text)
+        or _CLUE_ROLE_NAME_RE.search(text)
+    ) and (
         _CLUE_FACT_RELATION_RE.search(text)
         or _CLUE_IDENTITY_SURFACE_RE.search(text)
+        or _CLUE_ROLE_NAME_RE.search(text)
     ):
         flags.append("unsupported-factual-surface")
     # A weak fill entry is precisely where a surprising proper-name or trivia
@@ -2201,7 +2211,7 @@ def _clue_fact_risk(entry, clue):
     text = clue if isinstance(clue, str) else ""
     category = (
         "proper-name-or-biography"
-        if _CLUE_PROPER_NAME_RE.search(text)
+        if _CLUE_PROPER_NAME_RE.search(text) or _CLUE_ROLE_NAME_RE.search(text)
         else "factual-relation"
     )
     return {

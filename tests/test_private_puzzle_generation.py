@@ -1914,7 +1914,12 @@ def test_clue_risk_flags_only_specific_factual_surfaces_and_tracks_footholds():
 
 @pytest.mark.parametrize(
     "clue",
-    ["Representative Alexandria", "Italian city", "French film director"],
+    [
+        "Representative Alexandria",
+        "Italian city",
+        "French film director",
+        "Actress Davis",
+    ],
 )
 def test_clue_risk_flags_source_free_identity_surfaces(clue):
     assert private_generation._clue_risk_flags(
@@ -1953,6 +1958,15 @@ def test_private_clue_safety_replaces_source_free_identity_surfaces():
     )
 
     assert safe["1A"] == "Entry supported by its crossings (3 letters)"
+
+
+def test_private_clue_safety_replaces_role_plus_name_surface():
+    entries = [{"id": "1A", "answer": "DAVIS", "length": 5, "needsFoothold": False}]
+    safe = private_generation._enforce_private_clue_safety(
+        entries, {"1A": "Actress Davis"}
+    )
+
+    assert safe["1A"] == "Entry supported by its crossings (5 letters)"
 
 
 def test_private_clue_safety_preserves_an_exact_reviewed_factual_surface():
