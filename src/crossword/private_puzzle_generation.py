@@ -534,8 +534,8 @@ def _clue_family_observation(clue):
 _DIFFICULTY = {
     "monday": {"candidates": 40, "time": 1, "voice": "welcoming, direct, familiar"},
     "tuesday": {
-        "candidates": 75,
-        "time": 2.0,
+        "candidates": 90,
+        "time": 2.5,
         "voice": "playful, with alternate senses, fair second readings, and a little more lift",
     },
     "wednesday": {
@@ -584,10 +584,10 @@ _WEEKDAY_RECIPES = {
         "intent": "Familiar material with a visible layer of fair second readings makes Tuesday a clear step beyond Monday while preserving dependable footholds.",
         "themeAnswerCount": 5,
         "themeDirection": "Choose a coherent cluster of up to five approachable answers whose connection is discoverable after one or two entries; let the pattern add a little lift without requiring specialist trivia.",
-        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but make at least fourteen clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least four distinct surface families so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
+        "clueDirection": "Use alternate senses, conversational surfaces, and several fair second readings. Keep direct footholds, but make at least eighteen clues visibly use a fair second reading, pun, fill-in, bracketed cue, quotation, spoken equivalent, language signal, or abbreviation across at least four distinct surface families so Tuesday does not read like a Monday repeat. Do not rely on obscure trivia.",
         "themeMode": "approachable-cluster-with-a-turn",
         "minimumNonDefinitionFamilies": 4,
-        "minimumNonDefinitionCount": 14,
+        "minimumNonDefinitionCount": 18,
     },
     "wednesday": {
         "id": "wednesday-private-v1",

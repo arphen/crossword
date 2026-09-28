@@ -1317,7 +1317,7 @@ def test_tuesday_recipe_has_a_real_step_up_from_monday():
     assert "second reading" in tuesday["clueDirection"]
     assert tuesday["themeAnswerCount"] == 5
     assert tuesday["minimumNonDefinitionFamilies"] == 4
-    assert tuesday["minimumNonDefinitionCount"] == 14
+    assert tuesday["minimumNonDefinitionCount"] == 18
     assert private_generation._DIFFICULTY["tuesday"]["candidates"] > private_generation._DIFFICULTY["monday"]["candidates"]
     assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
 
@@ -1920,15 +1920,15 @@ def test_tuesday_recipe_raises_the_surface_family_floor(monkeypatch):
         "gemma4:26b", entries, context, "tuesday"
     )
 
-    assert len(calls) == 4
+    assert len(calls) == 5
     assert context["_clue_diversity_repair"]["reason"] == "weekday-surface-floor"
-    assert context["_clue_diversity_repair"]["selectedCount"] == 10
+    assert context["_clue_diversity_repair"]["selectedCount"] <= 10
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )
     assert len(report["nonDefinitionFamilies"]) >= 6
     assert report["status"] == "varied"
-    assert report["nonDefinitionCount"] >= 14
+    assert report["nonDefinitionCount"] >= 18
     assert report["floorMet"] is True
 
 
@@ -1960,7 +1960,7 @@ def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
                 "title": "A Tuesday board",
                 "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
             }
-        batch_size = {2: 6, 3: 5, 4: 5}[len(calls)]
+        batch_size = {2: 8, 3: 8, 4: 8, 5: 8, 6: 8}.get(len(calls), 8)
         return {
             "title": "A Tuesday board",
             "clues": [
@@ -1987,7 +1987,7 @@ def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )
-    assert report["nonDefinitionCount"] >= 14
+    assert report["nonDefinitionCount"] >= 18
     assert report["floorMet"] is True
 
 
@@ -2020,6 +2020,8 @@ def test_tuesday_surface_floor_allows_one_additional_bounded_repair_batch(monkey
         "Safe and ___",
         "[Sound heard nearby]",
         '“Not a chance!”',
+        "A word? perhaps",
+        "[Action heard nearby]",
     ]
 
     def fake_chat(_model, _messages, schema, **_kwargs):
@@ -2033,10 +2035,13 @@ def test_tuesday_surface_floor_allows_one_additional_bounded_repair_batch(monkey
             for index, text in enumerate(initial_surfaces):
                 clues[index]["text"] = text
             return {"title": "A Tuesday board", "clues": clues}
-        text = followup_surfaces[len(calls) - 2]
+        text = followup_surfaces[min(len(calls) - 2, len(followup_surfaces) - 1)]
         return {
             "title": "A Tuesday board",
-            "clues": [{"id": ids[0], "text": text}],
+            "clues": [
+                {"id": clue_id, "text": text}
+                for clue_id in ids[:3]
+            ],
         }
 
     monkeypatch.setattr(private_generation, "_chat", fake_chat)
@@ -2051,12 +2056,12 @@ def test_tuesday_surface_floor_allows_one_additional_bounded_repair_batch(monkey
         "gemma4:26b", entries, context, "tuesday"
     )
 
-    assert len(calls) == 5
-    assert context["_clue_diversity_repair"]["attemptCount"] == 4
+    assert len(calls) == 4
+    assert context["_clue_diversity_repair"]["attemptCount"] == 3
     report = private_generation._clue_diversity_report(
         entries, clues, repair=context["_clue_diversity_repair"]
     )
-    assert report["nonDefinitionCount"] >= 14
+    assert report["nonDefinitionCount"] >= 18
     assert report["floorMet"] is True
 
 
