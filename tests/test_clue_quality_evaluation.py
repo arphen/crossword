@@ -56,6 +56,15 @@ def test_case_projection_is_answer_free_and_preserves_surface_receipts():
     assert not {"answer", "clueText", "entries", "clues"}.intersection(case)
 
 
+def test_case_projection_accepts_legacy_zero_fallback_receipts():
+    value = _provenance()
+    value["clueQuality"].pop("fallbackCount")
+    value["clueQuality"]["diversity"]["floorMet"] = False
+    case = clue_case_from_provenance(value, 8)
+    assert case["fallbackCount"] == 0
+    assert case["floorMet"] is False
+
+
 def test_study_digest_is_stable_and_reports_missing_requested_seed():
     case = clue_case_from_provenance(_provenance(), 7)
     report = evaluate_clue_quality_study(

@@ -148,7 +148,11 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
         "entryCount": entry_count,
         "grammarCheckedCount": _count(grammar.get("checkedCount"), "grammarBridge.checkedCount"),
         "grammarIssueCount": _count(quality.get("issueCount"), "clueQuality.issueCount"),
-        "fallbackCount": _count(quality.get("fallbackCount"), "clueQuality.fallbackCount"),
+        # Older private receipts omitted an explicit zero. Treat that legacy
+        # shape as zero while requiring all present values to remain strict.
+        "fallbackCount": _count(
+            quality.get("fallbackCount", 0), "clueQuality.fallbackCount"
+        ),
         "semanticStatus": _text(quality.get("diversity", {}).get("semanticStatus", "not-established"), "diversity.semanticStatus"),
         "familyCounts": family_counts,
         "nonDefinitionCount": non_definition,

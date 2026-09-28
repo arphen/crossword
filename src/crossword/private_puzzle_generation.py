@@ -3334,6 +3334,7 @@ def _clue_quality_summary(
     summary = {
         "checkedCount": len(entries),
         "issueCount": sum(issue_counts.values()),
+        "fallbackCount": fallback_count,
         "issueCounts": issue_counts,
         "signalCounts": _surface_signal_counts(grounding_entries),
         "grounding": {
@@ -3374,8 +3375,6 @@ def _clue_quality_summary(
             safety_fallbacks=safety_fallbacks,
         ),
     }
-    if fallback_count:
-        summary["fallbackCount"] = fallback_count
     return summary
 
 

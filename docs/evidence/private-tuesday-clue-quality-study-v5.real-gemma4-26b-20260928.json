@@ -1,0 +1,108 @@
+{
+  "version": "private-clue-quality-study-v1",
+  "scope": "answer-free-clue-surface-study",
+  "studyId": "real-gemma4-26b-tuesday-default-20260928",
+  "recipeId": "private-tuesday-v1",
+  "requestedSeeds": [
+    20470406
+  ],
+  "observedSeeds": [
+    20470406
+  ],
+  "missingSeeds": [],
+  "cases": [
+    {
+      "seed": 20470406,
+      "entryCount": 74,
+      "grammarCheckedCount": 74,
+      "grammarIssueCount": 0,
+      "fallbackCount": 0,
+      "semanticStatus": "not-established",
+      "familyCounts": {
+        "definition": 8,
+        "fill-blank": 57,
+        "pun": 9
+      },
+      "nonDefinitionCount": 66,
+      "nonDefinitionRate": 0.892,
+      "nonDefinitionFamilies": [
+        "fill-blank",
+        "pun"
+      ],
+      "floorMet": false,
+      "requiredNonDefinitionFamilies": 5,
+      "requiredNonDefinitionClues": 42,
+      "targetNonDefinitionRate": 0.56,
+      "targetNonDefinitionClues": 42,
+      "signalCounts": {
+        "fill-blank": 57,
+        "question-mark": 9,
+        "tense-marker": 1
+      },
+      "issueCounts": {},
+      "semanticChallenge": {
+        "mechanically-supported": 0,
+        "needs-review": 74,
+        "safe-fallback": 0
+      },
+      "repair": {
+        "attempted": true,
+        "attemptCount": 4,
+        "selectedCount": 16,
+        "rewrittenCount": 3,
+        "minimumFamilies": 5,
+        "minimumClueCount": 28
+      },
+      "timingsSeconds": {
+        "themeProposal": 17.459,
+        "nativeXfill": 42.722,
+        "clueGeneration": 216.009,
+        "clueChallenge": 0.009,
+        "total": 276.414
+      }
+    }
+  ],
+  "summary": {
+    "entryCount": 74,
+    "grammarCheckedCount": 74,
+    "grammarIssueCount": 0,
+    "fallbackCount": 0,
+    "nonDefinitionCount": 66,
+    "caseCount": 1,
+    "floorMetCases": 0,
+    "floorMetRate": 0.0,
+    "grammarCleanCases": 1,
+    "grammarCleanRate": 1.0,
+    "familyFloorMetCases": 0,
+    "targetRateCases": 1,
+    "targetRateMetCases": 1,
+    "observedNonDefinitionRate": 0.892,
+    "familyCounts": {
+      "definition": 8,
+      "fill-blank": 57,
+      "pun": 9
+    },
+    "signalCounts": {
+      "fill-blank": 57,
+      "question-mark": 9,
+      "tense-marker": 1
+    },
+    "issueCounts": {},
+    "totalTimingSeconds": 276.414,
+    "meanTimingSeconds": 276.414
+  },
+  "metadata": {
+    "answerFree": true,
+    "runtime": "local-ollama",
+    "model": "gemma4:26b",
+    "defaultRecipe": "28-surface-56-percent",
+    "sourceResponse": "local-loopback-run-20470406"
+  },
+  "interpretation": "surface-and-mechanical-receipts-only; no semantic-or-player-quality-claim",
+  "uncertainty": [
+    "clue-semantics-unreviewed",
+    "player-support-unmeasured",
+    "local-model-output"
+  ],
+  "studyDigest": "sha256:fd452020bdfef31c904758b12a1048f4e2c3d435122eccbd45f358551e362e5a"
+}
