@@ -27,6 +27,27 @@ function app() {
 }
 
 describe('prepared assistance ladder', () => {
+  it('explains that answer-free scaffolds should be approached through crossings', () => {
+    const entry = {
+      direction: 'across',
+      clue_number: 1,
+      clue_text: 'Entry supported by its crossings (4 letters)',
+      start_x: 0,
+      start_y: 0,
+      characters: [
+        { letters: 'E' },
+        { letters: 'C' },
+        { letters: 'H' },
+        { letters: 'O' },
+      ],
+    };
+
+    const first = assistanceLadder({ crossword: [entry], grid: {} }, entry)[0];
+    expect(first.assistanceTier).toBe('clue-reading');
+    expect(first.text).toContain('answer-free scaffold');
+    expect(first.text).toContain('Start with a crossing');
+  });
+
   it('offers an answer-free clue reading nudge and a crossing follow-up', () => {
     const ladder = assistanceLadder(app(), app().crossword[0]);
     expect(ladder.map((hint) => hint.assistanceTier)).toEqual([

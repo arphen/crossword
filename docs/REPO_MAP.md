@@ -115,7 +115,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/Signifier.jsx` — `Signifier:4`, `paint:6`
 - `apps/react/src/future/StimulusArtwork.jsx` — `legacySignifierKind:42`, `stableText:47`, `AbstractForm:54`, `TextureMaterial:100`, `StimulusArtwork:174`
 - `apps/react/src/future/StimulusArtwork.test.jsx`
-- `apps/react/src/future/assistanceLadder.js` — `entryId:24`, `entryCellIds:28`, `clueReading:36`, `assistanceLadder:85`, `crossingCells:94`
+- `apps/react/src/future/assistanceLadder.js` — `entryId:24`, `entryCellIds:28`, `clueReading:36`, `assistanceLadder:88`, `crossingCells:97`
 - `apps/react/src/future/assistanceLadder.test.js`
 - `apps/react/src/future/calibrationHypothesesApi.js` — `record:4`, `secureId:10`, `calibrationPath:23`, `responseJson:29`, `payload:30`, `loadCalibrationHypotheses:36`, `createCalibrationHypotheses:52`, `respondToCalibrationHypothesis:69`, `reviseCalibrationHypothesisResponse:106`
 - `apps/react/src/future/calibrationHypothesesApi.test.js`

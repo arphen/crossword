@@ -34,6 +34,9 @@ function entryCellIds(entry) {
 }
 
 function clueReading(clue) {
+  if (/^Entry supported by its crossings \([1-9][0-9]* letters\)$/i.test(clue)) {
+    return 'This entry is using an answer-free scaffold because its original surface was not safe to keep. Start with a crossing that has letters in place; the ladder can reveal one letter only after you have tried the structural route.';
+  }
   const notes = [];
   if (clue.includes('?')) {
     notes.push(
