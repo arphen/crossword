@@ -302,13 +302,16 @@ _SAFE_CLUE_RELATIONS = (
     ),
     (
         "plural-label",
-        re.compile(r"[\[(]\s*pl\.?\s*[\])]", re.IGNORECASE),
+        re.compile(
+            r"\bplural(?:\s+(?:form|of))?\b|[\[(]\s*pl\.?\s*[\])]",
+            re.IGNORECASE,
+        ),
         "surface",
     ),
     (
         "tense-label",
         re.compile(
-            r"\bpast(?:\s+tense)?\b|[\[(]\s*past(?:\s+tense)?\s*[\])]",
+            r"\b(?:past|present|future)(?:\s+tense)?\b|[\[(]\s*(?:past|present|future)(?:\s+tense)?\s*[\])]",
             re.IGNORECASE,
         ),
         "surface",
@@ -2720,15 +2723,15 @@ def _clue_grounding(entry, clue, *, model_response=None, reviewed_content=None):
                 relation_verification = "surface-only"
             if label == "plural-label":
                 morphology = (
-                    "plural-marker-mismatch"
+                    morphology_issue
                     if morphology_issue
                     else "plural-marker-present; answer morphology unverified"
                 )
             elif label == "tense-label":
                 morphology = (
-                    "past-tense-marker-mismatch"
+                    morphology_issue
                     if morphology_issue
-                    else "past-tense-marker-present; answer tense unverified"
+                    else "tense-marker-present; answer tense unverified"
                 )
             break
 
@@ -3616,6 +3619,8 @@ def _enforce_private_clue_safety(
         if morphology_issue in {
             "plural-marker-with-singular-shape",
             "past-tense-marker-with-nonpast-shape",
+            "present-tense-marker-with-past-shape",
+            "future-tense-marker-with-past-shape",
         }:
             reason_codes.append(morphology_issue)
         if (

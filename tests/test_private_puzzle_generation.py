@@ -1651,6 +1651,30 @@ def test_private_clue_safety_catches_explicit_plural_marker_mismatch():
     )["1A"] == "Entry supported by its crossings (3 letters)"
 
 
+def test_private_clue_safety_catches_plain_language_and_present_future_tense_mismatch():
+    plural = private_generation._clue_grounding(
+        {"answer": "CAT", "needsFoothold": False}, "Felines (plural)"
+    )
+    assert plural["status"] == "morphology-check-failed"
+    assert plural["relation"] == "plural-label"
+    assert plural["morphology"] == "plural-marker-with-singular-shape"
+    present = private_generation._clue_grounding(
+        {"answer": "RAN", "needsFoothold": False}, "Move (present tense)"
+    )
+    future = private_generation._clue_grounding(
+        {"answer": "RAN", "needsFoothold": False}, "Move (future tense)"
+    )
+    assert present["morphology"] == "present-tense-marker-with-past-shape"
+    assert future["morphology"] == "future-tense-marker-with-past-shape"
+    entries = [{"id": "1A", "answer": "RAN", "length": 3, "needsFoothold": False}]
+    assert private_generation._enforce_private_clue_safety(
+        entries, {"1A": "Move (present tense)"}
+    )["1A"] == "Entry supported by its crossings (3 letters)"
+    assert private_generation._enforce_private_clue_safety(
+        entries, {"1A": "Move (future tense)"}
+    )["1A"] == "Entry supported by its crossings (3 letters)"
+
+
 def test_private_clue_safety_catches_explicit_past_tense_marker_mismatch():
     assert (
         private_generation._clue_morphology_issue(
