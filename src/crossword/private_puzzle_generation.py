@@ -173,14 +173,14 @@ _CLUE_FACT_RELATION_RE = re.compile(
 _GENERIC_CLUE_RE = re.compile(
     r"^\s*(?:(?:a|an|the)\s+)?"
     r"(?:common|usual|ordinary|generic|standard)\s+"
-    r"(?:name|term|word|designation|label)"
+    r"(?:names?|terms?|words?|designations?|labels?)"
     r"(?:\s+(?:for|of))?\s*[?.]?\s*$",
     re.IGNORECASE,
 )
 _GENERIC_TEMPLATE_PHRASE_RE = re.compile(
     r"\b(?:common|usual|ordinary|generic|standard)\s+"
     r"(?:(?:[\w][\w'’/-]*|\d+)\s+){0,3}"
-    r"(?:name|term|word|designation|label)\b",
+    r"(?:names?|terms?|words?|designations?|labels?)\b",
     re.IGNORECASE,
 )
 # A role plus an unspecified person's name is the same dead-end clue in a
