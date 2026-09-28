@@ -8,7 +8,11 @@ from uuid import uuid4
 import pytest
 
 from tests.test_api_isolated import api, no_network  # noqa: F401
-from src.crossword.future_grid_jobs import FutureGridDraftJob, process_next_grid_draft
+from src.crossword.future_grid_jobs import (
+    FutureGridDraftJob,
+    FutureGridDraftPrivateSelection,
+    process_next_grid_draft,
+)
 from src.crossword.database import db
 from src.crossword.future import StartingProfile
 from src.crossword.future_puzzles import (
@@ -19,6 +23,7 @@ from src.crossword.learning_review import FutureLearningReviewRecord, _review_ta
 from src.crossword.models import Crossword
 import src.crossword.learning_review as learning_review
 import src.crossword.private_puzzle_generation as private_generation
+import src.crossword.future_grid_jobs as grid_jobs_module
 
 
 @pytest.mark.parametrize(
@@ -4396,6 +4401,117 @@ def test_private_generation_job_records_reclaimed_runtime_receipt(
         assert stored.provenance_json["jobRuntime"]["attempt"] == 2
         assert stored.provenance_json["jobRuntime"]["recovery"] == "reclaimed"
         assert stored.provenance_json["jobRuntime"]["elapsedSeconds"] >= 0
+
+
+def test_private_generation_job_survives_file_backed_restart_and_reclaims_once(
+    api, monkeypatch, saved_profile
+):
+    """A worker/session restart must leave one ready, replayable private result."""
+    crossword = _crossword()
+    with api.app.app_context():
+        manifest = register_legacy_puzzle(crossword)
+    provenance = {
+        "source": "local-ollama-xfill",
+        "model": "gemma4:26b",
+        "engine": "xfill",
+        "semanticStatus": "not-established",
+    }
+
+    def fake_generate(*_args, **kwargs):
+        # Exercise the real worker stage writer so the terminal cleanup is
+        # tested rather than only the lease-reclaim path.
+        kwargs["stage_callback"]("clue-generation")
+        return crossword, manifest, provenance
+
+    monkeypatch.setattr(private_generation, "_generate", fake_generate)
+    client = api.app.test_client()
+    created = client.post(
+        "/api/future/private-puzzle-jobs",
+        json={
+            "profileId": saved_profile["id"],
+            "idempotencyKey": str(uuid4()),
+            "seed": 42,
+            "weekday": "thursday",
+        },
+        headers={"Origin": "http://localhost"},
+    )
+    assert created.status_code == 202, created.json
+    job_id = created.json["id"]
+
+    # The first host/session disappears after reservation. The committed
+    # queued row must remain visible through a fresh client/session.
+    with api.app.app_context():
+        api.db.session.remove()
+        api.db.engine.dispose()
+    restarted_client = api.app.test_client()
+    queued = restarted_client.get(
+        f"/api/future/private-puzzle-jobs/{job_id}",
+        query_string={"profileId": saved_profile["id"]},
+    )
+    assert queued.status_code == 200, queued.json
+    assert queued.json["state"] == "queued"
+    assert queued.json["attempt"] == 0
+
+    # Simulate a worker that claimed the row, published progress, and then
+    # vanished. Expiring the lease is the durable handoff to the next worker.
+    with api.app.app_context():
+        claimed = grid_jobs_module._claim_next_job()
+        assert claimed is not None
+        claimed_id, first_token, _frozen = claimed
+        assert claimed_id == job_id
+        grid_jobs_module._set_runtime_stage(
+            api.app, job_id, first_token, "clue-generation"
+        )
+        job = api.db.session.get(FutureGridDraftJob, job_id)
+        job.lease_until = (
+            datetime.now(timezone.utc) - timedelta(minutes=10)
+        ).isoformat(timespec="milliseconds")
+        api.db.session.commit()
+        assert job.state == "running"
+        assert job.request_json["runtimeStage"] == "clue-generation"
+        api.db.session.remove()
+        api.db.engine.dispose()
+
+    assert process_next_grid_draft(api.app) is True
+    ready = restarted_client.get(
+        f"/api/future/private-puzzle-jobs/{job_id}",
+        query_string={"profileId": saved_profile["id"]},
+    )
+    assert ready.status_code == 200, ready.json
+    assert ready.json["state"] == "ready"
+    assert ready.json["attempt"] == 2
+    assert ready.json["recovery"] == "reclaimed"
+    assert ready.json["playable"] is True
+
+    with api.app.app_context():
+        stored_job = api.db.session.get(FutureGridDraftJob, job_id)
+        assert stored_job.request_json.get("runtimeStage") is None
+        assert stored_job.request_json.get("runtimeStageStartedAt") is None
+        assert (
+            api.db.session.query(FuturePuzzleProvenanceRecord).filter_by(
+                profile_id=saved_profile["id"],
+                puzzle_hash=manifest["integrity"]["value"].removeprefix("sha256:"),
+            ).count()
+            == 1
+        )
+        assert (
+            api.db.session.query(FutureGridDraftPrivateSelection)
+            .filter_by(job_id=job_id)
+            .count()
+            == 0
+        )
+        assert (
+            stored_job.result_json["provenance"]["semanticStatus"]
+            == "not-established"
+        )
+        assert "answer" not in json.dumps(
+            stored_job.result_json["provenance"], ensure_ascii=False
+        ).casefold()
+
+    # A late scheduler tick cannot process or duplicate a terminal result.
+    assert process_next_grid_draft(api.app) is False
+    with api.app.app_context():
+        assert api.db.session.query(FuturePuzzleProvenanceRecord).count() == 1
 
 
 def test_private_generation_passes_a_selected_local_model_to_sync_generator(

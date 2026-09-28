@@ -1541,6 +1541,14 @@ def _finalize_grid_result(
     private_runtime=None,
 ):
     """Atomically stage optional candidate/private evidence and fence the job write."""
+    # ``runtimeStage`` and its timestamp are polling annotations, not part of
+    # the immutable request receipt.  A worker may have written one after the
+    # claim (including ``finalizing``), so restore the frozen request on the
+    # terminal write.  This also removes a stale stage left by a worker that
+    # died after publishing progress and before committing its result.
+    terminal_request = _json_copy(frozen)
+    terminal_request.pop("runtimeStage", None)
+    terminal_request.pop("runtimeStageStartedAt", None)
     common = (
         FutureGridDraftJob.id == job_id,
         FutureGridDraftJob.state == "running",
@@ -1609,6 +1617,7 @@ def _finalize_grid_result(
             state=state,
             result_json=serialized,
             error=error,
+            request_json=terminal_request,
             lease_token=None,
             lease_until=None,
             updated_at=_stamp(),
