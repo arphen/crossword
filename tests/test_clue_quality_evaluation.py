@@ -44,6 +44,12 @@ def _provenance():
             },
         },
         "timingsSeconds": {"total": 12.5, "clueGeneration": 9.25},
+        "clueGenerationTiming": {
+            "primaryWriter": 4.0,
+            "riskRepair": 2.0,
+            "diversityRepair": 3.0,
+            "safetyNormalization": 0.25,
+        },
     }
 
 
@@ -57,6 +63,7 @@ def test_case_projection_is_answer_free_and_preserves_surface_receipts():
     assert case["issueCounts"] == {"answer-form-in-clue": 1}
     assert case["semanticChallenge"] == {"needs-review": 3, "safe-fallback": 1}
     assert case["timingsSeconds"]["total"] == 12.5
+    assert case["clueGenerationTimingSeconds"]["diversityRepair"] == 3.0
     assert not {"answer", "clueText", "entries", "clues"}.intersection(case)
 
 

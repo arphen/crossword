@@ -48,6 +48,17 @@ This sample did not materially beat the earlier 270.744-second run, so the
 budget is retained as a bounded execution control but is not presented as a
 measured latency win; clue generation remains the next profiling target.
 
+The timing-instrumented follow-up on seed `20470413` completed in 261.423
+seconds with zero deterministic grammar issues, six answer-free fallbacks, 53
+signalled surfaces (69.7%), all five required families, and `floorMet=true`.
+Its bounded clue breakdown was 89.819 seconds for the primary writer, 40.380
+seconds for the risk-repair pass, 75.759 seconds for Tuesday diversity repair,
+and 0.009 seconds for safety normalization. The answer-free receipt is
+[`private-tuesday-clue-quality-study-v11.gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-v11.gemma4-26b-20260928.json),
+whose digest is `sha256:9833c5bee04e41b44a1ec09b136619a1d54c28f97619711253b9db11ffc7a799`.
+This identifies the repair passes as the next bounded latency target while
+preserving the same grammar and Tuesday floor.
+
 The current non-live verification gate also passes: `make test` reports 886
 selected Python tests (three live-provider tests deselected), 11 legacy Jest
 tests, 146 domain tests, 8 persistence tests, 249 React tests, and 8

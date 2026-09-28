@@ -155,6 +155,14 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
         for key in ("themeProposal", "nativeXfill", "clueGeneration", "clueChallenge", "total"):
             if key in timings:
                 timing_projection[key] = _number(timings[key], f"provenance.timingsSeconds.{key}")
+    clue_timings = source.get("clueGenerationTiming", {})
+    clue_timing_projection: dict[str, float] = {}
+    if isinstance(clue_timings, Mapping):
+        for key in ("primaryWriter", "riskRepair", "diversityRepair", "safetyNormalization"):
+            if key in clue_timings:
+                clue_timing_projection[key] = _number(
+                    clue_timings[key], f"provenance.clueGenerationTiming.{key}"
+                )
     repair = diversity.get("repair", {})
     repair_projection = {}
     if isinstance(repair, Mapping):
@@ -209,6 +217,7 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
         ),
         "repair": repair_projection,
         "timingsSeconds": timing_projection,
+        "clueGenerationTimingSeconds": clue_timing_projection,
     }
 
 
