@@ -70,11 +70,13 @@ This is useful runtime evidence: the stronger count target is reachable, while
 family diversity still needs better model steering and remains an honest
 editorial shortfall rather than a reason to block private play.
 
+The v2 family contract was then exercised against a fresh local Gemma Tuesday run (seed `20470407`). The 74-entry board completed in 243.571 seconds with zero deterministic grammar issues and one answer-free fallback. It produced 46 signalled surfaces (62.2%) across five non-definition families (`factual-relation`, `fill-blank`, `metalinguistic`, `nonverbal-expression`, and `pun`), meeting both the 28-clue/56% target and the five-family floor. The answer-free receipt is [`private-tuesday-clue-quality-study-v6.real-gemma4-26b-20260928.json`](../evidence/private-tuesday-clue-quality-study-v6.real-gemma4-26b-20260928.json), digest `sha256:b317f0ee0a3a9cb488f61fcc81d45b2b5a0c33fd8d5c0db0da8e11268939195a`. The run demonstrates that strict family acceptance fixes the prior fill-in collapse; it remains a surface receipt, not semantic or player-difficulty evidence.
+
 The surface observer now retains a quote signal when a quoted fill-in or
-spoken phrase carries a trailing `(Fill-in)` or similar annotation, while
-keeping the primary family as fill-blank when the blank is the stronger
-convention. This keeps the renderer's explanation and answer-free study counts
-faithful to the literal clue surface.
+spoken phrase carries a trailing `(Fill-in)` or similar annotation. An explicit
+`(Spoken equivalent)` marker is classified as spoken-equivalent, while a
+`(Fill-in)` marker remains fill-blank; the renderer, session exposure history,
+and answer-free study counts therefore agree on the literal convention.
 
 The Tuesday recipe lets the model propose up to five theme locks, then submits
 at most four to the native runtime. The current bounded diversity repair asks
