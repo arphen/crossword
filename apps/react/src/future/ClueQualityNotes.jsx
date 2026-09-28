@@ -129,6 +129,11 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
     ? Number(quality.fallbackCount)
     : Number(grounding.fallbackCount) || 0;
   const fallbackSupport = quality.fallbackSupport;
+  const fallbackSupportEntries = Array.isArray(fallbackSupport?.entries)
+    ? fallbackSupport.entries
+        .filter((entry) => entry && typeof entry.entryId === 'string')
+        .slice(0, 8)
+    : [];
   const label = quality.issueCount
     ? `${quality.issueCount} local clue note${quality.issueCount === 1 ? '' : 's'}`
     : 'Local clue notes';
@@ -221,6 +226,39 @@ export default function ClueQualityNotes({ provenance, entries = [], profileId }
             assistance ladder as the next route; this metadata does not predict
             solve difficulty.
           </p>
+        )}
+        {fallbackSupportEntries.length > 0 && (
+          <div className="future-clue-quality-fallback-support">
+            <p>
+              Scaffolded clues with measured footholds (answer text stays hidden):
+            </p>
+            <ul>
+              {fallbackSupportEntries.map((entry) => {
+                const supportIds = Array.isArray(entry.supportEntryIds)
+                  ? entry.supportEntryIds.filter((id) => typeof id === 'string').slice(0, 6)
+                  : [];
+                const crossingCount = Number.isFinite(Number(entry.crossingCellCount))
+                  ? Number(entry.crossingCellCount)
+                  : 0;
+                return (
+                  <li key={entry.entryId}>
+                    <strong>{entry.entryId}</strong>
+                    <span>
+                      {crossingCount > 0
+                        ? `${crossingCount} crossing square${crossingCount === 1 ? '' : 's'}`
+                        : 'no measured crossing squares'}
+                    </span>
+                    {supportIds.length > 0 && (
+                      <small>Try a filled crossing from {supportIds.join(', ')}.</small>
+                    )}
+                    {supportIds.length === 0 && (
+                      <small>Use another filled entry or the assistance ladder.</small>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         )}
         {familySummary && (
           <p className="future-clue-quality-families">

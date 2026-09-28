@@ -216,7 +216,18 @@ it('explains answer-free scaffolds created for ungrounded factual surfaces', asy
               version: 'private-clue-fallback-support-v1',
               entryCount: 2,
               withCrossingCount: 1,
-              entries: [],
+              entries: [
+                {
+                  entryId: '1A',
+                  crossingCellCount: 2,
+                  supportEntryIds: ['1D', '2D'],
+                },
+                {
+                  entryId: '2A',
+                  crossingCellCount: 0,
+                  supportEntryIds: [],
+                },
+              ],
             },
           },
         }}
@@ -232,6 +243,11 @@ it('explains answer-free scaffolds created for ungrounded factual surfaces', asy
   expect(host.textContent).toContain(
     'Structural crossings are available for 1 of 2 scaffolded clues',
   );
+  expect(host.textContent).toContain('Scaffolded clues with measured footholds');
+  expect(host.textContent).toContain('1A2 crossing squares');
+  expect(host.textContent).toContain('Try a filled crossing from 1D, 2D.');
+  expect(host.textContent).toContain('2Ano measured crossing squares');
+  expect(host.textContent).toContain('Use another filled entry or the assistance ladder.');
 });
 
 it('distinguishes exact reviewed joins from the broader pack match count', async () => {
