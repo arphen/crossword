@@ -189,6 +189,7 @@ it('stores pending worker identity in a profile-scoped recovery record', () => {
 
 it('gives each real worker stage a distinct, honest wait message', () => {
   expect(describeJobStage('queued')).toContain('Queued');
+  expect(describeJobStage('reconnecting')).toContain('Reconnecting');
   expect(describeJobStage('theme-proposal')).toContain('thread');
   expect(describeJobStage('native-xfill')).toContain('crossings');
   expect(describeJobStage('clue-generation')).toContain('clues');
@@ -505,23 +506,53 @@ it('reattaches to a durable job after the solver view mounts again', async () =>
     'crossword.future.private-job.v1:profile-1',
     JSON.stringify(pending),
   );
-  const fetchMock = vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => privateJobPayload('ready'),
-  });
+  const fetchMock = vi
+    .fn()
+    .mockRejectedValueOnce(new TypeError('offline'))
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => privateJobPayload('ready'),
+    });
   vi.stubGlobal('fetch', fetchMock);
   mount(app);
 
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 25));
+    await new Promise((resolve) => setTimeout(resolve, 1200));
   });
 
-  expect(fetchMock).toHaveBeenCalledWith(
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  expect(fetchMock.mock.calls[0][0]).toBe(
     '/api/future/private-puzzle-jobs/job-1?profileId=profile-1',
-    expect.objectContaining({ signal: expect.any(AbortSignal) }),
   );
   expect(app.init).toHaveBeenCalledOnce();
   expect(localStorage.getItem('crossword.future.private-job.v1:profile-1')).toBeNull();
+});
+
+it('retries a transient durable poll without losing the in-flight puzzle', async () => {
+  const app = appState();
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => privateJobPayload('running'),
+    })
+    .mockRejectedValueOnce(new TypeError('offline'))
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => privateJobPayload('ready'),
+    });
+  vi.stubGlobal('fetch', fetchMock);
+  mount(app);
+
+  await act(async () => {
+    clickButton();
+    await new Promise((resolve) => setTimeout(resolve, 1800));
+  });
+
+  expect(fetchMock).toHaveBeenCalledTimes(3);
+  expect(app.init).toHaveBeenCalledOnce();
+  expect(host.textContent).not.toContain('could not be read');
+  expect(host.textContent).not.toContain('offline');
 });
 
 it('consumes an explicit language token hint before initializing the shared solver', async () => {

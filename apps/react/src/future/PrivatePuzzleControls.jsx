@@ -32,6 +32,7 @@ const LOCAL_MODEL_LABELS = {
 
 const JOB_STAGE_COPY = {
   queued: 'Queued for the local maker…',
+  reconnecting: 'Reconnecting to the local maker…',
   'theme-proposal': 'Finding a thread in your word field…',
   'native-xfill': 'Fitting the crossings around it…',
   'clue-generation': 'Writing and checking the clues…',
@@ -40,6 +41,8 @@ const JOB_STAGE_COPY = {
   generating: 'Building your theme, grid, and clues locally…',
   filling: 'Fitting the crossings locally…',
 };
+
+const JOB_POLL_RETRY_DELAYS_MS = [100, 250, 500];
 
 const WEEKDAY_RECIPE_COPY = {
   monday:
@@ -328,6 +331,33 @@ async function readResponse(response) {
   }
 }
 
+async function readPrivateJobWithRetry(profileId, jobId, signal, onRetry) {
+  let lastError;
+  for (let attempt = 0; attempt <= JOB_POLL_RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      const response = await fetch(
+        `/api/future/private-puzzle-jobs/${jobId}?profileId=${encodeURIComponent(profileId)}`,
+        { headers: { Accept: 'application/json' }, signal },
+      );
+      const payload = await readResponse(response);
+      const retryableStatus = response.status >= 500 && response.status <= 599;
+      if (!response.ok && retryableStatus && attempt < JOB_POLL_RETRY_DELAYS_MS.length) {
+        onRetry?.();
+        await wait(JOB_POLL_RETRY_DELAYS_MS[attempt]);
+        continue;
+      }
+      return { response, payload };
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      lastError = error;
+      if (attempt >= JOB_POLL_RETRY_DELAYS_MS.length) throw error;
+      onRetry?.();
+      await wait(JOB_POLL_RETRY_DELAYS_MS[attempt]);
+    }
+  }
+  throw lastError || new Error('The local puzzle job could not be read.');
+}
+
 export default function PrivatePuzzleControls({
   app,
   profileId,
@@ -469,12 +499,14 @@ export default function PrivatePuzzleControls({
     setJobStageElapsed(payload.stageElapsedSeconds);
     while (payload.state === 'queued' || payload.state === 'running') {
       await wait(750);
-      const poll = await fetch(
-        `/api/future/private-puzzle-jobs/${payload.id}?profileId=${encodeURIComponent(profileId)}`,
-        { headers: { Accept: 'application/json' }, signal: operation.abort.signal },
+      const polled = await readPrivateJobWithRetry(
+        profileId,
+        payload.id,
+        operation.abort.signal,
+        () => setJobStage('reconnecting'),
       );
-      payload = await readResponse(poll);
-      if (!poll.ok) {
+      payload = polled.payload;
+      if (!polled.response.ok) {
         throw new Error(
           typeof payload?.error === 'string'
             ? payload.error
@@ -620,12 +652,14 @@ export default function PrivatePuzzleControls({
     setJobStageElapsed(null);
     Promise.resolve()
       .then(async () => {
-        const response = await fetch(
-          `/api/future/private-puzzle-jobs/${pending.jobId}?profileId=${encodeURIComponent(profileId)}`,
-          { headers: { Accept: 'application/json' }, signal: operation.abort.signal },
+        const polled = await readPrivateJobWithRetry(
+          profileId,
+          pending.jobId,
+          operation.abort.signal,
+          () => setJobStage('reconnecting'),
         );
-        const payload = await readResponse(response);
-        if (!response.ok) {
+        const payload = polled.payload;
+        if (!polled.response.ok) {
           clearPendingPrivateJob(profileId, pending.jobId);
           throw new Error(
             typeof payload?.error === 'string'

@@ -104,7 +104,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/PlaytestPulse.test.jsx`
 - `apps/react/src/future/PostgameAssociations.jsx` — `initialResponses:16`, `AssociationCard:22`, `finishSwipe:27`, `PostgameAssociations:120`, `respond:133`, `expand:158`
 - `apps/react/src/future/PostgameAssociations.test.jsx`
-- `apps/react/src/future/PrivatePuzzleControls.jsx` — `pendingJobStorageKey:61`, `validPendingJob:65`, `loadPendingPrivateJob:81`, `savePendingPrivateJob:102`, `clearPendingPrivateJob:121`, `describeJobStage:139`, `describeStageElapsed:143`, `describeWeekdayRecipe:149`, `describePlayCalibration:156`, `describeThemeThread:161`, `describeLanguageTokenThread:173`, `describeLanguageRecurrence:184`, `overdue:193`, `describeLanguageTaskSources:204`, `describePersonalizationReceipt:221`, `personalizationReceiptFacts:240` (+13 more)
+- `apps/react/src/future/PrivatePuzzleControls.jsx` — `pendingJobStorageKey:64`, `validPendingJob:68`, `loadPendingPrivateJob:84`, `savePendingPrivateJob:105`, `clearPendingPrivateJob:124`, `describeJobStage:142`, `describeStageElapsed:146`, `describeWeekdayRecipe:152`, `describePlayCalibration:159`, `describeThemeThread:164`, `describeLanguageTokenThread:176`, `describeLanguageRecurrence:187`, `overdue:196`, `describeLanguageTaskSources:207`, `describePersonalizationReceipt:224`, `personalizationReceiptFacts:243` (+14 more)
 - `apps/react/src/future/PrivatePuzzleControls.test.jsx`
 - `apps/react/src/future/PrivatePuzzleReceipt.jsx` — `integer:3`, `score:7`, `receiptStats:13`, `PrivatePuzzleReceipt:58`, `body:75`
 - `apps/react/src/future/PrivatePuzzleReceipt.test.jsx`
