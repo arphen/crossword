@@ -30,6 +30,7 @@ def _quality(*, mean_score=80, minimum=55, iffy=1, weak=4, theme=2):
         "minimumScore": minimum,
         "iffyCount": iffy,
         "weakCount": weak,
+        "weakWithoutCrossingCount": 0,
         "themeCount": theme,
         "uncertainty": "xfill-heuristic-not-human-quality",
     }
@@ -93,6 +94,46 @@ def test_unavailable_scores_are_counted_without_inventing_metrics():
     assert report["summary"]["unavailableAttemptCount"] == 1
     assert report["summary"]["meanScore"]["mean"] is None
     assert report["acceptance"]["status"] == "unavailable"
+
+
+def test_weak_without_crossing_count_round_trips_and_rejects_invalid_values():
+    cases = [
+        {
+            "seed": 1,
+            "selectedAttempt": 1,
+            "attempts": [
+                {
+                    "label": "native",
+                    "seed": 1,
+                    "status": "candidate",
+                    "quality": _quality(),
+                }
+            ],
+        }
+    ]
+    cases[0]["attempts"][0]["quality"]["weakWithoutCrossingCount"] = 2
+    report = evaluate_fill_quality_study(cases)
+    assert report["summary"]["weakWithoutCrossingCount"]["mean"] == 2
+    assert report["summary"]["selectedWeakWithoutCrossingCount"]["mean"] == 2
+
+    invalid = _quality()
+    invalid["weakWithoutCrossingCount"] = -1
+    with pytest.raises(ValueError, match="weakWithoutCrossingCount"):
+        evaluate_fill_quality_study(
+            [
+                {
+                    "seed": 1,
+                    "attempts": [
+                        {
+                            "label": "native",
+                            "seed": 1,
+                            "status": "candidate",
+                            "quality": invalid,
+                        }
+                    ],
+                }
+            ]
+        )
 
 
 def test_runner_accepts_generation_shaped_quality_policy():

@@ -127,6 +127,22 @@ def _quality(quality: Any, path: str) -> dict[str, Any]:
     for name in ("entryCount", "iffyCount", "weakCount", "themeCount"):
         if name in raw and raw[name] is not None:
             result[name] = int(_number(raw[name], f"{path}.{name}", integer=True))
+    if "weakWithoutCrossingCount" in raw and raw["weakWithoutCrossingCount"] is not None:
+        value = int(
+            _number(
+                raw["weakWithoutCrossingCount"],
+                f"{path}.weakWithoutCrossingCount",
+                integer=True,
+            )
+        )
+        if value < 0:
+            raise ValueError(f"{path}.weakWithoutCrossingCount must be non-negative")
+        entry_count = result.get("entryCount")
+        if entry_count is not None and value > entry_count:
+            raise ValueError(
+                f"{path}.weakWithoutCrossingCount cannot exceed entryCount"
+            )
+        result["weakWithoutCrossingCount"] = value
     for name in ("meanScore", "minimumScore"):
         if name in raw and raw[name] is not None:
             result[name] = float(_number(raw[name], f"{path}.{name}"))
@@ -299,10 +315,16 @@ def evaluate_fill_quality_study(
             "selectedMeanScore": _summary(values("meanScore", selected_qualities), selected_total),
             "selectedIffyCount": _summary(values("iffyCount", selected_qualities), selected_total),
             "selectedWeakCount": _summary(values("weakCount", selected_qualities), selected_total),
+            "weakWithoutCrossingCount": _summary(
+                values("weakWithoutCrossingCount", measured), measured_total
+            ),
+            "selectedWeakWithoutCrossingCount": _summary(
+                values("weakWithoutCrossingCount", selected_qualities), selected_total
+            ),
         },
         "acceptance": {
             "status": "observed" if measured else "unavailable",
-            "policy": "fewest-iffy-then-theme-floor-then-weak-then-mean-then-min",
+            "policy": "fewest-iffy-then-theme-floor-then-isolated-weak-then-weak-then-mean-then-min",
             "humanQualityGate": "not-applied",
             "reason": "native scores compare fixed-seed retries; they do not gate private play",
         },

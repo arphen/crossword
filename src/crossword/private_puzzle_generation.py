@@ -5251,6 +5251,7 @@ def _fill_quality_report(grid):
             "entryCount": fields["entryCount"],
             "uncertainty": "xfill-heuristic-not-human-quality",
         }
+    weak_without_crossing = _native_weak_without_crossing(grid)
     theme_count = sum(
         1
         for entry in grid["entries"]
@@ -5260,10 +5261,64 @@ def _fill_quality_report(grid):
         "version": FILL_QUALITY_POLICY_VERSION,
         "status": "measured",
         **fields,
+        "weakWithoutCrossing": weak_without_crossing,
+        "weakWithoutCrossingCount": len(weak_without_crossing),
         "themeCount": theme_count,
         "source": "native-xfill-reported",
         "uncertainty": "xfill-heuristic-not-human-quality",
     }
+
+
+def _native_weak_without_crossing(grid, *, weak_threshold=60):
+    """Return weak native entries with no crossing cells.
+
+    This is a topology-only construction signal. It is answer-free and is
+    never interpreted as a solve-probability or familiarity estimate.
+    """
+    raw_entries = grid.get("entries") if isinstance(grid, dict) else None
+    if not isinstance(raw_entries, list):
+        return []
+    cells = {}
+    weak_entries = []
+    for raw in raw_entries:
+        if not isinstance(raw, dict):
+            continue
+        entry_id = f"{raw.get('num')}{raw.get('dir')}"
+        row, col, length, direction = (
+            raw.get("row"), raw.get("col"), raw.get("len"), raw.get("dir")
+        )
+        score = raw.get("score")
+        if (
+            not isinstance(row, int)
+            or isinstance(row, bool)
+            or not isinstance(col, int)
+            or isinstance(col, bool)
+            or not isinstance(length, int)
+            or isinstance(length, bool)
+            or length < 1
+            or direction not in {"A", "D"}
+        ):
+            continue
+        coordinates = []
+        for offset in range(length):
+            coordinate = (
+                row if direction == "A" else row + offset,
+                col + offset if direction == "A" else col,
+            )
+            coordinates.append(coordinate)
+            cells.setdefault(coordinate, []).append(entry_id)
+        if (
+            isinstance(score, (int, float))
+            and not isinstance(score, bool)
+            and math.isfinite(float(score))
+            and float(score) < weak_threshold
+        ):
+            weak_entries.append((entry_id, coordinates))
+    return sorted(
+        entry_id
+        for entry_id, coordinates in weak_entries
+        if not any(len(cells.get(coordinate, ())) > 1 for coordinate in coordinates)
+    )
 
 
 def _fill_quality_selection_key(report, attempt_index, *, theme_floor=0):
@@ -5308,6 +5363,7 @@ def _fill_quality_selection_key(report, attempt_index, *, theme_floor=0):
         return (
             0 if mechanic_candidate else 1,
             report["iffyCount"],
+            report.get("weakWithoutCrossingCount", 0),
             report["weakCount"],
             -report["meanScore"],
             -report["minimumScore"],
@@ -5318,6 +5374,7 @@ def _fill_quality_selection_key(report, attempt_index, *, theme_floor=0):
         0,
         report["iffyCount"],
         0 if retains_theme else 1,
+        report.get("weakWithoutCrossingCount", 0),
         report["weakCount"],
         -report["meanScore"],
         -report["minimumScore"],
@@ -5451,7 +5508,7 @@ def _fill_quality_policy(attempts, selected_index, *, theme_floor=0):
         "selectedAttempt": selected_index + 1 if selected_index is not None else None,
         "themeFloor": theme_floor,
         "selectionBasis": (
-            "fewest-iffy-then-theme-floor-then-weak-then-mean-then-min"
+            "fewest-iffy-then-theme-floor-then-isolated-weak-then-weak-then-mean-then-min"
             if measured
             else "first-valid-board-without-native-quality-receipt"
         ),
@@ -5942,6 +5999,10 @@ def _generate(
         "iffyCount": grid.get("iffy"),
         "weakCount": grid.get("weak"),
         "footholdCount": sum(1 for item in clue_entries if item["needsFoothold"]),
+        "weakWithoutCrossing": crossing_support.get("weakWithoutCrossing", []),
+        "weakWithoutCrossingCount": len(
+            crossing_support.get("weakWithoutCrossing", [])
+        ),
         "qualityPolicy": fill_policy,
     }
     timings = {

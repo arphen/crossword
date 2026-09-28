@@ -2161,6 +2161,15 @@ The regression also asserts that the runtime receipt is answer-free. This is
 process-like restart evidence against the canonical temporary SQLite file, not
 a claim about OS-level SIGKILL cleanup or multi-host failover.
 
+The private fill selector now carries a topology-only `weakWithoutCrossing`
+receipt for each measured native retry. When existing iffy-count and weekday
+theme priorities tie, a candidate with fewer weak entries that have no crossing
+cells wins before weak-count and score tie-breaks. The selected `fillQuality`
+and `constructionEvidence` retain the same answer-free count and
+`player-support-unmeasured` uncertainty; malformed or legacy study receipts
+remain compatible. This improves structural routes into unfamiliar fills, but
+does not claim solve probability, familiarity, or human fairness.
+
 The history panel now also offers a `private-play-calibration-export-v1`
 download. It is intentionally narrower than the profile archive: it contains
 bounded session metadata, aggregate replay analysis, and the observational

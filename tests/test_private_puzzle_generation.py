@@ -999,9 +999,11 @@ def test_fill_quality_report_keeps_native_scores_separate_from_human_quality():
         "entryCount": 2,
         "meanScore": 75.4,
         "minimumScore": 50,
-        "iffyCount": 13,
-        "weakCount": 38,
-        "themeCount": 1,
+            "iffyCount": 13,
+            "weakCount": 38,
+            "weakWithoutCrossing": [],
+            "weakWithoutCrossingCount": 0,
+            "themeCount": 1,
         "source": "native-xfill-reported",
         "uncertainty": "xfill-heuristic-not-human-quality",
     }
@@ -1048,6 +1050,69 @@ def test_fill_quality_policy_selects_a_better_retry_without_rejecting_weak_fallb
     assert policy["selectedAttempt"] == 2
     assert policy["selectionBasis"].startswith("fewest-iffy")
     assert policy["uncertainty"] == "xfill-heuristic-not-human-quality"
+
+
+def test_fill_quality_reports_weak_entries_without_crossing_cells():
+    report = private_generation._fill_quality_report(
+        {
+            "fill": ["A" * 7] * 7,
+            "entries": [
+                {"num": 1, "dir": "A", "row": 0, "col": 0, "len": 3, "score": 40},
+                {"num": 1, "dir": "D", "row": 0, "col": 1, "len": 3, "score": 75},
+                {"num": 2, "dir": "A", "row": 4, "col": 0, "len": 3, "score": 35},
+            ],
+            "mean_score": 60,
+            "min_score": 35,
+            "iffy": 1,
+            "weak": 2,
+        }
+    )
+
+    assert report["weakWithoutCrossing"] == ["2A"]
+    assert report["weakWithoutCrossingCount"] == 1
+
+
+def test_fill_quality_selection_prefers_crossed_weak_entries_after_existing_policy():
+    isolated = private_generation._fill_quality_report(
+        {
+            "entries": [
+                {"num": 1, "dir": "A", "row": 0, "col": 0, "len": 3, "score": 40},
+            ],
+            "mean_score": 75,
+            "min_score": 40,
+            "iffy": 1,
+            "weak": 1,
+        }
+    )
+    crossed = private_generation._fill_quality_report(
+        {
+            "entries": [
+                {"num": 1, "dir": "A", "row": 0, "col": 0, "len": 3, "score": 40},
+                {"num": 1, "dir": "D", "row": 0, "col": 1, "len": 3, "score": 75},
+            ],
+            "mean_score": 70,
+            "min_score": 40,
+            "iffy": 1,
+            "weak": 1,
+        }
+    )
+    selected = min(
+        enumerate([{"quality": isolated}, {"quality": crossed}]),
+        key=lambda item: private_generation._fill_quality_selection_key(
+            item[1]["quality"], item[0]
+        ),
+    )
+    assert selected[0] == 1
+
+    # Existing iffy priority still wins over the topology tie-break.
+    cleaner = {**isolated, "iffyCount": 0}
+    selected = min(
+        enumerate([{"quality": isolated}, {"quality": cleaner}]),
+        key=lambda item: private_generation._fill_quality_selection_key(
+            item[1]["quality"], item[0]
+        ),
+    )
+    assert selected[0] == 1
 
 
 def test_fill_quality_selection_preserves_two_themes_within_weak_band():
