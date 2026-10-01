@@ -689,10 +689,13 @@
 /* ==========================================================================
    3. The letter track.
    Letters are grouped by word first and balanced into runs of at most five
-   second (boardCues.js), and each run is an unbreakable flex item: a clue that
-   has to wrap breaks between runs, never through one, so the rhythm the reader
-   learned survives the line break. The wider gap between words is the same one
-   the answer has on the board.
+   second (boardCues.js), and each run is an unbreakable flex item while it
+   fits: a clue that has to wrap breaks between runs, never through one, so
+   the rhythm the reader learned survives the line break. The wider gap
+   between words is the same one the answer has on the board. A run wider
+   than its column — a Solid track, a narrow lane, Board size L — wraps
+   internally instead of spilling over the neighbouring clue: breaking a run
+   is the lesser evil next to painting over another answer.
    ========================================================================== */
 #app.react-desktop-app .state-container {
   /* A definite width, so a wrapping track never depends on shrink-to-fit sizing
@@ -706,7 +709,15 @@
 #app.react-desktop-app .state-run {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: calc(3px * var(--clue-letter-scale));
+  max-width: 100%;
+  min-width: 0;
+}
+
+#app.react-desktop-app #across li:nth-child(odd) .state-run,
+#app.react-desktop-app #down li:nth-child(odd) .state-run {
+  justify-content: flex-end;
 }
 
 /* A run that ends a word gets the wider gap: the boundary reads as a real gap
