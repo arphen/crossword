@@ -27,6 +27,58 @@ SPECIMEN_VERSION = "private-clue-specimen-ledger-v1"
 SPECIMEN_FILENAME = "private-clue-specimens-v1.local.json"
 SPECIMEN_ENV = "CROSSWORD_CLUE_SPECIMEN_PATH"
 
+HAND_LISTED = (
+    # (id, answer, clue, note)
+    ("sp-tautology-shadier", "SHADIER", "more shady", "§0: the comparative is the answer"),
+    ("sp-leak-shady", "SHADY", "shadier character", "derivation leak: answer degree form in clue"),
+    ("sp-pun-auctioneer", "AUCTIONEER", "One with a lot to say?", "witnessed pun, pivot LOT"),
+    ("sp-pun-teller", "TELLER", "Branch specialist?", "witnessed pun, pivot BRANCH"),
+    ("sp-pseudo-den", "DEN", "A quiet room?", "bare-? pseudo-pun"),
+    ("sp-name-singer", "ADELE", "Famous singer's name", "name slot, no source"),
+    ("sp-name-writer", "NASH", "Famous writer's name", "name slot, no source"),
+    ("sp-fill-voyage", "BON", "___ voyage", "fill-blank with its mark"),
+    ("sp-spoken-greeting", "GREETING", '"Hello there" (Spoken equivalent)', "utterance plus label"),
+    ("sp-spoken-bare", "HAMLET", '"To be or not to be"', "utterance without label"),
+    ("sp-plain-dark", "DARK", "Without light", "plain definition"),
+    ("sp-plain-are", "ARE", "They ___ here", "fill-in definition"),
+    ("sp-pair-bright-a", "BRIGHTER", "more bright", "pair: tautological comparative"),
+    ("sp-pair-bright-b", "BRIGHTER", "Full of light", "pair: plain definition"),
+)
+
+HAND_LISTED_PAIR_ID = "pair-bright-1"
+HAND_LISTED_PAIR_MEMBERS = ("sp-pair-bright-a", "sp-pair-bright-b")
+
+
+def seed_records(corpus_n=48, corpus_records=None) -> list:
+    """Build the starting ledger: hand-listed §0 surfaces plus a corpus sample."""
+    records = [
+        make_record(record_id, answer, clue, source="hand-listed §0", note=note)
+        for record_id, answer, clue, note in HAND_LISTED
+    ]
+    for record in records:
+        if record["id"] in HAND_LISTED_PAIR_MEMBERS:
+            record["pairId"] = HAND_LISTED_PAIR_ID
+    sampled = 0
+    for record in corpus_records or []:
+        if sampled >= corpus_n or not isinstance(record, dict):
+            continue
+        answer, clue = record.get("answer"), record.get("clue")
+        if not answer or not clue:
+            continue
+        records.append(
+            make_record(
+                f"corpus-{record.get('seed')}-{record.get('id')}",
+                answer,
+                clue,
+                source="local-corpus",
+                weekday=record.get("weekday"),
+                seed=record.get("seed"),
+                model_tag=record.get("modelTag"),
+            )
+        )
+        sampled += 1
+    return records
+
 VERDICTS = (
     "leak",
     "tautology",

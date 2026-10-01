@@ -35,31 +35,13 @@ from src.crossword.clue_specimens import (  # noqa: E402
     ledger_attestation,
     ledger_path,
     load_ledger,
-    make_record,
     save_ledger,
+    seed_records,
     validate_ledger,
 )
 from src.crossword.private_clue_corpus import load_corpus  # noqa: E402
 
 ATTESTATION_VERSION = "private-clue-specimen-attestation-v1"
-
-HAND_LISTED = (
-    # (id, answer, clue, note)
-    ("sp-tautology-shadier", "SHADIER", "more shady", "§0: the comparative is the answer"),
-    ("sp-leak-shady", "SHADY", "shadier character", "derivation leak: answer degree form in clue"),
-    ("sp-pun-auctioneer", "AUCTIONEER", "One with a lot to say?", "witnessed pun, pivot LOT"),
-    ("sp-pun-teller", "TELLER", "Branch specialist?", "witnessed pun, pivot BRANCH"),
-    ("sp-pseudo-den", "DEN", "A quiet room?", "bare-? pseudo-pun"),
-    ("sp-name-singer", "ADELE", "Famous singer's name", "name slot, no source"),
-    ("sp-name-writer", "NASH", "Famous writer's name", "name slot, no source"),
-    ("sp-fill-voyage", "BON", "___ voyage", "fill-blank with its mark"),
-    ("sp-spoken-greeting", "GREETING", '"Hello there" (Spoken equivalent)', "utterance plus label"),
-    ("sp-spoken-bare", "HAMLET", '"To be or not to be"', "utterance without label"),
-    ("sp-plain-dark", "DARK", "Without light", "plain definition"),
-    ("sp-plain-are", "ARE", "They ___ here", "fill-in definition"),
-    ("sp-pair-bright-a", "BRIGHTER", "more bright", "pair: tautological comparative"),
-    ("sp-pair-bright-b", "BRIGHTER", "Full of light", "pair: plain definition"),
-)
 
 
 def _read_ledger(path):
@@ -79,44 +61,15 @@ def command_seed(args) -> int:
     target = Path(args.out) if args.out else ledger_path()
     if target.is_file() and not args.force:
         raise SystemExit(f"ledger exists at {target}; pass --force to rebuild")
-    records = [
-        make_record(record_id, answer, clue, source="hand-listed §0", note=note)
-        for record_id, answer, clue, note in HAND_LISTED
-    ]
-    # Link the better-of-pair surfaces; the operator names the winner.
-    pair_id = "pair-bright-1"
-    for record in records:
-        if record["id"] in ("sp-pair-bright-a", "sp-pair-bright-b"):
-            record["pairId"] = pair_id
-    corpus = load_corpus()
-    sampled = 0
-    if corpus["captured"]:
-        for record in corpus["records"]:
-            if not isinstance(record, dict) or sampled >= args.corpus_n:
-                continue
-            answer, clue = record.get("answer"), record.get("clue")
-            if not answer or not clue:
-                continue
-            records.append(
-                make_record(
-                    f"corpus-{record.get('seed')}-{record.get('id')}",
-                    answer,
-                    clue,
-                    source="local-corpus",
-                    weekday=record.get("weekday"),
-                    seed=record.get("seed"),
-                    model_tag=record.get("modelTag"),
-                )
-            )
-            sampled += 1
+    records = seed_records(args.corpus_n, (load_corpus().get("records") or []))
     save_ledger(records, target)
     print(
         json.dumps(
             {
                 "out": os.path.relpath(target, ROOT) if _is_relative(target) else str(target),
                 "records": len(records),
-                "handListed": len(HAND_LISTED),
-                "corpusSampled": sampled,
+                "handListed": sum(1 for r in records if r["source"].startswith("hand-listed")),
+                "corpusSampled": sum(1 for r in records if r["source"] == "local-corpus"),
             },
             indent=2,
         )

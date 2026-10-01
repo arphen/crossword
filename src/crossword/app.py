@@ -23,6 +23,7 @@ from .calibration_api import calibration_api
 from .calibration_hypothesis_api import calibration_hypothesis_api
 from .postgame_associations_api import postgame_associations_api
 from .profile_narrative_api import profile_narrative_api
+from .specimen_api import specimen_api
 from .future_puzzles import future_puzzle_candidates_api, register_legacy_puzzle
 from .future_grid_jobs import future_grid_jobs_api
 from .private_puzzle_generation import private_puzzle_api
@@ -69,6 +70,7 @@ app.register_blueprint(calibration_api)
 app.register_blueprint(calibration_hypothesis_api)
 app.register_blueprint(postgame_associations_api)
 app.register_blueprint(profile_narrative_api)
+app.register_blueprint(specimen_api)
 app.register_blueprint(future_grid_jobs_api)
 app.register_blueprint(private_puzzle_api)
 app.register_blueprint(reviewed_samples_api)
