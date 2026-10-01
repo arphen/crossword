@@ -4,6 +4,7 @@ import {
   cellCues,
   clueRampStyle,
   createClueRamp,
+  entryStartingAt,
   groupRuns,
   groupSizes,
 } from './boardCues';
@@ -83,6 +84,19 @@ describe('number colour ramp', () => {
     const ramp = createClueRamp([{ clue_number: 1 }]);
     expect(clueRampStyle(ramp, 42)).toEqual({});
     expect(clueRampStyle(null, 1)).toEqual({});
+  });
+
+  it('finds the word opening at one square in one direction', () => {
+    const entries = [
+      { clue_number: 1, direction: 'across', start_x: 0, start_y: 0 },
+      { clue_number: 1, direction: 'down', start_x: 0, start_y: 0 },
+      { clue_number: 2, direction: 'across', start_x: 0, start_y: 4 },
+    ];
+    expect(entryStartingAt(entries, 0, 0, 'across')).toBe(entries[0]);
+    expect(entryStartingAt(entries, 0, 0, 'down')).toBe(entries[1]);
+    expect(entryStartingAt(entries, 4, 0, 'down')).toBeUndefined();
+    expect(entryStartingAt(entries, 4, 0, 'up')).toBeUndefined();
+    expect(entryStartingAt(null, 0, 0, 'across')).toBeUndefined();
   });
 });
 

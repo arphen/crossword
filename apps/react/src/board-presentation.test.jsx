@@ -47,7 +47,7 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-async function mountBoard() {
+async function mountBoard(customEntries) {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   const socket = { on: vi.fn(), emit: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), removeAllListeners: vi.fn() };
   const axios = { get: vi.fn(async () => ({ data: { entries: [] } })), post: vi.fn(async () => ({ data: {} })) };
@@ -56,7 +56,7 @@ async function mountBoard() {
   const { app } = controller;
   // The fixture stands in for the daily load: the board is drawn from the entries.
   app.currentPuzzleMetadata = { date: '260829', title: 'Synthetic fixture', authors: ['Test'], width: 11, height: 5 };
-  app.crossword = entries();
+  app.crossword = customEntries || entries();
   // The behaviour narrates its grid build; the test reads the board, not the log.
   const log = vi.spyOn(console, 'log').mockImplementation(() => {});
   await act(async () => { app.init(); });
@@ -99,15 +99,16 @@ it('puts the reader view settings on the board for CSS to read', async () => {
     scale: 'normal',
     rail: 'on',
     ramp: 'on',
+    vibrance: 'vivid',
     grouping: 'auto',
     cues: 'on',
     glyph: 'regular',
   });
   // A choice with no word to press is the same as a choice that is not there.
   const choices = [...host.querySelectorAll('.view-choice')];
-  expect(choices.length).toBe(17);
+  expect(choices.length).toBe(20);
   expect(choices.every((button) => button.textContent.trim().length > 0)).toBe(true);
-  expect(host.querySelectorAll('.view-choice[aria-pressed="true"]').length).toBe(7);
+  expect(host.querySelectorAll('.view-choice[aria-pressed="true"]').length).toBe(8);
 });
 
 it('breaks a letter track into balanced runs and at word gaps', async () => {
@@ -183,6 +184,29 @@ it("lights the selection in the active clue's rank, not the square's own", async
   for (const box of boxes) {
     expect(/--clue-ramp:\s*([^;\s]+)/.exec(box.getAttribute('style') || '')?.[1]).toBe(activeRamp);
   }
+});
+
+it('paints each gate tick in the hue of the word it opens', async () => {
+  const host = await mountBoard([
+    { clue_number: 1, clue_text: 'Across opener (3)', direction: 'across', start_x: 1, start_y: 0, characters: boxes('ABC') },
+    { clue_number: 2, clue_text: 'Down opener (2)', direction: 'down', start_x: 0, start_y: 1, characters: boxes('DE') },
+  ]);
+  const rankOf = (element, name) => new RegExp(`${name}:\\s*([^;\\s]+)`).exec(element.getAttribute('style') || '')?.[1];
+  const chipRank = (number) => rankOf(
+    [...host.querySelectorAll('.clue-number')].find((chip) => chip.textContent === String(number)),
+    '--clue-ramp',
+  );
+  // The corner block opens an Across word to its east and a Down word below it.
+  const gates = [...host.querySelectorAll('.grid-cell.black-cell')].filter(
+    (cell) => /--gate-(across|down)/.test(cell.getAttribute('style') || ''),
+  );
+  expect(gates.length).toBeGreaterThan(0);
+  const east = gates.find((cell) => /--gate-across/.test(cell.getAttribute('style') || ''));
+  const south = gates.find((cell) => /--gate-down/.test(cell.getAttribute('style') || ''));
+  expect(east).toBeDefined();
+  expect(south).toBeDefined();
+  expect(rankOf(east, '--gate-across')).toBe(chipRank(1));
+  expect(rankOf(south, '--gate-down')).toBe(chipRank(2));
 });
 
 it('hands the appearance back to CSS when a view choice changes', async () => {

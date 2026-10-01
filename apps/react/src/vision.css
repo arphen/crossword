@@ -28,22 +28,24 @@
        glance. Enough chroma to learn by, never a gradient across the surface. */
   --ramp-start-hue: 46;
   --ramp-end-hue: 332;
-  --ramp-chroma: 0.115;
+  --ramp-chroma: 0.155;
   --ramp-lightness: 0.82;
   /* Direction reads as value, never as a second hue: the lane a clue sits in
-       lifts or quiets its colour without changing which colour it is. */
-  --across-lift: 0.04;
-  --down-drop: 0.05;
+       lifts or quiets its colour without changing which colour it is — Across
+       clearly brighter, Down clearly quieter, so the direction reads first
+       and the hue still names the clue. */
+  --across-lift: 0.07;
+  --down-drop: 0.09;
   --clue-lightness: var(--ramp-lightness);
   /* Interaction reads as saturation. The ember is the clue at rest, the flame
        is the clue (or its squares) being worked; the alphas decide how much
        light each state is allowed to make on this display. */
-  --ember-chroma: 0.55;
-  --flame-chroma: 1.6;
-  --ember-alpha: 13%;
-  --cross-alpha: 21%;
-  --flame-alpha: 32%;
-  --cursor-alpha: 44%;
+  --ember-chroma: 0.7;
+  --flame-chroma: 1.75;
+  --ember-alpha: 14%;
+  --cross-alpha: 22%;
+  --flame-alpha: 34%;
+  --cursor-alpha: 46%;
   /* Fallback for engines without @property; the initial value lives above. */
   --glow-pulse: 1;
   --clue-letter-scale: 1;
@@ -80,13 +82,35 @@
   --board-scale: 1.06;
 }
 
+/* Colour intensity: the reader's own saturation dial, next to Number colours
+   in the View cluster. Vivid is the tokens above; Soft steps the whole
+   rainbow down for tired eyes, Bold spends more of it everywhere. The
+   low-bloom tiers still cap the light afterwards (section 5). */
+#app.react-desktop-app[data-vibrance='soft'] {
+  --ramp-chroma: 0.1;
+  --ember-chroma: 0.55;
+  --flame-chroma: 1.4;
+  --ember-alpha: 10%;
+  --cross-alpha: 16%;
+  --flame-alpha: 26%;
+  --cursor-alpha: 36%;
+}
+#app.react-desktop-app[data-vibrance='bold'] {
+  --ramp-chroma: 0.2;
+  --ember-chroma: 0.8;
+  --flame-chroma: 1.9;
+  --ember-alpha: 17%;
+  --cross-alpha: 26%;
+  --flame-alpha: 39%;
+  --cursor-alpha: 50%;
+}
+
 /* Paper takes colour as ink: on a light ground the whole arc sits deeper so a
    tinted numeral, index or flame keeps its contrast on a pale square. The
    direction steps travel with it, so the lanes stay the same distance apart. */
 :root[style*='color-scheme: light']
   #app.react-desktop-app[data-ramp='on'] {
   --ramp-lightness: 0.42;
-  --ramp-chroma: 0.13;
 }
 
 /* ==========================================================================
@@ -571,19 +595,30 @@
    Three quiet layers, each answering a different question while moving across
    the board, and all of them off together with the Square notches choice.
    - Gate ticks: a black square that opens a slot carries a short bar on the edge
-     facing it, in the direction's own colour: orange where an Across word starts
-     (east edge), blue where a Down word starts (south edge). The reader learns
-     one rule — the colour of the tick is the lane the word will be in — and the
-     ticks of the direction being solved sit a little brighter than the other's.
+     facing it, in the hue of the word it opens — the east tick the Across word
+     starting to the east, the south tick the Down word starting below — each in
+     its lane's value, so the tick names both the word and its direction. A stub
+     that opens no word publishes no rank and keeps the quiet direction colour,
+     and the ticks of the direction being solved sit a little brighter than the
+     other's.
    - Numbers: the small index in a word's first square is the same rank colour as
      its chip in the ladder (section 1).
    - Ruler: the bezel carries a tick at every column and row, longer every fifth,
      so "three squares past the block" can be counted without losing the cursor.
    Marks come from the neighbouring squares alone (boardCues.js names which edges
-   are open; --open-e and --open-s are 0 or 1).
+   are open; --open-e and --open-s are 0 or 1; the opener's rank arrives as
+   --gate-across/--gate-down on the black square itself).
    ========================================================================== */
 #app.react-desktop-app .black-cell {
   position: relative;
+  --gate-across-hue: calc(
+    var(--ramp-start-hue) +
+      (var(--gate-across, 0) * (var(--ramp-end-hue) - var(--ramp-start-hue)))
+  );
+  --gate-down-hue: calc(
+    var(--ramp-start-hue) +
+      (var(--gate-down, 0) * (var(--ramp-end-hue) - var(--ramp-start-hue)))
+  );
 }
 
 #app.react-desktop-app[data-cues='on'] .black-cell::before,
@@ -622,6 +657,23 @@
 
 #app.react-desktop-app[data-cues='on'][data-direction='down'] .black-cell::after {
   opacity: var(--open-s, 0);
+}
+
+/* With Number colours on, each tick spends its opener's hue in its lane's
+   value — brighter for the Across tick, quieter for the Down one. Off, and
+   both ticks fall back to the quiet direction colours above. */
+#app.react-desktop-app[data-cues='on'][data-ramp='on'] .black-cell::before {
+  background: oklch(
+    calc(var(--ramp-lightness) + var(--across-lift)) var(--ramp-chroma)
+      var(--gate-across-hue)
+  );
+}
+
+#app.react-desktop-app[data-cues='on'][data-ramp='on'] .black-cell::after {
+  background: oklch(
+    calc(var(--ramp-lightness) - var(--down-drop)) var(--ramp-chroma)
+      var(--gate-down-hue)
+  );
 }
 
 /* The bezel ruler: four tick layers painted into the 5px frame around the board.

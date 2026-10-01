@@ -8,7 +8,7 @@ import { Finale, RaptureLayer, RaptureSparks } from './Rapture';
 import { useRapture } from './useRapture';
 import { cssVars } from './cssVars';
 import { createSelectionPresentation } from './selectionPresentation';
-import { cellCues, clueRampStyle, createClueRamp, groupRuns } from './boardCues';
+import { cellCues, clueRampStyle, createClueRamp, entryStartingAt, groupRuns } from './boardCues';
 import { normalizeViewSettings, readViewSettings, VIEW_DEFAULTS, viewAttributes, writeViewSettings } from './viewSettings';
 import { normalizeFutureKey } from './future/languageInput';
 
@@ -246,10 +246,23 @@ export default function CrosswordView({
         const withStyle = Object.keys(style).length > 0 ? { style } : {};
         if (!settings.cues) return { ...presentation, ...withStyle };
         const cues = cellCues(app.grid, rowIndex, cellIndex);
+        const gates = {};
+        if (settings.ramp && cues.style && ('--open-e' in cues.style || '--open-s' in cues.style)) {
+            // A gate tick names the word it opens: the east tick the Across
+            // word starting to the east, the south tick the Down word starting
+            // below. Stubs that open no word publish nothing and keep the
+            // quiet direction colour (section 4 of vision.css).
+            const east = entryStartingAt(app.crossword, rowIndex, cellIndex + 1, 'across');
+            const south = entryStartingAt(app.crossword, rowIndex + 1, cellIndex, 'down');
+            const eastRank = east ? clueRamp.get(east.clue_number) : undefined;
+            const southRank = south ? clueRamp.get(south.clue_number) : undefined;
+            if (eastRank !== undefined) gates['--gate-across'] = String(eastRank);
+            if (southRank !== undefined) gates['--gate-down'] = String(southRank);
+        }
         return {
             ...presentation,
             ...withStyle,
-            style: { ...style, ...cues.style },
+            style: { ...style, ...cues.style, ...gates },
             'data-start': cues.dataStart
         };
     };

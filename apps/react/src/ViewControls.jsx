@@ -4,6 +4,7 @@ import {
   GLYPH_LEVELS,
   LUMA_LEVELS,
   SCALE_LEVELS,
+  VIBRANCE_LEVELS,
   VIEW_DEFAULTS,
 } from './viewSettings.js';
 
@@ -40,6 +41,12 @@ const TIERS = [
         label: 'Number colours',
         options: [false, true],
         labels: { false: 'Off', true: 'On' },
+      },
+      {
+        key: 'vibrance',
+        label: 'Colour intensity',
+        options: VIBRANCE_LEVELS,
+        labels: { soft: 'Soft', vivid: 'Vivid', bold: 'Bold' },
       },
       {
         key: 'grouping',

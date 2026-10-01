@@ -124,6 +124,21 @@ export function clueRampStyle(ramp, clueNumber) {
   return value === undefined ? {} : { '--clue-ramp': String(value) };
 }
 
+/** The entry opening at one square in one direction, if the puzzle has one: a
+ *  gate tick on a black square names the word it opens, so the tick can wear
+ *  that word's own hue rather than just its lane's colour. A length-one stub
+ *  opens no word and finds no entry here, which is exactly when the tick keeps
+ *  its quiet direction colour. */
+export function entryStartingAt(entries, startY, startX, direction) {
+  if (!Array.isArray(entries)) return undefined;
+  return entries.find(
+    (entry) =>
+      entry?.direction === direction &&
+      entry?.start_y === startY &&
+      entry?.start_x === startX,
+  );
+}
+
 const OPEN_SIDES = [
   ['north', 'n', -1, 0],
   ['east', 'e', 0, 1],

@@ -47,6 +47,7 @@ describe('view settings', () => {
         luma: 'brightest',
         grouping: 'threes',
         rail: 'yes',
+        vibrance: 'blinding',
       }),
     });
     expect(readViewSettings({ storage })).toEqual(VIEW_DEFAULTS);
@@ -82,6 +83,7 @@ describe('board attributes', () => {
       'data-scale': 'normal',
       'data-rail': 'on',
       'data-ramp': 'on',
+      'data-vibrance': 'vivid',
       'data-grouping': 'auto',
       'data-cues': 'on',
       'data-glyph': 'regular',

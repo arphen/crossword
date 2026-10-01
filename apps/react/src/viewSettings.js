@@ -8,6 +8,7 @@ export const VIEW_SETTINGS_KEY = 'crossword.view.v1';
 
 export const LUMA_LEVELS = ['standard', 'dim', 'veil'];
 export const SCALE_LEVELS = ['compact', 'normal', 'full'];
+export const VIBRANCE_LEVELS = ['soft', 'vivid', 'bold'];
 export const GROUPING_MODES = ['auto', 'five', 'none'];
 export const GLYPH_LEVELS = ['regular', 'firm'];
 
@@ -16,6 +17,7 @@ export const VIEW_DEFAULTS = {
   scale: 'normal',
   rail: true,
   ramp: true,
+  vibrance: 'vivid',
   grouping: 'auto',
   cues: true,
   glyph: 'regular',
@@ -47,6 +49,7 @@ export function normalizeViewSettings(value, defaults = VIEW_DEFAULTS) {
     scale: pick(stored.scale, SCALE_LEVELS, defaults.scale),
     rail: boolean(stored.rail, defaults.rail),
     ramp: boolean(stored.ramp, defaults.ramp),
+    vibrance: pick(stored.vibrance, VIBRANCE_LEVELS, defaults.vibrance),
     grouping: pick(stored.grouping, GROUPING_MODES, defaults.grouping),
     cues: boolean(stored.cues, defaults.cues),
     glyph: pick(stored.glyph, GLYPH_LEVELS, defaults.glyph),
@@ -97,6 +100,7 @@ export function viewAttributes(settings) {
     'data-scale': settings.scale,
     'data-rail': settings.rail ? 'on' : 'off',
     'data-ramp': settings.ramp ? 'on' : 'off',
+    'data-vibrance': settings.vibrance,
     'data-grouping': settings.grouping,
     'data-cues': settings.cues ? 'on' : 'off',
     'data-glyph': settings.glyph,
