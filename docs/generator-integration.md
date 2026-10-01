@@ -40,4 +40,10 @@ The generator packages export TypeScript source for bundling, matching the previ
 
 ## Frontend status
 
-React is now the active daily-driver frontend and `make run` serves it on port 5001; Vue remains at `/legacy/` as the parity reference and fallback. The Vue JS/CSS/templates match the pre-React `origin/rebuild` baseline (`8523664`); the stash is untouched. The generator repository, vendored archives and application compatibility exports remain here, but generation is not yet wired into the React UI. That requires a separate bundling adapter. Existing tests validate covered behavior, not complete UI correctness or real WebGPU generation.
+React is now the frontend and `make run` serves it on port 5001. The Vue
+JS/CSS/templates matched the pre-React `origin/rebuild` baseline (`8523664`)
+and are shelved in git history. The generator repository, vendored archives
+and application compatibility exports remain here, but generation is not yet
+wired into the React UI. That requires a separate bundling adapter. Existing
+tests validate covered behavior, not complete UI correctness or real WebGPU
+generation.

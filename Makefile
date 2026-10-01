@@ -2,9 +2,9 @@
 .SHELL := /bin/sh
 
 .PHONY: help check-uv check-node doctor runtime-doctor install dev sync venv setup \
-	test test-js test-live core-test legacy-test legacy-test-live build legacy-assets react-assets \
+	test test-js test-live core-test legacy-test legacy-test-live build react-assets \
 	mutation-test \
-	legacy-run web-dev run future-worker future-worker-once legacy-smoke test-cov test-watch lint format clean \
+	legacy-run web-dev run future-worker future-worker-once test-cov test-watch lint format clean \
 	run-personal run-prod shell docker-build docker-run deps-update deps-list deps-tree \
 	npm-audit hooks-install map-update map-check check bootstrap all
 
@@ -14,8 +14,6 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m
 
-SMOKE_HOST ?= 127.0.0.1
-SMOKE_PORT ?= 5001
 CROSSWORD_XFILL_ROOT ?= ../crossword-generator/vendor/xfill
 
 help: ## Show the reproducible developer commands
@@ -59,9 +57,6 @@ sync: dev ## Alias for the canonical all-extras uv sync
 venv: check-uv ## Ensure the project uv environment exists
 	@if [ -d .venv ]; then echo "$(YELLOW).venv already exists; uv sync owns it.$(NC)"; else uv venv --python "$$(sed -e 's/[[:space:]]*#.*//' .python-version | sed '/^[[:space:]]*$$/d' | head -n 1); fi
 
-legacy-assets: check-node ## Generate ignored legacy/shared browser assets from package-lock.json
-	npm run build
-
 react-assets: check-node ## Build the React frontend served by Flask
 	npm run build --workspace @crossword/react-port
 
@@ -83,7 +78,7 @@ setup: check-uv check-node hooks-install ## Clean-clone setup using both pinned 
 	$(MAKE) build
 	@echo "$(GREEN)Setup complete. Run make doctor, make run, or make test.$(NC)"
 
-build: legacy-assets react-assets ## Build shared legacy assets and the React frontend
+build: react-assets ## Build the React frontend
 
 test: check-uv check-node ## Run local Python and JavaScript tests without live provider calls
 	uv run python -m pytest tests/ -m "not live_provider" -v
@@ -109,11 +104,11 @@ legacy-test: test ## Named legacy test entrypoint used by the continuity gate
 
 legacy-test-live: test-live ## Named opt-in live-provider test entrypoint
 
-legacy-run: run ## Start the same server; Vue fallback at http://127.0.0.1:5001/legacy/
+legacy-run: run ## Same server; React at http://127.0.0.1:5001/
 
 web-dev: run ## Alias for the React/Flask development server
 
-run: check-uv build ## Build both frontends; run React and the local puzzle worker at http://127.0.0.1:5001/
+run: check-uv build ## Build React; run it and the local puzzle worker at http://127.0.0.1:5001/
 	@set -eu; \
 	worker_log="$${TMPDIR:-/tmp}/crossword-future-worker.$$$$.log"; \
 	CROSSWORD_PRIVATE_CLUE_CHALLENGE="$${CROSSWORD_PRIVATE_CLUE_CHALLENGE:-1}" CROSSWORD_XFILL_ROOT="$(CROSSWORD_XFILL_ROOT)" uv run --no-sync python -c 'from src.crossword.app import app; assert app'; \
@@ -143,23 +138,6 @@ future-worker: check-uv check-node ## Process durable /future answer-grid draft 
 
 future-worker-once: check-uv check-node ## Process one queued /future answer-grid draft job
 	CROSSWORD_XFILL_ROOT="$(CROSSWORD_XFILL_ROOT)" uv run --no-sync python -m src.crossword.future_worker --once
-
-legacy-smoke: check-uv check-node legacy-assets ## Mount the legacy page on a local synthetic fixture
-	@set -eu; \
-	log_file=$$(mktemp "$${TMPDIR:-/tmp}/crossword-legacy-smoke.XXXXXX"); \
-	uv run python scripts/legacy-smoke-server.py --host "$(SMOKE_HOST)" --port "$(SMOKE_PORT)" >"$$log_file" 2>&1 & \
-	server_pid=$$!; \
-	cleanup() { kill "$$server_pid" 2>/dev/null || true; rm -f "$$log_file"; }; \
-	trap cleanup EXIT INT TERM; \
-	ready=0; \
-	for attempt in $$(seq 1 50); do \
-		if node -e 'fetch(process.argv[1]).then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))' "http://$(SMOKE_HOST):$(SMOKE_PORT)/legacy/"; then ready=1; break; fi; \
-		sleep 0.2; \
-	done; \
-	if [ "$$ready" -ne 1 ]; then cat "$$log_file"; echo "$(RED)Smoke server did not become ready.$(NC)"; exit 1; fi; \
-	set +e; node scripts/legacy-browser-smoke.mjs "http://$(SMOKE_HOST):$(SMOKE_PORT)/legacy/"; smoke_status=$$?; set -e; \
-	if [ "$$smoke_status" -eq 77 ]; then echo "$(YELLOW)Browser smoke skipped; set CHROME_BIN to a Chrome/Chromium executable.$(NC)"; \
-	elif [ "$$smoke_status" -ne 0 ]; then cat "$$log_file"; exit "$$smoke_status"; fi
 
 test-cov: check-uv ## Run Python coverage for the local test suite
 	uv run python -m pytest tests/ -m "not live_provider" --cov=src --cov-report=term-missing --cov-report=html

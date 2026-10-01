@@ -1,5 +1,5 @@
-// Mechanically ported from the curated Vue mobile behavior.
-// Regenerate with node scripts/snapshot-react-behavior.mjs; original files remain unchanged.
+// Solver behavior for the React mobile client (frozen port; the Vue
+// originals are shelved in git history).
 export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout, clearTimeout, setInterval, clearInterval, requestAnimationFrame, cancelAnimationFrame }) {
   return {
     el: '#app',

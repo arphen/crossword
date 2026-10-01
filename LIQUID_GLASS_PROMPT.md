@@ -90,13 +90,14 @@ Non-negotiable keeps:
 
 ## Hard boundaries
 
-- **Target is the React app** (`apps/react/src/`). The Flask/Vue legacy app is
-  a protected fallback: do **not** modify `src/crossword/templates/newapp.html`,
-  `src/crossword/static/main.js`, or any Vue-only assets. Note that
-  `src/crossword/static/styles.css` is loaded by **both** apps — either scope
-  your changes under a React-only wrapper (imported by `CrosswordView.jsx`,
-  e.g. a dedicated stylesheet with a root scope class) or, if you must touch
-  the shared sheet, verify after every change that the Vue page is visually
+- **Target is the React app** (`apps/react/src/`). The shelved Vue
+  frontend (git history only) is out of scope: do **not** recreate
+  `src/crossword/templates/newapp.html`, `src/crossword/static/main.js`,
+  or any Vue-only assets. Note that `src/crossword/static/styles.css`
+  is shared infrastructure — either scope your changes under a
+  React-only wrapper (imported by `CrosswordView.jsx`, e.g. a dedicated
+  stylesheet with a root scope class) or, if you must touch the shared
+  sheet, verify after every change that unrelated pages are visually
   unchanged. When in doubt, prefer the React-scoped stylesheet.
 - Preserve all puzzle logic and interaction behavior (selection, focus,
   keyboard handling, check/reveal scoring, completion persistence). This is a
@@ -105,20 +106,13 @@ Non-negotiable keeps:
   the listed directory boundaries and the staged working tree: commit only the
   files you changed, never the user's unrelated staged work. Pre-commit hooks
   are strict — no `--no-verify`, no weakening checks.
-- Existing tests pin some exact computed colors (`scripts/grid-click-browser-check.mjs`).
-  If you change the palette, update those **presentation pins only**, and keep
-  the script's behavior-parity assertions (Vue vs React selection behavior)
-  exactly as strict as they are.
 
 ## Verification gates (all must exit 0)
 
 Run from the repo root:
 
-- `npm --workspace @crossword/react-port test` (behavior/render parity, 22 tests)
-- `npm test -- --runInBand` (legacy Jest characterization, 11 tests)
-- `node scripts/grid-click-browser-check.mjs` (needs Flask on :5001 via
-  `make legacy-run` or the smoke server, and Vite dev on :5174; verifies
-  selection, focus, and direction colors in both apps)
+- `npm --workspace @crossword/react-port test` (React behavior/render tests)
+- `npm test -- --runInBand` (root Jest gate; currently zero suites)
 - `npm run typecheck && npm run lint && npx prettier --check .`
 
 Visual verification: serve the app (`make run` for the Flask backend on :5001,

@@ -2,7 +2,7 @@ import type { AxiosStatic } from 'axios';
 import type { Socket } from 'socket.io-client';
 
 /**
- * Legacy boundary: the Vue-compatible options adapter adds data, methods,
+ * The options adapter adds data, methods,
  * computed properties and $refs at runtime. This declaration checks its React
  * lifecycle contract, not the dynamically assembled app implementation.
  */

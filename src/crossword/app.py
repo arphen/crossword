@@ -118,7 +118,7 @@ class GameSession:
 REACT_DIST = os.path.join(current_dir, 'static', 'react')
 
 def _react_index():
-    """Serve React explicitly; a missing build must not silently select Vue."""
+    """Serve React explicitly; a missing build fails loudly instead of serving stale content."""
     if not os.path.exists(os.path.join(REACT_DIST, 'index.html')):
         return 'React build missing. Run make react-assets, then reload.', 503
     response = send_from_directory(REACT_DIST, 'index.html')
@@ -135,16 +135,6 @@ def index():
 def future_index():
     """Personal onboarding, followed by the existing React solver."""
     return _react_index()
-
-@app.route('/legacy')
-@app.route('/legacy/')
-def legacy_index():
-    """Legacy Vue frontend: parity reference and fallback, not the default."""
-    return render_template('newapp.html')
-
-@app.route('/legacy/mobile/<room_id>/<role>')
-def legacy_mobile_client(room_id, role):
-    return render_template('mobile.html', room_id=room_id, role=role)
 
 @app.route('/assets/<path:filename>')
 def react_assets(filename):

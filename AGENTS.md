@@ -2,22 +2,21 @@
 
 ## Overview
 
-Crossword is an online/offline crossword-solving application with a Flask/Socket.IO backend, a legacy Vue interface, and a React port. TypeScript packages separate domain logic, application use cases, and persistence; the legacy provider integration remains a private continuity bridge.
+Crossword is an online/offline crossword-solving application with a Flask/Socket.IO backend and a React frontend. TypeScript packages separate domain logic, application use cases, and persistence; the legacy provider integration remains a private continuity bridge. (The Vue frontend is shelved in git history.)
 
 ## Tech Stack & Versions
 
 - Python 3.13 (`.python-version`); uv + Hatchling. Declared minimums: Flask 3.0, Pydantic 2.5.2, Flask-SQLAlchemy 3.0, Flask-SocketIO 5.5.1; SQLite storage. Exact resolutions live in `uv.lock`.
 - Node 24.20.0 (`.node-version`), npm 11.19.0; npm workspaces and JavaScript/TypeScript 5.9.2.
-- Legacy Vue 2.7.16; React/React DOM 19.1.1 and Vite 7.1.4 in `apps/react`; Axios 1.13.2, Socket.IO client 4.8.3.
+- React/React DOM 19.1.1 and Vite 7.1.4 in `apps/react`; Axios 1.13.2, Socket.IO client 4.8.3.
 - pytest (declared >=7.4.3), Jest 29.7.0, Vitest 3.2.4, Playwright 1.55.0; Ruff 0.13.2, ESLint 9.36.0, Prettier 3.6.2.
 
 ## Critical Entry Points
 
 1. `run.py` — starts the Flask/Socket.IO server on port 5001.
 2. `src/crossword/app.py` — app initialization, HTTP routes, and multiplayer socket handlers.
-3. `src/crossword/static/main.js` — legacy desktop Vue interface; mobile counterpart is `mobile.js`.
-4. `apps/react/src/main.jsx` — mounts the React desktop/mobile interface and controller.
-5. `packages/application/src/index.ts` — application package's public use-case entry point.
+3. `apps/react/src/main.jsx` — mounts the React desktop/mobile interface and controller.
+4. `packages/application/src/index.ts` — application package's public use-case entry point.
 
 ## Repository Map
 
@@ -41,7 +40,7 @@ Run from the repository root. Prefer existing Make targets; use direct commands 
 | React port tests | `npm --workspace @crossword/react-port test` |
 | Lint | `uv run --no-sync ruff check .` and `npm run lint` (`make lint` is only a placeholder) |
 | Type / format checks | `npm run typecheck` / `npm run format:check` |
-| Legacy development server | `make run` (port 5001; rebuilds legacy assets) |
+| Legacy development server | `make run` (port 5001; rebuilds React assets) |
 | Legacy build | `make build` |
 | React development / build | `npm --workspace @crossword/react-port run dev` / `npm --workspace @crossword/react-port run build` |
 | Update / check map | `make map-update` / `make map-check` |

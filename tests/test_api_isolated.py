@@ -160,13 +160,10 @@ def test_missing_react_build_is_explicit(api, tmp_path, monkeypatch, route):
     assert b"make react-assets" in response.data
 
 
-def test_explicit_vue_fallbacks(api):
+def test_legacy_vue_routes_are_gone(api):
     client = api.app.test_client()
     for route in ("/legacy/", "/legacy/mobile/test/across"):
-        response = client.get(route)
-        assert response.status_code == 200
-        assert b"react-root" not in response.data
-        assert b"vue.js" in response.data
+        assert client.get(route).status_code == 404
 
 
 def test_harness_rejects_live_http():

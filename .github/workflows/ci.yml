@@ -161,10 +161,8 @@ jobs:
       - run: uv sync --all-extras --frozen
       - run: npm ci --ignore-scripts
       - run: npx --no-install playwright install --with-deps chromium
-      - name: Build frontend and legacy assets
-        run: |
-          npm run build
-          npm --workspace @crossword/react-port run build
+      - name: Build React frontend
+        run: npm run build
       # Playwright owns both processes, waits for HTTP readiness, and cleans up.
       # The backend uses an isolated SQLite database (no external DB required).
       - run: npm run test:e2e

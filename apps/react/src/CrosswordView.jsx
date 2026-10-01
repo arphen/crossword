@@ -65,7 +65,7 @@ export function renderClueSurface(text, annotate = false) {
     return parts.length ? parts : text;
 }
 
-// Vue-style class bindings, without a Vue runtime or additional DOM wrappers.
+// Conditional class bindings, without additional DOM wrappers.
 function classes(...values) {
     return values.map(value => {
         if (Array.isArray(value)) return classes(...value);

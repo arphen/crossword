@@ -78,7 +78,6 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
 - `apps/react/src/Rapture.jsx` — `RaptureSparks:11`, `RaptureLayer:34`, `Confetti:50`, `Finale:73`
 - `apps/react/src/ViewControls.jsx` — `optionValue:81`, `ViewControls:83`, `choose:84`
-- `apps/react/src/behavior-parity.test.js`
 - `apps/react/src/behavior/complete.test.js`
 - `apps/react/src/behavior/desktop.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/desktop.js` — `createOptions:3`, `data:6`, `isHalfCompleted:85`, `weekdayOptions:91`, `selectedWeekday:102`, `activeDirection:105`, `created:114`, `beforeUnmount:144`, `checkAndStartCaching:151`, `needsMore:154`, `handleOnlineStatus:182`, `updateCachedCounts:191`, `updateSolvedCounts:198`, `isPuzzleSolved:204`, `isPuzzleSolvedBackend:209`, `markPuzzleSolved:219` (+80 more)
@@ -159,7 +158,6 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/tokenManifest.test.js`
 - `apps/react/src/lattice.css`
 - `apps/react/src/main.jsx` — `FutureApp:14`, `App:17`
-- `apps/react/src/mobile-render-parity.test.jsx`
 - `apps/react/src/mobile.css`
 - `apps/react/src/parity.test.js`
 - `apps/react/src/selection-presentation.test.js`
@@ -219,7 +217,6 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/private-weekday-mechanic-study-v1.real-gemma4-26b-thursday-20260928.json`
 - `docs/future-onboarding.md`
 - `docs/generator-integration.md`
-- `docs/legacy-assets.md`
 - `docs/mutation-testing.md`
 - `docs/npm-audit-baseline.md`
 - `docs/plans/06_PERSONAL_EPISTEME.md` — large file; path only
@@ -286,7 +283,6 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 ## scripts
 
-- `scripts/build-legacy-assets.mjs`
 - `scripts/calibration-validator.cjs`
 - `scripts/ci-server.py` — `deny_outbound:25`, `synthetic_puzzle:29`, `main:65`
 - `scripts/doctor.py` — `read_pin:14`, `command_version:22`, `node_package_manager:36`, `python_version:44`, `main:48`
@@ -295,25 +291,18 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/fill-quality-compare.py` — `main:22`
 - `scripts/fill-quality-study.py` — `main:23`
 - `scripts/forbidden-content.json`
-- `scripts/grid-click-browser-check.mjs` — `snapshot:29`, `arrowSnapshot:56`, `destination:106`
-- `scripts/legacy-browser-smoke.mjs` — `browser:13`
-- `scripts/legacy-smoke-server.py` — `synthetic_crossword:23`, `main:61`
 - `scripts/live-model-holdout.py` — `_Response:33`, `_Response.__init__:34`, `_Response.raise_for_status:38`, `_Response.json:42`, `_Session:46`, `_Session.request:47`, `_Session.get:62`, `_Session.post:65`, `_canonical:69`, `_sha256:79`, `_text:83`, `_shape_gate:87`, `_tags:142`, `_observation:156`, `main:229`
-- `scripts/mobile-browser-parity.mjs` — `capture:40`, `walk:48`, `activeCell:66`
 - `scripts/model-evaluation-report.py` — `main:18`
 - `scripts/private-clue-derivation-gate.py` — `build_pairs:111`, `evaluate:155`, `degree_rule_gaps:174`, `corpus_digest:191`, `real_corpus_status:196`, `receipt_body:217`, `main:276`
 - `scripts/private-clue-review-export.py` — `main:26`
 - `scripts/private-clue-study.py` — `_base_url:37`, `_request:48`, `main:75`
 - `scripts/private-fill-study.py` — `_request_puzzle:31`, `_validate_local_base_url:62`, `_case_from_response:73`, `main:93`
 - `scripts/private-weekday-mechanic-study.py` — `_canonical:34`, `_digest:44`, `_validate_loopback:48`, `_request:59`, `_evaluate:88`, `main:140`
-- `scripts/react-browser-parity.mjs` — `character:18`, `snapshot:71`, `normalize:73`, `walk:74`, `checkpoint:78`, `cell:105`, `focusIs:107`, `selected:124`, `coordinates:130`
 - `scripts/reflection-bridge.cjs`
 - `scripts/runtime_doctor.py` — `_preferred_model_tags:51`, `_sha512_integrity:72`, `_load_json:80`, `_check_runtime_archive:88`, `_check_runtime_cli:124`, `_configured_xfill_root:159`, `_check_xfill_engine:169`, `_ollama_url:193`, `_check_ollama:209`, `_private_hint_fill_words:247`, `_check_private_domain_hints:266`, `collect_report:299`, `_print_report:316`, `main:340`
 - `scripts/scan-forbidden-content.mjs` — `patterns:24`, `walk:35`, `isExempt:47`, `violations:82`, `exemptHits:83`
 - `scripts/sibling-construction-simulation.cjs` — `loadSimulator:15`
-- `scripts/snapshot-react-behavior.mjs`
 - `scripts/solve-analyzer.cjs` — `main:48`
-- `scripts/watermark-browser-check.mjs` — `measure:27`, `pseudo:34`, `state:69`
 
 ## src
 
@@ -323,7 +312,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `src/crossword/admitted_pack_config.py` — `AdmittedPackConfigError:32`, `AdmittedPackConfigError.__init__:42`, `ConfiguredAdmittedPack:47`, `_DuplicatePinKey:61`, `_unique_object:65`, `_reject_json_constant:74`, `_required_string:78`, `_parse_source_pins:87`, `_configured_pack_pins:139`, `load_configured_admitted_pack:157`, `load_configured_admitted_candidates:195`
 - `src/crossword/admitted_pack_loader.py` — `AdmittedPackLoadError:31`, `_DuplicateObjectKey:35`, `LoadedAdmittedPack:40`, `_object_without_duplicate_keys:47`, `_reject_non_json_constant:56`, `_validate_pins:60`, `_parse_and_resolve:85`, `_parse_pack:107`, `_parse_resolve_and_project:128`, `load_admitted_pack_bytes:159`, `load_admitted_pack_bytes_with_content:180`, `load_admitted_pack_file:199`, `load_admitted_pack_file_with_content:224`
 - `src/crossword/admitted_retrieval_api.py` — `_error:70`, `_valid_uuid:77`, `_local_origin:84`, `_now:89`, `_canonical_digest:93`, `_read_snapshot:98`, `_selection_limit:163`, `_is_record:176`, `_finite_number:180`, `_valid_id_list:189`, `_valid_score_components:198`, `_valid_candidate:206`, `_valid_compiled_brief:232`, `read_retrieval_brief:349`
-- `src/crossword/app.py` — `GameSession:96`, `GameSession.__init__:97`, `GameSession.update_cell:106`, `GameSession.to_dict:109`, `_react_index:120`, `index:129`, `future_index:135`, `legacy_index:141`, `legacy_mobile_client:146`, `react_assets:150`, `get_crossword:158`, `get_crossword_by_date:164`, `daterange:194`, `get_random_crossword:205`, `grid:252`, `get_completed_puzzles:259` (+11 more)
+- `src/crossword/app.py` — `GameSession:96`, `GameSession.__init__:97`, `GameSession.update_cell:106`, `GameSession.to_dict:109`, `_react_index:120`, `index:129`, `future_index:135`, `react_assets:140`, `get_crossword:148`, `get_crossword_by_date:154`, `daterange:184`, `get_random_crossword:195`, `grid:242`, `get_completed_puzzles:249`, `check_puzzle_completed:260`, `mark_puzzle_completed:273` (+9 more)
 - `src/crossword/calibration_api.py` — `CalibrationSessionRecord:25`, `CalibrationRuntimeUnavailable:35`, `CalibrationPayloadRejected:39`, `_error:43`, `_canonical_json:50`, `_valid_uuid:54`, `_same_origin:63`, `_read_bounded_json:68`, `_catalog_stimuli:87`, `_run_validator:99`, `_sequences:144`, `_has_active_response:157`, `_validate_host_invariants:180`, `_validate_append:206`, `_etag:239`, `_session_response:243` (+4 more)
 - `src/crossword/calibration_hypothesis_api.py` — `CalibrationHypothesisDeckRecord:62`, `CalibrationHypothesisResponseRecord:79`, `CalibrationHypothesisActionRecord:96`, `HypothesisRuntimeUnavailable:114`, `_canonical:118`, `_hash:122`, `_valid_uuid:126`, `_local_origin:135`, `_error:140`, `_read_json:147`, `_catalog:168`, `_calibration_and_profile:183`, `_active_chosen_source:216`, `_text:303`, `_reject_player_inference:316`, `_validate_model_paths:322` (+32 more)
 - `src/crossword/clue_grammar_bridge.py` — `_issue:71`, `_signals:78`, `_surface_signal_present:85`, `_signal_matches_literal:108`, `validate_surface_clue_family:127`, `summarize_surface_clue_families:231`
@@ -373,11 +362,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `src/crossword/scraper.py` — `main:11`, `usecase:19`, `CSVWriter:29`, `CSVWriter.__init__:30`, `CSVWriter.save:37`
 - `src/crossword/session_journal.py` — `_private_surface_clue_family:67`, `PersonalSolveSession:97`, `PersonalSolveEvent:111`, `_canonical:127`, `_digest:131`, `_canonical_uuid:135`, `_origin_is_local:144`, `_error:149`, `_bounded_json_body:156`, `_uuid_list:167`, `_token:177`, `_normalized_token:188`, `_cell_id:192`, `_is_iso_datetime:196`, `_validate_initial_grid:210`, `_manifest_indexes:265` (+5 more)
 - `src/crossword/solve_replay.py` — `SolveReplayUnavailable:16`, `SolveReplayRejected:20`, `analyze_solve_session:24`, `analyze_solve_session_v2:29`, `validate_solve_puzzle_v2:34`, `evaluate_puzzle_v2_publication_gate:43`, `_analyze_solve_session:90`, `_run_analyzer:97`
-- `src/crossword/static/main.js` — `data:7`, `isHalfCompleted:85`, `weekdayOptions:91`, `selectedWeekday:102`, `activeDirection:105`, `created:114`, `beforeUnmount:144`, `checkAndStartCaching:151`, `needsMore:154`, `handleOnlineStatus:182`, `updateCachedCounts:191`, `updateSolvedCounts:198`, `isPuzzleSolved:204`, `isPuzzleSolvedBackend:209`, `markPuzzleSolved:219`, `existingEntry:231` (+81 more)
-- `src/crossword/static/mobile.js` — `myEntries:18`, `sortedEntries:22`, `checkButtonLabel:32`, `toggleCheck:37`, `clearIncorrectAndMarkSolved:47`, `isPerfect:56`, `isEntryFilled:90`, `isCellCorrect:95`, `loadPuzzle:101`, `getCellValue:110`, `getCoordinates:114`, `selectEntry:124`, `focusInput:133`, `handleInput:142`, `handleKeydown:166`, `requestSwap:193` (+2 more)
 - `src/crossword/static/styles.css`
-- `src/crossword/templates/mobile.html`
-- `src/crossword/templates/newapp.html`
 - `src/crossword/token_construction.py` — `NativeTokenConstructionRejected:26`, `_entry_id:30`, `_entry_cells:34`, `_bounded_text:53`, `_grid_dimensions:62`, `construct_native_token_grid:72`, `validate_native_token_cells:203`, `emit_single_cell_language_tokens:340`, `native_token_hints:424`
 - `src/crossword/v2_session_journal.py` — `FuturePuzzleV2PublishedRecord:54`, `FuturePuzzleV2SolveSession:71`, `FuturePuzzleV2SolveEvent:86`, `FuturePuzzleV2SolveAnalysis:104`, `_canonical:115`, `_v2_envelope_error:119`, `_validate_publication_receipt:126`, `_validated_published_record:148`, `_validated_profile_candidate:181`, `_validated_session_puzzle:216`, `_indexes:241`, `_validate_event_v2:277`, `_validate_v2_initial_grid:300`, `_writer_matches:307`, `_session_error:314`, `_recompute_final_v2_analysis:318` (+4 more)
 - `src/crossword/weekday_mechanics_evaluation.py` — `_canonical:23`, `_digest:33`, `_ordinary_answer:37`, `_board_and_provenance:47`, `_theme_entries:64`, `_mechanic_base:81`, `evaluate_thursday_mechanic_board:89`, `_evaluate_fallback:238`, `_entry_id:279`, `_uncertainty:283`, `_report:292`, `evaluate_thursday_mechanic_suite:320`, `evaluate_sunday_size_gate:354`
@@ -385,11 +370,9 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 ## tests
 
 - `tests/__init__.py`
-- `tests/characterization/legacy_ui_behavior.test.js`
 - `tests/characterization/test_legal_fixtures.py`
 - `tests/e2e/crossword.spec.ts`
 - `tests/e2e/fixtures.ts`
-- `tests/js/main.test.js`
 - `tests/legal/test_content_scan.py`
 - `tests/test_admitted_pack.py`
 - `tests/test_admitted_pack_config.py`

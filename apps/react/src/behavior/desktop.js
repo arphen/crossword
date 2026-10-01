@@ -1,5 +1,5 @@
-// Mechanically ported from the curated Vue desktop behavior.
-// Regenerate with node scripts/snapshot-react-behavior.mjs; original files remain unchanged.
+// Solver behavior for the React desktop client (frozen port; the Vue
+// originals are shelved in git history).
 export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout, clearTimeout, setInterval, clearInterval, requestAnimationFrame, cancelAnimationFrame }) {
   return {
     delimiters: ['[[', ']]'],
@@ -136,7 +136,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
         // Listen for multiplayer updates
         socket.on('cell_updated', (data) => {
             if (this.grid && this.grid[data.row] && typeof this.grid[data.row][data.col] !== 'undefined') {
-                // Use Vue.set to ensure reactivity
+                // Use the reactive setter to ensure updates propagate
                 this.$set(this.grid[data.row], data.col, data.value);
             }
         });
