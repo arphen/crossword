@@ -5,12 +5,17 @@ The ledger is answer-bearing and stays on this host
 (``private-clue-specimens-v1.local.json``, gitignored, never committed).
 Only counts plus a digest are committed, via ``attest``.
 
-Workflow for the labeling session (~40 minutes, 60-100 pairs):
-  seed    build the ledger from hand-listed §0 surfaces plus a corpus sample
-  status  show labeled/unlabeled counts and incomplete pairs
-  label   record one verdict: label --id <id> --verdict <verdict> [--note ...]
-  pair    link two records for better-of-pair: pair --ids <a> <b>
-  attest  validate the closed ledger and write the committed attestation
+The 14 hand-listed §0 surfaces are spec reference: pre-labeled by the
+spec, read-only, never judged. Scaffold placeholders are skipped at seed
+by string match. The operator judges only the blind queue — real model
+surfaces with genuinely unknown verdicts.
+
+Workflow for the labeling session:
+  seed    build the ledger: spec reference + blind queue (corpus + harvest)
+  status  show blind/reference counts and open blind ids
+  label   record one blind verdict: label --id <id> --verdict <verdict>
+  pair    link two blind records for better-of-pair: pair --ids <a> <b>
+  attest  validate the closed blind queue and write the attestation
 
 Closed verdicts: leak, tautology, name-slot, pseudo-pun, acceptable,
 better-of-pair (winner of a linked pair only).
@@ -34,6 +39,7 @@ from src.crossword.clue_specimens import (  # noqa: E402
     VERDICTS,
     ledger_attestation,
     ledger_path,
+    load_harvest,
     load_ledger,
     save_ledger,
     seed_records,
@@ -61,15 +67,20 @@ def command_seed(args) -> int:
     target = Path(args.out) if args.out else ledger_path()
     if target.is_file() and not args.force:
         raise SystemExit(f"ledger exists at {target}; pass --force to rebuild")
-    records = seed_records(args.corpus_n, (load_corpus().get("records") or []))
+    harvest = load_harvest()
+    records, report = seed_records(
+        args.corpus_n,
+        (load_corpus().get("records") or []),
+        (harvest.get("records") or []),
+        args.harvest_n,
+    )
     save_ledger(records, target)
     print(
         json.dumps(
             {
                 "out": os.path.relpath(target, ROOT) if _is_relative(target) else str(target),
-                "records": len(records),
-                "handListed": sum(1 for r in records if r["source"].startswith("hand-listed")),
-                "corpusSampled": sum(1 for r in records if r["source"] == "local-corpus"),
+                **report,
+                "harvestPresent": harvest["present"],
             },
             indent=2,
         )
@@ -91,6 +102,11 @@ def command_label(args) -> int:
         raise SystemExit(f"verdict must be one of {list(VERDICTS)}")
     for record in records:
         if record.get("id") == args.id:
+            if record.get("origin") == "spec":
+                raise SystemExit(
+                    f"{args.id!r} is spec reference, decided by the spec — "
+                    "judge the blind queue instead"
+                )
             record["verdict"] = args.verdict
             if args.note:
                 record["note"] = args.note
@@ -104,9 +120,11 @@ def command_label(args) -> int:
 def command_pair(args) -> int:
     records = _read_ledger(args.ledger)
     first, second = args.ids
-    found = {record.get("id") for record in records}
+    found = {record.get("id"): record for record in records}
     if first not in found or second not in found:
         raise SystemExit("both ids must exist in the ledger")
+    if found[first].get("origin") == "spec" or found[second].get("origin") == "spec":
+        raise SystemExit("reference records keep their spec pairs; link blind records")
     pair_id = f"pair-{first}-{second}"
     for record in records:
         if record.get("id") in (first, second):
@@ -119,7 +137,8 @@ def command_pair(args) -> int:
 def command_status(args) -> int:
     records = _read_ledger(args.ledger)
     counts: dict = {}
-    unlabeled = [record.get("id") for record in records if record.get("verdict") is None]
+    blind = [record for record in records if record.get("origin") != "spec"]
+    unlabeled = [record.get("id") for record in blind if record.get("verdict") is None]
     for record in records:
         verdict = record.get("verdict")
         if verdict is not None:
@@ -129,6 +148,10 @@ def command_status(args) -> int:
         json.dumps(
             {
                 "records": len(records),
+                "reference": len(records) - len(blind),
+                "blind": len(blind),
+                "blindLabeled": len(blind) - len(unlabeled),
+                "blindUnlabeled": len(unlabeled),
                 "labeled": sum(counts.values()),
                 "unlabeled": len(unlabeled),
                 "verdictCounts": dict(sorted(counts.items())),
@@ -145,7 +168,11 @@ def command_attest(args) -> int:
     records = _read_ledger(args.ledger)
     problems = validate_ledger(records)
     attestation = ledger_attestation(records)
-    unlabeled = attestation["unlabeled"]
+    unlabeled = attestation["blindUnlabeled"]
+    blind = sum(1 for r in records if r.get("origin") != "spec")
+    if not blind:
+        print(json.dumps({"attested": False, "error": "no blind queue; seed real surfaces first"}, indent=2))
+        return 1
     if problems or unlabeled:
         print(
             json.dumps(
@@ -161,13 +188,16 @@ def command_attest(args) -> int:
         "kind": "counts-only",
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "claim": (
-            "closed human verdicts on real clue/answer pairs; every later "
-            "scorer is scored against these ids and verdicts"
+            "closed blind human verdicts on real clue/answer pairs, plus "
+            "spec-defined reference; every later scorer reports blind "
+            "agreement against these ids and verdicts"
         ),
         "ledger": attestation,
         "knownLimits": [
             "the ledger is answer-bearing, local-only, and never committed",
             "verdicts judge the clue/answer relation, not semantic truth or player difficulty",
+            "reference verdicts are spec-defined worked examples, not independent judgment",
+            "scaffold placeholders are excluded deterministically, never queued",
         ],
     }
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -192,6 +222,7 @@ def main() -> int:
     seed = sub.add_parser("seed", help="build the ledger")
     seed.add_argument("--out", type=Path, default=None)
     seed.add_argument("--corpus-n", type=int, default=48)
+    seed.add_argument("--harvest-n", type=int, default=48)
     seed.add_argument("--force", action="store_true")
     label = sub.add_parser("label", help="record one verdict")
     label.add_argument("--id", required=True)

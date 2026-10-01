@@ -1,10 +1,12 @@
 """Same-origin specimen labeling API for the closed clue-verdict ledger (Q02).
 
 The ledger is answer-bearing and lives on this host only; the browser on
-the same host reads and labels it through these routes. Nothing here leaves
-the loopback device: every mutating route requires a local origin, bodies
-are size-bounded, and the attestation writes to a fixed dated filename
-under docs/evidence (counts plus digest only, never clue text).
+the same host judges the blind queue through these routes. Spec reference
+records are read-only (decided by the spec, never voted on); scaffold
+placeholders never enter the ledger. Nothing here leaves the loopback
+device: every mutating route requires a local origin, bodies are
+size-bounded, and the attestation writes to a fixed dated filename under
+docs/evidence (counts plus digest only, never clue text).
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ from .clue_specimens import (
     VERDICTS,
     ledger_attestation,
     ledger_path,
+    load_harvest,
     load_ledger,
     save_ledger,
     seed_records,
@@ -93,16 +96,27 @@ def _ledger_or_missing():
 def _summary(records):
     counts: dict = {}
     unlabeled = 0
+    blind = 0
+    blind_unlabeled = 0
     for record in records:
         verdict = record.get("verdict") if isinstance(record, dict) else None
+        is_blind = not isinstance(record, dict) or record.get("origin") != "spec"
+        if is_blind:
+            blind += 1
         if verdict is None:
             unlabeled += 1
+            if is_blind:
+                blind_unlabeled += 1
         else:
             counts[verdict] = counts.get(verdict, 0) + 1
     return {
         "records": len(records),
+        "reference": len(records) - blind,
+        "blind": blind,
+        "blindLabeled": blind - blind_unlabeled,
+        "blindUnlabeled": blind_unlabeled,
         "labeled": sum(counts.values()),
-        "unlabeled": unlabeled,
+        "unlabeled": blind_unlabeled,
         "verdictCounts": dict(sorted(counts.items())),
         "problems": validate_ledger(records),
     }
@@ -135,27 +149,35 @@ def specimen_status():
 
 @specimen_api.post("/api/future/specimens/seed")
 def seed_specimens():
-    """Build the ledger from hand-listed surfaces plus a corpus sample."""
+    """Build the ledger: spec reference plus the blind queue."""
     if not _local_origin():
         return _error("Cross-origin specimen writes are not allowed", 403)
-    body, error = _read_body({"corpusN", "force"})
+    body, error = _read_body({"corpusN", "harvestN", "force"})
     if error is not None:
         return error
     corpus_n = body.get("corpusN", 48)
     if not isinstance(corpus_n, int) or not 0 <= corpus_n <= 200:
         return None, _error("corpusN must be an integer 0-200", 422)
+    harvest_n = body.get("harvestN", 48)
+    if not isinstance(harvest_n, int) or not 0 <= harvest_n <= 200:
+        return None, _error("harvestN must be an integer 0-200", 422)
     target = ledger_path()
     if target.is_file() and body.get("force") is not True:
         return _error("Specimen ledger exists; pass force true to rebuild", 409)
     corpus = load_corpus()
-    records = seed_records(corpus_n, corpus.get("records") or [])
+    harvest = load_harvest()
+    records, report = seed_records(
+        corpus_n, corpus.get("records") or [], harvest.get("records") or [], harvest_n
+    )
     save_ledger(records, target)
-    return jsonify({"version": SPECIMEN_VERSION, "summary": _summary(records)})
+    summary = _summary(records)
+    summary["seed"] = report
+    return jsonify({"version": SPECIMEN_VERSION, "summary": summary})
 
 
 @specimen_api.post("/api/future/specimens/<record_id>/verdict")
 def record_verdict(record_id):
-    """Record one closed verdict for one ledger record."""
+    """Record one closed verdict for one blind ledger record."""
     if not _local_origin():
         return _error("Cross-origin specimen writes are not allowed", 403)
     if not _RECORD_ID.fullmatch(record_id or ""):
@@ -174,6 +196,11 @@ def record_verdict(record_id):
         return load_error
     for record in records:
         if record.get("id") == record_id:
+            if record.get("origin") == "spec":
+                return _error(
+                    "Reference records are decided by the spec; judge the blind queue",
+                    422,
+                )
             record["verdict"] = verdict
             record["note"] = note if isinstance(note, str) and note else record.get("note")
             record["labeledAt"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -198,9 +225,11 @@ def link_pair():
     records, load_error = _ledger_or_missing()
     if load_error is not None:
         return load_error
-    found = {record.get("id") for record in records}
+    found = {record.get("id"): record for record in records}
     if first not in found or second not in found:
         return _error("both pair members must exist in the ledger", 404)
+    if found[first].get("origin") == "spec" or found[second].get("origin") == "spec":
+        return _error("reference records keep their spec pairs; link blind records", 422)
     pair_id = f"pair-{first}-{second}"
     for record in records:
         if record.get("id") in (first, second):
@@ -211,7 +240,7 @@ def link_pair():
 
 @specimen_api.post("/api/future/specimens/attest")
 def attest_specimens():
-    """Validate the closed ledger and write the committed attestation."""
+    """Validate the closed blind queue and write the committed attestation."""
     if not _local_origin():
         return _error("Cross-origin specimen writes are not allowed", 403)
     body, error = _read_body(set())
@@ -220,15 +249,29 @@ def attest_specimens():
     records, load_error = _ledger_or_missing()
     if load_error is not None:
         return load_error
+    blind = [record for record in records if record.get("origin") != "spec"]
+    if not blind:
+        return (
+            jsonify(
+                {
+                    "attested": False,
+                    "error": "no blind queue; seed real surfaces first",
+                    "problems": [],
+                    "unlabeled": 0,
+                    "summary": _summary(records),
+                }
+            ),
+            422,
+        )
     problems = validate_ledger(records)
     attestation = ledger_attestation(records)
-    if problems or attestation["unlabeled"]:
+    if problems or attestation["blindUnlabeled"]:
         return (
             jsonify(
                 {
                     "attested": False,
                     "problems": problems,
-                    "unlabeled": attestation["unlabeled"],
+                    "unlabeled": attestation["blindUnlabeled"],
                     "summary": _summary(records),
                 }
             ),
@@ -244,13 +287,15 @@ def attest_specimens():
                 "kind": "counts-only",
                 "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 "claim": (
-                    "closed human verdicts on real clue/answer pairs; every later "
-                    "scorer is scored against these ids and verdicts"
+                    "closed blind human verdicts on real clue/answer pairs, plus "
+                    "spec-defined reference; every later scorer reports blind "
+                    "agreement against these ids and verdicts"
                 ),
                 "ledger": attestation,
                 "knownLimits": [
                     "the ledger is answer-bearing, local-only, and never committed",
                     "verdicts judge the clue/answer relation, not semantic truth",
+                    "reference verdicts are spec-defined worked examples, not independent judgment",
                 ],
             },
             indent=2,
