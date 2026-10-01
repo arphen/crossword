@@ -181,6 +181,15 @@ export default function CrosswordView({
         const active = settings.ramp ? clueRampStyle(clueRamp, activeEntry.clue_number) : {};
         return { style: { ...cell.style, ...active }, 'data-entry-index': cell.index, title: cell.title };
     };
+    // A crossing box belongs to two words but the ladder reads hue as identity:
+    // inside an affected row it wears its own row's rank at flame strength,
+    // while the board and the active row burn in the active word.
+    const boxPresentation = (entry, rowIndex, cellIndex) => {
+        const base = cellPresentation(rowIndex, cellIndex);
+        if (base['data-entry-index'] === undefined) return base;
+        if (!settings.ramp || !app.isClueAffected(entry)) return base;
+        return { ...base, style: { ...base.style, ...clueRampStyle(clueRamp, entry.clue_number) } };
+    };
     const activeEntryCellClasses = (rowIndex, cellIndex) => {
         const cell = selection.get(`${rowIndex},${cellIndex}`);
         if (!cell) return {};
@@ -278,7 +287,7 @@ export default function CrosswordView({
             const col = entry.start_x + (entry.direction === 'across' ? index : 0);
             const rawChar = app.grid[row]?.[col] || ' ';
             const char = displayGridValue(rawChar, row, col) || ' ';
-            return <span key={index} {...cellPresentation(row, col)} className={classes('state', {
+            return <span key={index} {...boxPresentation(entry, row, col)} className={classes('state', {
                 red: app.isChecking && rawChar.toLowerCase() !== character.letters.toLowerCase() && rawChar !== ' ',
                 green: app.isChecking && rawChar.toLowerCase() === character.letters.toLowerCase() && rawChar !== ' ',
                 'intersection-cell-across': app.activeDirection === 'across' && app.isCellInAffectedClue(entry, index),
@@ -315,7 +324,17 @@ export default function CrosswordView({
         <div id="app" className={classes({ 'half-completed': app.isHalfCompleted, 'react-desktop-app': true })}
             data-direction={app.activeDirection || 'across'}
             {...viewAttributes(settings)}
-            style={/** @type {React.CSSProperties} */ ({ '--grid-columns': app.grid[0]?.length || 15, '--grid-rows': app.grid.length || 15 })}>
+            style={/** @type {React.CSSProperties} */ ({
+                '--grid-columns': app.grid[0]?.length || 15,
+                '--grid-rows': app.grid.length || 15,
+                // The highlighted word's rank for the background layers — lane
+                // watermarks and grid wash — that have no rank of their own.
+                // A distinct property, never --clue-ramp itself, so nothing
+                // else inherits a rank it was not given.
+                ...(settings.ramp && activeEntry && clueRamp.has(activeEntry.clue_number)
+                    ? { '--active-clue-ramp': String(clueRamp.get(activeEntry.clue_number)) }
+                    : {}),
+            })}>
             <div id="notmenu">
                 <div className={classes('clue-column', { active: app.direction === 'across', inactive: app.direction !== 'across' })} data-label="ACROSS">
                     <ul id="across">

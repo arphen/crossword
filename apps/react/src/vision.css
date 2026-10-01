@@ -197,22 +197,79 @@
   --clue-lightness: calc(var(--ramp-lightness) - var(--down-drop));
 }
 
+/* Direction-unique starts keep their own half of the wheel whatever is being
+   solved; a square that opens both words follows the direction being solved,
+   so its corner number changes with the mode. (Without Square notches there
+   is no data-start and every square rests on the Across half.) */
+#app.react-desktop-app .grid-cell[data-start='across'] {
+  --arc-start-hue: var(--across-arc-start);
+  --arc-end-hue: var(--across-arc-end);
+}
+#app.react-desktop-app .grid-cell[data-start='down'] {
+  --arc-start-hue: var(--down-arc-start);
+  --arc-end-hue: var(--down-arc-end);
+}
+#app.react-desktop-app[data-direction='across']
+  .grid-cell[data-start~='across'][data-start~='down'] {
+  --arc-start-hue: var(--across-arc-start);
+  --arc-end-hue: var(--across-arc-end);
+}
+#app.react-desktop-app[data-direction='down']
+  .grid-cell[data-start~='across'][data-start~='down'] {
+  --arc-start-hue: var(--down-arc-start);
+  --arc-end-hue: var(--down-arc-end);
+}
+
 /* A lit square answers to the active word even when it stands in the other
-   lane's track, so it takes the active direction's highlight value and the
-   active half of the wheel rather than the lane's — the selection is one word
-   wherever its boxes are shown — and it carries the direction's halo colour:
-   warm rail orange for Across, rail blue for Down. */
-#app.react-desktop-app[data-direction='across'] [data-entry-index] {
+   lane's track, so the selection — board squares and the active row's boxes —
+   takes the active direction's highlight value and the active half of the
+   wheel rather than the lane's, and it carries the direction's halo colour:
+   warm rail orange for Across, rail blue for Down. Boxes in a crossing row
+   keep their own row's hue below instead. */
+#app.react-desktop-app[data-direction='across']
+  :is(.grid-cell[data-entry-index], li.highlighted-clue .state[data-entry-index]) {
   --clue-lightness: calc(var(--ramp-lightness) + var(--highlight-lift));
   --arc-start-hue: var(--across-arc-start);
   --arc-end-hue: var(--across-arc-end);
   --highlight-halo: var(--react-orange);
 }
-#app.react-desktop-app[data-direction='down'] [data-entry-index] {
+#app.react-desktop-app[data-direction='down']
+  :is(.grid-cell[data-entry-index], li.highlighted-clue .state[data-entry-index]) {
   --clue-lightness: calc(var(--ramp-lightness) - var(--highlight-drop));
   --arc-start-hue: var(--down-arc-start);
   --arc-end-hue: var(--down-arc-end);
   --highlight-halo: var(--react-blue);
+}
+
+/* The highlighted word's hue, published on the root as --active-clue-ramp for
+   the background layers — lane watermarks and the grid wash — that have no
+   rank of their own to read. Deliberately no fallback: without an active rank
+   the hue is invalid and every dependent below falls back to exactly what
+   desktop.css already paints. */
+#app.react-desktop-app[data-direction='across'] {
+  --active-clue-hue: calc(
+    var(--across-arc-start) +
+      (
+        var(--active-clue-ramp) *
+          (var(--across-arc-end) - var(--across-arc-start))
+      )
+  );
+  --active-clue-lightness: calc(var(--ramp-lightness) + var(--highlight-lift));
+}
+#app.react-desktop-app[data-direction='down'] {
+  --active-clue-hue: calc(
+    var(--down-arc-start) +
+      (
+        var(--active-clue-ramp) *
+          (var(--down-arc-end) - var(--down-arc-start))
+      )
+  );
+  --active-clue-lightness: calc(var(--ramp-lightness) - var(--highlight-drop));
+}
+#app.react-desktop-app {
+  --active-clue-tint: oklch(
+    var(--active-clue-lightness) var(--ramp-chroma) var(--active-clue-hue)
+  );
 }
 
 #app.react-desktop-app :is(#across, #down) .clue-number {
@@ -360,10 +417,47 @@
       color-mix(in oklab, var(--clue-flame) var(--cross-alpha), transparent);
 }
 
-/* The selection: every box of the word — in its own lane and where it crosses
-   another — burns in the active clue's hue inside, and wears the direction's
-   halo outside: the flame names the clue, the halo names the lane. */
-#app.react-desktop-app[data-ramp='on'] li .state[data-entry-index] {
+/* The selection in the active row: every box burns in the active clue's hue
+   inside, and wears the direction's halo outside: the flame names the clue,
+   the halo names the lane. */
+#app.react-desktop-app[data-ramp='on']
+  li.highlighted-clue
+  .state[data-entry-index] {
+  box-shadow:
+    inset 0 1px 0 var(--surface-glint),
+    inset 0 0 5px
+      color-mix(in oklab, var(--clue-flame) var(--flame-alpha), transparent),
+    0 0 9px
+      color-mix(
+        in oklab,
+        var(--highlight-halo, transparent) var(--halo-alpha),
+        transparent
+      );
+}
+
+/* Intersection boxes in the crossing lane — the intersection-cell hooks — wear
+   their own row's hue at the same flame strength and highlight split as the
+   selection: the hue still names the clue, the lane's halo names the lane.
+   The cursor box keeps its ring (its rule comes later), so position stays
+   findable where the words cross. */
+#app.react-desktop-app[data-ramp='on']
+  #across
+  li.affected-clue
+  .state[data-entry-index] {
+  --clue-lightness: calc(var(--ramp-lightness) + var(--highlight-lift));
+  --highlight-halo: var(--rail);
+}
+#app.react-desktop-app[data-ramp='on']
+  #down
+  li.affected-clue
+  .state[data-entry-index] {
+  --clue-lightness: calc(var(--ramp-lightness) - var(--highlight-drop));
+  --highlight-halo: var(--rail);
+}
+#app.react-desktop-app[data-ramp='on']
+  :is(#across, #down)
+  li.affected-clue
+  .state[data-entry-index]:not(.cursor-cell) {
   box-shadow:
     inset 0 1px 0 var(--surface-glint),
     inset 0 0 5px
@@ -440,6 +534,39 @@
         transparent
       );
   animation: clue-breath 2.1s ease-in-out infinite;
+}
+
+/* The grid's selection wash breathes the highlighted word's hue: the
+   direction's own fill, gently adjusted toward the selection. Without an
+   active rank the tint is invalid and desktop.css's wash stands untouched. */
+#app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index] {
+  background: color-mix(
+    in oklab,
+    var(--entry-fill) 68%,
+    var(--active-clue-tint)
+  ) !important;
+}
+
+/* The active lane's watermark breathes the highlighted word's hue the same
+   gentle way: the direction's own wash, adjusted toward the selection. The
+   :has guard means the tint only applies while a word is actually lit — with
+   no selection the invalid tint would otherwise inherit ink instead of
+   falling back to desktop.css's direction wash. */
+#app.react-desktop-app[data-ramp='on']:has(.grid-cell[data-entry-index])
+  .clue-column[data-label='ACROSS'].active::before {
+  color: color-mix(
+    in oklab,
+    var(--active-clue-tint) 45%,
+    rgba(255, 152, 0, 0.75)
+  );
+}
+#app.react-desktop-app[data-ramp='on']:has(.grid-cell[data-entry-index])
+  .clue-column[data-label='DOWN'].active::before {
+  color: color-mix(
+    in oklab,
+    var(--active-clue-tint) 45%,
+    rgba(33, 150, 243, 0.75)
+  );
 }
 
 /* The selected chip spends the highlight split, not the lane's: Across brighter,

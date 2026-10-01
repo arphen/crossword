@@ -179,11 +179,31 @@ it("lights the selection in the active clue's rank, not the square's own", async
   // The closing square wears its own number but burns with the active word.
   const borrowed = selected.find((cell) => cell.querySelector('.clue-index')?.textContent === '2');
   expect(borrowed).toBeDefined();
-  const boxes = [...host.querySelectorAll('.state[data-entry-index]')];
-  expect(boxes.length).toBeGreaterThan(0);
-  for (const box of boxes) {
-    expect(/--clue-ramp:\s*([^;\s]+)/.exec(box.getAttribute('style') || '')?.[1]).toBe(activeRamp);
+  const rankOf = (element) => /--clue-ramp:\s*([^;\s]+)/.exec(element.getAttribute('style') || '')?.[1];
+  for (const row of host.querySelectorAll('li.highlighted-clue')) {
+    const boxes = [...row.querySelectorAll('.state[data-entry-index]')];
+    expect(boxes.length).toBeGreaterThan(0);
+    for (const box of boxes) expect(rankOf(box)).toBe(activeRamp);
   }
+  // Crossing boxes keep their own row's hue at flame strength.
+  const affected = [...host.querySelectorAll('li.affected-clue')];
+  expect(affected.length).toBeGreaterThan(0);
+  for (const row of affected) {
+    const rowRank = rankOf(row.querySelector('.clue-number'));
+    const boxes = [...row.querySelectorAll('.state[data-entry-index]')];
+    expect(boxes.length).toBeGreaterThan(0);
+    for (const box of boxes) expect(rankOf(box)).toBe(rowRank);
+  }
+});
+
+it('publishes the highlighted word rank for the background layers', async () => {
+  const host = await mountBoard();
+  const { app } = controllers[controllers.length - 1];
+  const down = app.crossword.find((entry) => entry.direction === 'down');
+  await act(async () => { app.handle_clue_click({}, down); });
+  expect(board(host).getAttribute('style') || '').toMatch(/--active-clue-ramp:\s*0(?![\d.])/);
+  await choose(host, 'Number colours', 'Off');
+  expect(board(host).getAttribute('style') || '').not.toMatch(/--active-clue-ramp/);
 });
 
 it('paints each gate tick in the hue of the word it opens', async () => {
