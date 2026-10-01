@@ -1,0 +1,64 @@
+{
+  "version": "private-clue-candidate-lane-v1",
+  "generatedAt": "2026-10-01T17:47:46+00:00",
+  "kind": "live-model",
+  "model": "llama3.2:3b",
+  "entrySource": "corpus",
+  "entryCount": 24,
+  "claim": "candidate selection vs single draft on one tag, deterministic rules only",
+  "arms": {
+    "single": {
+      "title": "Monday Clues",
+      "wallSeconds": 29.249,
+      "candidateCalls": null,
+      "challengeEnabled": null,
+      "score": {
+        "surfaces": 24,
+        "leakCount": 0,
+        "leakRate": 0.0,
+        "grammarIssueCount": 0,
+        "grammarCleanRate": 1.0,
+        "witnessedNonDefinitionCount": 0,
+        "witnessedNonDefinitionRate": 0.0,
+        "pseudoPunCount": 0,
+        "genreCounts": {
+          "plain-definition": 24
+        }
+      },
+      "clueCount": 24
+    },
+    "candidate": {
+      "title": "Monday Warm-Up",
+      "wallSeconds": 81.056,
+      "candidateCalls": {
+        "draft": 4,
+        "compare": 21
+      },
+      "challengeEnabled": false,
+      "score": {
+        "surfaces": 24,
+        "leakCount": 0,
+        "leakRate": 0.0,
+        "grammarIssueCount": 0,
+        "grammarCleanRate": 1.0,
+        "witnessedNonDefinitionCount": 3,
+        "witnessedNonDefinitionRate": 0.125,
+        "pseudoPunCount": 0,
+        "genreCounts": {
+          "fill-blank": 1,
+          "plain-definition": 18,
+          "quotational": 5
+        }
+      },
+      "clueCount": 24
+    }
+  },
+  "winner": "candidate",
+  "winnerRule": "witnessedNonDefinitionRate, then grammarCleanRate, then leakRate ascending",
+  "interpretation": "candidate lane beats single draft here",
+  "knownLimits": [
+    "no preference corpus exists, so no quality winner is claimed",
+    "frozen 26 B surfaces do not exist on this host; 26 B counter receipts supply context only",
+    "challenge flag state is echoed per arm where the candidate path ran"
+  ]
+}

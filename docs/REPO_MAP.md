@@ -179,6 +179,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/content-scan.md`
 - `docs/evidence/live-model-smoke-holdout-v1.20260928.json`
 - `docs/evidence/model-evaluation-holdout-v1.structural.json`
+- `docs/evidence/private-clue-candidate-lane-v1.llama3.2-3b-20261001.json`
 - `docs/evidence/private-clue-corpus-attestation-v1.20261001.json`
 - `docs/evidence/private-clue-corpus-v1.local.json`
 - `docs/evidence/private-clue-counter-reresolution-v1.offline.json`
@@ -300,6 +301,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/forbidden-content.json`
 - `scripts/live-model-holdout.py` — `_Response:33`, `_Response.__init__:34`, `_Response.raise_for_status:38`, `_Response.json:42`, `_Session:46`, `_Session.request:47`, `_Session.get:62`, `_Session.post:65`, `_canonical:69`, `_sha256:79`, `_text:83`, `_shape_gate:87`, `_tags:142`, `_observation:156`, `main:229`
 - `scripts/model-evaluation-report.py` — `main:18`
+- `scripts/private-clue-candidate-lane.py` — `entry_set:50`, `diagnose:72`, `run_arm:104`, `decide:134`, `main:148`
 - `scripts/private-clue-corpus.py` — `_today:39`, `_file_digest:43`, `attest_body:47`, `collect_study_artifacts:65`, `reresolve_body:81`, `main:92`
 - `scripts/private-clue-derivation-gate.py` — `build_pairs:111`, `evaluate:155`, `degree_rule_gaps:174`, `corpus_digest:191`, `real_corpus_status:196`, `receipt_body:217`, `main:276`
 - `scripts/private-clue-genre-census.py` — `audit_matrix:64`, `audit_corpus:75`, `receipt_body:98`, `main:126`
@@ -326,6 +328,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `src/crossword/app.py` — `GameSession:96`, `GameSession.__init__:97`, `GameSession.update_cell:106`, `GameSession.to_dict:109`, `_react_index:120`, `index:129`, `future_index:135`, `react_assets:140`, `get_crossword:148`, `get_crossword_by_date:154`, `daterange:184`, `get_random_crossword:195`, `grid:242`, `get_completed_puzzles:249`, `check_puzzle_completed:260`, `mark_puzzle_completed:273` (+9 more)
 - `src/crossword/calibration_api.py` — `CalibrationSessionRecord:25`, `CalibrationRuntimeUnavailable:35`, `CalibrationPayloadRejected:39`, `_error:43`, `_canonical_json:50`, `_valid_uuid:54`, `_same_origin:63`, `_read_bounded_json:68`, `_catalog_stimuli:87`, `_run_validator:99`, `_sequences:144`, `_has_active_response:157`, `_validate_host_invariants:180`, `_validate_append:206`, `_etag:239`, `_session_response:243` (+4 more)
 - `src/crossword/calibration_hypothesis_api.py` — `CalibrationHypothesisDeckRecord:62`, `CalibrationHypothesisResponseRecord:79`, `CalibrationHypothesisActionRecord:96`, `HypothesisRuntimeUnavailable:114`, `_canonical:118`, `_hash:122`, `_valid_uuid:126`, `_local_origin:135`, `_error:140`, `_read_json:147`, `_catalog:168`, `_calibration_and_profile:183`, `_active_chosen_source:216`, `_text:303`, `_reject_player_inference:316`, `_validate_model_paths:322` (+32 more)
+- `src/crossword/clue_candidate_admission.py` — `_tokens:32`, `token_overlap:36`, `shape_admit:46`, `admit_candidate:58`, `select_survivors:76`, `comparison_payload:84`, `validate_comparison_response:99`, `score_surface_set:112`
 - `src/crossword/clue_genre.py` — `_text:130`, `observe_clue_genre:134`, `census_genres:201`
 - `src/crossword/clue_grammar_bridge.py` — `_issue:73`, `_signals:80`, `_surface_signal_present:87`, `_signal_matches_literal:110`, `validate_surface_clue_family:129`, `summarize_surface_clue_families:237`
 - `src/crossword/clue_grounding_validators.py` — `_letters_only:57`, `_span:61`, `_validator_base:84`, `_mechanical_validator:100`, `validate_private_clue_witnesses:153`
@@ -395,6 +398,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `tests/test_api_isolated.py`
 - `tests/test_calibration_api.py`
 - `tests/test_calibration_hypothesis_api.py`
+- `tests/test_clue_candidate_admission.py`
 - `tests/test_clue_derivation_leak.py`
 - `tests/test_clue_genre.py`
 - `tests/test_clue_grammar_bridge.py`

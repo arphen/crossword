@@ -987,6 +987,13 @@ _MODEL_GENERATION_POLICIES = {
         "qwenClueBatchTokensPerEntry": 40,
         "qwenClueBatchMaxTokens": 1400,
         "qwenSkipOptionalRepairsAfterBatch": True,
+        "candidateDraftRounds": 4,
+        "candidateBatchSize": 24,
+        "candidateDraftTokensPerEntry": 60,
+        "candidateDraftTemperature": 0.7,
+        "candidateCompareTokens": 200,
+        "candidateCompareTemperature": 0.2,
+        "candidateRedraftRounds": 1,
     },
     "gemma4:26b": {
         "themeTimeout": 90,
@@ -1049,6 +1056,13 @@ _MODEL_GENERATION_POLICIES = {
         "qwenClueBatchTokensPerEntry": 40,
         "qwenClueBatchMaxTokens": 1400,
         "qwenSkipOptionalRepairsAfterBatch": True,
+        "candidateDraftRounds": 4,
+        "candidateBatchSize": 24,
+        "candidateDraftTokensPerEntry": 60,
+        "candidateDraftTemperature": 0.7,
+        "candidateCompareTokens": 200,
+        "candidateCompareTemperature": 0.2,
+        "candidateRedraftRounds": 1,
     },
     "gemma3:4b": {
         "themeTimeout": 90,
@@ -1066,6 +1080,13 @@ _MODEL_GENERATION_POLICIES = {
         "qwenClueBatchTokensPerEntry": 40,
         "qwenClueBatchMaxTokens": 1400,
         "qwenSkipOptionalRepairsAfterBatch": True,
+        "candidateDraftRounds": 4,
+        "candidateBatchSize": 24,
+        "candidateDraftTokensPerEntry": 60,
+        "candidateDraftTemperature": 0.7,
+        "candidateCompareTokens": 200,
+        "candidateCompareTemperature": 0.2,
+        "candidateRedraftRounds": 1,
     },
 }
 
@@ -4759,7 +4780,359 @@ def _fallback_private_clues(entries, weekday, context, reason):
     )
 
 
+def _use_candidate_path(model) -> bool:
+    """Select the candidate-set clue path: tier-driven, env-overridable.
+
+    Local-small models fumble whole-board single-request JSON (74/74
+    scaffolded on both small tags here) while writing clean small batches, so
+    they draft per-entry candidates. Large tags keep the proven single-draft
+    path byte-identical. ``CROSSWORD_CLUE_CANDIDATES=1`` forces the candidate
+    path (A/B runs), ``=0`` forces the legacy path.
+    """
+    override = os.environ.get("CROSSWORD_CLUE_CANDIDATES", "").strip().casefold()
+    if override in {"1", "true", "yes", "on"}:
+        return True
+    if override in {"0", "false", "no", "off"}:
+        return False
+    return _model_tier(model) == "local-small"
+
+
+def _candidate_draft_seed(base_seed, round_index, batch_index):
+    """Deterministic per-round seed so candidate receipts replay."""
+    try:
+        base = int(base_seed)
+    except (TypeError, ValueError):
+        return None
+    return (base + round_index * 7919 + batch_index * 131) % 2147483647
+
+
+def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=None):
+    """Draft k shortlisted clues per entry, admit deterministically, compare.
+
+    Replaces the single-draft plus model repair passes for the candidate
+    path: failed entries get one bounded re-draft round, and anything still
+    unadmitted falls back to the answer-free scaffold through the same safety
+    pass every other board uses. Reviewed exact surfaces are preserved
+    without drafting. Fail-open throughout: any model misfire scaffolds only
+    the entries it touched, never the board.
+    """
+    from .clue_candidate_admission import (
+        CANDIDATE_BATCH_SIZE,
+        CANDIDATE_COMPARE_TEMPERATURE,
+        CANDIDATE_COMPARE_TOKENS,
+        CANDIDATE_DRAFT_ROUNDS,
+        CANDIDATE_DRAFT_TEMPERATURE,
+        CANDIDATE_DRAFT_TOKENS_PER_ENTRY,
+        CANDIDATE_REDRAFT_ROUNDS,
+        admit_candidate,
+        comparison_payload,
+        select_survivors,
+        shape_admit,
+        validate_comparison_response,
+    )
+    from .clue_genre import observe_clue_genre
+    from .clue_witness import witness_clue_family
+
+    policy = _model_generation_policy(model)
+    rounds = int(policy.get("candidateDraftRounds", CANDIDATE_DRAFT_ROUNDS))
+    batch_size = int(policy.get("candidateBatchSize", CANDIDATE_BATCH_SIZE))
+    draft_tokens = int(
+        policy.get("candidateDraftTokensPerEntry", CANDIDATE_DRAFT_TOKENS_PER_ENTRY)
+    )
+    draft_temperature = float(
+        policy.get("candidateDraftTemperature", CANDIDATE_DRAFT_TEMPERATURE)
+    )
+    compare_tokens = int(
+        policy.get("candidateCompareTokens", CANDIDATE_COMPARE_TOKENS)
+    )
+    compare_temperature = float(
+        policy.get("candidateCompareTemperature", CANDIDATE_COMPARE_TEMPERATURE)
+    )
+    redraft_rounds = int(policy.get("candidateRedraftRounds", CANDIDATE_REDRAFT_ROUNDS))
+    voice = _DIFFICULTY[weekday]["voice"]
+    base_seed = context.get("_candidate_base_seed") if isinstance(context, dict) else None
+    clue_timing = {
+        "version": "private-clue-generation-timing-v1",
+        "primaryWriter": 0.0,
+        "riskRepair": 0.0,
+        "diversityRepair": 0.0,
+        "safetyNormalization": 0.0,
+        "candidateDrafts": 0.0,
+        "candidateCompare": 0.0,
+    }
+
+    def publish_timing():
+        context["_clue_generation_timing"] = dict(clue_timing)
+
+    reviewed_by_id = (
+        reviewed_pack.get("byId")
+        if isinstance(reviewed_pack, dict)
+        and isinstance(reviewed_pack.get("byId"), dict)
+        else {}
+    )
+    reviewed_text_by_id = {
+        clue_id: record.get("text")
+        for clue_id, record in reviewed_by_id.items()
+        if isinstance(record, dict) and isinstance(record.get("text"), str)
+    }
+    draft_started = monotonic()
+    title = f"{weekday.title()} Crossword"
+    records: dict = {}
+    safety_fallbacks: dict = {}
+    draft_calls = 0
+    compare_calls = 0
+
+    def draftable(entry):
+        clue_id = entry.get("id") if isinstance(entry, dict) else None
+        return (
+            isinstance(clue_id, str)
+            and clue_id not in reviewed_text_by_id
+            and isinstance(entry.get("answer"), str)
+            and bool(entry.get("answer"))
+        )
+
+    def draft_instruction():
+        return (
+            f"Write original, lively crossword clues ({weekday.title()} difficulty: {voice}). "
+            "One concise clue per entry id, fair and grammatical, matching the answer's "
+            "part of speech, number, and tense. Never repeat the answer or its stem. "
+            "Reply as JSON with a short title and a clues array of {id, text}."
+        )
+
+    def run_draft_round(round_index, target_entries):
+        nonlocal title, draft_calls
+        ids = [entry["id"] for entry in target_entries]
+        for batch_index in range(0, len(target_entries), batch_size):
+            batch = target_entries[batch_index : batch_index + batch_size]
+            batch_ids = [entry["id"] for entry in batch]
+            seed = _candidate_draft_seed(base_seed, round_index, batch_index)
+            try:
+                value = _chat(
+                    model,
+                    [
+                        {"role": "system", "content": draft_instruction()},
+                        {
+                            "role": "user",
+                            "content": json.dumps(
+                                {
+                                    "entries": [
+                                        {
+                                            "id": entry["id"],
+                                            "answer": entry["answer"],
+                                            "length": entry.get("length"),
+                                        }
+                                        for entry in batch
+                                    ]
+                                },
+                                ensure_ascii=False,
+                                separators=(",", ":"),
+                            ),
+                        },
+                    ],
+                    _clue_schema(batch_ids),
+                    timeout=policy["primaryClueTimeout"],
+                    tokens=max(600, len(batch) * draft_tokens),
+                    temperature=draft_temperature,
+                    seed=seed,
+                )
+            except (requests.RequestException, ValueError, TypeError, KeyError) as error:
+                for entry in batch:
+                    records.setdefault(entry["id"], []).append(
+                        {
+                            "round": round_index,
+                            "seed": seed,
+                            "text": None,
+                            "admitted": False,
+                            "reasons": [f"draft-call-failed:{type(error).__name__}"],
+                        }
+                    )
+                continue
+            draft_calls += 1
+            if (
+                isinstance(value, dict)
+                and isinstance(value.get("title"), str)
+                and 2 <= len(value["title"].strip()) <= 64
+                and title == f"{weekday.title()} Crossword"
+            ):
+                title = value["title"].strip()
+            for raw in value.get("clues", []) if isinstance(value, dict) else []:
+                shaped = shape_admit(raw)
+                if not shaped["admitted"] or shaped["id"] not in ids:
+                    continue
+                records.setdefault(shaped["id"], []).append(
+                    {
+                        "round": round_index,
+                        "seed": seed,
+                        "text": shaped["text"],
+                        "admitted": None,
+                    }
+                )
+
+    def admit_round():
+        for entry in entries:
+            clue_id = entry.get("id") if isinstance(entry, dict) else None
+            if clue_id is None or clue_id in reviewed_text_by_id:
+                continue
+            admitted_texts = [
+                item["text"]
+                for item in records.get(clue_id, [])
+                if item.get("admitted") is True
+            ]
+            for item in records.get(clue_id, []):
+                if item.get("admitted") is not None or item.get("text") is None:
+                    continue
+                text = item["text"]
+                issue_codes = [
+                    code
+                    for code in (
+                        _clue_wordplay_issue(entry, text),
+                        _clue_morphology_issue(entry, text),
+                        _clue_information_issue(entry, text, weekday=weekday),
+                    )
+                    if isinstance(code, str) and code
+                ]
+                for flag in _clue_risk_flags(entry, text) or []:
+                    if isinstance(flag, str) and flag and flag != "foothold-required":
+                        issue_codes.append(flag)
+                verdict = witness_clue_family(
+                    _clue_family_observation(text).get("family", "definition"), text
+                )
+                genre = observe_clue_genre(text).get("genre")
+                decision = admit_candidate(
+                    text,
+                    issue_codes=issue_codes,
+                    witnessed_family=verdict["family"],
+                    admitted_texts=admitted_texts,
+                )
+                item["admitted"] = decision["admitted"]
+                item["reasons"] = decision["reasons"]
+                item["witnessedFamily"] = verdict["family"]
+                item["genre"] = genre
+                if decision["admitted"]:
+                    admitted_texts.append(text)
+
+    pour = [entry for entry in entries if draftable(entry)]
+    for round_index in range(max(1, rounds)):
+        run_draft_round(round_index, pour)
+        admit_round()
+    failed = [
+        entry
+        for entry in pour
+        if not any(item.get("admitted") is True for item in records.get(entry["id"], []))
+    ]
+    for extra in range(max(0, redraft_rounds)):
+        if not failed:
+            break
+        run_draft_round(rounds + extra, failed)
+        admit_round()
+        failed = [
+            entry
+            for entry in failed
+            if not any(item.get("admitted") is True for item in records.get(entry["id"], []))
+        ]
+    clue_timing["candidateDrafts"] = round(max(0.0, monotonic() - draft_started), 3)
+
+    compare_started = monotonic()
+    clues = {}
+    for entry in entries:
+        clue_id = entry.get("id") if isinstance(entry, dict) else None
+        if not isinstance(clue_id, str):
+            continue
+        if clue_id in reviewed_text_by_id:
+            clues[clue_id] = reviewed_text_by_id[clue_id]
+            continue
+        survivors = select_survivors(
+            [
+                {**item, "draftId": f"r{item['round']}-{index}"}
+                for index, item in enumerate(records.get(clue_id, []))
+            ]
+        )
+        if not survivors:
+            clues[clue_id] = _source_free_foothold(entry)
+            safety_fallbacks[clue_id] = ["no-admitted-candidate"]
+            continue
+        if len(survivors) == 1:
+            clues[clue_id] = survivors[0]["text"]
+            continue
+        seed = _candidate_draft_seed(base_seed, 4242, abs(hash(clue_id)) % 1000)
+        try:
+            verdict = validate_comparison_response(
+                _chat(
+                    model,
+                    [
+                        {
+                            "role": "user",
+                            "content": json.dumps(
+                                comparison_payload(
+                                    entry.get("answer"), entry.get("length"), survivors
+                                ),
+                                ensure_ascii=False,
+                                separators=(",", ":"),
+                            ),
+                        }
+                    ],
+                    {"type": "object"},
+                    timeout=policy["challengeTimeout"],
+                    tokens=compare_tokens,
+                    temperature=compare_temperature,
+                    seed=seed,
+                ),
+                [item["draftId"] for item in survivors],
+            )
+            compare_calls += 1
+        except (requests.RequestException, ValueError, TypeError, KeyError):
+            verdict = {"pick": None, "valid": False, "reason": "comparison-unavailable"}
+        if verdict["valid"]:
+            picked = next(item for item in survivors if item["draftId"] == verdict["pick"])
+            clues[clue_id] = picked["text"]
+        else:
+            clues[clue_id] = survivors[0]["text"]
+            verdict = {**verdict, "pick": survivors[0]["draftId"], "fallback": True}
+        records[clue_id].append({"comparison": verdict})
+    clue_timing["candidateCompare"] = round(max(0.0, monotonic() - compare_started), 3)
+
+    challenge_raw = os.environ.get(PRIVATE_CLUE_CHALLENGE_ENV, "")
+    context["_candidate_generation"] = {
+        "version": "private-clue-candidate-lane-v1",
+        "model": model,
+        "weekday": weekday,
+        "rounds": rounds,
+        "redraftRounds": redraft_rounds,
+        "batchSize": batch_size,
+        "baseSeed": base_seed,
+        "draftCalls": draft_calls,
+        "compareCalls": compare_calls,
+        "challengeEnv": challenge_raw,
+        "challengeEnabled": challenge_raw.strip().casefold() in {"1", "true", "yes", "on"},
+        "entries": {
+            entry.get("id"): {
+                "reviewed": entry.get("id") in reviewed_text_by_id,
+                "selected": clues.get(entry.get("id")),
+                "candidates": records.get(entry.get("id"), []),
+            }
+            for entry in entries
+            if isinstance(entry, dict) and isinstance(entry.get("id"), str)
+        },
+    }
+    safety_started = monotonic()
+    safe_clues = _enforce_private_clue_safety(
+        entries,
+        clues,
+        weekday=weekday,
+        reviewed_by_id=reviewed_by_id,
+        fallback_reasons=safety_fallbacks,
+    )
+    clue_timing["safetyNormalization"] = round(max(0.0, monotonic() - safety_started), 3)
+    context["_clue_safety_fallbacks"] = safety_fallbacks
+    publish_timing()
+    return title.strip(), safe_clues
+
+
 def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
+    if _use_candidate_path(model):
+        return _make_candidate_clues(
+            model, entries, context, weekday, reviewed_pack=reviewed_pack
+        )
     recipe = _effective_weekday_recipe(weekday, context)
     clue_timing = {
         "version": "private-clue-generation-timing-v1",
@@ -6185,6 +6558,7 @@ def _generate(
     clue_context = {
         **context,
         "_foothold_seed_plan": pre_clue_construction.get("footholdSeedPlan"),
+        "_candidate_base_seed": selected_seed,
     }
     if active_theme_mechanic is not None:
         clue_context["_weekday_theme_mechanic"] = active_theme_mechanic
@@ -6471,6 +6845,7 @@ def _generate(
         "clueQuality": clue_quality,
         "clueCorpus": clue_corpus_receipt,
         "clueGenerationBatches": context.get("_clue_generation_batches"),
+        "candidateGeneration": context.get("_candidate_generation"),
         "clueGenerationTiming": clue_context.get("_clue_generation_timing"),
         "clueGenerationFallback": (
             {
