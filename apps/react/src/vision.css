@@ -317,7 +317,10 @@
    its answer track, and the numbered square it starts from. The flame is the
    same colour saturated and widened while the clue — or its squares — are the
    ones being worked, and the lit board squares breathe slowly so the
-   selection feels alive without anything moving. Around the selection sits a
+   selection feels alive without anything moving. The resting light lives
+   mostly inside the border — tracks sit 3px apart with text 10px above, and
+   positioned boxes paint over static text, so an outer bloom at rest would
+   smear both. Around the selection sits a
    third light, the halo, which always names the direction instead of the
    clue — warm rail orange for Across, rail blue for Down — while the
    highlight split sets Across clearly brighter than Down. Hue always stays
@@ -343,13 +346,16 @@
       color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent);
 }
 
-/* The answer track at rest: every box keeps its faint ember. */
+/* The answer track at rest: every box keeps its faint ember, kept inside the
+   border — boxes sit 3px apart with text 10px above, and an outer bloom
+   would paint over both (boxes are positioned, text is not). The outside
+   light is spent on selection instead, where few elements wear it. */
 #app.react-desktop-app[data-ramp='on'] .state {
   box-shadow:
     inset 0 1px 0 var(--surface-glint),
     inset 0 0 4px
       color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent),
-    0 0 7px
+    0 0 3px
       color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent);
 }
 
@@ -385,7 +391,7 @@
     inset 0 1px 0 var(--surface-glint),
     inset 0 0 5px
       color-mix(in oklab, var(--clue-ember) var(--cross-alpha), transparent),
-    0 0 8px
+    0 0 5px
       color-mix(in oklab, var(--clue-ember) var(--cross-alpha), transparent);
 }
 
@@ -413,7 +419,7 @@
     inset 0 1px 0 var(--surface-glint),
     inset 0 0 5px
       color-mix(in oklab, var(--clue-flame) var(--cross-alpha), transparent),
-    0 0 8px
+    0 0 5px
       color-mix(in oklab, var(--clue-flame) var(--cross-alpha), transparent);
 }
 
