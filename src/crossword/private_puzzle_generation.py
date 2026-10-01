@@ -33,6 +33,7 @@ from .clue_grammar_bridge import (
     validate_surface_clue_family,
 )
 from .clue_grounding_validators import validate_private_clue_witnesses
+from .private_clue_corpus import append_corpus_records, build_corpus_records
 from .clue_semantic_challenger import (
     challenge_private_clue_pair,
     summarize_challenge_classifications,
@@ -6076,6 +6077,66 @@ def _generate(
     clue_quality["fallbackSupport"] = _fallback_support_receipt(
         clue_context.get("_clue_safety_fallbacks"), crossing_support
     )
+    # Q03: keep every generated surface in a local answer-bearing corpus so
+    # later guards and scorers have a denominator. Fail-open and local-only;
+    # the committed artifact carries counts plus a digest, never clue text.
+    corpus_issues_by_id = {}
+    for _corpus_entry in clue_entries:
+        _corpus_clue = clues.get(_corpus_entry["id"], "")
+        _corpus_codes = []
+        for _corpus_issue in (
+            _clue_wordplay_issue(_corpus_entry, _corpus_clue),
+            _clue_morphology_issue(_corpus_entry, _corpus_clue),
+            _clue_information_issue(_corpus_entry, _corpus_clue, weekday=weekday),
+        ):
+            if isinstance(_corpus_issue, str) and _corpus_issue:
+                _corpus_codes.append(_corpus_issue)
+        for _corpus_flag in _clue_risk_flags(_corpus_entry, _corpus_clue) or []:
+            if (
+                isinstance(_corpus_flag, str)
+                and _corpus_flag
+                and _corpus_flag != "foothold-required"
+            ):
+                _corpus_codes.append(_corpus_flag)
+        if _corpus_codes:
+            corpus_issues_by_id[_corpus_entry["id"]] = sorted(set(_corpus_codes))
+    _corpus_safety = clue_context.get("_clue_safety_fallbacks")
+    _corpus_challenge_by_id = {}
+    for _grounding_entry in (
+        clue_quality.get("grounding", {}).get("entries", []) or []
+    ):
+        _challenge = _grounding_entry.get("semanticChallenge")
+        _classification = (
+            _challenge.get("classification") if isinstance(_challenge, dict) else None
+        )
+        if isinstance(_grounding_entry.get("id"), str) and isinstance(
+            _classification, str
+        ):
+            _corpus_challenge_by_id[_grounding_entry["id"]] = _classification
+    _corpus_reviewed_by_id = reviewed_clue_pack.get("byId")
+    clue_corpus_receipt = append_corpus_records(
+        build_corpus_records(
+            clue_entries,
+            clues,
+            weekday=weekday,
+            seed=selected_seed,
+            model_tag=model,
+            issues_by_id=corpus_issues_by_id,
+            fallback_ids=[
+                _entry_id
+                for _entry_id, _reasons in (
+                    _corpus_safety.items()
+                    if isinstance(_corpus_safety, dict)
+                    else []
+                )
+                if isinstance(_reasons, list) and _reasons
+            ],
+            reviewed_ids=list(_corpus_reviewed_by_id.keys())
+            if isinstance(_corpus_reviewed_by_id, dict)
+            else [],
+            challenge_by_id=_corpus_challenge_by_id,
+        )
+    )
     construction_evidence = evaluate_private_board(
         grid,
         clue_entries,
@@ -6232,6 +6293,7 @@ def _generate(
         # ``failed``; neither state affects playable private generation.
         "siblingEvaluatorAdapter": sibling_evaluator_adapter,
         "clueQuality": clue_quality,
+        "clueCorpus": clue_corpus_receipt,
         "clueGenerationBatches": context.get("_clue_generation_batches"),
         "clueGenerationTiming": clue_context.get("_clue_generation_timing"),
         "clueGenerationFallback": (

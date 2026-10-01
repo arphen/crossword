@@ -178,6 +178,9 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/content-scan.md`
 - `docs/evidence/live-model-smoke-holdout-v1.20260928.json`
 - `docs/evidence/model-evaluation-holdout-v1.structural.json`
+- `docs/evidence/private-clue-corpus-attestation-v1.20261001.json`
+- `docs/evidence/private-clue-corpus-v1.local.json`
+- `docs/evidence/private-clue-counter-reresolution-v1.offline.json`
 - `docs/evidence/private-clue-leak-gate-v1.synthetic.json`
 - `docs/evidence/private-current-source-live-smoke-v1.20260928.json`
 - `docs/evidence/private-current-source-live-smoke-v2.20260928.json`
@@ -293,6 +296,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/forbidden-content.json`
 - `scripts/live-model-holdout.py` — `_Response:33`, `_Response.__init__:34`, `_Response.raise_for_status:38`, `_Response.json:42`, `_Session:46`, `_Session.request:47`, `_Session.get:62`, `_Session.post:65`, `_canonical:69`, `_sha256:79`, `_text:83`, `_shape_gate:87`, `_tags:142`, `_observation:156`, `main:229`
 - `scripts/model-evaluation-report.py` — `main:18`
+- `scripts/private-clue-corpus.py` — `_today:39`, `_file_digest:43`, `attest_body:47`, `collect_study_artifacts:65`, `reresolve_body:81`, `main:92`
 - `scripts/private-clue-derivation-gate.py` — `build_pairs:111`, `evaluate:155`, `degree_rule_gaps:174`, `corpus_digest:191`, `real_corpus_status:196`, `receipt_body:217`, `main:276`
 - `scripts/private-clue-review-export.py` — `main:26`
 - `scripts/private-clue-study.py` — `_base_url:37`, `_request:48`, `main:75`
@@ -344,6 +348,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `src/crossword/parser.py` — `NYTFormatParser:12`, `NYTFormatParser.parse:25`, `NYTFormatParser._normalize_grid_line:103`, `NYTFormatParser._calculate_actual_dimensions:151`, `NYTFormatParser._parse_entries:209`, `NYTFormatParser._find_starting_positions:266`, `NYTFormatParser._find_across_starts:306`, `NYTFormatParser._find_down_starts:326`, `NYTFormatParser._extract_across_word:346`, `NYTFormatParser._extract_down_word:369`, `NYTFormatParser._extract_character_at_position:392`
 - `src/crossword/personalized_manifest.py` — `PersonalizedManifestRejected:38`, `GridSlot:43`, `GridSlot.key:50`, `GridSlot.entry_id:54`, `PersonalizedManifestBuild:60`, `_reject:68`, `_mapping:72`, `_text:78`, `_freeze_json:84`, `_plain:97`, `_canonical_number:106`, `_canonical_json:138`, `_canonical_bytes:162`, `_is_iso_date_time:169`, `_digest:179`, `_frozen_json_digest:183` (+12 more)
 - `src/crossword/postgame_associations_api.py` — `PostgameAssociationRuntimeUnavailable:63`, `PostgameAssociationRunRecord:67`, `PostgameAssociationResponseRecord:82`, `_canonical:97`, `_hash:103`, `_valid_uuid:107`, `_local_origin:111`, `_error:116`, `_read_json:123`, `_text:142`, `_reject_inference:154`, `_model_identity:159`, `_read_response:170`, `_ollama_session:188`, `_validate_paths:194`, `_diversity_receipt:244` (+10 more)
+- `src/crossword/private_clue_corpus.py` — `_repo_root:32`, `corpus_path:36`, `_text:44`, `_string_list:48`, `build_corpus_records:54`, `_payload_digest:110`, `load_corpus:115`, `append_corpus_records:130`, `corpus_counts_attestation:163`, `reresolve_counters:182`
 - `src/crossword/private_domain_hints.py` — `PrivateDomainHintsError:31`, `_DuplicateKey:35`, `_unique_object:39`, `_reject_constant:48`, `_canonical:52`, `_digest:65`, `_unavailable:69`, `_validate_source:86`, `_validate_document:116`, `load_private_domain_hints:160`, `private_domain_hint_receipt:232`
 - `src/crossword/private_puzzle_generation.py` — large file; path only
 - `src/crossword/profile_export.py` — `_canonical_archive_bytes:49`, `archive_integrity_digest:60`, `_valid_uuid:67`, `_same_origin:76`, `_error:81`, `_calibrations_for_profile:91`, `_safe_generation_metadata:105`, `_without_capability_fields:116`, `_export_size_preflight:136`, `_export_profile:436`, `export_profile:859`
@@ -414,6 +419,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `tests/test_parser.py`
 - `tests/test_personalized_manifest.py`
 - `tests/test_postgame_associations_api.py`
+- `tests/test_private_clue_corpus.py`
 - `tests/test_private_domain_hints.py`
 - `tests/test_private_provenance.py`
 - `tests/test_private_puzzle_generation.py`

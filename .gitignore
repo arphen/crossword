@@ -89,6 +89,9 @@ src/crossword/static/react/
 
 # Local dependency-audit output is intentionally kept out of source control.
 reports/npm-audit.json
+# Answer-bearing local clue corpora are never committed; only their
+# counts-plus-digest attestations enter docs/evidence/.
+docs/evidence/*.local.json
 reports/mutation/
 .npm-cache/
 .shots/

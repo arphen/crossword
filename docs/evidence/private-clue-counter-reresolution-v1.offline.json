@@ -1,0 +1,402 @@
+{
+  "version": "private-clue-counter-reresolution-v1",
+  "files": [
+    {
+      "name": "private-clue-corpus-attestation-v1.20261001.json",
+      "digest": "sha256-e7c7053fa7ae53adaf5695ecc0ba09530c75b4eaa8e181bd0dedb527935b2fb7",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-clue-counter-reresolution-v1.offline.json",
+      "digest": "sha256-d8fd200dbeaee5d22e61f7f1b1e4cde7bfbfd991ea2bfaf77ff42b72453ab4ba",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-clue-leak-gate-v1.synthetic.json",
+      "digest": "sha256-33b2c4416148143937f52deaeab70de6fd24fef404291a24a000f81a490320d7",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-current-source-live-smoke-v1.20260928.json",
+      "digest": "sha256-6878e1bd3b1b70fd0833e92ab1ec7c8fe4311e956f6040c2b2925abd1c782aba",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-current-source-live-smoke-v2.20260928.json",
+      "digest": "sha256-fb65c02f8f72e3af4e31a33c7d184fd6ce4b876bc24ebe3d8755f8b0005e3e4c",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-current-source-live-smoke-v3.20260928.json",
+      "digest": "sha256-3fd9a2347580c7a3b92da6b706cf5bec336afd188b7a891e3badc1d3bf1b95f8",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-fill-quality-comparison-v1.synthetic.json",
+      "digest": "sha256-9379f2c692911a22d00dbb04afdb41719a680de4ab6db7b9df8d0325476d2663",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-fill-quality-study-v1.real-gemma4-26b-wednesday-20260928.json",
+      "digest": "sha256-467bab4256f9ccf91ac0b0c0d2ef4f7e68920944ce848260ec30fa48bd26bb25",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-fill-quality-study-v1.real-gemma4-26b-wednesday-recovery-20260928.json",
+      "digest": "sha256-a00ad638c5ea9d2ca7e9af025100ff916a784d279a35dfe06c4c25bde1c512ad",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-fill-quality-study-v1.synthetic.json",
+      "digest": "sha256-5ae060363fca5043fca91c19879b96e3f004f73e0768633ec8ed3c63f82c8cf5",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-foothold-seed-plan-smoke-v1.20260928.json",
+      "digest": "sha256-996f7a30ec9e86b9bc9fc3f2798d8e7a3cedce052dd42f3c678b5c1b6eab1403",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-live-smoke-retry.gemma4-26b-20260928.json",
+      "digest": "sha256-7fc7f90665ab809f6427a52379f126cf1c84188fd8b2691ccb50417c8d88195b",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "spoken-equivalent"
+      ],
+      "entryCount": 76
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-live-smoke.gemma4-26b-20260928.json",
+      "digest": "sha256-0e306043be53a8b9f89d72934ccb3dffe5356c3e3d3d5067b4a1f1f6aec78903",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "factual-relation",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun"
+      ],
+      "entryCount": 74
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v1.real-gemma4-26b-20260928-target.json",
+      "digest": "sha256-24c3aa914e1bf67bdb7fa92bf4725adc219b852bde79c4835b8477e7b082b857",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "factual-relation",
+        "fill-blank",
+        "metalinguistic",
+        "pun"
+      ],
+      "entryCount": 74
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v1.real-gemma4-26b-20260928.json",
+      "digest": "sha256-f6e6051298fc0d90db7a6f93beaa2987a133ab033f4f4450179d29bd70d31b5b",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "factual-relation",
+        "fill-blank",
+        "pun",
+        "spoken-equivalent"
+      ],
+      "entryCount": 78
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v11.gemma4-26b-20260928.json",
+      "digest": "sha256-a25074170258fead8487fc1f16e9f51afec0217704c40aa1b868bd5ca35924fe",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun",
+        "spoken-equivalent"
+      ],
+      "entryCount": 76
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v12.gemma4-26b-20260928.json",
+      "digest": "sha256-b2a2430b07a09961f0f2b6c201fa755db83f551b87fc4f2c2b764a2429a49a84",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun",
+        "spoken-equivalent"
+      ],
+      "entryCount": 78
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v13.gemma4-26b-20260928.json",
+      "digest": "sha256-c2af4605274868997730a87850f0a984926d9312f95f224c38a93b05552e2614",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "factual-relation",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun",
+        "spoken-equivalent"
+      ],
+      "entryCount": 74
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v14.real-gemma4-26b-20260928.json",
+      "digest": "sha256-431090d5c061701f06bae7d0d2d64a0f6e2f19aa667645762144ff75404ff6b0",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun",
+        "spoken-equivalent"
+      ],
+      "entryCount": 72
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v2.real-gemma4-26b-20260928.json",
+      "digest": "sha256-782cfae372ccfd51c3cf1bd729cba4b3aa01b1ee9ae120956df3a36f236c2e06",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun",
+        "spoken-equivalent"
+      ],
+      "entryCount": 78
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v3.real-gemma4-26b-20260928.json",
+      "digest": "sha256-5b0ec805a37870e31904bb9e54dddc17838a25d2aac7d574ee7920150642535f",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "factual-relation",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun",
+        "spoken-equivalent"
+      ],
+      "entryCount": 74
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v4.real-gemma4-26b-20260928.json",
+      "digest": "sha256-737aaee098deaf595a24d8bdba036e67b0903fb239746052ad2fa763378b304d",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "factual-relation",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun"
+      ],
+      "entryCount": 76
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v5.real-gemma4-26b-20260928.json",
+      "digest": "sha256-921feb0ca6a101d118537d5263ac65a9b86612c4cc9f4043ad3e303991738c2a",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "fill-blank",
+        "pun"
+      ],
+      "entryCount": 74
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v6.real-gemma4-26b-20260928.json",
+      "digest": "sha256-b3cf1d4ca98530544ce5d0a6168deae76d1b297f2659458ab130583f94bfa98a",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "factual-relation",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun"
+      ],
+      "entryCount": 74
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v7.real-gemma4-26b-20260928.json",
+      "digest": "sha256-a2a5a25a4b59bfb3d9126b01789fe238f80f89abb2be0bbfece0c0c46ed20d9e",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun",
+        "spoken-equivalent"
+      ],
+      "entryCount": 76
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v8.real-gemma4-26b-20260928.json",
+      "digest": "sha256-435e58df7b7a455d420f8e49ea1d763356a3402e447fc7c11989a062b1f1f835",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun",
+        "spoken-equivalent"
+      ],
+      "entryCount": 74
+    },
+    {
+      "name": "private-tuesday-clue-quality-study-v9.gemma4-26b-20260928.json",
+      "digest": "sha256-879e6f86c07606260b20cd73a7e29bf8f2219d3984bf44097e9c09b61b034150",
+      "scopes": [
+        "summary"
+      ],
+      "families": [
+        "definition",
+        "factual-relation",
+        "fill-blank",
+        "metalinguistic",
+        "nonverbal-expression",
+        "pun",
+        "spoken-equivalent"
+      ],
+      "entryCount": 72
+    },
+    {
+      "name": "private-tuesday-clue-study-v1.real-gemma4-26b-20260928.json",
+      "digest": "sha256-a3dc8c8c5788eaaf925dad87f75aa4e9be5f823293bd7c26f0aa1f5aef305606",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-tuesday-clue-study-v2.real-gemma4-26b-20260928.json",
+      "digest": "sha256-e02945fc01f5b2c5b06d243c0974ea5f3c5fad71605f3b7bab91ce747f63e7a8",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-tuesday-clue-study-v3.real-gemma4-26b-20260928.json",
+      "digest": "sha256-8783f8835895613a4214c6e6be13f33f274f4e12c94335fc4cd8d614862bab73",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-tuesday-qwen-runtime-smoke-v1.20260928.json",
+      "digest": "sha256-d98fc9066fb9b5095540fe6943565cee3410d563f819c41deb84608c5bf37582",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-two-theme-anchor-smoke-v1.json",
+      "digest": "sha256-abea6ec55416bf32d3e03c05e1eb6d753d945e61bb7ca7bc41a295f33f5517b7",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-weekday-mechanic-study-v1.real-gemma4-26b-20260928.json",
+      "digest": "sha256-2e76baed5b96fbd8ab5e89740768d9006e78a30d2deb25294e8b8d85915377c9",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-weekday-mechanic-study-v1.real-gemma4-26b-fallback-20260928.json",
+      "digest": "sha256-97ef3f85a9c3728c4613135f73e9f24424a51aa5825257757bfc6f6a266c49c8",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-weekday-mechanic-study-v1.real-gemma4-26b-floor-20260928.json",
+      "digest": "sha256-f6f82318ff536feef88cf3914a980acb20c3fa9ff05e54b947b0a6d3fa85895f",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-weekday-mechanic-study-v1.real-gemma4-26b-manifest-20260928.json",
+      "digest": "sha256-19065f059c86845e4b8920bfba2cd1417e2050297c0d6f1faed5b0b0372b28a4",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-weekday-mechanic-study-v1.real-gemma4-26b-seed140-20260928.json",
+      "digest": "sha256-60f6a751db8fb630cbf2a51087138b1d9d453863068ce84389588e194d95f441",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-weekday-mechanic-study-v1.real-gemma4-26b-strict-floor-20260928.json",
+      "digest": "sha256-3a8ba2efac1dc4159983689f83db6b97b339e6c6fcf10909cb8809516cf407cc",
+      "note": "no familyCounts; counters not re-resolvable"
+    },
+    {
+      "name": "private-weekday-mechanic-study-v1.real-gemma4-26b-thursday-20260928.json",
+      "digest": "sha256-feb7b3458119694954774140153f53e38ab633509e0f8bc5a3e9e1eb16da9e3d",
+      "note": "no familyCounts; counters not re-resolvable"
+    }
+  ],
+  "familyTotals": {
+    "definition": 387,
+    "factual-relation": 12,
+    "fill-blank": 315,
+    "metalinguistic": 134,
+    "nonverbal-expression": 141,
+    "pun": 151,
+    "spoken-equivalent": 60
+  },
+  "signalTotals": {
+    "abbreviation-indicator": 134,
+    "brackets": 141,
+    "fill-blank": 315,
+    "language-indicator": 12,
+    "question-mark": 151,
+    "quote": 61,
+    "spoken-equivalent-marker": 54,
+    "tense-marker": 1
+  },
+  "issueTotals": {},
+  "maxFillBlankShare": {
+    "name": "private-tuesday-clue-quality-study-v5.real-gemma4-26b-20260928.json#summary",
+    "share": 0.7703,
+    "fillBlank": 57,
+    "entryCount": 74
+  },
+  "generatedAt": "2026-10-01T08:32:29+00:00",
+  "kind": "offline",
+  "interpretation": "surface-and-mechanical counters only; the artifacts carry no clue text, so no quality claim follows"
+}
