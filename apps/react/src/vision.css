@@ -22,12 +22,21 @@
 
 /* --- 0. Tokens for this pass --------------------------------------------- */
 #app.react-desktop-app {
-  /* The number ramp is the board's rainbow: one arc from amber through green,
-       cyan, blue and violet to rose, spread by rank so neighbouring clues step
-       gently along the spectrum and the whole sweep of the puzzle reads at a
-       glance. Enough chroma to learn by, never a gradient across the surface. */
+  /* The number ramp is the board's rainbow, and each lane gets half the wheel:
+       Across the warm half — red-orange through amber to green — Down the cool
+       half — cyan through blue and violet to rose — so the two gradients never
+       overlap and each direction keeps full intensity in its own flavour. The
+       full 46→332 sweep survives underneath for celebrations; the clue mapping
+       below reads the per-lane arc instead. Board squares follow the Across
+       half, so one number still means one learned hue on the board. */
   --ramp-start-hue: 46;
   --ramp-end-hue: 332;
+  --across-arc-start: 30;
+  --across-arc-end: 170;
+  --down-arc-start: 200;
+  --down-arc-end: 350;
+  --arc-start-hue: var(--across-arc-start);
+  --arc-end-hue: var(--across-arc-end);
   --ramp-chroma: 0.155;
   --ramp-lightness: 0.82;
   /* Direction reads as value, never as a second hue: the lane a clue sits in
@@ -35,13 +44,13 @@
        clearly brighter, Down clearly quieter, so the direction reads first
        and the hue still names the clue. */
   --across-lift: 0.07;
-  --down-drop: 0.09;
+  --down-drop: 0.07;
   --clue-lightness: var(--ramp-lightness);
   /* The selection pushes the same split further: an Across highlight clearly
        brighter, a Down highlight clearly dimmer, so the direction reads first
        even on the lit word while the hue still names the clue. */
   --highlight-lift: 0.11;
-  --highlight-drop: 0.13;
+  --highlight-drop: 0.1;
   /* Interaction reads as saturation. The ember is the clue at rest, the flame
        is the clue (or its squares) being worked; the alphas decide how much
        light each state is allowed to make on this display. The halo is the
@@ -130,16 +139,19 @@
    it — the ladder's number box, the clue row it sits in, the answer boxes
    under it, the numbered square on the board — never only on the container:
    custom properties are substituted where they are declared, so each place
-   computes its own hue where that hue is shown. Learn the colour on a chip,
-   find the same colour on the square. Three channels: the hue is the clue,
-   the lightness below is the direction, and the ember/flame pair (section 1b)
-   spends the chroma on interaction.
+   computes its own hue where that hue is shown. The rank maps onto the lane's
+   own half of the wheel (section 0): neighbouring Across answers step along
+   the warm half, neighbouring Down answers along the cool half, so each lane
+   is a gradient that never touches the other's. Learn the colour on a chip,
+   find the same colour on the square. Three channels: the hue is the clue
+   within its lane, the lightness below is the direction, and the
+   ember/flame pair (section 1b) spends the chroma on interaction.
    ========================================================================== */
 #app.react-desktop-app
   :is(.clue-number, .state, .grid-cell, .spring-stop, #across li, #down li) {
   --clue-hue: calc(
-    var(--ramp-start-hue) +
-      (var(--clue-ramp, 0) * (var(--ramp-end-hue) - var(--ramp-start-hue)))
+    var(--arc-start-hue) +
+      (var(--clue-ramp, 0) * (var(--arc-end-hue) - var(--arc-start-hue)))
   );
   --clue-tint: oklch(var(--clue-lightness) var(--ramp-chroma) var(--clue-hue));
   /* Ember: the resting light — the same hue, spent quietly. */
@@ -170,26 +182,36 @@
 #app.react-desktop-app #across,
 #app.react-desktop-app #down {
   --rail: var(--react-orange);
-  /* Across sits a step brighter, Down a step quieter: the lanes read apart at
-     a glance while every clue keeps the hue that is its own. */
+  /* Across sits a step brighter on its warm half of the wheel. */
+  --arc-start-hue: var(--across-arc-start);
+  --arc-end-hue: var(--across-arc-end);
   --clue-lightness: calc(var(--ramp-lightness) + var(--across-lift));
 }
 #app.react-desktop-app #down {
   --rail: var(--react-blue);
+  /* Down sits a step quieter on its cool half: the lanes read apart at a
+     glance in hue as well as value, while every clue keeps the colour that
+     is its own within its lane. */
+  --arc-start-hue: var(--down-arc-start);
+  --arc-end-hue: var(--down-arc-end);
   --clue-lightness: calc(var(--ramp-lightness) - var(--down-drop));
 }
 
 /* A lit square answers to the active word even when it stands in the other
-   lane's track, so it takes the active direction's highlight value rather than
-   the lane's — the selection is one word wherever its boxes are shown — and it
-   carries the direction's halo colour: warm rail orange for Across, rail blue
-   for Down. */
+   lane's track, so it takes the active direction's highlight value and the
+   active half of the wheel rather than the lane's — the selection is one word
+   wherever its boxes are shown — and it carries the direction's halo colour:
+   warm rail orange for Across, rail blue for Down. */
 #app.react-desktop-app[data-direction='across'] [data-entry-index] {
   --clue-lightness: calc(var(--ramp-lightness) + var(--highlight-lift));
+  --arc-start-hue: var(--across-arc-start);
+  --arc-end-hue: var(--across-arc-end);
   --highlight-halo: var(--react-orange);
 }
 #app.react-desktop-app[data-direction='down'] [data-entry-index] {
   --clue-lightness: calc(var(--ramp-lightness) - var(--highlight-drop));
+  --arc-start-hue: var(--down-arc-start);
+  --arc-end-hue: var(--down-arc-end);
   --highlight-halo: var(--react-blue);
 }
 
@@ -645,13 +667,18 @@
    ========================================================================== */
 #app.react-desktop-app .black-cell {
   position: relative;
+  /* Each tick wears its opener's hue on its opener's half of the wheel: east
+     the Across word's warm hue, south the Down word's cool one. */
   --gate-across-hue: calc(
-    var(--ramp-start-hue) +
-      (var(--gate-across, 0) * (var(--ramp-end-hue) - var(--ramp-start-hue)))
+    var(--across-arc-start) +
+      (
+        var(--gate-across, 0) *
+          (var(--across-arc-end) - var(--across-arc-start))
+      )
   );
   --gate-down-hue: calc(
-    var(--ramp-start-hue) +
-      (var(--gate-down, 0) * (var(--ramp-end-hue) - var(--ramp-start-hue)))
+    var(--down-arc-start) +
+      (var(--gate-down, 0) * (var(--down-arc-end) - var(--down-arc-start)))
   );
 }
 
