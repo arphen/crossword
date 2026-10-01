@@ -79,14 +79,14 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/CrosswordView.test.jsx`
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
 - `apps/react/src/Rapture.jsx` — `RaptureSparks:11`, `RaptureLayer:34`, `Confetti:50`, `Finale:73`
-- `apps/react/src/ViewControls.jsx` — `optionValue:81`, `ViewControls:83`, `choose:84`
+- `apps/react/src/ViewControls.jsx` — `optionValue:88`, `ViewControls:90`, `choose:91`
 - `apps/react/src/behavior/complete.test.js`
 - `apps/react/src/behavior/desktop.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/desktop.js` — `createOptions:3`, `data:6`, `isHalfCompleted:85`, `weekdayOptions:91`, `selectedWeekday:102`, `activeDirection:105`, `created:114`, `beforeUnmount:144`, `checkAndStartCaching:151`, `needsMore:154`, `handleOnlineStatus:182`, `updateCachedCounts:191`, `updateSolvedCounts:198`, `isPuzzleSolved:204`, `isPuzzleSolvedBackend:209`, `markPuzzleSolved:219` (+80 more)
 - `apps/react/src/behavior/mobile.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/mobile.js` — `createOptions:3`, `myEntries:19`, `sortedEntries:23`, `checkButtonLabel:33`, `toggleCheck:38`, `clearIncorrectAndMarkSolved:48`, `isPerfect:57`, `isEntryFilled:91`, `isCellCorrect:96`, `loadPuzzle:102`, `getCellValue:111`, `getCoordinates:115`, `selectEntry:125`, `focusInput:134`, `handleInput:143`, `handleKeydown:167` (+3 more)
 - `apps/react/src/board-presentation.test.jsx`
-- `apps/react/src/boardCues.js` — `balancedRuns:7`, `isWordSeparator:22`, `groupSizes:35`, `groupRuns:43`, `createClueRamp:100`, `clueRampStyle:122`, `isOpen:134`, `cellCues:149`
+- `apps/react/src/boardCues.js` — `balancedRuns:7`, `isWordSeparator:22`, `groupSizes:35`, `groupRuns:43`, `createClueRamp:100`, `clueRampStyle:122`, `entryStartingAt:132`, `isOpen:149`, `cellCues:164`
 - `apps/react/src/boardCues.test.js`
 - `apps/react/src/celebration.css`
 - `apps/react/src/celebration.js` — `countMistakes:5`, `celebrationTier:25`, `seeded:37`, `sparkSpecs:50`, `raptureNote:66`, `finaleMessage:74`, `confettiSpecs:89`
@@ -124,7 +124,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/ReflectionCards.jsx` — `restoredAnswers:18`, `signalReceipt:39`, `ReflectionCards:53`, `respond:59`, `revise:91`, `startSwipe:123`, `finishSwipe:131`, `indexFor:147`, `complete:151`
 - `apps/react/src/future/ReflectionCards.test.jsx`
 - `apps/react/src/future/Signifier.jsx` — `Signifier:4`, `paint:6`
-- `apps/react/src/future/SpecimenLabelPanel.jsx` — `SpecimenLabelPanel:12`, `counts:47`, `prepare:57`, `judge:71`, `toggleSelect:85`, `linkSelected:94`, `attest:111`, `visible:123`
+- `apps/react/src/future/SpecimenLabelPanel.jsx` — `SpecimenLabelPanel:45`, `first:66`, `counts:83`, `queue:89`, `currentIndex:94`, `pairSuggestions:96`, `prepare:107`, `first:114`, `advanceAfter:124`, `rest:125`, `judgedAt:127`, `after:128`, `judge:132`, `stepQueue:151`, `toggleSelect:157`, `linkSelected:166` (+2 more)
 - `apps/react/src/future/SpecimenLabelPanel.test.jsx`
 - `apps/react/src/future/StimulusArtwork.jsx` — `legacySignifierKind:42`, `stableText:47`, `AbstractForm:54`, `TextureMaterial:100`, `StimulusArtwork:174`
 - `apps/react/src/future/StimulusArtwork.test.jsx`
@@ -170,7 +170,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/selectionPresentation.js` — `createSelectionPresentation:3`
 - `apps/react/src/springGeometry.js` — `springTension:17`, `springEnds:31`, `reach:38`, `smooth:51`, `round:52`, `coilPath:60`, `springSegments:93`
 - `apps/react/src/useRapture.js` — `RETRACE_EVENT:16`, `reducedMotion:18`, `useRapture:22`, `retrace:28`, `tick:32`, `celebrate:51`, `gained:52`, `seed:64`
-- `apps/react/src/viewSettings.js` — `VIEW_SETTINGS_KEY:7`, `LUMA_LEVELS:9`, `SCALE_LEVELS:10`, `GROUPING_MODES:11`, `GLYPH_LEVELS:12`, `VIEW_DEFAULTS:14`, `prefersLowBloom:27`, `pick:35`, `boolean:39`, `normalizeViewSettings:43`, `readViewSettings:67`, `writeViewSettings:81`, `viewAttributes:94`
+- `apps/react/src/viewSettings.js` — `VIEW_SETTINGS_KEY:7`, `LUMA_LEVELS:9`, `SCALE_LEVELS:10`, `VIBRANCE_LEVELS:11`, `GROUPING_MODES:12`, `GLYPH_LEVELS:13`, `VIEW_DEFAULTS:15`, `prefersLowBloom:29`, `pick:37`, `boolean:41`, `normalizeViewSettings:45`, `readViewSettings:70`, `writeViewSettings:84`, `viewAttributes:97`
 - `apps/react/src/viewSettings.test.js`
 - `apps/react/src/vision.css`
 - `apps/react/tsconfig.json`
