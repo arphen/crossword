@@ -47,6 +47,12 @@ Run from the repository root. Prefer existing Make targets; use direct commands 
 
 Do not run live-provider tests without explicit opt-in. Generator source belongs to the separate `../crossword-generator` checkout; normal builds consume versioned archives, not that sibling's sources. `make setup` installs the tracked `.githooks` path; its pre-commit hook regenerates and stages `docs/REPO_MAP.md`, and its pre-push hook verifies that the committed map is current.
 
+## Working agreements
+
+- Commit finished work in small, reviewable commits whose messages state what changed and why. Never end a session with tracked modifications uncommitted, and never mix unrelated changes into one commit.
+- Keep the visible HEAD clean: untracked experiments are either committed (marked as experiments) or removed. `git status --short` should show nothing the next agent has to guess about.
+- Run the slice's acceptance commands before committing. The git hooks only keep `docs/REPO_MAP.md` fresh — pre-commit regenerates it, pre-push verifies it. They do not run tests, lint, or type checks. Green gates are the author's responsibility (`make test`, `npm run typecheck`, `npm run lint`, `npm run format:check`); CI enforces them after push.
+
 ## Strict Boundaries
 
 NEVER search, index, or manually modify these directories (names apply at any depth unless a full path is shown):
