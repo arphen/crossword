@@ -31,7 +31,7 @@ letter and solve journal restored after reload. The six Playwright checks pass
 using an isolated synthetic creation fixture and cover the complete solve and
 reflection flow. `/` keeps its daily feed. See
 [implementation notes](../future-onboarding.md) and the
-[current Luna handoff](LUNA_PROMPTS.md).
+[private-game handoff](06_PERSONAL_EPISTEME.md#22-private-game-implementation-handoff-for-luna).
 
 The next implementation work improves actual theme/clue play and shortens the
 generation wait. The separate admitted-content worker, V2 candidate storage,
@@ -80,14 +80,10 @@ the evidence gates in the active plan.
 
 ## Historical/contextual plans
 
-The following documents retain useful reasoning and earlier audits. Browser-only, backend-free, static-workspace-first and obsolete sequencing instructions in them are superseded by ADR 0003 and the active specification.
-
-1. [Legacy audit](00_LEGACY_AUDIT.md).
-2. [Earlier product experience](01_PRODUCT_EXPERIENCE.md).
-3. [Earlier puzzle intelligence](02_PUZZLE_INTELLIGENCE.md).
-4. [Earlier architecture migration](03_ARCHITECTURE_MIGRATION.md).
-5. [Earlier quality/delivery plan](04_QUALITY_DELIVERY.md).
-6. [Earlier execution backlog](05_EXECUTION_BACKLOG.md).
-7. [Luna launch prompt and archived assignments](LUNA_PROMPTS.md).
+Earlier audits and superseded sequencing (00–05, LUNA_PROMPTS) and the Vue
+parity report (`docs/react-port-parity.md`) are shelved from the visible tree
+as of the React-only move; they remain in git history (`git log --all -- <path>`).
+Browser-only, backend-free, static-workspace-first and obsolete sequencing
+instructions in them are superseded by ADR 0003 and the active specification.
 
 No agent should re-request approval for the already authorized move to Ollama/native construction. Detailed editorial defaults are proposals to test during play; claims of runtime readiness, puzzle quality and learning require the evidence in the active plan.

@@ -222,12 +222,6 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/legacy-assets.md`
 - `docs/mutation-testing.md`
 - `docs/npm-audit-baseline.md`
-- `docs/plans/00_LEGACY_AUDIT.md`
-- `docs/plans/01_PRODUCT_EXPERIENCE.md`
-- `docs/plans/02_PUZZLE_INTELLIGENCE.md`
-- `docs/plans/03_ARCHITECTURE_MIGRATION.md`
-- `docs/plans/04_QUALITY_DELIVERY.md`
-- `docs/plans/05_EXECUTION_BACKLOG.md`
 - `docs/plans/06_PERSONAL_EPISTEME.md` — large file; path only
 - `docs/plans/07_EXPERTISE_AND_THE_GENERAL_CROSSWORD.md`
 - `docs/plans/08_AN_INTERNATIONAL_AUDIENCE.md`
@@ -239,9 +233,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/plans/14_CLUE_GRAMMAR_MEANING_AND_ENJOYMENT.md`
 - `docs/plans/15_THE_SELF_CRITIQUE_OF_THE_CONCEPT.md`
 - `docs/plans/16_CLUE_QUALITY_RECOVERY.md`
-- `docs/plans/LUNA_PROMPTS.md`
 - `docs/plans/README.md`
-- `docs/react-port-parity.md`
 
 ## packages
 
