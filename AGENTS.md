@@ -51,7 +51,7 @@ Do not run live-provider tests without explicit opt-in. Generator source belongs
 
 - Commit finished work in small, reviewable commits whose messages state what changed and why. Never end a session with tracked modifications uncommitted, and never mix unrelated changes into one commit.
 - Keep the visible HEAD clean: untracked experiments are either committed (marked as experiments) or removed. `git status --short` should show nothing the next agent has to guess about.
-- Run the slice's acceptance commands before committing. The git hooks only keep `docs/REPO_MAP.md` fresh — pre-commit regenerates it, pre-push verifies it. They do not run tests, lint, or type checks. Green gates are the author's responsibility (`make test`, `npm run typecheck`, `npm run lint`, `npm run format:check`); CI enforces them after push.
+- Run the slice's acceptance commands before committing. The git hooks enforce green gates: pre-commit runs the repo-map regen plus ruff, prettier, eslint and typecheck; pre-push runs the map check and the full `make test` suite. Do not use `--no-verify`; CI enforces the same gates after push.
 
 ## Strict Boundaries
 
