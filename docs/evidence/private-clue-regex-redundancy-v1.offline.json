@@ -1,0 +1,99 @@
+{
+  "version": "private-clue-regex-redundancy-v1",
+  "kind": "offline",
+  "generatedAt": "2026-10-01T17:57:09+00:00",
+  "claim": "per-blocker redundancy verdicts with the evidence for each",
+  "matrix": {
+    "surfaces": 12
+  },
+  "verdicts": {
+    "generic": {
+      "matrixFires": 6,
+      "matrixSurfaces": 6,
+      "uniqueRejections": 6,
+      "uncovered": [
+        {
+          "surface": "generic-bare",
+          "clue": "Common name",
+          "answer": "XENON",
+          "otherEnforcement": []
+        },
+        {
+          "surface": "generic-padded",
+          "clue": "A common name for a gas?",
+          "answer": "XENON",
+          "otherEnforcement": []
+        },
+        {
+          "surface": "generic-term",
+          "clue": "Usually a common term",
+          "answer": "XENON",
+          "otherEnforcement": []
+        },
+        {
+          "surface": "template-acronym",
+          "clue": "A common acronym",
+          "answer": "XENON",
+          "otherEnforcement": []
+        },
+        {
+          "surface": "noroute-synonym",
+          "clue": "Usual synonym",
+          "answer": "XENON",
+          "otherEnforcement": []
+        },
+        {
+          "surface": "noroute-answer",
+          "clue": "Standard answer",
+          "answer": "XENON",
+          "otherEnforcement": []
+        }
+      ],
+      "decision": "retain",
+      "rationale": "a bare Common name is caught by nothing else; removal would admit it to players"
+    },
+    "low-information": {
+      "matrixFires": 2,
+      "matrixSurfaces": 2,
+      "uniqueRejections": 2,
+      "uncovered": [
+        {
+          "surface": "lowinfo-thing",
+          "clue": "A thing",
+          "answer": "XENON",
+          "otherEnforcement": []
+        },
+        {
+          "surface": "lowinfo-something",
+          "clue": "Something",
+          "answer": "XENON",
+          "otherEnforcement": []
+        }
+      ],
+      "decision": "retain",
+      "rationale": "the set is the information guard; removal would admit content-free surfaces"
+    },
+    "name": {
+      "matrixFires": 4,
+      "matrixSurfaces": 4,
+      "uniqueRejections": 0,
+      "uncovered": [],
+      "decision": "removed",
+      "rationale": "unsourced name slots are refused downstream by the factual-surface guard and the genre cap, which spare reviewed source-backed senses"
+    }
+  },
+  "corpus": {
+    "captured": true,
+    "pairs": 146,
+    "fires": {
+      "generic": 0,
+      "low-information": 0,
+      "name": 0
+    }
+  },
+  "knownLimits": [
+    "matrix surfaces are hand-listed, not a sample of production boards",
+    "retained blockers await the specimen scorer (Q02), not another regex",
+    "no operator-judged specimen is consumed by this receipt"
+  ]
+}

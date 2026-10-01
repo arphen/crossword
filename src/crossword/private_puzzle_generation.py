@@ -96,11 +96,19 @@ _DIVERSITY_FAMILY_ORDER = (
 # pass.  The validators below remain authoritative; the examples are only
 # there to make the requested house style legible to a local model.
 _DIVERSITY_REQUIRED_SURFACE = {
-    "pun": "end with ? and use a concise alternate-reading question, e.g. `Branch specialist?`",
-    "fill-blank": "contain ___ or an ellipsis blank",
+    "pun": (
+        "end with ? AND hinge on a word with two real senses present in the "
+        "surface, e.g. `One with a lot to say?` (LOT: a quantity / an auction "
+        "item) or `Branch specialist?` (BRANCH: a tree limb / a bank office). "
+        "A bare ? with no double-meaning word is not a pun."
+    ),
+    "fill-blank": "contain ___ or an ellipsis blank, e.g. `___ voyage`",
     "nonverbal-expression": "be fully bracketed like [Sound heard nearby]",
-    "spoken-equivalent": "be a whole quoted utterance, optionally followed by (Spoken equivalent)",
-    "metalinguistic": "include (abbr.) or the word briefly",
+    "spoken-equivalent": (
+        "be a whole quoted utterance plus its spoken label, e.g. `\"Hello "
+        "there\" (Spoken equivalent)`. A quote without a label is not one."
+    ),
+    "metalinguistic": "include (abbr.) or the word briefly, e.g. `Doctor, briefly`",
 }
 
 # A private crossword can be strange, slangy, or occasionally adult when the
@@ -197,37 +205,12 @@ _GENERIC_TEMPLATE_PHRASE_RE = re.compile(
     r"(?:names?|terms?|words?|designations?|labels?)\b",
     re.IGNORECASE,
 )
-# A role plus an unspecified person's name is the same dead-end clue in a
-# slightly more flattering costume.  It gives no route into the entry and is
-# especially harmful for the obscure-name cases the foothold policy is meant
-# to soften.  Keep this anchored so a specific clue such as "Writer's name in
-# a quoted title" remains available.
-_GENERIC_NAME_CLUE_RE = re.compile(
-    r"^\s*(?:(?:a|an|the)\s+)?"
-    r"(?:(?:famous|well[- ]known|notable|popular|renowned|celebrated|"
-    r"italian|french|german|spanish|japanese|portuguese|dutch)\s+)?"
-    r"(?:actor|actress|artist|author|band|character|comedian|composer|"
-    r"director|king|queen|singer|scientist|scholar|surname|writer|"
-    r"novelist|poet|person|president|saint|celebrity)"
-    r"(?:'s|’s)?\s+name"
-    r"(?:\s*,?\s*perhaps)?\s*[?.]?\s*$",
-    re.IGNORECASE,
-)
-_GENERIC_NAME_OF_CLUE_RE = re.compile(
-    r"^\s*name\s+of\s+(?:(?:a|an|the)\s+)?"
-    r"(?:(?:famous|well[- ]known|notable|popular|renowned|celebrated|"
-    r"classic|italian|french|german|spanish|japanese|portuguese|dutch)\s+)?"
-    r"(?:actor|actress|artist|author|comedian|composer|director|king|queen|"
-    r"singer|scientist|scholar|writer|novelist|poet|person|president|saint|"
-    r"celebrity)\s*[?.]?\s*$",
-    re.IGNORECASE,
-)
-_GENERIC_NAME_CONTEXT_RE = re.compile(
-    r"^\s*(?:a\s+)?name\s+(?:that|which)\s+"
-    r"(?:(?:might|could|would|can)\s+)?"
-    r"(?:follow|precede|come\s+(?:after|before))\b.*[?.]?\s*$",
-    re.IGNORECASE,
-)
+# The three anchored name-shape guards lived here and were retired in Q08:
+# name-shaped clues without a source-backed sense are refused downstream by
+# the factual-surface guard and the genre cap (name-slot-without-source),
+# which additionally spare reviewed source-backed senses. The anchored
+# shapes survive as detectors in clue_genre.py (anchored-name-guard), where
+# they count instead of blocking.
 # A few other noun-only templates have the same failure mode as ``common
 # name``: they describe the *kind* of answer without giving the solver a
 # referent, sense, or signalled mechanism.  Keep this detector anchored to the
@@ -3168,12 +3151,16 @@ def _clue_wordplay_issue(entry, clue):
     degree = _clue_degree_issue(entry, text)
     if degree is not None:
         return degree
+    # The three anchored name-shape guards lived here and were removed in
+    # Q08: name-shaped clues without a source-backed sense are refused
+    # downstream by the factual-surface guard and the genre cap
+    # (name-slot-without-source), which additionally spare reviewed
+    # source-backed senses instead of scaffolding them. The generic and
+    # low-information blockers below stay: nothing else catches a bare
+    # "Common name", and removing them would admit it to players.
     if (
         _GENERIC_TEMPLATE_PHRASE_RE.search(text)
         or _GENERIC_CLUE_RE.fullmatch(text)
-        or _GENERIC_NAME_CLUE_RE.fullmatch(text)
-        or _GENERIC_NAME_OF_CLUE_RE.fullmatch(text)
-        or _GENERIC_NAME_CONTEXT_RE.fullmatch(text)
         or _GENERIC_NO_ROUTE_CLUE_RE.fullmatch(text)
     ):
         return "generic-clue"
@@ -4299,8 +4286,8 @@ def _repair_clue_diversity(model, entries, clues, context, weekday, reviewed_by_
                         f"{recipe['clueDirection']} "
                         "Rewrite only the selected entries, preserving fair grammar and answer shape. "
                         "The requested desiredFamily is mandatory for each selected id; do not silently substitute another family. "
-                        "Use its requiredSurface literally. For a pun, do more than append a question mark: write a concise question with a plausible alternate reading or playful double meaning; the surface example `Branch specialist?` shows the shape only, and must be adapted to the supplied answer without spelling that answer. "
-                        "A fill-in contains ___ or an ellipsis, a nonverbal cue is fully bracketed, a spoken-equivalent is a whole quoted utterance, and a metalinguistic clue says abbr. or briefly. "
+                        "Use its requiredSurface literally. For a pun, the question mark is not enough: hinge the surface on a word with two real senses, e.g. `One with a lot to say?` (LOT: a quantity / an auction item); the surface example `Branch specialist?` shows the shape only, and must be adapted to the supplied answer without spelling that answer. "
+                        "A fill-in contains ___ or an ellipsis, a nonverbal cue is fully bracketed, a spoken-equivalent is a whole quoted utterance plus its spoken label (a bare quote does not qualify), and a metalinguistic clue says abbr. or briefly. "
                         "Prefer these surface conventions over unsupported factual relations; do not invent facts, proper names, translations, or wordplay. Do not put an answer in its clue. "
                         "Return exactly one clue for every supplied id and no extra keys."
                     ),

@@ -39,7 +39,8 @@ GENRES = (
     "plain-definition",
 )
 
-# Closed role vocabulary, mirroring _GENERIC_NAME_CLUE_RE/_GENERIC_NAME_OF_CLUE_RE.
+# Closed role vocabulary, formerly shared with the retired generic name
+# guards; the genre census is now its home.
 _ROLES = (
     "actor", "actress", "artist", "author", "band", "character", "comedian",
     "composer", "director", "king", "queen", "singer", "scientist", "scholar",
@@ -51,8 +52,9 @@ _ROLES = (
 _ROLE_RE = re.compile(r"\b(?:" + "|".join(_ROLES) + r")\b", re.IGNORECASE)
 _NAME_WORD_RE = re.compile(r"\bname[ds]?\b", re.IGNORECASE)
 _NAME_OF_RE = re.compile(r"\bname\s+of\s+(?:a|an|the)\b", re.IGNORECASE)
-# Anchored dead-end shapes, mirroring _GENERIC_NAME_CLUE_RE,
-# _GENERIC_NAME_OF_CLUE_RE and _GENERIC_NAME_CONTEXT_RE. Update together.
+# Anchored dead-end shapes, formerly also enforced as generic-clue blockers
+# in _clue_wordplay_issue (retired in Q08). They survive here as detectors
+# (anchored-name-guard), where they count instead of blocking.
 _ANCHORED_NAME_RES = (
     re.compile(
         r"^\s*(?:(?:a|an|the)\s+)?"

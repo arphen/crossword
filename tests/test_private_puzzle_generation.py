@@ -1513,36 +1513,23 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
         )
         == "generic-clue"
     )
-    assert (
-        private_generation._clue_wordplay_issue(
-            {"answer": "NASH"}, "Famous writer's name"
-        )
-        == "generic-clue"
-    )
-    assert (
-        private_generation._clue_wordplay_issue(
-            {"answer": "TONI"}, "Italian singer's name, perhaps"
-        )
-        == "generic-clue"
-    )
-    assert (
-        private_generation._clue_wordplay_issue(
-            {"answer": "TONI"}, "Artist's name"
-        )
-        == "generic-clue"
-    )
-    assert (
-        private_generation._clue_wordplay_issue(
-            {"answer": "NASH"}, "Name of a classic novelist"
-        )
-        == "generic-clue"
-    )
-    assert (
-        private_generation._clue_wordplay_issue(
-            {"answer": "SAJAK"}, "Name that might follow 'Pat ...'"
-        )
-        == "generic-clue"
-    )
+    # Q08 retired the three anchored name-shape blockers from the wordplay
+    # guard: unsourced name slots are refused downstream by the
+    # factual-surface guard and the genre cap (name-slot-without-source),
+    # which spare reviewed source-backed senses instead of scaffolding them.
+    # The legitimate crosswordese convention below passes the wordplay guard
+    # whole; safety still scaffolds it without a source-backed sense.
+    for clue, answer in (
+        ("Famous writer's name", "NASH"),
+        ("Italian singer's name, perhaps", "TONI"),
+        ("Artist's name", "TONI"),
+        ("Name of a classic novelist", "NASH"),
+        ("Name that might follow 'Pat ...'", "SAJAK"),
+    ):
+        assert (
+            private_generation._clue_wordplay_issue({"answer": answer}, clue)
+            is None
+        ), clue
 
 
 def test_clue_guard_rejects_other_noun_only_generic_templates_but_keeps_specific_routes():
@@ -2366,16 +2353,16 @@ def test_tuesday_diversity_prompt_gives_puns_a_second_reading_example(monkeypatc
 
     assert repair["rewrittenCount"] > 0
     system_prompt = captured["messages"][0]["content"]
-    assert "alternate reading or playful double meaning" in system_prompt
+    assert "hinge the surface on a word with two real senses" in system_prompt
     assert "Branch specialist?" in system_prompt
     payload = json.loads(captured["messages"][-1]["content"])
     pun_entry = next(
         item for item in payload["entries"] if item["desiredFamily"] == "pun"
     )
-    assert pun_entry["requiredSurface"] == (
-        "end with ? and use a concise alternate-reading question, "
-        "e.g. `Branch specialist?`"
+    assert pun_entry["requiredSurface"].startswith(
+        "end with ? AND hinge on a word with two real senses present in the surface"
     )
+    assert "A bare ? with no double-meaning word is not a pun." in pun_entry["requiredSurface"]
     assert clues[pun_entry["id"]] == "Branch specialist?"
 
 

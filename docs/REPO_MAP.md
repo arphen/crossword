@@ -185,6 +185,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/private-clue-counter-reresolution-v1.offline.json`
 - `docs/evidence/private-clue-genre-census-v1.offline.json`
 - `docs/evidence/private-clue-leak-gate-v1.synthetic.json`
+- `docs/evidence/private-clue-regex-redundancy-v1.offline.json`
 - `docs/evidence/private-clue-witness-audit-v1.offline.json`
 - `docs/evidence/private-current-source-live-smoke-v1.20260928.json`
 - `docs/evidence/private-current-source-live-smoke-v2.20260928.json`
@@ -305,6 +306,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/private-clue-corpus.py` — `_today:39`, `_file_digest:43`, `attest_body:47`, `collect_study_artifacts:65`, `reresolve_body:81`, `main:92`
 - `scripts/private-clue-derivation-gate.py` — `build_pairs:111`, `evaluate:155`, `degree_rule_gaps:174`, `corpus_digest:191`, `real_corpus_status:196`, `receipt_body:217`, `main:276`
 - `scripts/private-clue-genre-census.py` — `audit_matrix:64`, `audit_corpus:75`, `receipt_body:98`, `main:126`
+- `scripts/private-clue-regex-redundancy.py` — `_fires:58`, `_other_enforcement:74`, `main:102`
 - `scripts/private-clue-review-export.py` — `main:26`
 - `scripts/private-clue-study.py` — `_base_url:37`, `_request:48`, `main:75`
 - `scripts/private-clue-witness-audit.py` — `audit_matrix:67`, `audit_corpus:93`, `hidden_word_probe:115`, `receipt_body:124`, `main:162`
@@ -329,7 +331,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `src/crossword/calibration_api.py` — `CalibrationSessionRecord:25`, `CalibrationRuntimeUnavailable:35`, `CalibrationPayloadRejected:39`, `_error:43`, `_canonical_json:50`, `_valid_uuid:54`, `_same_origin:63`, `_read_bounded_json:68`, `_catalog_stimuli:87`, `_run_validator:99`, `_sequences:144`, `_has_active_response:157`, `_validate_host_invariants:180`, `_validate_append:206`, `_etag:239`, `_session_response:243` (+4 more)
 - `src/crossword/calibration_hypothesis_api.py` — `CalibrationHypothesisDeckRecord:62`, `CalibrationHypothesisResponseRecord:79`, `CalibrationHypothesisActionRecord:96`, `HypothesisRuntimeUnavailable:114`, `_canonical:118`, `_hash:122`, `_valid_uuid:126`, `_local_origin:135`, `_error:140`, `_read_json:147`, `_catalog:168`, `_calibration_and_profile:183`, `_active_chosen_source:216`, `_text:303`, `_reject_player_inference:316`, `_validate_model_paths:322` (+32 more)
 - `src/crossword/clue_candidate_admission.py` — `_tokens:32`, `token_overlap:36`, `shape_admit:46`, `admit_candidate:58`, `select_survivors:76`, `comparison_payload:84`, `validate_comparison_response:99`, `score_surface_set:112`
-- `src/crossword/clue_genre.py` — `_text:130`, `observe_clue_genre:134`, `census_genres:201`
+- `src/crossword/clue_genre.py` — `_text:132`, `observe_clue_genre:136`, `census_genres:203`
 - `src/crossword/clue_grammar_bridge.py` — `_issue:73`, `_signals:80`, `_surface_signal_present:87`, `_signal_matches_literal:110`, `validate_surface_clue_family:129`, `summarize_surface_clue_families:237`
 - `src/crossword/clue_grounding_validators.py` — `_letters_only:57`, `_span:61`, `_validator_base:84`, `_mechanical_validator:100`, `validate_private_clue_witnesses:153`
 - `src/crossword/clue_quality_evaluation.py` — `canonical_clue_quality_json:29`, `_digest:39`, `_seed:45`, `_count:51`, `_text:57`, `_mapping:63`, `_counts:69`, `_number:81`, `clue_case_from_provenance:87`, `evaluate_clue_quality_study:256`
