@@ -1,0 +1,712 @@
+/* ==========================================================================
+   Vision pass — reader-adjustable legibility for the React desktop board.
+   Loaded after desktop.css, so these declarations are the final word on shared
+   selectors. Every rule keys off the data-* attributes the view publishes from
+   its saved settings (viewSettings.js); nothing here changes puzzle behaviour.
+   Kept intact: the two-column zigzag with its +/-25px ladder, the ACROSS / DOWN
+   watermarks, orange Across / blue Down, and the matte surfaces (no blur, no
+   moving light, motion limited to transform / opacity).
+   Sections: 0 tokens, 1 number colour, 2 springs, 3 letter track, 4 board
+   notches, 5 low-bloom tiers, 6 view cluster, 8 board size.
+   ========================================================================== */
+
+/* --- 0. Tokens for this pass --------------------------------------------- */
+#app.react-desktop-app {
+  /* The number ramp runs warm to cool across the whole puzzle, so a low number
+       is amber, a middle one is green-teal and a high one is blue-violet. Enough
+       chroma to learn by, not enough to read as a rainbow. */
+  --ramp-start-hue: 62;
+  --ramp-end-hue: 285;
+  --ramp-chroma: 0.105;
+  --ramp-lightness: 0.82;
+  --clue-letter-scale: 1;
+  --clue-text-scale: 1;
+  /* One face for letters and numerals: a rounded-geometric sans reads faster in
+       capitals than a monospace, and its tabular figures still keep columns. */
+  --react-face: 'Avenir Next', 'SF Pro Rounded', 'Segoe UI Variable Text',
+    'Segoe UI', system-ui, sans-serif;
+  --slot-line: color-mix(in oklab, var(--react-ink) 34%, transparent);
+  --slot-wash: color-mix(in oklab, var(--react-ink) 6%, transparent);
+  --tick-across: color-mix(in oklab, var(--react-orange) 82%, transparent);
+  --tick-down: color-mix(in oklab, var(--react-blue) 82%, transparent);
+  --ruler-minor: color-mix(in oklab, var(--react-ink) 18%, transparent);
+  --ruler-major: color-mix(in oklab, var(--react-ink) 38%, transparent);
+  --letter-glow: 0 0 14px rgba(180, 205, 235, 0.22);
+  /* Board size. desktop.css fits the cell to whichever budget is tightest; the
+       reader's choice is a factor on that fit, kept modest at the top end because
+       the board column has only a few pixels of slack around the frame. */
+  --board-scale: 1;
+  --cell-size: calc(
+    min(
+        3.25rem,
+        calc((min(42.4vw, 814px) - 52px) / var(--grid-columns)),
+        calc((100dvh - 310px) / var(--grid-rows))
+      ) *
+      var(--board-scale)
+  );
+}
+
+#app.react-desktop-app[data-scale='compact'] {
+  --board-scale: 0.82;
+}
+#app.react-desktop-app[data-scale='full'] {
+  --board-scale: 1.06;
+}
+
+/* ==========================================================================
+   1. Number-to-colour association.
+   The ramp is declared on the two elements that carry a rank (the ladder's
+   number box and the board square), never on the container: custom properties
+   are substituted where they are declared, so a shared declaration on the root
+   would resolve against a rank that is not there. Both places compute the same
+   hue for the same number, which is the whole point — learn the hue once in the
+   ladder, find the square in the grid.
+   ========================================================================== */
+#app.react-desktop-app .clue-number,
+#app.react-desktop-app .grid-cell,
+#app.react-desktop-app .spring-stop {
+  --clue-hue: calc(
+    var(--ramp-start-hue) +
+      (var(--clue-ramp, 0) * (var(--ramp-end-hue) - var(--ramp-start-hue)))
+  );
+  --clue-tint: oklch(var(--ramp-lightness) var(--ramp-chroma) var(--clue-hue));
+}
+
+/* Off keeps the structure and drops the pigment, so the option is usable by
+   readers who only want the rails. */
+#app.react-desktop-app[data-ramp='off'] {
+  --ramp-chroma: 0;
+  --ramp-lightness: 0.72;
+}
+
+/* The ladder chip. The numeral carries the rank colour, because the number is
+   what the reader hunts for; the frame carries the direction (orange Across,
+   blue Down) at a strength that sits under any rank hue. The fill is opaque on
+   purpose: the springs run behind the chips and must end at their edge. The
+   selected and crossing chips keep desktop.css's solid direction fill. */
+#app.react-desktop-app #across,
+#app.react-desktop-app #down {
+  --rail: var(--react-orange);
+}
+#app.react-desktop-app #down {
+  --rail: var(--react-blue);
+}
+
+#app.react-desktop-app :is(#across, #down) .clue-number {
+  color: var(--clue-tint);
+  border-color: color-mix(in oklab, var(--rail) 50%, var(--react-bg));
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--rail) 10%, var(--react-bg)),
+    var(--react-bg)
+  );
+  box-shadow:
+    inset 0 1px 0 var(--surface-glint),
+    0 3px 8px -4px #000c;
+  font-family: var(--react-face);
+  font-size: 1.12rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: 0.01em;
+}
+
+#app.react-desktop-app[data-ramp='off'] :is(#across, #down) .clue-number {
+  color: var(--rail);
+}
+
+/* A square's small index is the reader's cross-check, so it carries the rank
+   directly. Squares inside the active entry keep their plain ink: the amber or
+   blue wash behind them is already doing the emphasis. */
+#app.react-desktop-app .grid-cell:not([data-entry-index]) .clue-index {
+  color: color-mix(in oklab, var(--react-muted) 45%, var(--clue-tint));
+}
+
+/* ==========================================================================
+   2. The springs.
+   One coil between every pair of neighbouring chips, drawn by ClueSpring from
+   the measured chip positions and painted behind the chips so each end tucks
+   under its anchor. The stroke is a gradient from the first chip's rank colour
+   to the second's. Adjacent numbers make a relaxed, tightly wound spring; when
+   solved clues leave the ladder the neighbours are further apart on the ramp,
+   the same length carries more colour change, and the coil opens out and flattens
+   — the slack is taken up. The geometry is in springGeometry.js; this is only ink.
+   ========================================================================== */
+#app.react-desktop-app .clue-spring {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#app.react-desktop-app .spring-stop {
+  stop-color: var(--clue-tint);
+}
+
+#app.react-desktop-app .spring-coil {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.7;
+  animation: spring-settle 240ms ease-out both;
+}
+
+#app.react-desktop-app .spring-coil[data-state='affected'] {
+  opacity: 0.88;
+}
+
+#app.react-desktop-app .spring-coil[data-state='active'] {
+  opacity: 1;
+  stroke-width: 2.1;
+}
+
+/* A new spring, made when a solved clue closes a gap, takes up the slack by
+   fading in rather than appearing. Opacity only. */
+@keyframes spring-settle {
+  from {
+    opacity: 0;
+  }
+}
+
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  .spring-coil {
+  opacity: 0.6;
+}
+
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  .spring-coil[data-state] {
+  opacity: 0.9;
+}
+
+/* ==========================================================================
+   3. The letter track.
+   Letters are grouped by word first and balanced into runs of at most five
+   second (boardCues.js), and each run is an unbreakable flex item: a clue that
+   has to wrap breaks between runs, never through one, so the rhythm the reader
+   learned survives the line break. The wider gap between words is the same one
+   the answer has on the board.
+   ========================================================================== */
+#app.react-desktop-app .state-container {
+  /* A definite width, so a wrapping track never depends on shrink-to-fit sizing
+     to decide how tall its row is. Alignment is justify-content's job. */
+  align-self: stretch;
+  box-sizing: border-box;
+  gap: calc(5px * var(--clue-letter-scale)) calc(11px * var(--clue-letter-scale));
+  min-height: calc(25px * var(--clue-letter-scale));
+}
+
+#app.react-desktop-app .state-run {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(3px * var(--clue-letter-scale));
+}
+
+/* A run that ends a word gets the wider gap: the boundary reads as a real gap
+ * in the answer, not as another letter slot. */
+#app.react-desktop-app .state-run.word-end {
+  margin-inline-end: calc(8px * var(--clue-letter-scale));
+}
+
+#app.react-desktop-app .state-container .state {
+  flex: 0 0 calc(21px * var(--clue-letter-scale));
+  width: calc(21px * var(--clue-letter-scale));
+  height: calc(25px * var(--clue-letter-scale));
+  font-size: calc(0.85rem * var(--clue-letter-scale));
+}
+
+#app.react-desktop-app [data-grouping='none'] .state-container,
+#app.react-desktop-app [data-grouping='none'] .state-run {
+  gap: calc(3px * var(--clue-letter-scale));
+}
+
+/* The board speaks the same face as the ladder. */
+#app.react-desktop-app .grid-cell input {
+  font-family: var(--react-face);
+  font-size: calc(var(--cell-size) * 0.52);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+#app.react-desktop-app .grid-cell.rebus input {
+  font-size: calc(var(--cell-size) * 0.28);
+}
+
+#app.react-desktop-app .clue-index {
+  font-family: var(--react-face);
+  font-weight: 650;
+}
+
+#app.react-desktop-app .clue-content .clue-text {
+  font-family: var(--react-face);
+}
+
+#app.react-desktop-app[data-scale='compact'] {
+  --clue-letter-scale: 0.9;
+}
+
+#app.react-desktop-app[data-scale='full'] {
+  --clue-letter-scale: 1.16;
+  --clue-text-scale: 1.06;
+}
+
+#app.react-desktop-app .clue-content .clue-text {
+  font-size: calc(clamp(15px, 1.04vw, 20px) * var(--clue-text-scale));
+}
+
+/* Firm letters trade the thin mono stroke for weight and a touch of tracking,
+   which is what survives a bright screen behind smudged lenses. */
+#app.react-desktop-app[data-glyph='firm']
+  :is(.state, .grid-cell input, .clue-index) {
+  font-weight: 700;
+}
+
+#app.react-desktop-app[data-glyph='firm'] .state,
+#app.react-desktop-app[data-glyph='firm'] .grid-cell input {
+  letter-spacing: 0.02em;
+}
+
+/* ==========================================================================
+   4. Board notches.
+   Three quiet layers, each answering a different question while moving across
+   the board, and all of them off together with the Square notches choice.
+   - Gate ticks: a black square that opens a slot carries a short bar on the edge
+     facing it, in the direction's own colour: orange where an Across word starts
+     (east edge), blue where a Down word starts (south edge). The reader learns
+     one rule — the colour of the tick is the lane the word will be in — and the
+     ticks of the direction being solved sit a little brighter than the other's.
+   - Numbers: the small index in a word's first square is the same rank colour as
+     its chip in the ladder (section 1).
+   - Ruler: the bezel carries a tick at every column and row, longer every fifth,
+     so "three squares past the block" can be counted without losing the cursor.
+   Marks come from the neighbouring squares alone (boardCues.js names which edges
+   are open; --open-e and --open-s are 0 or 1).
+   ========================================================================== */
+#app.react-desktop-app .black-cell {
+  position: relative;
+}
+
+#app.react-desktop-app[data-cues='on'] .black-cell::before,
+#app.react-desktop-app[data-cues='on'] .black-cell::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: 1px;
+}
+
+/* East edge: an Across word begins in the square to the right. */
+#app.react-desktop-app[data-cues='on'] .black-cell::before {
+  top: 50%;
+  right: 2px;
+  width: 2px;
+  height: 38%;
+  transform: translateY(-50%);
+  background: var(--tick-across);
+  opacity: calc(var(--open-e, 0) * 0.5);
+}
+
+/* South edge: a Down word begins in the square below. */
+#app.react-desktop-app[data-cues='on'] .black-cell::after {
+  bottom: 2px;
+  left: 50%;
+  width: 38%;
+  height: 2px;
+  transform: translateX(-50%);
+  background: var(--tick-down);
+  opacity: calc(var(--open-s, 0) * 0.5);
+}
+
+#app.react-desktop-app[data-cues='on'][data-direction='across'] .black-cell::before {
+  opacity: var(--open-e, 0);
+}
+
+#app.react-desktop-app[data-cues='on'][data-direction='down'] .black-cell::after {
+  opacity: var(--open-s, 0);
+}
+
+/* The square a word begins in keeps its index at reading size in its rank
+   colour, a little heavier than the plain muted index it replaces. */
+#app.react-desktop-app[data-cues='on'] .grid-cell[data-start]:not([data-entry-index]) .clue-index {
+  color: var(--clue-tint);
+}
+
+/* The bezel ruler: four tick layers painted into the 5px frame around the board.
+   Every layer is a static gradient on the one board element, so it costs nothing
+   per cell. Minor ticks sit on each cell's closing edge; major ones on every
+   fifth. */
+#app.react-desktop-app[data-cues='on'] .grid {
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(var(--cell-size) * 5 - 1px),
+      var(--ruler-major) calc(var(--cell-size) * 5 - 1px)
+        calc(var(--cell-size) * 5)
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(var(--cell-size) - 1px),
+      var(--ruler-minor) calc(var(--cell-size) - 1px) var(--cell-size)
+    ),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 calc(var(--cell-size) * 5 - 1px),
+      var(--ruler-major) calc(var(--cell-size) * 5 - 1px)
+        calc(var(--cell-size) * 5)
+    ),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 calc(var(--cell-size) - 1px),
+      var(--ruler-minor) calc(var(--cell-size) - 1px) var(--cell-size)
+    );
+  background-repeat: no-repeat;
+  /* Top band: 4px tall major ticks over 3px minor ones; left band likewise. */
+  background-size:
+    calc(100% - 10px) 4px,
+    calc(100% - 10px) 3px,
+    4px calc(100% - 10px),
+    3px calc(100% - 10px);
+  background-position:
+    5px 0,
+    5px 0,
+    0 5px,
+    0 5px;
+}
+
+/* ==========================================================================
+   5. Low-bloom tiers.
+   A screen turned down at night, or bright and seen through smudged lenses,
+   blooms at the highlights, not the midtones: the pure-white cursor letter, the
+   cool glow under every glyph, the watermark and the ambient wash. Both tiers
+   take those away and put the emphasis where it survives — a slightly raised
+   ground, crisper edges, and a letter that is darker rather than brighter.
+   Dim keeps the palette, Veil raises the black level for a dim panel.
+   ========================================================================== */
+#app.react-desktop-app[data-luma='dim'] {
+  --react-ink: #e3e8ee;
+  --react-muted: #9ba5b1;
+  --react-cell: #262b33;
+  --react-cell-edge: #4f5863;
+  --slot-fill: #1f232a;
+  --slot-edge: #5c646f;
+  --surface-glint: #ffffff0d;
+  --cell-glint: #ffffff04;
+  --entry-first: #f0bd76;
+  --entry-last: #d89a46;
+  --entry-fill-first: #4a3925;
+  --entry-fill-last: #372b1e;
+  --cursor-fill: #6d4d20;
+  --cursor-edge: #e8bd76;
+  --cue-ink: rgba(214, 223, 235, 0.4);
+  --cue-gate: rgba(214, 223, 235, 0.58);
+}
+
+#app.react-desktop-app[data-luma='veil'] {
+  --react-bg: #10151b;
+  --react-panel: #191f26;
+  --panel-light: #2b323a;
+  --react-ink: #d7dde5;
+  --react-muted: #98a2ae;
+  --react-cell: #2f353d;
+  --react-cell-edge: #5b646f;
+  --board-bezel: #171d24;
+  --board-edge: #59626d;
+  --slot-fill: #23272e;
+  --slot-edge: #666f7a;
+  --surface-glint: #ffffff0a;
+  --cell-glint: transparent;
+  --entry-first: #e6b985;
+  --entry-last: #cd9b62;
+  --entry-fill-first: #463725;
+  --entry-fill-last: #342a1e;
+  --cursor-fill: #66481e;
+  --cursor-edge: #dcb57c;
+  --cue-ink: rgba(206, 215, 227, 0.44);
+  --cue-gate: rgba(206, 215, 227, 0.62);
+}
+
+/* Nothing glows on either tier: a halo is exactly the bloom being avoided. */
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  :is(.state, .grid-cell input, .clue-number) {
+  text-shadow: none;
+}
+
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  li.highlighted-clue
+  .state {
+  text-shadow: none;
+}
+
+/* The ambient wash, the lane watermark and the lit spine are the three largest
+   bright areas on screen. They stay, quieter: structure without a lamp behind it. */
+#app.react-desktop-app[data-luma='dim']::before {
+  opacity: 0.6;
+}
+#app.react-desktop-app[data-luma='veil']::before {
+  opacity: 0.3;
+}
+#app.react-desktop-app[data-luma='dim'] .clue-column::before {
+  opacity: 0.12 !important;
+}
+#app.react-desktop-app[data-luma='veil'] .clue-column::before {
+  opacity: 0.05 !important;
+}
+#app.react-desktop-app[data-luma='dim'] .clue-column::after {
+  opacity: 0.75;
+}
+#app.react-desktop-app[data-luma='veil'] .clue-column::after {
+  opacity: 0.55;
+}
+
+/* The cursor is the one place the palette reaches for white. It reaches for
+   ink instead, and keeps the ring, which reads as position rather than flare. */
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  .grid-cell:focus-within
+  :is(input, .clue-index) {
+  color: #eef2f7;
+}
+
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  .state.cursor-cell {
+  color: #eef2f7 !important;
+}
+
+/* The page behind the app, so an overscroll or a short panel does not flash the
+   unlit browser canvas. */
+html[data-luma='dim'] {
+  background: #0c1015;
+}
+html[data-luma='veil'] {
+  background: #10151b;
+}
+
+/* A display that asks for more contrast gets harder edges, not brighter ink. */
+@media (prefers-contrast: more) {
+  #app.react-desktop-app {
+    --react-cell-edge: #6b7480;
+    --slot-edge: #7a828d;
+    --board-edge: #78818c;
+  }
+}
+
+/* ==========================================================================
+   6. The view cluster: three tiers of adjustment, matte, in the control bar.
+   It borrows the existing control material so it cannot be mistaken for a
+   different app, and it opens upward because the board owns the space below.
+   ========================================================================== */
+#app.react-desktop-app .view-cluster {
+  position: relative;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+}
+
+#app.react-desktop-app .view-cluster-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* Same padding as the command buttons it sits beside, so the bar stays level. */
+  padding: 8px 12px;
+  border: 1px solid var(--control-edge);
+  border-radius: 11px;
+  background: linear-gradient(var(--control-top), var(--control-fill));
+  box-shadow:
+    inset 0 1px 0 var(--surface-glint),
+    0 2px 3px var(--control-shadow);
+  color: var(--react-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  list-style: none;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+#app.react-desktop-app .view-cluster-summary::-webkit-details-marker {
+  display: none;
+}
+#app.react-desktop-app .view-cluster-summary:hover {
+  border-color: var(--react-muted);
+  transform: translateY(-1px);
+}
+#app.react-desktop-app .view-cluster[open] .view-cluster-summary {
+  color: var(--react-ink);
+  border-color: var(--react-muted);
+}
+
+#app.react-desktop-app .view-cluster-panel {
+  position: absolute;
+  z-index: 30;
+  right: 0;
+  bottom: calc(100% + 8px);
+  display: grid;
+  gap: 9px;
+  width: 272px;
+  padding: 12px;
+  border: 1px solid var(--react-panel-edge);
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--panel-light), var(--react-panel));
+  box-shadow: 0 14px 34px -12px rgba(0, 0, 0, 0.8);
+}
+
+#app.react-desktop-app .view-tier {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+}
+
+#app.react-desktop-app .view-tier legend {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 4px;
+  color: var(--react-muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+#app.react-desktop-app .view-tier-hint {
+  letter-spacing: 0.04em;
+  text-transform: none;
+  opacity: 0.75;
+}
+#app.react-desktop-app .view-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#app.react-desktop-app .view-row-label {
+  color: var(--react-ink);
+  font-size: 0.76rem;
+}
+#app.react-desktop-app .view-choices {
+  display: inline-flex;
+  gap: 4px;
+}
+
+#app.react-desktop-app .view-choice {
+  min-height: 28px;
+  padding: 2px 9px;
+  border: 1px solid var(--control-edge);
+  border-radius: 8px;
+  background: var(--control-fill);
+  color: var(--react-muted);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#app.react-desktop-app .view-choice:hover {
+  border-color: var(--react-muted);
+  color: var(--react-ink);
+}
+
+#app.react-desktop-app .view-choice[aria-pressed='true'] {
+  border-color: currentColor;
+  background: linear-gradient(var(--control-top), var(--control-fill));
+  box-shadow: inset 0 1px 0 var(--surface-glint);
+  color: var(--react-ink);
+}
+
+/* The three tiers keep the interface's own accents, so a row is recognisable by
+   colour alone: comfort green, reading amber, board blue. */
+#app.react-desktop-app
+  .view-tier[data-tier='mini']
+  .view-choice[aria-pressed='true'] {
+  color: var(--react-green);
+}
+#app.react-desktop-app
+  .view-tier[data-tier='micro']
+  .view-choice[aria-pressed='true'] {
+  color: var(--react-orange);
+}
+#app.react-desktop-app
+  .view-tier[data-tier='nano']
+  .view-choice[aria-pressed='true'] {
+  color: var(--react-blue);
+}
+
+#app.react-desktop-app .view-reset {
+  justify-self: start;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--react-muted);
+  font-family: inherit;
+  font-size: 0.7rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+#app.react-desktop-app .view-reset:hover {
+  color: var(--react-ink);
+}
+
+/* ==========================================================================
+   7. Plain ladder.
+   With the rail switched off the chips drop their +/-25px zigzag and stand in a
+   straight column; the springs are not drawn at all (ClueSpring is not mounted).
+   ========================================================================== */
+#app.react-desktop-app[data-rail='on'] #across li,
+#app.react-desktop-app[data-rail='on'] #down li {
+  min-height: 100px;
+}
+
+/* Plain tier: the column stops moving. Some readers want a straight list, and
+   alignment is the calmer choice. */
+#app.react-desktop-app[data-rail='off'] #across .clue-number,
+#app.react-desktop-app[data-rail='off'] #down .clue-number {
+  transform: none;
+}
+
+/* ==========================================================================
+   8. Board size.
+   The board column in desktop.css is a budget — min(42.4vw, 814px) — and the cell
+   size is that budget divided by the number of columns. So the scale is applied to
+   the budget, not to the result: a larger board also widens the column that holds
+   it, and the clue column gives up the space instead of being pushed out of the
+   window. The 52vw ceiling keeps the board inside the shell at every scale. Below
+   900px the layout stacks and the budget no longer applies, so the column rule is
+   scoped to wide windows.
+   ========================================================================== */
+#app.react-desktop-app {
+  --board-budget: min(calc(min(42.4vw, 814px) * var(--board-scale)), 52vw);
+}
+
+#app.react-desktop-app .board {
+  --cell-size: min(
+    calc(3.25rem * var(--board-scale)),
+    calc((var(--board-budget) - 52px) / var(--grid-columns)),
+    calc((100dvh - 310px) / var(--grid-rows) * var(--board-scale))
+  );
+}
+
+@media (min-width: 901px) {
+  #app.react-desktop-app .clue-board {
+    grid-template-columns: fit-content(
+        calc(46% - (var(--board-scale) - 1) * 26%)
+      ) minmax(0, 1fr) minmax(280px, var(--board-budget));
+  }
+}
+
+/* In the action bar the view cluster rides the right edge, away from the commands
+ * a reader reaches for while solving, and its panel scrolls rather than running
+ * past a short window. */
+#app.react-desktop-app .action-bar .view-cluster {
+  margin-inline-start: auto;
+}
+
+#app.react-desktop-app .view-cluster-panel {
+  max-height: min(72dvh, 620px);
+  overflow: auto;
+}

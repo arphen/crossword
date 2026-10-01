@@ -72,17 +72,27 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 - `apps/react/index.html`
 - `apps/react/package.json`
-- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:6`, `clueSignalKind:22`, `renderClueSurface:32`, `classes:60`, `CrosswordView:70`, `describeRebusInput:85`, `entryContainsCell:93`, `entryAtCell:98`, `directional:99`, `tokenAt:112`, `displayGridValue:115`, `gridValues:140`, `clueClasses:143`, `cellPresentation:151`, `activeEntryCellClasses:155`, `isCursorCell:166` (+2 more)
+- `apps/react/src/ClueSpring.jsx` — `measure:11`, `centres:15`, `ClueSpring:33`, `redraw:42`, `signature:46`, `schedule:62`
+- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:15`, `clueSignalKind:31`, `renderClueSurface:41`, `classes:69`, `CrosswordView:79`, `changeSettings:104`, `describeRebusInput:109`, `entryContainsCell:117`, `entryAtCell:122`, `directional:123`, `tokenAt:136`, `displayGridValue:139`, `gridValues:164`, `clueClasses:167`, `cellPresentation:175`, `activeEntryCellClasses:179` (+12 more)
 - `apps/react/src/CrosswordView.test.jsx`
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
+- `apps/react/src/Rapture.jsx` — `RaptureSparks:11`, `RaptureLayer:34`, `Confetti:50`, `Finale:73`
+- `apps/react/src/ViewControls.jsx` — `optionValue:81`, `ViewControls:83`, `choose:84`
 - `apps/react/src/behavior-parity.test.js`
 - `apps/react/src/behavior/complete.test.js`
 - `apps/react/src/behavior/desktop.d.ts` — `createOptions:2`
-- `apps/react/src/behavior/desktop.js` — `createOptions:3`, `data:6`, `isHalfCompleted:85`, `weekdayOptions:91`, `selectedWeekday:102`, `activeDirection:105`, `created:114`, `beforeUnmount:144`, `checkAndStartCaching:151`, `needsMore:154`, `handleOnlineStatus:182`, `updateCachedCounts:191`, `updateSolvedCounts:198`, `isPuzzleSolved:204`, `isPuzzleSolvedBackend:209`, `markPuzzleSolved:219` (+82 more)
+- `apps/react/src/behavior/desktop.js` — `createOptions:3`, `data:6`, `isHalfCompleted:85`, `weekdayOptions:91`, `selectedWeekday:102`, `activeDirection:105`, `created:114`, `beforeUnmount:144`, `checkAndStartCaching:151`, `needsMore:154`, `handleOnlineStatus:182`, `updateCachedCounts:191`, `updateSolvedCounts:198`, `isPuzzleSolved:204`, `isPuzzleSolvedBackend:209`, `markPuzzleSolved:219` (+80 more)
 - `apps/react/src/behavior/mobile.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/mobile.js` — `createOptions:3`, `myEntries:19`, `sortedEntries:23`, `checkButtonLabel:33`, `toggleCheck:38`, `clearIncorrectAndMarkSolved:48`, `isPerfect:57`, `isEntryFilled:91`, `isCellCorrect:96`, `loadPuzzle:102`, `getCellValue:111`, `getCoordinates:115`, `selectEntry:125`, `focusInput:134`, `handleInput:143`, `handleKeydown:167` (+3 more)
+- `apps/react/src/board-presentation.test.jsx`
+- `apps/react/src/boardCues.js` — `balancedRuns:7`, `isWordSeparator:22`, `groupSizes:35`, `groupRuns:43`, `createClueRamp:100`, `clueRampStyle:122`, `isOpen:134`, `cellCues:149`
+- `apps/react/src/boardCues.test.js`
+- `apps/react/src/celebration.css`
+- `apps/react/src/celebration.js` — `countMistakes:5`, `celebrationTier:25`, `seeded:37`, `sparkSpecs:50`, `raptureNote:66`, `finaleMessage:74`, `confettiSpecs:89`
+- `apps/react/src/celebration.test.js`
 - `apps/react/src/controller.d.ts` — `ControllerConfiguration:9`, `Controller:16`, `createController:26`
 - `apps/react/src/controller.js` — `createController:6`, `notify:19`, `unwrap:20`, `observe:21`, `get:28`, `set:45`, `deleteProperty:54`, `setTimeout:61`, `clearTimeout:62`, `setInterval:63`, `clearInterval:64`, `requestAnimationFrame:65`, `cancelAnimationFrame:66`, `subscribe:82`, `flush:84`, `start:85` (+1 more)
+- `apps/react/src/cssVars.js` — `cssVars:2`
 - `apps/react/src/desktop.css`
 - `apps/react/src/future/AssistancePanel.jsx` — `idFor:4`, `blankCell:8`, `revealEntry:14`, `AssistanceLadder:32`, `hasBlank:48`
 - `apps/react/src/future/AssistancePanel.test.jsx`
@@ -147,12 +157,18 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/sessionJournal.test.js`
 - `apps/react/src/future/tokenManifest.js` — `FUTURE_TOKEN_MANIFEST_VERSION:16`, `FUTURE_TOKEN_POLICY_VERSION:17`, `FUTURE_TOKEN_CELL_POLICY:18`, `FUTURE_TOKEN_FILL_POLICY:19`, `FUTURE_TOKEN_PRODUCER_VERSION:26`, `isRecord:67`, `exactKeys:71`, `nonEmptyString:79`, `issue:83`, `stableJson:87`, `digest:98`, `sourcePuzzleDigest:109`, `puzzleDimensions:114`, `cellId:123`, `entryCells:127`, `tokenForCharacter:134` (+18 more)
 - `apps/react/src/future/tokenManifest.test.js`
+- `apps/react/src/lattice.css`
 - `apps/react/src/main.jsx` — `FutureApp:14`, `App:17`
 - `apps/react/src/mobile-render-parity.test.jsx`
 - `apps/react/src/mobile.css`
 - `apps/react/src/parity.test.js`
 - `apps/react/src/selection-presentation.test.js`
 - `apps/react/src/selectionPresentation.js` — `createSelectionPresentation:3`
+- `apps/react/src/springGeometry.js` — `springTension:17`, `springEnds:31`, `reach:38`, `smooth:51`, `round:52`, `coilPath:60`, `springSegments:93`
+- `apps/react/src/useRapture.js` — `RETRACE_EVENT:16`, `reducedMotion:18`, `useRapture:22`, `retrace:28`, `tick:32`, `celebrate:51`, `gained:52`, `seed:64`
+- `apps/react/src/viewSettings.js` — `VIEW_SETTINGS_KEY:7`, `LUMA_LEVELS:9`, `SCALE_LEVELS:10`, `GROUPING_MODES:11`, `GLYPH_LEVELS:12`, `VIEW_DEFAULTS:14`, `prefersLowBloom:27`, `pick:35`, `boolean:39`, `normalizeViewSettings:43`, `readViewSettings:67`, `writeViewSettings:81`, `viewAttributes:94`
+- `apps/react/src/viewSettings.test.js`
+- `apps/react/src/vision.css`
 - `apps/react/tsconfig.json`
 - `apps/react/vite.config.js`
 
@@ -221,6 +237,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/plans/13_LEARNING_TO_EARN_THE_AHA.md`
 - `docs/plans/14_CLUE_GRAMMAR_MEANING_AND_ENJOYMENT.md`
 - `docs/plans/15_THE_SELF_CRITIQUE_OF_THE_CONCEPT.md`
+- `docs/plans/16_CLUE_QUALITY_RECOVERY.md`
 - `docs/plans/LUNA_PROMPTS.md`
 - `docs/plans/README.md`
 - `docs/react-port-parity.md`
@@ -291,6 +308,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/live-model-holdout.py` — `_Response:33`, `_Response.__init__:34`, `_Response.raise_for_status:38`, `_Response.json:42`, `_Session:46`, `_Session.request:47`, `_Session.get:62`, `_Session.post:65`, `_canonical:69`, `_sha256:79`, `_text:83`, `_shape_gate:87`, `_tags:142`, `_observation:156`, `main:229`
 - `scripts/mobile-browser-parity.mjs` — `capture:40`, `walk:48`, `activeCell:66`
 - `scripts/model-evaluation-report.py` — `main:18`
+- `scripts/private-clue-derivation-gate.py` — `build_pairs:111`, `evaluate:150`, `degree_rule_gaps:169`, `corpus_digest:186`, `real_corpus_status:191`, `receipt_body:212`, `main:268`
 - `scripts/private-clue-review-export.py` — `main:26`
 - `scripts/private-clue-study.py` — `_base_url:37`, `_request:48`, `main:75`
 - `scripts/private-fill-study.py` — `_request_puzzle:31`, `_validate_local_base_url:62`, `_case_from_response:73`, `main:93`
@@ -319,7 +337,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `src/crossword/clue_grounding_validators.py` — `_letters_only:57`, `_span:61`, `_validator_base:84`, `_mechanical_validator:100`, `validate_private_clue_witnesses:153`
 - `src/crossword/clue_quality_evaluation.py` — `canonical_clue_quality_json:29`, `_digest:39`, `_seed:45`, `_count:51`, `_text:57`, `_mapping:63`, `_counts:69`, `_number:81`, `clue_case_from_provenance:87`, `evaluate_clue_quality_study:245`
 - `src/crossword/clue_review_bundle.py` — `canonical_review_json:26`, `_digest:36`, `_text:42`, `_mapping:51`, `_json_copy:57`, `build_clue_review_bundle:64`, `verify_clue_review_bundle:176`
-- `src/crossword/clue_semantic_challenger.py` — `_codes:41`, `_mechanical_statuses:47`, `_model_projection:60`, `challenge_private_clue_pair:109`, `summarize_challenge_classifications:208`
+- `src/crossword/clue_semantic_challenger.py` — `_codes:45`, `_mechanical_statuses:51`, `_model_projection:64`, `challenge_private_clue_pair:113`, `summarize_challenge_classifications:212`
 - `src/crossword/construction_evidence.py` — `_canonical:24`, `_digest:28`, `_entry_id:32`, `_entry_cells:40`, `_board_projection:58`, `_round:74`, `_foothold_seed_plan:78`, `evaluate_private_board:211`
 - `src/crossword/construction_runtime.py` — `FullSizeRuntimeUnavailable:45`, `FullSizeDraftRejected:49`, `FullSizeDraftCancelled:53`, `_validated_options:57`, `_validate_result:97`, `_validate_admitted_wordlist:137`, `_stop_process:190`, `_run_cancellable:223`, `generate_full_size_draft:264`
 - `src/crossword/construction_simulation_adapter.py` — `DerivedFillSignalEnvelope:46`, `EstimateProvenanceEnvelope:52`, `EstimateProvenanceBinding:71`, `_canonical:82`, `_digest:92`, `_probability:96`, `_entry_cells:104`, `_crossings:126`, `_normalize_estimate_envelope:166`, `_estimate_provenance_binding:259`, `_verified_estimate_provenance:299`, `build_simulation_request:337`, `_invoke_bridge:432`, `run_sibling_simulation:463`, `evaluate_sibling_adapter:522`
@@ -387,6 +405,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `tests/test_api_isolated.py`
 - `tests/test_calibration_api.py`
 - `tests/test_calibration_hypothesis_api.py`
+- `tests/test_clue_derivation_leak.py`
 - `tests/test_clue_grammar_bridge.py`
 - `tests/test_clue_grounding_validators.py`
 - `tests/test_clue_numbering.py`

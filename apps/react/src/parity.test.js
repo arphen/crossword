@@ -101,7 +101,7 @@ describe('desktop reference contracts (controller method tests)', () => {
     expect(document.body.dataset.activeDirection).toBe('down');
   });
 
-  it('moves within words, jumps only from a filled word, skips black squares, and changes arrow direction', () => {
+  it('moves within words, stays on a completed word, skips black squares, and changes arrow direction', () => {
     const { app, controller } = fresh();
     input(app, 0, 0).focus();
     app.move(0, 0, 'forward');
@@ -114,7 +114,10 @@ describe('desktop reference contracts (controller method tests)', () => {
     [...'CAT'].forEach((letter, c) => fill(app, 0, c, letter));
     app.move(0, 2, 'forward');
     controller.flush();
-    expect(document.activeElement).toBe(input(app, 2, 0));
+    // A finished word used to teleport the reader to the next clue of the same
+    // direction, halfway across the grid. The last letter now leaves the cursor on
+    // the word you just wrote; moving on is Tab's and the clue list's job.
+    expect(document.activeElement).toBe(input(app, 0, 2));
     input(app, 0, 1).focus();
     const arrow = key('ArrowDown');
     app.handle_crossword_cell_keydown(arrow, 0, 1);

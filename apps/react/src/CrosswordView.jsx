@@ -1,6 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './desktop.css';
+import './vision.css';
+import './celebration.css';
+import ViewControls from './ViewControls';
+import ClueSpring from './ClueSpring';
+import { Finale, RaptureLayer, RaptureSparks } from './Rapture';
+import { useRapture } from './useRapture';
+import { cssVars } from './cssVars';
 import { createSelectionPresentation } from './selectionPresentation';
+import { cellCues, clueRampStyle, createClueRamp, groupRuns } from './boardCues';
+import { normalizeViewSettings, readViewSettings, VIEW_DEFAULTS, viewAttributes, writeViewSettings } from './viewSettings';
 import { normalizeFutureKey } from './future/languageInput';
 
 export function displayedPuzzleWeekday(app, displayWeekday) {
@@ -82,6 +91,21 @@ export default function CrosswordView({
     const [cursorCell, setCursorCell] = useState(null);
     const [rebusDisplayValue, setRebusDisplayValue] = useState('');
     const inputSources = useRef(new Map());
+    // Reader-adjustable view settings: presentation only, kept in local storage,
+    // and published to the board root as data-* attributes so that vision.css can
+    // own every visual consequence (see viewSettings.js). A first visit on a
+    // display that reports low contrast or reduced transparency starts on the dim
+    // tier rather than at full bloom; the reader can move it from there.
+    const browserStorage = typeof window === 'undefined' ? null : window.localStorage;
+    const [settings, setSettings] = useState(() => readViewSettings({
+        storage: browserStorage,
+        media: typeof window === 'undefined' ? null : window.matchMedia?.bind(window)
+    }));
+    const changeSettings = next => {
+        const normalized = normalizeViewSettings(next);
+        setSettings(normalized);
+        writeViewSettings(normalized, { storage: browserStorage });
+    };
     const describeRebusInput = value => {
         const normalized = languageInput?.normalizeRebus
             ? languageInput.normalizeRebus(value)
@@ -163,6 +187,51 @@ export default function CrosswordView({
             'active-entry-end': entryIndex === activeEntry.characters.length - 1
         };
     };
+    // One hue per distinct clue number, spread across the arc by rank rather than
+    // by value: the ladder anchor and the square index at that number read as the
+    // same colour, so a hue is learned once and points at the board either way.
+    const clueRamp = useMemo(() => createClueRamp(app.crossword), [app.crossword]);
+    // The clues still on the ladder: a solved clue leaves it, and the springs
+    // follow the same list so the chips either side of the gap are joined directly.
+    // Clues a check has just solved are held a moment so they can celebrate.
+    const rapture = useRapture(app);
+    const held = rapture.active?.holding ? rapture.active.order : undefined;
+    const laneEntries = direction => app.crossword.filter(entry => entry.direction === direction && (!app.completedWords.has(entry.clue_text) || held?.has(entry.clue_text)));
+    const raptureRow = entry => {
+        const index = held?.get(entry.clue_text);
+        if (index === undefined) return {};
+        return {
+            'data-rapture': rapture.active.tier,
+            style: cssVars({ '--rapture-delay': `${Math.min(index, rapture.active.maxStep) * rapture.active.step}ms` })
+        };
+    };
+    const raptureSparks = entry => {
+        const index = held?.get(entry.clue_text);
+        return index === undefined ? null : <RaptureSparks specs={rapture.active.sparks} index={index} />;
+    };
+    const springState = entry => (held?.has(entry.clue_text) ? 'rapture' : app.isActiveClue(entry) ? 'active' : app.isClueAffected(entry) ? 'affected' : '');
+    const laneSprings = (direction, entries) => settings.rail && (
+        <ClueSpring
+            lane={direction}
+            ramp={clueRamp}
+            numbers={entries.map(entry => entry.clue_number)}
+            states={entries.map(springState)}
+        />
+    );
+    // Everything a square needs to be drawn: the selection styling the controller
+    // already knows about, plus the neighbour-derived cues. JS only names what a
+    // square is (where a word starts, which black squares open a slot); the
+    // appearance belongs to vision.css.
+    const gridCellProps = (rowIndex, cellIndex) => {
+        const presentation = cellPresentation(rowIndex, cellIndex);
+        if (!settings.cues) return presentation;
+        const cues = cellCues(app.grid, rowIndex, cellIndex);
+        return {
+            ...presentation,
+            style: { ...presentation.style, ...cues.style },
+            'data-start': cues.dataStart
+        };
+    };
     const isCursorCell = (entry, index) => {
         if (!cursorCell) return false;
         const rowIndex = entry.direction === 'across' ? entry.start_y : entry.start_y + index;
@@ -170,7 +239,7 @@ export default function CrosswordView({
         return cursorCell.rowIndex === rowIndex && cursorCell.cellIndex === cellIndex;
     };
     const answer = entry => {
-        return entry.characters.map((character, index) => {
+        const letters = entry.characters.map((character, index) => {
             const row = entry.start_y + (entry.direction === 'down' ? index : 0);
             const col = entry.start_x + (entry.direction === 'across' ? index : 0);
             const rawChar = app.grid[row]?.[col] || ' ';
@@ -181,12 +250,27 @@ export default function CrosswordView({
                 'intersection-cell-across': app.activeDirection === 'across' && app.isCellInAffectedClue(entry, index),
                 'intersection-cell-down': app.activeDirection === 'down' && app.isCellInAffectedClue(entry, index),
                 'cursor-cell': isCursorCell(entry, index),
-                'rebus-state': rawChar.length > 1,
-                'state-group-end': (index + 1) % 5 === 0 && index + 1 < entry.characters.length
+                'rebus-state': rawChar.length > 1
             })} onClick={event => {
                 app.handle_cell_click(event, entry, index);
                 onEntryFocused?.(entry, 'pointer');
             }}>{char}</span>;
+        });
+        // Grouping follows the answer, not a counter: runs break where the answer
+        // has a real word gap and balance to at most five letters elsewhere, and a
+        // track that has to wrap breaks between runs instead of through one. A run
+        // set that disagrees with the cells about the length - a rebus carrying a
+        // word gap inside a single box, say - stays one run rather than inventing
+        // boundaries the answer does not have.
+        const runs = groupRuns(entry, settings.grouping);
+        const sized = runs.reduce((total, run) => total + run.size, 0);
+        const grouped = sized === letters.length ? runs : [{ size: letters.length, wordEnd: false }];
+        if (!letters.length) return letters;
+        let taken = 0;
+        return grouped.map((run, runIndex) => {
+            const slice = letters.slice(taken, taken + run.size);
+            taken += run.size;
+            return <span key={runIndex} className={classes('state-run', { 'word-end': run.wordEnd })}>{slice}</span>;
         });
     };
     const selfClick = handler => event => {
@@ -196,22 +280,25 @@ export default function CrosswordView({
     return (
         <div id="app" className={classes({ 'half-completed': app.isHalfCompleted, 'react-desktop-app': true })}
             data-direction={app.activeDirection || 'across'}
+            {...viewAttributes(settings)}
             style={/** @type {React.CSSProperties} */ ({ '--grid-columns': app.grid[0]?.length || 15, '--grid-rows': app.grid.length || 15 })}>
             <div id="notmenu">
                 <div className={classes('clue-column', { active: app.direction === 'across', inactive: app.direction !== 'across' })} data-label="ACROSS">
                     <ul id="across">
-                        {app.crossword.filter(entry => entry.direction === 'across' && !app.completedWords.has(entry.clue_text)).map(entry => (
+                        {laneEntries('across').map(entry => (
                             <li key={'across-' + entry.clue_number} onClick={event => {
                                 app.handle_clue_click(event, entry);
                                 onEntryFocused?.(entry, 'pointer');
-                            }} className={clueClasses(entry)}>
+                            }} className={clueClasses(entry)} {...raptureRow(entry)}>
                                 <div className="clue-content">
                                     <span className="clue-text">{renderClueSurface(entry.clue_text, annotateClueGrammar)}</span>
                                     <div className="state-container">{answer(entry)}</div>
                                 </div>
-                                <strong className="clue-number">{entry.clue_number}</strong>
+                                <strong className="clue-number" style={settings.ramp ? clueRampStyle(clueRamp, entry.clue_number) : undefined}>{entry.clue_number}</strong>
+                                {raptureSparks(entry)}
                             </li>
                         ))}
+                        {laneSprings('across', laneEntries('across'))}
                     </ul>
                 </div>
 
@@ -302,14 +389,14 @@ export default function CrosswordView({
                             {app.grid.map((row, rowIndex) => (
                                 <div className="grid-row" key={rowIndex} style={{ gridTemplateColumns: `repeat(${row.length}, var(--cell-size))` }}>
                                     {row.map((cell, cellIndex) => (
-                                        <div key={cellIndex} {...cellPresentation(rowIndex, cellIndex)} className={classes('grid-cell', app.getCellClasses(rowIndex, cellIndex), {
+                                        <div key={cellIndex} {...gridCellProps(rowIndex, cellIndex)} className={classes('grid-cell', app.getCellClasses(rowIndex, cellIndex), {
                                             'black-cell': cell === null,
                                             'has-letter': Boolean(cell),
                                             'highlighted-cell': app.isCellInActiveEntry(rowIndex, cellIndex),
                                             'future-token-cell': Boolean(tokenAt(rowIndex, cellIndex)),
                                             ...activeEntryCellClasses(rowIndex, cellIndex)
                                         })} data-token-display={tokenAt(rowIndex, cellIndex)?.displayToken || undefined}>
-                                            {Boolean(app.find_index(rowIndex, cellIndex)) && <span className="clue-index">{app.find_index(rowIndex, cellIndex)}</span>}
+                                            {Boolean(app.find_index(rowIndex, cellIndex)) && <span className="clue-index" style={settings.ramp ? clueRampStyle(clueRamp, app.find_index(rowIndex, cellIndex)) : undefined}>{app.find_index(rowIndex, cellIndex)}</span>}
                                             {cell !== null && (
                                                 <>
                                                 <input ref={element => { app.setRef('input-' + rowIndex + '-' + cellIndex, element); }} type="text"
@@ -431,8 +518,12 @@ export default function CrosswordView({
                     <div className="menu-row action-bar">
                         <button onClick={() => {
                             const wasChecking = app.isChecking;
+                            const solvedBefore = new Set(app.completedWords);
                             app.check_all();
-                            if (!wasChecking && app.isChecking) onCheckAll?.(app);
+                            if (!wasChecking && app.isChecking) {
+                                rapture.celebrate(solvedBefore);
+                                onCheckAll?.(app);
+                            }
                         }} id="check-all" className="action-button blue-action" title="Check all">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <circle cx="12" cy="12" r="10"></circle>
@@ -468,6 +559,7 @@ export default function CrosswordView({
                             </svg>
                             <span>Complete</span>
                         </button>
+                        <ViewControls settings={settings} onChange={changeSettings} onReset={() => changeSettings(VIEW_DEFAULTS)} />
                     </div>
 
                     {/* Bottom Control Panel */}
@@ -517,18 +609,20 @@ export default function CrosswordView({
 
                 <div className={classes('clue-column', { active: app.direction === 'down', inactive: app.direction !== 'down' })} data-label="DOWN">
                     <ul id="down">
-                        {app.crossword.filter(entry => entry.direction === 'down' && !app.completedWords.has(entry.clue_text)).map(entry => (
+                        {laneEntries('down').map(entry => (
                             <li key={'down-' + entry.clue_number} onClick={event => {
                                 app.handle_clue_click(event, entry);
                                 onEntryFocused?.(entry, 'pointer');
-                            }} className={clueClasses(entry)}>
-                                <strong className="clue-number">{entry.clue_number}</strong>
+                            }} className={clueClasses(entry)} {...raptureRow(entry)}>
+                                <strong className="clue-number" style={settings.ramp ? clueRampStyle(clueRamp, entry.clue_number) : undefined}>{entry.clue_number}</strong>
                                 <div className="clue-content">
                                     <span className="clue-text">{renderClueSurface(entry.clue_text, annotateClueGrammar)}</span>
                                     <div className="state-container">{answer(entry)}</div>
                                 </div>
+                                {raptureSparks(entry)}
                             </li>
                         ))}
+                        {laneSprings('down', laneEntries('down'))}
                     </ul>
                 </div>
             </div>
@@ -710,8 +804,9 @@ export default function CrosswordView({
                 </div>
             )}
 
-            {/* Fireworks Canvas Overlay: v-show keeps the canvas mounted. */}
-            <canvas id="fireworks-canvas" style={{ display: app.showFireworks ? undefined : 'none' }}></canvas>
+            {/* The finish and the check celebrations are plain DOM, not a canvas. */}
+            <RaptureLayer active={rapture.active} />
+            {app.showFireworks && <Finale app={app} />}
         </div>
     );
 }

@@ -958,59 +958,29 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             }
             return null;
         },
-        findNextWord(currentEntry) {
-            if (!currentEntry) return null;
-
-            // Sort entries by clue number for the current direction
-            const directionEntries = this.crossword
-                .filter(e => e.direction === currentEntry.direction)
-                .sort((a, b) => a.clue_number - b.clue_number);
-
-            // Find the next entry
-            const currentIndex = directionEntries.findIndex(e => e.clue_number === currentEntry.clue_number);
-            if (currentIndex < directionEntries.length - 1) {
-                return directionEntries[currentIndex + 1];
+        isWordEdge(rowIndex, cellIndex, direction) {
+            // True when this cell is the last cell going forward, or the first
+            // going backward, inside the word currently under the cursor.
+            const word = this.findCurrentWord(rowIndex, cellIndex);
+            if (!word) return false;
+            if (this.direction === 'across') {
+                return direction === 'forward'
+                    ? cellIndex === word.start_x + word.characters.length - 1
+                    : cellIndex === word.start_x;
             }
-            return null;
-        },
-        isWordComplete(entry) {
-            if (!entry) return false;
-            const answer = this.getCurrentAnswer(entry).join('');
-            // Word is complete if all cells have letters (no spaces)
-            return answer.trim().length === entry.characters.length && !answer.includes(' ');
+            return direction === 'forward'
+                ? rowIndex === word.start_y + word.characters.length - 1
+                : rowIndex === word.start_y;
         },
         move(rowIndex, cellIndex, direction) {
             const sign = direction === 'forward' ? 1 : -1;
-            const currentWord = this.findCurrentWord(rowIndex, cellIndex);
 
-            // Check if we're at the end of a word or about to hit a black square
-            if (currentWord && direction === 'forward') {
-                const nextCell = this.direction === 'across' ?
-                    this.grid[rowIndex]?.[cellIndex + 1] :
-                    this.grid[rowIndex + 1]?.[cellIndex];
-
-                const isLastCell = (this.direction === 'across' &&
-                    cellIndex === currentWord.start_x + currentWord.characters.length - 1) ||
-                    (this.direction === 'down' &&
-                        rowIndex === currentWord.start_y + currentWord.characters.length - 1);
-
-                const isBlackSquareNext = nextCell === null;
-
-                if ((isLastCell || isBlackSquareNext) && this.isWordComplete(currentWord)) {
-                    const nextWord = this.findNextWord(currentWord);
-                    if (nextWord) {
-                        this.$nextTick(() => {
-                            const nextInput = this.$refs[`input-${nextWord.start_y}-${nextWord.start_x}`];
-                            if (nextInput) {
-                                nextInput[0].focus();
-                                return;
-                            }
-                        });
-                        this.selectWordAt(nextWord.start_y, nextWord.start_x);
-                        return;
-                    }
-                }
-            }
+            // A word boundary is a hard stop. Finishing a clue used to teleport the
+            // reader to the next clue of the same direction, halfway across the
+            // grid; the cursor arrived somewhere the eyes had not agreed to go.
+            // Crossing a boundary is now a decision, made with a clue click, a cell
+            // click, or Tab - never as a side effect of typing the last letter.
+            if (this.isWordEdge(rowIndex, cellIndex, direction)) return;
 
             // Check bounds
             if (this.direction === 'across' && (cellIndex + 1 * sign < 0 || cellIndex + 1 * sign >= this.grid[0].length)) {
@@ -1454,10 +1424,10 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             // Play sounds
             this.playCelebrationSounds(soundCount, celebrationLevel);
 
-            // Auto-hide after celebration
+            // Auto-hide after the finale card has had its moment
             setTimeout(() => {
                 this.stopFireworks();
-            }, celebrationLevel === 'spectacular' ? 8000 : celebrationLevel === 'great' ? 6000 : 4000);
+            }, 9000);
         },
 
         launchFireworksSequence(count) {
