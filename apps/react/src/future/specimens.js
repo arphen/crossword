@@ -13,6 +13,7 @@ function normalizeRecord(value) {
   if (typeof value.answer !== 'string' || typeof value.clue !== 'string') return null;
   if (value.verdict !== null && value.verdict !== undefined && !SPECIMEN_VERDICTS.includes(value.verdict)) return null;
   if (value.pairId !== null && value.pairId !== undefined && typeof value.pairId !== 'string') return null;
+  if (value.origin !== undefined && value.origin !== 'spec' && value.origin !== 'blind') return null;
   return {
     id: value.id,
     answer: value.answer,
@@ -21,6 +22,7 @@ function normalizeRecord(value) {
     pairId: value.pairId ?? null,
     note: typeof value.note === 'string' ? value.note : null,
     source: typeof value.source === 'string' ? value.source : null,
+    origin: value.origin === 'spec' ? 'spec' : 'blind',
   };
 }
 
@@ -39,8 +41,16 @@ export function normalizeSpecimenSummary(body) {
   if (!Number.isInteger(summary.records) || !Number.isInteger(summary.labeled) || !Number.isInteger(summary.unlabeled)) return null;
   return {
     records: summary.records,
+    reference: Number.isInteger(summary.reference) ? summary.reference : 0,
+    blind: Number.isInteger(summary.blind) ? summary.blind : summary.records,
+    blindLabeled: Number.isInteger(summary.blindLabeled) ? summary.blindLabeled : summary.labeled,
+    blindUnlabeled: Number.isInteger(summary.blindUnlabeled)
+      ? summary.blindUnlabeled
+      : Number.isInteger(summary.unlabeled)
+        ? summary.unlabeled
+        : 0,
     labeled: summary.labeled,
-    unlabeled: summary.unlabeled,
+    unlabeled: Number.isInteger(summary.unlabeled) ? summary.unlabeled : 0,
     verdictCounts: summary.verdictCounts && typeof summary.verdictCounts === 'object' ? summary.verdictCounts : {},
     problems: Array.isArray(summary.problems) ? summary.problems : [],
   };
@@ -70,12 +80,12 @@ export async function loadSpecimens({ fetchImpl = globalThis.fetch, signal } = {
   return result;
 }
 
-/** @param {{fetchImpl?: typeof fetch, corpusN?: number, force?: boolean}} [options] */
-export async function seedSpecimens({ fetchImpl = globalThis.fetch, corpusN = 48, force = false } = {}) {
+/** @param {{fetchImpl?: typeof fetch, corpusN?: number, harvestN?: number, force?: boolean}} [options] */
+export async function seedSpecimens({ fetchImpl = globalThis.fetch, corpusN = 48, harvestN = 48, force = false } = {}) {
   const response = await fetchImpl('/api/future/specimens/seed', {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ corpusN, ...(force ? { force: true } : {}) }),
+    body: JSON.stringify({ corpusN, harvestN, ...(force ? { force: true } : {}) }),
   });
   const body = await readJson(response, 'The specimen ledger could not be prepared.');
   const summary = normalizeSpecimenSummary(body);

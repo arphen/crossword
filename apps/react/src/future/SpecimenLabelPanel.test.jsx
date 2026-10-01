@@ -8,38 +8,54 @@ import SpecimenLabelPanel from './SpecimenLabelPanel';
 let root;
 let host;
 
+const reference = {
+  id: 'sp-tautology-shadier',
+  answer: 'SHADIER',
+  clue: 'more shady',
+  verdict: 'tautology',
+  pairId: null,
+  note: '§0: the comparative is the answer',
+  source: 'hand-listed §0',
+  origin: 'spec',
+};
+
+const blindOpen = {
+  id: 'real-moss-0-candidate',
+  answer: 'MOSS',
+  clue: 'Green stuff',
+  verdict: null,
+  pairId: null,
+  note: null,
+  source: 'real-harvest',
+  origin: 'blind',
+};
+
+const blindJudged = {
+  id: 'real-dark-1-candidate',
+  answer: 'DARK',
+  clue: 'Without light',
+  verdict: 'acceptable',
+  pairId: null,
+  note: null,
+  source: 'real-harvest',
+  origin: 'blind',
+};
+
 const ledger = {
   version: 'private-clue-specimen-ledger-v1',
   verdicts: ['leak', 'tautology', 'name-slot', 'pseudo-pun', 'acceptable', 'better-of-pair'],
-  records: [
-    {
-      id: 'sp-tautology-shadier',
-      answer: 'SHADIER',
-      clue: 'more shady',
-      verdict: null,
-      pairId: null,
-      note: '§0: the comparative is the answer',
-      source: 'hand-listed §0',
-    },
-    {
-      id: 'sp-plain-dark',
-      answer: 'DARK',
-      clue: 'Without light',
-      verdict: 'acceptable',
-      pairId: null,
-      note: null,
-      source: 'hand-listed §0',
-    },
-  ],
-  summary: { records: 2, labeled: 1, unlabeled: 1, verdictCounts: { acceptable: 1 }, problems: [] },
-};
-
-const pairLedger = {
-  ...ledger,
-  records: [
-    { id: 'sp-pair-a', answer: 'BRIGHTER', clue: 'more bright', verdict: null, pairId: null, note: null, source: 'hand' },
-    { id: 'sp-pair-b', answer: 'BRIGHTER', clue: 'Full of light', verdict: null, pairId: null, note: null, source: 'hand' },
-  ],
+  records: [reference, blindOpen, blindJudged],
+  summary: {
+    records: 3,
+    reference: 1,
+    blind: 2,
+    blindLabeled: 1,
+    blindUnlabeled: 1,
+    labeled: 2,
+    unlabeled: 1,
+    verdictCounts: { acceptable: 1, tautology: 1 },
+    problems: [],
+  },
 };
 
 beforeEach(() => {
@@ -65,56 +81,75 @@ function verdictButton(name) {
   );
 }
 
-it('offers to prepare the ledger when none exists, then shows one card with guidance', async () => {
+it('offers to prepare the ledger when none exists, then shows the blind queue', async () => {
   const fetchImpl = vi.fn()
     .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({ error: 'No specimen ledger on this host yet' }) })
-    .mockResolvedValueOnce({ ok: true, json: async () => ({ version: 'private-clue-specimen-ledger-v1', summary: { records: 2, labeled: 0, unlabeled: 2, verdictCounts: {}, problems: [] } }) })
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ version: 'private-clue-specimen-ledger-v1', summary: { records: 3, reference: 1, blind: 2, blindLabeled: 0, blindUnlabeled: 2, labeled: 1, unlabeled: 2, verdictCounts: {}, problems: [] } }) })
     .mockResolvedValueOnce({ ok: true, json: async () => ledger });
   vi.stubGlobal('fetch', fetchImpl);
   await act(async () => root.render(<SpecimenLabelPanel open />));
   await settle();
-  expect(host.textContent).toContain('Prepare 62 judging surfaces');
+  expect(host.textContent).toContain('Prepare the judging surfaces');
   await act(async () => {
     host.querySelector('button').click();
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
   await settle();
-  expect(host.textContent).toContain('more shady');
-  expect(host.textContent).toContain('1 of 2 done');
+  expect(host.textContent).toContain('Green stuff');
+  expect(host.textContent).toContain('You judge 2 genuine unknowns · 1 done · 1 to go');
   expect(host.textContent).toContain('needs your verdict');
-  // Verdict meanings are visible inline, not cryptic slugs.
   expect(host.textContent).toContain('just restates the answer');
-  expect(host.textContent).toContain('Skip pairs');
 });
 
-it('records a verdict on the focused card and advances', async () => {
+it('records a verdict on the focused blind card', async () => {
   const fetchImpl = vi.fn()
     .mockResolvedValueOnce({ ok: true, json: async () => ledger })
     .mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ id: 'sp-tautology-shadier', verdict: 'tautology', summary: { records: 2, labeled: 2, unlabeled: 0, verdictCounts: {}, problems: [] } }),
+      json: async () => ({ id: 'real-moss-0-candidate', verdict: 'acceptable', summary: { records: 3, reference: 1, blind: 2, blindLabeled: 2, blindUnlabeled: 0, labeled: 3, unlabeled: 0, verdictCounts: {}, problems: [] } }),
     });
   vi.stubGlobal('fetch', fetchImpl);
   await act(async () => root.render(<SpecimenLabelPanel open />));
   await settle();
-  const tautology = verdictButton('tautology');
-  expect(tautology).toBeTruthy();
+  const good = verdictButton('good clue');
+  expect(good).toBeTruthy();
   await act(async () => {
-    tautology.click();
+    good.click();
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
   await settle();
-  expect(fetchImpl.mock.calls[1][0]).toContain('/sp-tautology-shadier/verdict');
+  expect(fetchImpl.mock.calls[1][0]).toContain('/real-moss-0-candidate/verdict');
 });
 
-it('links a suggested same-answer pair without tickboxes', async () => {
-  const fetchImpl = vi.fn()
-    .mockResolvedValueOnce({ ok: true, json: async () => pairLedger })
-    .mockResolvedValueOnce({ ok: true, json: async () => ({ pairId: 'pair-a-b', members: ['sp-pair-a', 'sp-pair-b'] }) });
+it('shows reference read-only with its spec verdict', async () => {
+  const fetchImpl = vi.fn().mockResolvedValueOnce({ ok: true, json: async () => ledger });
   vi.stubGlobal('fetch', fetchImpl);
   await act(async () => root.render(<SpecimenLabelPanel open />));
   await settle();
-  expect(host.textContent).toContain('BRIGHTER');
+  const referenceTab = [...host.querySelectorAll('button')].find((button) => button.textContent.includes('Reference'));
+  await act(async () => {
+    referenceTab.click();
+  });
+  expect(host.textContent).toContain('more shady');
+  expect(host.textContent).toContain('tautology (spec)');
+  expect(host.textContent).toContain('read-only');
+});
+
+it('links a suggested same-answer blind pair', async () => {
+  const paired = {
+    ...ledger,
+    records: [
+      reference,
+      { ...blindOpen, id: 'real-moss-a', clue: 'Green stuff' },
+      { ...blindOpen, id: 'real-moss-b', clue: 'Lawn cover' },
+    ],
+  };
+  const fetchImpl = vi.fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => paired })
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ pairId: 'pair-a-b', members: ['real-moss-a', 'real-moss-b'] }) });
+  vi.stubGlobal('fetch', fetchImpl);
+  await act(async () => root.render(<SpecimenLabelPanel open />));
+  await settle();
   const link = [...host.querySelectorAll('button')].find((button) => button.textContent.includes('Link these 2'));
   expect(link).toBeTruthy();
   await act(async () => {
@@ -124,22 +159,22 @@ it('links a suggested same-answer pair without tickboxes', async () => {
   expect(fetchImpl.mock.calls[1][0]).toContain('/pairs');
 });
 
-it('reviews all cards and attests the closed ledger', async () => {
-  const closed = { ...ledger, records: ledger.records.map((record) => ({ ...record, verdict: record.verdict || 'acceptable' })) };
+it('attests the closed blind queue and shows the digest', async () => {
+  const closed = {
+    ...ledger,
+    records: ledger.records.map((record) =>
+      record.origin !== 'spec' && !record.verdict ? { ...record, verdict: 'acceptable' } : record,
+    ),
+  };
   const fetchImpl = vi.fn()
     .mockResolvedValueOnce({ ok: true, json: async () => closed })
     .mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ attested: true, pairs: 2, digest: 'sha256:abc', out: 'att.json' }),
+      json: async () => ({ attested: true, pairs: 3, digest: 'sha256:abc', out: 'att.json' }),
     });
   vi.stubGlobal('fetch', fetchImpl);
   await act(async () => root.render(<SpecimenLabelPanel open />));
   await settle();
-  const review = [...host.querySelectorAll('button')].find((button) => button.textContent.includes('Review all'));
-  await act(async () => {
-    review.click();
-  });
-  expect(host.textContent).toContain('Without light');
   const attest = [...host.querySelectorAll('button')].find((button) => button.textContent === 'Attest the closed ledger');
   expect(attest).toBeTruthy();
   await act(async () => {

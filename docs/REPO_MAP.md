@@ -124,7 +124,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/ReflectionCards.jsx` — `restoredAnswers:18`, `signalReceipt:39`, `ReflectionCards:53`, `respond:59`, `revise:91`, `startSwipe:123`, `finishSwipe:131`, `indexFor:147`, `complete:151`
 - `apps/react/src/future/ReflectionCards.test.jsx`
 - `apps/react/src/future/Signifier.jsx` — `Signifier:4`, `paint:6`
-- `apps/react/src/future/SpecimenLabelPanel.jsx` — `SpecimenLabelPanel:45`, `first:66`, `counts:83`, `queue:89`, `currentIndex:94`, `pairSuggestions:96`, `prepare:107`, `first:114`, `advanceAfter:124`, `rest:125`, `judgedAt:127`, `after:128`, `judge:132`, `stepQueue:151`, `toggleSelect:157`, `linkSelected:166` (+2 more)
+- `apps/react/src/future/SpecimenLabelPanel.jsx` — `SpecimenLabelPanel:45`, `first:66`, `reference:83`, `blind:84`, `queue:85`, `currentIndex:91`, `pairSuggestions:93`, `prepare:104`, `first:111`, `advanceAfter:121`, `judgedAt:122`, `rest:126`, `judge:130`, `stepQueue:149`, `toggleSelect:155`, `linkSelected:164` (+2 more)
 - `apps/react/src/future/SpecimenLabelPanel.test.jsx`
 - `apps/react/src/future/StimulusArtwork.jsx` — `legacySignifierKind:42`, `stableText:47`, `AbstractForm:54`, `TextureMaterial:100`, `StimulusArtwork:174`
 - `apps/react/src/future/StimulusArtwork.test.jsx`
@@ -158,7 +158,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/reflection.test.js`
 - `apps/react/src/future/sessionJournal.js` — `stableJson:9`, `sha256:20`, `randomUuid:30`, `randomCapability:43`, `entryCells:51`, `supportedManifest:61`, `canonicalCells:137`, `describeLegacyPuzzle:167`, `entries:207`, `activeEntryId:228`, `httpStatus:233`, `byteLength:242`, `valuesByCell:246`, `cellPosition:261`, `appPuzzleIdentity:266`, `eventCellChanges:275` (+43 more)
 - `apps/react/src/future/sessionJournal.test.js`
-- `apps/react/src/future/specimens.js` — `SPECIMEN_VERDICTS:1`, `normalizeRecord:10`, `normalizeSpecimens:27`, `normalizeSpecimenSummary:35`, `readJson:49`, `body:50`, `errorCode:60`, `loadSpecimens:66`, `seedSpecimens:74`, `recordVerdict:87`, `linkPair:101`, `attestSpecimens:113`, `body:119`
+- `apps/react/src/future/specimens.js` — `SPECIMEN_VERDICTS:1`, `normalizeRecord:10`, `normalizeSpecimens:29`, `normalizeSpecimenSummary:37`, `readJson:59`, `body:60`, `errorCode:70`, `loadSpecimens:76`, `seedSpecimens:84`, `recordVerdict:97`, `linkPair:111`, `attestSpecimens:123`, `body:129`
 - `apps/react/src/future/specimens.test.js`
 - `apps/react/src/future/tokenManifest.js` — `FUTURE_TOKEN_MANIFEST_VERSION:16`, `FUTURE_TOKEN_POLICY_VERSION:17`, `FUTURE_TOKEN_CELL_POLICY:18`, `FUTURE_TOKEN_FILL_POLICY:19`, `FUTURE_TOKEN_PRODUCER_VERSION:26`, `isRecord:67`, `exactKeys:71`, `nonEmptyString:79`, `issue:83`, `stableJson:87`, `digest:98`, `sourcePuzzleDigest:109`, `puzzleDimensions:114`, `cellId:123`, `entryCells:127`, `tokenForCharacter:134` (+18 more)
 - `apps/react/src/future/tokenManifest.test.js`

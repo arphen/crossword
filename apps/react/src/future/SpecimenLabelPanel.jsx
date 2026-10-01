@@ -63,8 +63,8 @@ export default function SpecimenLabelPanel({ open }) {
       .then((value) => {
         if (controller.signal.aborted) return;
         setRecords(value.records);
-        const first = value.records.find((record) => !record.verdict);
-        setCurrentId((first || value.records[0] || {}).id ?? null);
+        const first = value.records.find((record) => record.origin !== 'spec' && !record.verdict);
+        setCurrentId((first || {}).id ?? null);
         setState('ready');
       })
       .catch((cause) => {
@@ -80,29 +80,26 @@ export default function SpecimenLabelPanel({ open }) {
     return () => controller.abort();
   }, [open]);
 
-  const counts = useMemo(() => {
-    let unlabeled = 0;
-    for (const record of records) if (!record.verdict) unlabeled += 1;
-    return { unlabeled, total: records.length, judged: records.length - unlabeled };
-  }, [records]);
-
-  const queue = useMemo(() => records.filter((record) => !record.verdict), [records]);
+  const reference = useMemo(() => records.filter((record) => record.origin === 'spec'), [records]);
+  const blind = useMemo(() => records.filter((record) => record.origin !== 'spec'), [records]);
+  const queue = useMemo(() => blind.filter((record) => !record.verdict), [blind]);
+  const judgedBlind = blind.length - queue.length;
   const current = useMemo(
-    () => records.find((record) => record.id === currentId) || queue[0] || records[0] || null,
-    [records, currentId, queue],
+    () => blind.find((record) => record.id === currentId) || queue[0] || null,
+    [blind, currentId, queue],
   );
   const currentIndex = current ? queue.findIndex((record) => record.id === current.id) : -1;
 
   const pairSuggestions = useMemo(() => {
     const groups = new Map();
-    for (const record of records) {
+    for (const record of blind) {
       const key = String(record.answer || '').toUpperCase();
       if (!key) continue;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(record);
     }
     return [...groups.entries()].filter(([, members]) => members.length > 1).slice(0, 6);
-  }, [records]);
+  }, [blind]);
 
   async function prepare() {
     setState('seeding');
@@ -111,8 +108,8 @@ export default function SpecimenLabelPanel({ open }) {
       await seedSpecimens({});
       const value = await loadSpecimens({});
       setRecords(value.records);
-      const first = value.records.find((record) => !record.verdict);
-      setCurrentId((first || value.records[0] || {}).id ?? null);
+      const first = value.records.find((record) => record.origin !== 'spec' && !record.verdict);
+      setCurrentId((first || {}).id ?? null);
       setView('judge');
       setState('ready');
     } catch (cause) {
@@ -122,11 +119,12 @@ export default function SpecimenLabelPanel({ open }) {
   }
 
   function advanceAfter(updated, judgedId) {
-    const rest = updated.filter((record) => !record.verdict && record.id !== judgedId);
-    // Prefer the next item after the judged one; fall back to the first remaining.
     const judgedAt = updated.findIndex((record) => record.id === judgedId);
-    const after = updated.slice(judgedAt + 1).find((record) => !record.verdict && record.id !== judgedId);
-    setCurrentId((after || rest[0] || {}).id ?? null);
+    const after = updated
+      .slice(judgedAt + 1)
+      .find((record) => record.origin !== 'spec' && !record.verdict && record.id !== judgedId);
+    const rest = updated.filter((record) => record.origin !== 'spec' && !record.verdict && record.id !== judgedId);
+    setCurrentId(((after || rest[0]) || {}).id ?? null);
   }
 
   async function judge(id, verdict) {
@@ -203,23 +201,23 @@ export default function SpecimenLabelPanel({ open }) {
       const receipt = await attestSpecimens({});
       setAttestation(receipt);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'The ledger is not closed yet.');
+      setError(cause instanceof Error ? cause.message : 'The blind queue is not closed yet.');
     }
   }
 
   if (!open) return null;
-  const percent = counts.total === 0 ? 0 : Math.round((counts.judged / counts.total) * 100);
+  const percent = blind.length === 0 ? 0 : Math.round((judgedBlind / blind.length) * 100);
 
   return (
     <section className="future-specimens" aria-label="Clue specimen labeling">
       <div>
-        <p className="future-eyebrow">Judge the clues — 3 steps</p>
+        <p className="future-eyebrow">Judge the clues — your call only</p>
         <p className="future-small">
-          {counts.total === 0
-            ? 'Step 0: build the 62 judging surfaces on this host, then work through them.'
-            : `Step 1: judge · ${counts.judged} of ${counts.total} done${counts.unlabeled > 0 ? ` · ${counts.unlabeled} to go` : ' · all judged'}`}
+          {blind.length === 0
+            ? 'No blind queue on this host yet. Prepare the surfaces first.'
+            : `You judge ${blind.length} genuine unknowns · ${judgedBlind} done${queue.length > 0 ? ` · ${queue.length} to go` : ' · queue closed'}`}
         </p>
-        {counts.total > 0 && (
+        {blind.length > 0 && (
           <div
             role="progressbar"
             aria-valuenow={percent}
@@ -236,19 +234,19 @@ export default function SpecimenLabelPanel({ open }) {
       {state === 'loading' && <p className="future-small" aria-busy="true">Opening the ledger…</p>}
       {state === 'empty' && (
         <div>
-          <p className="future-small">No ledger on this host yet. This builds 62 short clue → answer cards locally.</p>
+          <p className="future-small">No ledger on this host yet. This builds reference cards plus real clues to judge, locally.</p>
           <button className="future-text-button" onClick={() => void prepare()}>
-            Prepare 62 judging surfaces
+            Prepare the judging surfaces
           </button>
         </div>
       )}
 
-      {state === 'ready' && counts.total > 0 && (
+      {state === 'ready' && records.length > 0 && (
         <>
           <ol className="future-small" style={{ paddingLeft: 18, margin: '8px 0' }}>
             <li><strong>Read one card</strong> and pick the verdict that fits best. Unsure? Choose “Good clue” and move on.</li>
-            <li><strong>Skip pairs</strong> unless two clues share the same answer — only 1–2 cards need this.</li>
-            <li><strong>Attest</strong> when the counter hits 0. That locks in your verdicts.</li>
+            <li><strong>Skip pairs</strong> unless two clues share the same answer.</li>
+            <li><strong>Attest</strong> when your counter hits 0. That locks in your verdicts.</li>
           </ol>
 
           <div className="future-specimens-filters" role="group" aria-label="Judging view">
@@ -264,7 +262,14 @@ export default function SpecimenLabelPanel({ open }) {
               aria-pressed={view === 'review'}
               onClick={() => setView('review')}
             >
-              Review all
+              Review my queue
+            </button>
+            <button
+              className="future-text-button"
+              aria-pressed={view === 'reference'}
+              onClick={() => setView('reference')}
+            >
+              Reference ({reference.length})
             </button>
           </div>
 
@@ -277,16 +282,15 @@ export default function SpecimenLabelPanel({ open }) {
               <p className="future-small">
                 {current.verdict
                   ? `Judged as “${current.verdict}” — change it below if needed.`
-                  : counts.unlabeled > 0
-                    ? `Card ${counts.judged + 1} of ${counts.total} · needs your verdict`
-                    : 'All judged — you can still revise.'}
+                  : blind.length > 0
+                    ? `Card ${judgedBlind + 1} of ${blind.length} · needs your verdict`
+                    : 'Queue closed — you can still revise.'}
               </p>
               <div style={{ margin: '8px 0' }}>
                 <div style={{ fontSize: '1.15rem' }}>“{current.clue}”</div>
                 <div style={{ marginTop: 4 }}>
                   answer: <strong style={{ letterSpacing: 1 }}>{current.answer}</strong>
                 </div>
-                {current.note && <div className="future-small">hint: {current.note}</div>}
                 {current.pairId && <div className="future-small">linked pair: {current.pairId}</div>}
               </div>
               <div className="future-specimens-verdicts" role="group" aria-label={`Verdict for ${current.id}`}>
@@ -319,9 +323,13 @@ export default function SpecimenLabelPanel({ open }) {
             </article>
           )}
 
+          {view === 'judge' && !current && (
+            <p className="future-small">Your queue is closed. Switch to Review to revise, then attest below.</p>
+          )}
+
           {view === 'review' && (
             <ul className="future-specimens-list" style={{ marginTop: 8 }}>
-              {records.map((record) => (
+              {blind.map((record) => (
                 <li key={record.id} className="future-specimens-card" style={{ padding: '6px 0', borderTop: '1px solid #eee' }}>
                   <div>
                     <strong>{record.answer}</strong> <span>“{record.clue}”</span>{' '}
@@ -337,16 +345,35 @@ export default function SpecimenLabelPanel({ open }) {
             </ul>
           )}
 
+          {view === 'reference' && (
+            <div style={{ marginTop: 8 }}>
+              <p className="future-small">
+                Decided by the spec, read-only — worked examples so later rules can be checked
+                against them. Not yours to judge, not counted as your verdicts.
+              </p>
+              <ul className="future-specimens-list">
+                {reference.map((record) => (
+                  <li key={record.id} className="future-specimens-card" style={{ padding: '6px 0', borderTop: '1px solid #eee' }}>
+                    <div>
+                      <strong>{record.answer}</strong> <span>“{record.clue}”</span>{' '}
+                      <span className="future-small">→ {record.verdict} (spec)</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <details style={{ marginTop: 12 }}>
             <summary className="future-small">
-              <strong>Step 2 (optional): compare a same-answer pair</strong> — skip this unless two clues share one answer.
+              <strong>Pairs (optional): compare two clues with one answer</strong>
             </summary>
             <p className="future-small">
-              The “pair candidate” tickbox only marks two cards to compare. Nothing happens until you press a link
-              button. Almost everything needs no pair at all.
+              Only for two of <em>your</em> queue cards that share an answer. Reference cards
+              keep their spec pairs and cannot be relinked.
             </p>
             {pairSuggestions.length === 0 ? (
-              <p className="future-small">No repeated answers — nothing to link.</p>
+              <p className="future-small">No repeated answers in your queue — nothing to link.</p>
             ) : (
               <ul className="future-small" style={{ paddingLeft: 18 }}>
                 {pairSuggestions.map(([answer, members]) => (
@@ -367,7 +394,7 @@ export default function SpecimenLabelPanel({ open }) {
               </ul>
             )}
             <div className="future-small" style={{ marginTop: 8 }}>
-              <p>Manual fallback: tick exactly 2 cards below, then link them.</p>
+              <p>Manual fallback: tick exactly 2 of your cards, then link them.</p>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <span>{selected.size} of 2 selected</span>
                 <button
@@ -377,42 +404,35 @@ export default function SpecimenLabelPanel({ open }) {
                 >
                   Link selected pair
                 </button>
-                {selected.size !== 2 && <span>(tick 2 boxes in Review to enable)</span>}
+                {selected.size !== 2 && <span>(tick 2 boxes below to enable)</span>}
               </div>
-              {view !== 'review' && (
-                <button className="future-text-button" onClick={() => setView('review')}>
-                  Show tickboxes in Review
-                </button>
-              )}
-              {view === 'review' && (
-                <div style={{ marginTop: 4 }}>
-                  {records.slice(0, 8).map((record) => (
-                    <label key={record.id} className="future-small" style={{ display: 'block' }}>
-                      <input
-                        type="checkbox"
-                        checked={selected.has(record.id)}
-                        onChange={() => toggleSelect(record.id)}
-                      />{' '}
-                      {record.answer} — “{record.clue}”
-                    </label>
-                  ))}
-                  <span className="future-small">First 8 shown; use Judge view for the rest.</span>
-                </div>
-              )}
+              <div style={{ marginTop: 4 }}>
+                {blind.slice(0, 10).map((record) => (
+                  <label key={record.id} className="future-small" style={{ display: 'block' }}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(record.id)}
+                      onChange={() => toggleSelect(record.id)}
+                    />{' '}
+                    {record.answer} — “{record.clue}”
+                  </label>
+                ))}
+                {blind.length > 10 && <span className="future-small">First 10 shown.</span>}
+              </div>
             </div>
           </details>
 
           <div style={{ marginTop: 12 }}>
-            {counts.unlabeled === 0 ? (
+            {queue.length === 0 && blind.length > 0 ? (
               <>
-                <p className="future-small"><strong>Step 3: lock it in.</strong> All cards judged — attest to write the counts + digest.</p>
+                <p className="future-small"><strong>Lock it in.</strong> Your queue is closed — attest to write the counts + digest.</p>
                 <button className="future-text-button" onClick={() => void attest()}>
                   Attest the closed ledger
                 </button>
               </>
             ) : (
               <p className="future-small">
-                <strong>Step 3 unlocks at 0 to go</strong> ({counts.unlabeled} left). Attesting early is refused — that refusal is expected.
+                Attest unlocks at 0 to go ({queue.length} left). Early attests are refused — that refusal is expected.
               </p>
             )}
           </div>
