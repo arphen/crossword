@@ -4,6 +4,7 @@ export default defineConfig({
   esbuild: { jsx: 'automatic' },
   test: {
     include: ['apps/react/src/**/*.test.{js,jsx}', 'packages/*/src/**/*.test.ts'],
+    setupFiles: ['apps/react/vitest.setup.js'],
     coverage: {
       provider: 'v8',
       reportsDirectory: 'coverage/frontend',

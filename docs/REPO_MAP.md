@@ -169,6 +169,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/vision.css`
 - `apps/react/tsconfig.json`
 - `apps/react/vite.config.js`
+- `apps/react/vitest.setup.js` — `MemoryStorage:6`, `constructor:7`, `key:13`, `getItem:16`, `setItem:20`, `removeItem:23`, `clear:26`, `descriptorMissing:31`
 
 ## docs
 
