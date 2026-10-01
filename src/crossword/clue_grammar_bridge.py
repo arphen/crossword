@@ -19,6 +19,8 @@ from collections.abc import Mapping
 from typing import Any
 
 
+from .clue_witness import witness_clue_family
+
 CLUE_GRAMMAR_BRIDGE_VERSION = "private-clue-grammar-bridge-v1"
 HOUSE_GRAMMAR_VERSION = "clue-grammar-v1"
 
@@ -218,6 +220,10 @@ def validate_surface_clue_family(
         "status": status,
         "valid": not issues,
         "family": family,
+        # The witness verdict is reported alongside validity and never gates
+        # it: a claimed pun without a ledger pivot stays surface-valid here
+        # while reporting witnessed pseudo-pun.
+        "witness": witness_clue_family(family, text) if family in _FAMILIES else None,
         "checkedRules": checked_rules,
         "issues": issues,
         "semanticStatus": "not-established",

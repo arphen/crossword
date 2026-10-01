@@ -106,6 +106,16 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
         diversity.get("familyCounts", bundle.get("familyCounts")),
         "provenance.clueQuality.diversity.familyCounts",
     )
+    # Witnessed counts exist only in receipts generated after the witness
+    # requirement landed; older receipts remain valid without them.
+    witnessed_counts = None
+    if "familyCountsWitnessed" in diversity:
+        witnessed_counts = _counts(
+            diversity.get("familyCountsWitnessed"),
+            "provenance.clueQuality.diversity.familyCountsWitnessed",
+        )
+        if sum(witnessed_counts.values()) != entry_count:
+            raise ValueError("witnessed clue family counts must add up to entryCount")
     non_definition = _count(
         diversity.get("nonDefinitionCount"),
         "provenance.clueQuality.diversity.nonDefinitionCount",
@@ -206,6 +216,7 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
         ),
         "semanticStatus": _text(quality.get("diversity", {}).get("semanticStatus", "not-established"), "diversity.semanticStatus"),
         "familyCounts": family_counts,
+        "familyCountsWitnessed": witnessed_counts,
         "nonDefinitionCount": non_definition,
         "nonDefinitionRate": observed_rate,
         "nonDefinitionFamilies": sorted(set(families)),
@@ -270,6 +281,8 @@ def evaluate_clue_quality_study(
     if len(requested) > MAX_STUDY_SEEDS or len(set(requested)) != len(requested):
         raise ValueError("requestedSeeds must be unique and bounded")
     family_totals: Counter[str] = Counter()
+    witnessed_totals: Counter[str] = Counter()
+    witnessed_cases = 0
     signal_totals: Counter[str] = Counter()
     issue_totals: Counter[str] = Counter()
     totals = Counter()
@@ -281,6 +294,10 @@ def evaluate_clue_quality_study(
     family_floor_met_cases = 0
     for item in normalized:
         family_totals.update(item.get("familyCounts", {}))
+        witnessed = item.get("familyCountsWitnessed")
+        if isinstance(witnessed, dict):
+            witnessed_totals.update(witnessed)
+            witnessed_cases += 1
         signal_totals.update(item.get("signalCounts", {}))
         issue_totals.update(item.get("issueCounts", {}))
         for key in ("entryCount", "grammarCheckedCount", "grammarIssueCount", "fallbackCount", "nonDefinitionCount"):
@@ -331,6 +348,17 @@ def evaluate_clue_quality_study(
             if totals["entryCount"]
             else 0.0,
             "familyCounts": dict(sorted(family_totals.items())),
+            "familyCountsWitnessed": dict(sorted(witnessed_totals.items()))
+            if witnessed_cases
+            else None,
+            "witnessedCases": witnessed_cases,
+            "witnessGap": {
+                family: family_totals.get(family, 0) - witnessed_totals.get(family, 0)
+                for family in sorted(set(family_totals) | set(witnessed_totals))
+                if family_totals.get(family, 0) != witnessed_totals.get(family, 0)
+            }
+            if witnessed_cases
+            else None,
             "signalCounts": dict(sorted(signal_totals.items())),
             "issueCounts": dict(sorted(issue_totals.items())),
             "totalTimingSeconds": round(sum(total_times), 3),

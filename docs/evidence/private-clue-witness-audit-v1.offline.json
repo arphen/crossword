@@ -1,0 +1,63 @@
+{
+  "version": "private-clue-witness-audit-v1",
+  "kind": "offline",
+  "generatedAt": "2026-10-01T15:58:31+00:00",
+  "claim": "a claimed family is punctuation; a witnessed family carries the witness the family requires, and the gap is reported",
+  "matrix": {
+    "surfaces": 17,
+    "expectationsSource": "hand-listed English, not the rule under test",
+    "familyCountsClaimed": {
+      "definition": 2,
+      "factual-relation": 1,
+      "fill-blank": 2,
+      "metalinguistic": 1,
+      "nonverbal-expression": 1,
+      "pun": 8,
+      "spoken-equivalent": 2
+    },
+    "familyCountsWitnessed": {
+      "definition": 3,
+      "factual-relation": 1,
+      "fill-blank": 2,
+      "metalinguistic": 1,
+      "nonverbal-expression": 1,
+      "pseudo-pun": 4,
+      "pun": 4,
+      "spoken-equivalent": 1
+    },
+    "disagreements": []
+  },
+  "punInflation": {
+    "claimedPun": 8,
+    "witnessedPun": 4,
+    "pseudoPun": 4,
+    "unwitnessedPun": 4
+  },
+  "corpus": {
+    "captured": true,
+    "pairs": 78,
+    "familyCountsClaimed": {
+      "definition": 75,
+      "factual-relation": 3
+    },
+    "familyCountsWitnessed": {
+      "definition": 75,
+      "factual-relation": 3
+    }
+  },
+  "hiddenWordProbe": {
+    "surface": "Found inside \"cabin door\"",
+    "witnessed": true,
+    "span": {
+      "start": 13,
+      "end": 25
+    }
+  },
+  "knownLimits": [
+    "the ledger is 50 curated homographs labeled sense-source curated-v1, not a sense inventory",
+    "a pivot that is the answer itself is refused; bare stems of doubled comparatives are not reversed",
+    "stress-dependent doubling and irregular degree pairs are not modeled",
+    "the corpus rescore is empty until a generation populates the local corpus",
+    "no operator-judged specimen is consumed by this receipt"
+  ]
+}

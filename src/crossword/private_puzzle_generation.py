@@ -33,6 +33,7 @@ from .clue_grammar_bridge import (
     validate_surface_clue_family,
 )
 from .clue_grounding_validators import validate_private_clue_witnesses
+from .clue_witness import witness_clue_family
 from .private_clue_corpus import append_corpus_records, build_corpus_records
 from .clue_semantic_challenger import (
     challenge_private_clue_pair,
@@ -551,18 +552,21 @@ _COMMON_SUPERLATIVE_FORMS = frozenset(
 )
 
 
-def _clue_family_observation(clue):
+def _clue_family_observation(clue, answer=None):
     """Classify visible clue signals without asserting the intended meaning.
 
     Private generated clues do not have a reviewed sense annotation.  This
     observation records only text-visible conventions so a reviewer or future
     challenger can select the right validator.  ``confidence`` deliberately
     stays structural: a question mark may signal a pun, but it cannot prove
-    one.
+    one.  The attached witness verdict (see ``clue_witness.py``) states which
+    claimed family the surface actually carries a witness for; a trailing
+    ``?`` alone is ``pseudo-pun``, never ``pun``.
     """
     text = clue if isinstance(clue, str) else ""
     stripped = text.strip()
     signals = []
+    fact_pattern_matched = False
 
     if (
         len(stripped) >= 2
@@ -675,11 +679,18 @@ def _clue_family_observation(clue):
             stripped
         ):
             family = "factual-relation"
+            fact_pattern_matched = True
         else:
             family = "definition"
 
+    witness = witness_clue_family(
+        family, text, answer=answer, relation_pattern_matched=fact_pattern_matched
+    )
     return {
         "family": family,
+        "witnessedFamily": witness["family"],
+        "witness": witness["witness"],
+        "senseSource": witness["senseSource"],
         "confidence": "surface-signal-only",
         "signals": signals,
         "uncertainty": ["semantic-family-unverified"],
@@ -3243,7 +3254,7 @@ def _clue_grounding(entry, clue, *, model_response=None, reviewed_content=None):
     """
     structure = _answer_structure(entry)
     text = clue if isinstance(clue, str) else ""
-    family_observation = _clue_family_observation(text)
+    family_observation = _clue_family_observation(text, entry.get("answer"))
     grammar_bridge = validate_surface_clue_family(text, family_observation)
     witness_validators = validate_private_clue_witnesses(entry, text)
     issue = _clue_wordplay_issue(entry, text)
@@ -3799,12 +3810,24 @@ def _repair_risky_clues(model, entries, clues, context, weekday):
 def _clue_diversity_report(entries, clues, *, repair=None):
     """Summarize visible clue conventions without asserting their meaning."""
     family_counts = {}
+    witnessed_counts = {}
     for entry in entries if isinstance(entries, list) else []:
         if not isinstance(entry, Mapping):
             continue
         clue = clues.get(entry.get("id"), "") if isinstance(clues, Mapping) else ""
-        family = _clue_family_observation(clue).get("family", "definition")
+        observation = _clue_family_observation(clue)
+        family = observation.get("family", "definition")
         family_counts[family] = family_counts.get(family, 0) + 1
+        witnessed = observation.get("witnessedFamily", family)
+        witnessed_counts[witnessed] = witnessed_counts.get(witnessed, 0) + 1
+    # The gap between claimed and witnessed counts is reported, never
+    # reconciled by assumption: a family counted but not witnessed stays
+    # visible instead of being folded into another bucket.
+    witness_gap = {
+        family: family_counts.get(family, 0) - witnessed_counts.get(family, 0)
+        for family in sorted(set(family_counts) | set(witnessed_counts))
+        if family_counts.get(family, 0) != witnessed_counts.get(family, 0)
+    }
     non_definition = sorted(
         family for family in family_counts if family != "definition"
     )
@@ -3815,6 +3838,9 @@ def _clue_diversity_report(entries, clues, *, repair=None):
         "version": CLUE_DIVERSITY_REPAIR_VERSION,
         "entryCount": sum(family_counts.values()),
         "familyCounts": dict(sorted(family_counts.items())),
+        "familyCountsClaimed": dict(sorted(family_counts.items())),
+        "familyCountsWitnessed": dict(sorted(witnessed_counts.items())),
+        "witnessGap": witness_gap,
         "nonDefinitionFamilies": non_definition,
         "nonDefinitionCount": non_definition_count,
         "nonDefinitionRate": round(
