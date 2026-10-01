@@ -141,6 +141,50 @@ it('tints every clue number with its own place on the ramp', async () => {
   expect(new Set(numbers.map((number) => number.getAttribute('style'))).size).toBeGreaterThan(1);
 });
 
+it('shares one rank between the ladder row, its chip, and the numbered square', async () => {
+  const host = await mountBoard();
+  const rampOf = (element) => /--clue-ramp:\s*([^;\s]+)/.exec(element.getAttribute('style') || '')?.[1];
+  const rows = [...host.querySelectorAll('#across li, #down li')];
+  expect(rows.length).toBeGreaterThan(1);
+  for (const row of rows) {
+    expect(rampOf(row)).toBeDefined();
+    expect(rampOf(row.querySelector('.clue-number'))).toBe(rampOf(row));
+  }
+  const indices = [...host.querySelectorAll('.clue-index')];
+  expect(indices.length).toBeGreaterThan(0);
+  for (const index of indices) {
+    const cellRamp = rampOf(index.closest('.grid-cell'));
+    expect(cellRamp).toBeDefined();
+    const chips = [...host.querySelectorAll('.clue-number')].filter((chip) => chip.textContent === index.textContent);
+    expect(chips.length).toBeGreaterThan(0);
+    for (const chip of chips) expect(rampOf(chip)).toBe(cellRamp);
+  }
+});
+
+it("lights the selection in the active clue's rank, not the square's own", async () => {
+  const host = await mountBoard();
+  const { app } = controllers[controllers.length - 1];
+  const down = app.crossword.find((entry) => entry.direction === 'down');
+  await act(async () => { app.handle_clue_click({}, down); });
+  const activeRamp = /--clue-ramp:\s*([^;\s]+)/.exec(
+    host.querySelector('#down li.highlighted-clue .clue-number').getAttribute('style') || '',
+  )?.[1];
+  expect(activeRamp).toBeDefined();
+  const selected = [...host.querySelectorAll('.grid-cell[data-entry-index]')];
+  expect(selected.length).toBe(down.characters.length);
+  for (const cell of selected) {
+    expect(/--clue-ramp:\s*([^;\s]+)/.exec(cell.getAttribute('style') || '')?.[1]).toBe(activeRamp);
+  }
+  // The closing square wears its own number but burns with the active word.
+  const borrowed = selected.find((cell) => cell.querySelector('.clue-index')?.textContent === '2');
+  expect(borrowed).toBeDefined();
+  const boxes = [...host.querySelectorAll('.state[data-entry-index]')];
+  expect(boxes.length).toBeGreaterThan(0);
+  for (const box of boxes) {
+    expect(/--clue-ramp:\s*([^;\s]+)/.exec(box.getAttribute('style') || '')?.[1]).toBe(activeRamp);
+  }
+});
+
 it('hands the appearance back to CSS when a view choice changes', async () => {
   const host = await mountBoard();
   await choose(host, 'Letter track', 'Solid');

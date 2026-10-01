@@ -172,9 +172,14 @@ export default function CrosswordView({
         ? app.getEntryByClueNumber(app.activeClueNumber, app.activeDirection)
         : null;
     const selection = createSelectionPresentation(activeEntry);
+    // A lit square carries the active entry's rank alongside its coordinate, so
+    // every representation of the selection — board squares and answer boxes —
+    // glows in the hue of the clue being solved.
     const cellPresentation = (rowIndex, cellIndex) => {
         const cell = selection.get(`${rowIndex},${cellIndex}`);
-        return cell ? { style: cell.style, 'data-entry-index': cell.index, title: cell.title } : {};
+        if (!cell || !activeEntry) return {};
+        const active = settings.ramp ? clueRampStyle(clueRamp, activeEntry.clue_number) : {};
+        return { style: { ...cell.style, ...active }, 'data-entry-index': cell.index, title: cell.title };
     };
     const activeEntryCellClasses = (rowIndex, cellIndex) => {
         const cell = selection.get(`${rowIndex},${cellIndex}`);
@@ -205,6 +210,15 @@ export default function CrosswordView({
             style: cssVars({ '--rapture-delay': `${Math.min(index, rapture.active.maxStep) * rapture.active.step}ms` })
         };
     };
+    // The row carries its own rank next to the chip it already sits beside, so
+    // the answer track and every glow on the row read the same hue as the
+    // number. The pigment only travels while the reader has Number colours on.
+    const rowProps = entry => {
+        const rowRapture = raptureRow(entry);
+        const ramp = settings.ramp ? clueRampStyle(clueRamp, entry.clue_number) : {};
+        const style = { ...rowRapture.style, ...ramp };
+        return Object.keys(style).length > 0 ? { ...rowRapture, style } : rowRapture;
+    };
     const raptureSparks = entry => {
         const index = held?.get(entry.clue_text);
         return index === undefined ? null : <RaptureSparks specs={rapture.active.sparks} index={index} />;
@@ -224,11 +238,18 @@ export default function CrosswordView({
     // appearance belongs to vision.css.
     const gridCellProps = (rowIndex, cellIndex) => {
         const presentation = cellPresentation(rowIndex, cellIndex);
-        if (!settings.cues) return presentation;
+        // A numbered square wears its own clue's rank; the selection style is
+        // spread over it afterwards, so a lit square shows the active clue's
+        // hue instead — interaction over identity, on the same property.
+        const clueNumber = settings.ramp ? app.find_index(rowIndex, cellIndex) : null;
+        const style = { ...(clueNumber ? clueRampStyle(clueRamp, clueNumber) : {}), ...presentation.style };
+        const withStyle = Object.keys(style).length > 0 ? { style } : {};
+        if (!settings.cues) return { ...presentation, ...withStyle };
         const cues = cellCues(app.grid, rowIndex, cellIndex);
         return {
             ...presentation,
-            style: { ...presentation.style, ...cues.style },
+            ...withStyle,
+            style: { ...style, ...cues.style },
             'data-start': cues.dataStart
         };
     };
@@ -289,7 +310,7 @@ export default function CrosswordView({
                             <li key={'across-' + entry.clue_number} onClick={event => {
                                 app.handle_clue_click(event, entry);
                                 onEntryFocused?.(entry, 'pointer');
-                            }} className={clueClasses(entry)} {...raptureRow(entry)}>
+                            }} className={clueClasses(entry)} {...rowProps(entry)}>
                                 <div className="clue-content">
                                     <span className="clue-text">{renderClueSurface(entry.clue_text, annotateClueGrammar)}</span>
                                     <div className="state-container">{answer(entry)}</div>
@@ -396,7 +417,8 @@ export default function CrosswordView({
                                             'future-token-cell': Boolean(tokenAt(rowIndex, cellIndex)),
                                             ...activeEntryCellClasses(rowIndex, cellIndex)
                                         })} data-token-display={tokenAt(rowIndex, cellIndex)?.displayToken || undefined}>
-                                            {Boolean(app.find_index(rowIndex, cellIndex)) && <span className="clue-index" style={settings.ramp ? clueRampStyle(clueRamp, app.find_index(rowIndex, cellIndex)) : undefined}>{app.find_index(rowIndex, cellIndex)}</span>}
+                                            {/* The square carries the rank (see gridCellProps); the index just inherits its tone. */}
+                                            {Boolean(app.find_index(rowIndex, cellIndex)) && <span className="clue-index">{app.find_index(rowIndex, cellIndex)}</span>}
                                             {cell !== null && (
                                                 <>
                                                 <input ref={element => { app.setRef('input-' + rowIndex + '-' + cellIndex, element); }} type="text"
@@ -613,7 +635,7 @@ export default function CrosswordView({
                             <li key={'down-' + entry.clue_number} onClick={event => {
                                 app.handle_clue_click(event, entry);
                                 onEntryFocused?.(entry, 'pointer');
-                            }} className={clueClasses(entry)} {...raptureRow(entry)}>
+                            }} className={clueClasses(entry)} {...rowProps(entry)}>
                                 <strong className="clue-number" style={settings.ramp ? clueRampStyle(clueRamp, entry.clue_number) : undefined}>{entry.clue_number}</strong>
                                 <div className="clue-content">
                                     <span className="clue-text">{renderClueSurface(entry.clue_text, annotateClueGrammar)}</span>
