@@ -22,6 +22,7 @@ import FutureSolver from './FutureSolver';
 import LearningReview from './LearningReview';
 import EpistemeSnapshot from './EpistemeSnapshotView';
 import ProfileNarrativePanel from './ProfileNarrativePanel';
+import SpecimenLabelPanel from './SpecimenLabelPanel';
 import GameHistory from './GameHistory';
 import CalibrationHypotheses from './CalibrationHypotheses';
 import {
@@ -1642,6 +1643,7 @@ const selectedDay = catalog.days.find((day) => day.id === draft.weekday);
                 setEpistemeRefresh((value) => value + 1);
               }}
             />
+            <SpecimenLabelPanel open={profileOpen} />
             {hypothesisDeck ? (
               <CalibrationHypotheses
                 deck={hypothesisDeck}

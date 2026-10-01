@@ -103,7 +103,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/ClueQualityNotes.test.jsx`
 - `apps/react/src/future/EpistemeSnapshotView.jsx` — `claimLabel:5`, `claimTensionLabel:12`, `associationLabel:20`, `EpistemeSnapshot:33`, `correctClaim:61`, `claims:91`, `tensionClaims:92`, `signalClaims:93`, `renderClaim:96`
 - `apps/react/src/future/EpistemeSnapshotView.test.jsx`
-- `apps/react/src/future/FutureApp.jsx` — `stimulusById:96`, `stimulusByLegacyId:97`, `hasActiveHypothesisSource:128`, `stimulusCaption:157`, `presentationFor:178`, `draftFromCalibration:183`, `selectedAt:198`, `objectId:217`, `companionId:220`, `stableJson:255`, `isAppendOnlyCalibrationExtension:266`, `Arrow:300`, `Mark:315`, `ObjectChoice:326`, `ProfileField:353`, `FutureApp:490` (+42 more)
+- `apps/react/src/future/FutureApp.jsx` — `stimulusById:97`, `stimulusByLegacyId:98`, `hasActiveHypothesisSource:129`, `stimulusCaption:158`, `presentationFor:179`, `draftFromCalibration:184`, `selectedAt:199`, `objectId:218`, `companionId:221`, `stableJson:256`, `isAppendOnlyCalibrationExtension:267`, `Arrow:301`, `Mark:316`, `ObjectChoice:327`, `ProfileField:354`, `FutureApp:491` (+42 more)
 - `apps/react/src/future/FutureApp.test.jsx`
 - `apps/react/src/future/FutureSolver.jsx` — `reflectionStorageKey:26`, `reflectionStorageValue:30`, `savedReflectionSessionId:40`, `futureOptions:58`, `FutureSolver:125`, `handlePuzzleRestored:186`, `enableHostSync:207`, `onEntryFocused:422`, `onCellChanged:424`, `onCheckAll:426`, `onRevealAll:427`, `onCellRevealed:440`, `onHintShown:442`
 - `apps/react/src/future/FutureSolver.test.js`
@@ -124,6 +124,8 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/ReflectionCards.jsx` — `restoredAnswers:18`, `signalReceipt:39`, `ReflectionCards:53`, `respond:59`, `revise:91`, `startSwipe:123`, `finishSwipe:131`, `indexFor:147`, `complete:151`
 - `apps/react/src/future/ReflectionCards.test.jsx`
 - `apps/react/src/future/Signifier.jsx` — `Signifier:4`, `paint:6`
+- `apps/react/src/future/SpecimenLabelPanel.jsx` — `SpecimenLabelPanel:12`, `counts:47`, `prepare:57`, `judge:71`, `toggleSelect:85`, `linkSelected:94`, `attest:111`, `visible:123`
+- `apps/react/src/future/SpecimenLabelPanel.test.jsx`
 - `apps/react/src/future/StimulusArtwork.jsx` — `legacySignifierKind:42`, `stableText:47`, `AbstractForm:54`, `TextureMaterial:100`, `StimulusArtwork:174`
 - `apps/react/src/future/StimulusArtwork.test.jsx`
 - `apps/react/src/future/assistanceLadder.js` — `entryId:24`, `entryCellIds:28`, `clueReading:36`, `assistanceLadder:88`, `crossingCells:97`
@@ -156,6 +158,8 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/reflection.test.js`
 - `apps/react/src/future/sessionJournal.js` — `stableJson:9`, `sha256:20`, `randomUuid:30`, `randomCapability:43`, `entryCells:51`, `supportedManifest:61`, `canonicalCells:137`, `describeLegacyPuzzle:167`, `entries:207`, `activeEntryId:228`, `httpStatus:233`, `byteLength:242`, `valuesByCell:246`, `cellPosition:261`, `appPuzzleIdentity:266`, `eventCellChanges:275` (+43 more)
 - `apps/react/src/future/sessionJournal.test.js`
+- `apps/react/src/future/specimens.js` — `SPECIMEN_VERDICTS:1`, `normalizeRecord:10`, `normalizeSpecimens:27`, `normalizeSpecimenSummary:35`, `readJson:49`, `body:50`, `errorCode:60`, `loadSpecimens:66`, `seedSpecimens:74`, `recordVerdict:87`, `linkPair:101`, `attestSpecimens:113`, `body:119`
+- `apps/react/src/future/specimens.test.js`
 - `apps/react/src/future/tokenManifest.js` — `FUTURE_TOKEN_MANIFEST_VERSION:16`, `FUTURE_TOKEN_POLICY_VERSION:17`, `FUTURE_TOKEN_CELL_POLICY:18`, `FUTURE_TOKEN_FILL_POLICY:19`, `FUTURE_TOKEN_PRODUCER_VERSION:26`, `isRecord:67`, `exactKeys:71`, `nonEmptyString:79`, `issue:83`, `stableJson:87`, `digest:98`, `sourcePuzzleDigest:109`, `puzzleDimensions:114`, `cellId:123`, `entryCells:127`, `tokenForCharacter:134` (+18 more)
 - `apps/react/src/future/tokenManifest.test.js`
 - `apps/react/src/lattice.css`
