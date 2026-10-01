@@ -32,6 +32,11 @@ _SAFE_MECHANICAL_ISSUES = frozenset(
         # to know the surface cannot stand, so the crossing scaffold is safe.
         "tautological-degree-form",
         "generic-clue",
+        # Genre-cap replacements are deterministic in the same way: a
+        # name-shaped clue with no source-backed sense, or a fill-blank past
+        # one quarter of the board, needs no judgement call to refuse.
+        "name-slot-without-source",
+        "fill-blank-over-cap",
         "anagram-mismatch",
         "reversal-mismatch",
         "hidden-word-mismatch",

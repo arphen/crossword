@@ -1,0 +1,40 @@
+{
+  "version": "private-clue-genre-census-v1",
+  "kind": "offline",
+  "generatedAt": "2026-10-01T16:15:59+00:00",
+  "claim": "the closed genre taxonomy is measured per board before it is enforced; the loose-vs-anchored name split names the rate the anchored guards miss",
+  "taxonomy": [
+    "name-slot",
+    "role-plus-name",
+    "common-term",
+    "x-e-g",
+    "fill-blank",
+    "quotational",
+    "sound-or-action-cue",
+    "abbreviation",
+    "plain-definition"
+  ],
+  "matrix": {
+    "surfaces": 19,
+    "expectationsSource": "hand-listed English, not the rule under test",
+    "disagreements": []
+  },
+  "corpus": {
+    "version": "private-clue-genre-v1",
+    "pairs": 0,
+    "genreCounts": {},
+    "nameSlotCount": 0,
+    "nameSlotRate": 0.0,
+    "fillBlankCount": 0,
+    "fillBlankRate": 0.0,
+    "nameSlotAnchored": 0,
+    "nameSlotLoose": 0,
+    "captured": false
+  },
+  "knownLimits": [
+    "name-shape detection is closed-vocabulary plus role heuristics, not a semantic judge",
+    "role-plus-name needs a capitalized name past the first word; lowercase names read as plain definitions",
+    "sound-or-action-cue covers bracket spans plus a closed cue-word list",
+    "no operator-judged specimen is consumed by this receipt"
+  ]
+}

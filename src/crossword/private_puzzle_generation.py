@@ -33,6 +33,7 @@ from .clue_grammar_bridge import (
     validate_surface_clue_family,
 )
 from .clue_grounding_validators import validate_private_clue_witnesses
+from .clue_genre import observe_clue_genre
 from .clue_witness import witness_clue_family
 from .private_clue_corpus import append_corpus_records, build_corpus_records
 from .clue_semantic_challenger import (
@@ -4311,6 +4312,21 @@ def _enforce_private_clue_safety(
         if isinstance(reviewed_by_id, Mapping)
         else {}
     )
+    # Q05 genre caps. Fill-blank is capped at one quarter of the board: keep
+    # the first surfaces in entry order, scaffold the rest. Reviewed exact
+    # surfaces are exempt from the count and the replacement alike.
+    fill_blank_ids = []
+    for entry in entries:
+        clue_id = entry.get("id") if isinstance(entry, dict) else None
+        if not isinstance(clue_id, str) or clue_id not in safe:
+            continue
+        clue = safe[clue_id]
+        exact_reviewed_text = reviewed_text_by_id.get(clue_id)
+        if isinstance(exact_reviewed_text, str) and exact_reviewed_text.strip() == clue.strip():
+            continue
+        if observe_clue_genre(clue).get("genre") == "fill-blank":
+            fill_blank_ids.append(clue_id)
+    fill_blank_over_cap = set(fill_blank_ids[len(entries) // 4 :])
     for entry in entries:
         clue_id = entry.get("id") if isinstance(entry, dict) else None
         if not isinstance(clue_id, str) or clue_id not in safe:
@@ -4355,6 +4371,23 @@ def _enforce_private_clue_safety(
             reason_codes.append(morphology_issue)
         if information_issue == "low-information-surface" and not reviewed_surface:
             reason_codes.append(information_issue)
+        genre = observe_clue_genre(clue).get("genre")
+        if genre == "name-slot" and not reviewed_surface:
+            # Anchored name shapes were already scaffolded as generic clues;
+            # this extends the rule to loose name shapes, exempting entries
+            # whose reviewed record carries source-backed senses or facts.
+            reviewed_record = (
+                reviewed_by_id.get(clue_id)
+                if isinstance(reviewed_by_id, Mapping)
+                else None
+            )
+            has_source = isinstance(reviewed_record, Mapping) and bool(
+                reviewed_record.get("senses") or reviewed_record.get("facts")
+            )
+            if not has_source:
+                reason_codes.append("name-slot-without-source")
+        if genre == "fill-blank" and clue_id in fill_blank_over_cap and not reviewed_surface:
+            reason_codes.append("fill-blank-over-cap")
         if (
             reason_codes
         ):
