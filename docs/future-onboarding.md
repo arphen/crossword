@@ -199,9 +199,10 @@ the next generated board without restarting calibration or changing the board
 currently on screen.
 
 The same creation panel exposes a local writing-model selector. **Automatic**
-keeps the host's preferred installed model order; choosing Gemma 4 26B, Qwen 3.8
-27B, Gemma 4 31B, or Gemma 3 27B sends that exact allowlisted tag through the
-durable job. The choice is part of the profile draft and is included when the
+keeps the host's preferred installed model order (large tier first, then
+local-small); choosing any allowlisted tag — Gemma 4 26B, Qwen 3.8 27B,
+Gemma 4 31B, Gemma 3 27B, Llama 3.2 3B, or Gemma 3 4B — sends that exact tag
+through the durable job. The choice is part of the profile draft and is included when the
 player uses the constellation panel's existing **Save changes** action, so a
 later session restores the same preference. Flask checks the tag against this
 device's Ollama installation before freezing it, and the worker records the
@@ -402,7 +403,10 @@ independent sample counts. The fixture is a deterministic contract check, not
 a learning or mastery claim.
 
 For local use, install project dependencies with `make setup`, ensure Ollama
-is running with one supported model installed. Before starting the server, use
+is running with one supported model installed. Small local-small tags
+(`llama3.2:3b`, `gemma3:4b`) fit a 16 GB host; the large tier
+(`gemma4:26b`, `qwen3.8:27b`, `gemma4:31b`, `gemma3:27b`) needs ~15-18 GB
+and is selected first only where installed. Before starting the server, use
 the read-only runtime doctor:
 
 ```sh
@@ -432,7 +436,7 @@ unreadable configured file is surfaced as `unavailable` and blocks
 invites discoverable without silently accepting a broken hint list.
 
 If the check is not ready, start Ollama and install one of the preferred model
-tags (`gemma4:26b` or `qwen3.8:27b`) yourself, or set
+tags yourself (`ollama pull llama3.2:3b` fits a 16 GB host), or set
 `CROSSWORD_PUZZLE_MODEL`/`CROSSWORD_PROFILE_MODEL` to an already installed local
 tag. The command only reports this state; it does not pull it. Then run:
 

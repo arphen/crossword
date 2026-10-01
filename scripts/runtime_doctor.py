@@ -43,6 +43,8 @@ DEFAULT_MODEL_TAGS = (
     "qwen3.8:27b",
     "gemma4:31b",
     "gemma3:27b",
+    "llama3.2:3b",
+    "gemma3:4b",
 )
 OLLAMA_TIMEOUT_SECONDS = 2.0
 PROTOCOL_TIMEOUT_SECONDS = 5.0

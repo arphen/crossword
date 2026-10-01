@@ -180,6 +180,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/live-model-smoke-holdout-v1.20260928.json`
 - `docs/evidence/model-evaluation-holdout-v1.structural.json`
 - `docs/evidence/private-clue-corpus-attestation-v1.20261001.json`
+- `docs/evidence/private-clue-corpus-v1.local.json`
 - `docs/evidence/private-clue-counter-reresolution-v1.offline.json`
 - `docs/evidence/private-clue-genre-census-v1.offline.json`
 - `docs/evidence/private-clue-leak-gate-v1.synthetic.json`
@@ -192,6 +193,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/private-fill-quality-study-v1.real-gemma4-26b-wednesday-recovery-20260928.json`
 - `docs/evidence/private-fill-quality-study-v1.synthetic.json`
 - `docs/evidence/private-foothold-seed-plan-smoke-v1.20260928.json`
+- `docs/evidence/private-host-model-tiers-v1.m3-16gb-20261001.json`
 - `docs/evidence/private-tuesday-clue-quality-study-live-smoke-retry.gemma4-26b-20260928.json`
 - `docs/evidence/private-tuesday-clue-quality-study-live-smoke.gemma4-26b-20260928.json`
 - `docs/evidence/private-tuesday-clue-quality-study-v1.real-gemma4-26b-20260928-target.json`
@@ -305,9 +307,10 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/private-clue-study.py` — `_base_url:37`, `_request:48`, `main:75`
 - `scripts/private-clue-witness-audit.py` — `audit_matrix:67`, `audit_corpus:93`, `hidden_word_probe:115`, `receipt_body:124`, `main:162`
 - `scripts/private-fill-study.py` — `_request_puzzle:31`, `_validate_local_base_url:62`, `_case_from_response:73`, `main:93`
+- `scripts/private-host-model-tiers.py` — `_get:40`, `_post:47`, `_installed_models:60`, `_probe_tag:67`, `_parse_size:92`, `_resident_bytes:100`, `_host:127`, `_board_summary:156`, `receipt_body:177`, `main:232`
 - `scripts/private-weekday-mechanic-study.py` — `_canonical:34`, `_digest:44`, `_validate_loopback:48`, `_request:59`, `_evaluate:88`, `main:140`
 - `scripts/reflection-bridge.cjs`
-- `scripts/runtime_doctor.py` — `_preferred_model_tags:51`, `_sha512_integrity:72`, `_load_json:80`, `_check_runtime_archive:88`, `_check_runtime_cli:124`, `_configured_xfill_root:159`, `_check_xfill_engine:169`, `_ollama_url:193`, `_check_ollama:209`, `_private_hint_fill_words:247`, `_check_private_domain_hints:266`, `collect_report:299`, `_print_report:316`, `main:340`
+- `scripts/runtime_doctor.py` — `_preferred_model_tags:53`, `_sha512_integrity:74`, `_load_json:82`, `_check_runtime_archive:90`, `_check_runtime_cli:126`, `_configured_xfill_root:161`, `_check_xfill_engine:171`, `_ollama_url:195`, `_check_ollama:211`, `_private_hint_fill_words:249`, `_check_private_domain_hints:268`, `collect_report:301`, `_print_report:318`, `main:342`
 - `scripts/scan-forbidden-content.mjs` — `patterns:24`, `walk:35`, `isExempt:47`, `violations:82`, `exemptHits:83`
 - `scripts/sibling-construction-simulation.cjs` — `loadSimulator:15`
 - `scripts/solve-analyzer.cjs` — `main:48`
@@ -369,7 +372,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `src/crossword/reflection_api.py` — `_extend_authored_reflection_bank:291`, `FutureReflectionDeckRecord:334`, `FutureReflectionResponseRecord:344`, `FutureReflectionActionRecord:363`, `ReflectionRuntimeUnavailable:378`, `ReflectionConversionRejected:382`, `_canonical:386`, `_hash:390`, `_valid_uuid:394`, `_error:403`, `_same_origin:410`, `_utc_now:415`, `_mapping:423`, `_language_learning_signal:453`, `_reflection_context:481`, `_analysis_summary:563` (+40 more)
 - `src/crossword/reviewed_samples.py` — `_sample_crossword:44`, `_sample_payload:83`, `reviewed_sample:107`
 - `src/crossword/reviewer_auth.py` — `ReviewerAuthConfigError:30`, `ReviewerAuthConfigError.__init__:35`, `ReviewerAuthenticationError:40`, `ReviewerAuthenticationError.__init__:45`, `ReviewerPrincipal:50`, `_valid_reviewer_id:56`, `_valid_token:70`, `_reject_duplicate_json_keys:78`, `_parse_additional_reviewers:87`, `_configured_credentials:134`, `resolve_reviewer_principal:167`
-- `src/crossword/runtime_readiness.py` — `preferred_model_tags:48`, `_ollama_tags_url:73`, `_ollama_status:91`, `_configured_xfill_root:138`, `_xfill_status:148`, `_heartbeat_path:182`, `_parse_timestamp:195`, `_pid_is_alive:207`, `_worker_status:220`, `_queue_status:263`, `_readiness_payload:282`, `runtime_readiness:310`, `worker_heartbeat_path:320`, `write_worker_heartbeat:328`, `clear_worker_heartbeat:358`
+- `src/crossword/runtime_readiness.py` — `preferred_model_tags:52`, `_ollama_tags_url:77`, `_ollama_status:95`, `_configured_xfill_root:155`, `_xfill_status:165`, `_heartbeat_path:199`, `_parse_timestamp:212`, `_pid_is_alive:224`, `_worker_status:237`, `_queue_status:280`, `_readiness_payload:299`, `runtime_readiness:327`, `worker_heartbeat_path:337`, `write_worker_heartbeat:345`, `clear_worker_heartbeat:375`
 - `src/crossword/scraper.py` — `main:11`, `usecase:19`, `CSVWriter:29`, `CSVWriter.__init__:30`, `CSVWriter.save:37`
 - `src/crossword/session_journal.py` — `_private_surface_clue_family:67`, `PersonalSolveSession:97`, `PersonalSolveEvent:111`, `_canonical:127`, `_digest:131`, `_canonical_uuid:135`, `_origin_is_local:144`, `_error:149`, `_bounded_json_body:156`, `_uuid_list:167`, `_token:177`, `_normalized_token:188`, `_cell_id:192`, `_is_iso_datetime:196`, `_validate_initial_grid:210`, `_manifest_indexes:265` (+5 more)
 - `src/crossword/solve_replay.py` — `SolveReplayUnavailable:16`, `SolveReplayRejected:20`, `analyze_solve_session:24`, `analyze_solve_session_v2:29`, `validate_solve_puzzle_v2:34`, `evaluate_puzzle_v2_publication_gate:43`, `_analyze_solve_session:90`, `_run_analyzer:97`
@@ -421,6 +424,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `tests/test_lexicon_pack_builder.py`
 - `tests/test_machine_evidence_prerequisites.py`
 - `tests/test_model_evaluation.py`
+- `tests/test_model_tiers.py`
 - `tests/test_notepad_parsing.py`
 - `tests/test_oewn_candidates.py`
 - `tests/test_oewn_import.py`

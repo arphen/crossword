@@ -36,11 +36,15 @@ OLLAMA_READ_TIMEOUT_SECONDS = 2.0
 
 # Kept in a single helper so the readiness report and the private generation
 # lane can be compared without serializing a configured model or host value.
+# Large tags first: hosts with ~15-18 GB free keep their incumbent default,
+# while 16 GB hosts fall through to the runnable local-small tier.
 _DEFAULT_MODEL_TAGS = (
     "gemma4:26b",
     "qwen3.8:27b",
     "gemma4:31b",
     "gemma3:27b",
+    "llama3.2:3b",
+    "gemma3:4b",
 )
 _HEARTBEAT_WRITE_LOCK = Lock()
 
@@ -112,12 +116,25 @@ def _ollama_status() -> dict[str, Any]:
                 if name and not any(ord(char) < 0x20 for char in name):
                     installed.add(name)
         installed_preferred = [tag for tag in preferred if tag in installed]
+        if installed_preferred:
+            return {
+                "reachable": True,
+                "status": "ready",
+                "preferredModels": preferred,
+                "installedPreferredModels": installed_preferred,
+                "installedPreferredCount": len(installed_preferred),
+            }
         return {
             "reachable": True,
-            "status": "ready" if installed_preferred else "no-preferred-model",
+            "status": "no-preferred-model",
             "preferredModels": preferred,
-            "installedPreferredModels": installed_preferred,
-            "installedPreferredCount": len(installed_preferred),
+            "installedPreferredModels": [],
+            "installedPreferredCount": 0,
+            "guidance": (
+                "No admissible local model is installed. On a 16 GB host only "
+                "the local-small tier fits (llama3.2:3b, gemma3:4b); the large "
+                "tier needs ~15-18 GB. Install one with `ollama pull <tag>`."
+            ),
         }
     except requests.RequestException:
         return {

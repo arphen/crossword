@@ -49,8 +49,8 @@ def test_readiness_reports_local_dependencies_without_leaking_paths_or_environme
     monkeypatch.setenv("CROSSWORD_XFILL_ROOT", str(root))
     monkeypatch.setenv("CROSSWORD_FUTURE_WORKER_HEARTBEAT", str(heartbeat))
     monkeypatch.setenv("CROSSWORD_PROFILE_MODEL", "qwen3.8:27b")
-    readiness.requests.get = Mock(
-        return_value=_tags_response(["qwen3.8:27b", "unrelated-local-model"])
+    monkeypatch.setattr(
+        readiness.requests, "get", Mock(return_value=_tags_response(["qwen3.8:27b", "unrelated-local-model"]))
     )
 
     response = api.app.test_client().get("/api/future/runtime-readiness")
@@ -89,7 +89,7 @@ def test_readiness_is_advisory_when_ollama_and_worker_are_unavailable(
         "CROSSWORD_FUTURE_WORKER_HEARTBEAT", str(tmp_path / "missing.json")
     )
     failure = Mock(side_effect=readiness.requests.RequestException("offline"))
-    readiness.requests.get = failure
+    monkeypatch.setattr(readiness.requests, "get", failure)
 
     response = api.app.test_client().get("/api/future/runtime-readiness")
 
@@ -99,7 +99,14 @@ def test_readiness_is_advisory_when_ollama_and_worker_are_unavailable(
     assert payload["ollama"] == {
         "reachable": False,
         "status": "unreachable",
-        "preferredModels": ["gemma4:26b", "qwen3.8:27b", "gemma4:31b", "gemma3:27b"],
+        "preferredModels": [
+            "gemma4:26b",
+            "qwen3.8:27b",
+            "gemma4:31b",
+            "gemma3:27b",
+            "llama3.2:3b",
+            "gemma3:4b",
+        ],
         "installedPreferredModels": [],
     }
     assert payload["xfill"]["status"] == "not-configured"
@@ -118,7 +125,9 @@ def test_readiness_marks_an_old_worker_heartbeat_stale(api, monkeypatch, tmp_pat
     _heartbeat(heartbeat, age_seconds=120, pid=999_999)
     monkeypatch.setenv("CROSSWORD_FUTURE_WORKER_HEARTBEAT", str(heartbeat))
     monkeypatch.setenv("CROSSWORD_XFILL_ROOT", str(tmp_path / "missing-xfill"))
-    readiness.requests.get = Mock(return_value=_tags_response(["gemma4:26b"]))
+    monkeypatch.setattr(
+        readiness.requests, "get", Mock(return_value=_tags_response(["gemma4:26b"]))
+    )
 
     payload = api.app.test_client().get("/api/future/runtime-readiness").json
 
@@ -126,3 +135,22 @@ def test_readiness_marks_an_old_worker_heartbeat_stale(api, monkeypatch, tmp_pat
     assert payload["worker"]["available"] is False
     assert payload["worker"]["heartbeatFresh"] is False
     assert payload["worker"]["processAlive"] is False
+
+
+def test_readiness_guidance_names_installable_tags(api, monkeypatch, tmp_path):
+    monkeypatch.delenv("CROSSWORD_XFILL_ROOT", raising=False)
+    monkeypatch.setenv(
+        "CROSSWORD_FUTURE_WORKER_HEARTBEAT", str(tmp_path / "missing.json")
+    )
+    monkeypatch.delenv("CROSSWORD_PUZZLE_MODEL", raising=False)
+    monkeypatch.delenv("CROSSWORD_PROFILE_MODEL", raising=False)
+    monkeypatch.setattr(
+        readiness.requests, "get", Mock(return_value=_tags_response([]))
+    )
+
+    payload = api.app.test_client().get("/api/future/runtime-readiness").json
+
+    assert payload["ollama"]["status"] == "no-preferred-model"
+    assert payload["ollama"]["installedPreferredModels"] == []
+    assert "ollama pull" in payload["ollama"]["guidance"]
+    assert "llama3.2:3b" in payload["ollama"]["guidance"]

@@ -909,7 +909,59 @@ _EXPLICIT_MODEL_TAGS = (
     "qwen3.8:27b",
     "gemma4:31b",
     "gemma3:27b",
+    "llama3.2:3b",
+    "gemma3:4b",
 )
+
+# Model tiers: large tags exceed a 16 GB host and only run where ~15-18 GB
+# of weights fit; local-small tags are the lane this host can run. Order
+# matters: selection prefers large where installed (quality incumbents keep
+# their default) and falls through to local-small where large do not fit.
+# The fixture tier carries no tag; synthetic doubles run without a model.
+_MODEL_TIERS = {
+    "large": ("gemma4:26b", "qwen3.8:27b", "gemma4:31b", "gemma3:27b"),
+    "local-small": ("llama3.2:3b", "gemma3:4b"),
+    "fixture": (),
+}
+
+# Steady-state resident bytes including KV cache, per tag. Large tags exceed
+# this host's ~10.2 GiB Metal budget; that is an admissibility fact, not a
+# quality ranking.
+_MODEL_MEMORY_CEILINGS = {
+    "gemma4:26b": 18_000_000_000,
+    "qwen3.8:27b": 18_000_000_000,
+    "gemma4:31b": 20_000_000_000,
+    "gemma3:27b": 18_000_000_000,
+    "llama3.2:3b": 3_000_000_000,
+    "gemma3:4b": 4_500_000_000,
+}
+
+# Explicit sampling parameters per tier, sent on every /api/chat call.
+# Temperature stays per call (0.2 challenger … 0.8 theme proposal) because it
+# encodes the call's role, not the tier; top_p stays host-default in both
+# tiers. num_ctx is pinned only for local-small, whose whole-board
+# structured JSON needs the room; the large path keeps its proven host
+# defaults untouched. Seed is per-call random until Q07 passes per-candidate
+# seeds for comparison ranking.
+_TIER_SAMPLING = {
+    "large": {"topP": None, "numCtx": None, "seed": None},
+    "local-small": {"topP": None, "numCtx": 8192, "seed": None},
+    "fixture": {"topP": None, "numCtx": None, "seed": None},
+}
+
+
+def _model_tier(model) -> str:
+    """Return the registry tier for a tag, or unlisted for unknown tags."""
+    normalized = model.casefold() if isinstance(model, str) else ""
+    for tier, tags in _MODEL_TIERS.items():
+        if normalized in [tag.casefold() for tag in tags]:
+            return tier
+    return "unlisted"
+
+
+def _tier_sampling(model) -> dict:
+    """Return the explicit sampling defaults for a tag's tier."""
+    return dict(_TIER_SAMPLING.get(_model_tier(model), _TIER_SAMPLING["large"]))
 
 # Large local models do not have the same useful latency envelope. Keep the
 # generic policy conservative, give the installed Gemma path a shorter
@@ -978,6 +1030,43 @@ _MODEL_GENERATION_POLICIES = {
         "qwenClueBatchMaxTokens": 1400,
         "qwenSkipOptionalRepairsAfterBatch": True,
     },
+    # Local-small tags decode fast enough that the generic budgets hold; the
+    # entries below make the choice deliberate rather than inherited, so a
+    # future tuning pass has a named place to record measured per-tag costs.
+    "llama3.2:3b": {
+        "themeTimeout": 90,
+        "primaryClueTimeout": 180,
+        "clueTokensPerEntry": 56,
+        "riskRepairMaxEntries": 20,
+        "repairTimeout": 90,
+        "diversityTimeout": 90,
+        "challengeTimeout": 90,
+        "tuesdayDiversityAttempts": 4,
+        "tuesdayPostSafetyRepair": True,
+        "qwenClueBatchThreshold": 48,
+        "qwenClueBatchSize": 24,
+        "qwenClueBatchTimeout": 60,
+        "qwenClueBatchTokensPerEntry": 40,
+        "qwenClueBatchMaxTokens": 1400,
+        "qwenSkipOptionalRepairsAfterBatch": True,
+    },
+    "gemma3:4b": {
+        "themeTimeout": 90,
+        "primaryClueTimeout": 180,
+        "clueTokensPerEntry": 56,
+        "riskRepairMaxEntries": 20,
+        "repairTimeout": 90,
+        "diversityTimeout": 90,
+        "challengeTimeout": 90,
+        "tuesdayDiversityAttempts": 4,
+        "tuesdayPostSafetyRepair": True,
+        "qwenClueBatchThreshold": 48,
+        "qwenClueBatchSize": 24,
+        "qwenClueBatchTimeout": 60,
+        "qwenClueBatchTokensPerEntry": 40,
+        "qwenClueBatchMaxTokens": 1400,
+        "qwenSkipOptionalRepairsAfterBatch": True,
+    },
 }
 
 
@@ -989,6 +1078,8 @@ def _model_generation_policy(model):
             return dict(_MODEL_GENERATION_POLICIES["qwen3.8:27b"])
         if normalized == "gemma4:26b":
             return dict(_MODEL_GENERATION_POLICIES["gemma4:26b"])
+        if normalized in ("llama3.2:3b", "gemma3:4b"):
+            return dict(_MODEL_GENERATION_POLICIES[normalized])
     return dict(_MODEL_GENERATION_POLICIES["default"])
 
 
@@ -1016,6 +1107,14 @@ def _model_runtime_policy_receipt(model):
             "qwenSkipOptionalRepairsAfterBatch"
         ],
         "tuesdayDiversityRequiredAfterBatch": True,
+        "tier": _model_tier(model),
+        "memoryCeilingBytes": _MODEL_MEMORY_CEILINGS.get(
+            model.casefold() if isinstance(model, str) else ""
+        ),
+        "sampling": {
+            **_tier_sampling(model),
+            "temperaturePolicy": "per-call role (0.2 challenger … 0.8 theme proposal)",
+        },
         "interpretation": "execution-budget-only",
         "qualityClaim": "none",
     }
@@ -1055,8 +1154,12 @@ def _installed_model():
     ]
     model = next((name for name in preferred if name and name in installed), None)
     if model is None:
+        admissible = ", ".join(_EXPLICIT_MODEL_TAGS)
         raise RuntimeError(
-            "Install Gemma 4 26B or Qwen 3.8 27B in Ollama to make a local puzzle"
+            "No admissible local model is installed. This host can run the "
+            f"local-small tier (llama3.2:3b, gemma3:4b); the large tier needs "
+            f"~15-18 GB of weights, past a 16 GB host. Install one with "
+            f"`ollama pull <tag>`. Admissible tags: {admissible}"
         )
     return model
 
@@ -1892,7 +1995,21 @@ def _theme_exposure_receipt(context, theme_entries):
     }
 
 
-def _chat(model, messages, schema, *, timeout, tokens, temperature):
+def _chat(model, messages, schema, *, timeout, tokens, temperature, seed=None, top_p=None, num_ctx=None):
+    sampling = _tier_sampling(model)
+    if top_p is None:
+        top_p = sampling.get("topP")
+    if num_ctx is None:
+        num_ctx = sampling.get("numCtx")
+    if seed is None:
+        seed = sampling.get("seed")
+    options = {"temperature": temperature, "num_predict": tokens}
+    if top_p is not None:
+        options["top_p"] = top_p
+    if num_ctx is not None:
+        options["num_ctx"] = num_ctx
+    if seed is not None:
+        options["seed"] = seed
     response = requests.post(
         "http://127.0.0.1:11434/api/chat",
         timeout=(2, timeout),
@@ -1901,7 +2018,7 @@ def _chat(model, messages, schema, *, timeout, tokens, temperature):
             "stream": False,
             "think": False,
             "format": schema,
-            "options": {"temperature": temperature, "num_predict": tokens},
+            "options": options,
             "messages": messages,
         },
     )
