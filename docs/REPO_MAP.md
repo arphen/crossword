@@ -180,6 +180,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/content-scan.md`
 - `docs/evidence/live-model-smoke-holdout-v1.20260928.json`
 - `docs/evidence/model-evaluation-holdout-v1.structural.json`
+- `docs/evidence/private-clue-leak-gate-v1.synthetic.json`
 - `docs/evidence/private-current-source-live-smoke-v1.20260928.json`
 - `docs/evidence/private-current-source-live-smoke-v2.20260928.json`
 - `docs/evidence/private-current-source-live-smoke-v3.20260928.json`
@@ -308,7 +309,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/live-model-holdout.py` — `_Response:33`, `_Response.__init__:34`, `_Response.raise_for_status:38`, `_Response.json:42`, `_Session:46`, `_Session.request:47`, `_Session.get:62`, `_Session.post:65`, `_canonical:69`, `_sha256:79`, `_text:83`, `_shape_gate:87`, `_tags:142`, `_observation:156`, `main:229`
 - `scripts/mobile-browser-parity.mjs` — `capture:40`, `walk:48`, `activeCell:66`
 - `scripts/model-evaluation-report.py` — `main:18`
-- `scripts/private-clue-derivation-gate.py` — `build_pairs:111`, `evaluate:150`, `degree_rule_gaps:169`, `corpus_digest:186`, `real_corpus_status:191`, `receipt_body:212`, `main:268`
+- `scripts/private-clue-derivation-gate.py` — `build_pairs:111`, `evaluate:155`, `degree_rule_gaps:174`, `corpus_digest:191`, `real_corpus_status:196`, `receipt_body:217`, `main:276`
 - `scripts/private-clue-review-export.py` — `main:26`
 - `scripts/private-clue-study.py` — `_base_url:37`, `_request:48`, `main:75`
 - `scripts/private-fill-study.py` — `_request_puzzle:31`, `_validate_local_base_url:62`, `_case_from_response:73`, `main:93`

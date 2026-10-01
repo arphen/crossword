@@ -27,6 +27,10 @@ _SAFE_MECHANICAL_ISSUES = frozenset(
     {
         "answer-giveaway",
         "answer-form-in-clue",
+        # A comparative phrase that gradates the answer's own base is a
+        # deterministic failure of the same kind: no judgement call is needed
+        # to know the surface cannot stand, so the crossing scaffold is safe.
+        "tautological-degree-form",
         "generic-clue",
         "anagram-mismatch",
         "reversal-mismatch",

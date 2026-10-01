@@ -1,0 +1,57 @@
+{
+  "version": "private-clue-derivation-gate-v1",
+  "kind": "synthetic",
+  "generatedAt": "2026-10-01T08:09:02+00:00",
+  "claim": "the derivation-leak gate rejects clues that define an answer with the answer's own gradation or inflection, and leaves unrelated comparatives, look-alike stems and plain definitions alone",
+  "environment": {
+    "os": "Darwin",
+    "machine": "arm64",
+    "python": "3.13.12",
+    "modelUsed": null,
+    "networkUsed": false
+  },
+  "corpus": {
+    "pairs": 326,
+    "expectedRejects": 174,
+    "expectedLegal": 101,
+    "families": [
+      "answer-degree-form",
+      "answer-superlative-form",
+      "comparative-phrase",
+      "look-alike",
+      "plain-definition",
+      "stem-of-comparative",
+      "superlative-phrase",
+      "unrelated-comparative"
+    ],
+    "digest": "sha256-b40ca74d6c1479bd0060560a368649ed523e6caf3da67db2f77ff0cbeaa527ed",
+    "expectationsSource": "hand-listed English morphology, not the rule under test"
+  },
+  "results": {
+    "inScopeLeaksCaught": 174,
+    "inScopeLeaksTotal": 174,
+    "legalSurfacesKept": 101,
+    "legalSurfacesTotal": 101,
+    "misses": [],
+    "falseRejections": [],
+    "caughtBeyondStatedScope": []
+  },
+  "reasonCounts": {
+    "accepted": 152,
+    "answer-form-in-clue": 100,
+    "tautological-degree-form": 74
+  },
+  "degreeRuleGaps": [],
+  "realCorpus": {
+    "captured": false,
+    "reason": "no answer-bearing clue corpus on disk; published study receipts carry counters only"
+  },
+  "knownLimits": [
+    "morphology only: a clue that restates the answer without using any of its forms is outside this gate and belongs to the challenger, not to a regex",
+    "a bare stem of a doubled comparative (BIG inside BIGGER) is not reversed, because BUTTER would hand back the word BUT",
+    "degree-form expansion applies only to bases of length >=4; short bases such as OLD/ODD/FAT are left alone to avoid collisions with unrelated words",
+    "stress-dependent doubling (THIN -> THINNER) is not modelled",
+    "irregular pairs such as GOOD -> BETTER are not invented",
+    "no operator-judged specimen is consumed by this receipt"
+  ]
+}

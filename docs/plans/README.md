@@ -1,6 +1,6 @@
 # Crossword implementation planning index
 
-Status: updated 27 September 2026. The local Ollama/native runtime direction is accepted, and private profile-seeded play now works end to end. The next run improves clue/theme quality and generation time.
+Status: updated 1 October 2026. The local Ollama/native runtime direction is accepted, and private profile-seeded play now works end to end. The next run improves clue/theme quality and generation time; that queue is [note 16](16_CLUE_QUALITY_RECOVERY.md).
 
 ## Active specification
 
@@ -37,6 +37,15 @@ The next implementation work improves actual theme/clue play and shortens the
 generation wait. The separate admitted-content worker, V2 candidate storage,
 diagnostics and publication packet belong to later sharing work; they are not
 requirements for making or playing a private puzzle.
+
+## Next-slice plan (clue quality)
+
+[Clue quality recovery](16_CLUE_QUALITY_RECOVERY.md) is the execution queue for
+the complaint that clues are still trivial: five named defects with the code that
+produces each, the model tiers reachable on a 16 GB host, and slices `Q01`–`Q08`
+in backlog-table form. It amends `E05`, `E06`, `E10` and `E18` rather than
+replacing them, and it is the operational half of
+[note 15](15_THE_SELF_CRITIQUE_OF_THE_CONCEPT.md) §4–§7.
 
 ## Conceptual correspondence
 

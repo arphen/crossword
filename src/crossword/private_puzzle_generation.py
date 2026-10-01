@@ -441,6 +441,22 @@ _COMPARATIVE_MARKER_RE = re.compile(
 _SUPERLATIVE_MARKER_RE = re.compile(
     r"\bsuperlative\b|[\[(]\s*superl\.?\s*[\])]", re.IGNORECASE
 )
+# An unglossed comparative/superlative phrase: "more shady", "most kindly".
+# Captured because the answer can itself be the comparative the phrase
+# describes, which no marker-based convention check can see.
+_DEGREE_PHRASE_RE = re.compile(
+    r"\b(?:more|most|less|least)\s+([A-Za-z][A-Za-z]{2,})\b", re.IGNORECASE
+)
+# A short-vowel monosyllable such as BIG, FAT or HOT: single consonant, single
+# vowel, single consonant. Those are the bases that double the final consonant
+# before -ER/-EST. A final W, X or Y is excluded because those letters do not
+# double and a base ending in them is not gradable by this rule. Length is
+# capped at three letters on purpose: OPEN and MINT also look like CVC shapes
+# but take no doubling, because the stress decides and this guard does not
+# model stress.
+_SHORT_VOWEL_CVC_RE = re.compile(
+    r"[BCDFGHJKLMNPQRSTVZW][AEIOU][BCDFGHJKLMNPQRSTVZ]", re.IGNORECASE
+)
 _COMMON_IRREGULAR_PLURALS = frozenset(
     {
         "CHILDREN",
@@ -2858,6 +2874,24 @@ def _answer_lexical_forms(answer):
         forms.add(answer + "ED")
     if not answer.endswith("ING"):
         forms.add(answer + "ING")
+    # Degree forms. A clue that contains "shadier" is as much a leak for
+    # SHADY as one that contains "shady", and the comparative phrase check
+    # below handles the reverse direction. Only ordinary gradable shapes are
+    # produced; a four-letter floor keeps short fill from generating forms
+    # that collide with unrelated words.
+    if len(answer) >= 4 and not answer.endswith(("S", "ED", "ING")):
+        forms.update(_degree_forms(answer) - {answer})
+    # The reverse direction: an answer that is itself a comparative hands its
+    # base back, so a clue for SHADIER that prints "shady" leaks the stem.
+    # Only -IER/-IEST are reversed. Plain -ER is not, because COVER would yield
+    # the unrelated word COVE, and a doubled consonant is not either, because
+    # BUTTER would yield the word BUT - which appears in ordinary clue prose
+    # constantly. Those surfaces are still caught when the clue actually
+    # compares, because _clue_degree_issue gradates the clue's own base.
+    if len(answer) > 4 and answer.endswith("IER"):
+        forms.add(answer[:-3] + "Y")
+    if len(answer) > 5 and answer.endswith("IEST"):
+        forms.add(answer[:-4] + "Y")
     return {form for form in forms if len(form) >= 3}
 
 
@@ -2901,6 +2935,65 @@ def _clue_information_issue(entry, clue, *, weekday=None):
     return None
 
 
+def _degree_forms(base):
+    """Return the ordinary English degree forms of a gradable base.
+
+    ``SHADY`` yields ``SHADIER``/``SHADIEST``; ``NICE`` yields ``NICER`` and
+    ``NICEST``.  This is an orthographic rule, not a grammar: irregular forms
+    such as ``GOOD``/``BETTER`` are deliberately not invented here, because a
+    wrong degree pair would reject an unrelated clue.  Both the leak guard and
+    the tautology check below share this one rule so they cannot disagree.
+    """
+    base = _letters_only(base)
+    if len(base) < 3:
+        return set()
+    forms = {base}
+    doubling = _SHORT_VOWEL_CVC_RE.fullmatch(base)
+    if base.endswith("Y") and len(base) > 3:
+        stem = base[:-1]
+        forms.update({stem + "IER", stem + "IEST"})
+    elif doubling:
+        # Short-vowel monosyllables double the final consonant: FAT gives
+        # FATTER, never FATER. Emitting the undoubled spelling as well would
+        # only add a non-word to the ban list, so it is left out.
+        forms.update({base + base[2] + "ER", base + base[2] + "EST"})
+    elif base.endswith("E"):
+        forms.update({base + "R", base + "ST"})
+    else:
+        forms.update({base + "ER", base + "EST"})
+    return forms
+
+
+def _clue_degree_issue(entry, clue):
+    """Reject a clue that defines an answer with the answer's own gradation.
+
+    A clue such as ``more shady`` for ``SHADIER`` states the answer's meaning
+    by repeating the answer's own comparative construction. It is not a near
+    miss: the comparative of the base *is* the answer. The existing morphology
+    guard only sees an explicit ``(comp.)``/``comparative`` convention marker,
+    so an unglossed comparative phrase reaches the player untouched.
+
+    The check is intentionally one-directional. It fires only when the clue
+    contains a ``more``/``most`` phrase whose complement is a base that
+    gradates into exactly this answer, which keeps unrelated comparatives
+    such as ``more bright`` for ``DULLER`` legal.
+    """
+    if not isinstance(entry, dict) or not isinstance(clue, str):
+        return None
+    answer = _letters_only(entry.get("answer", ""))
+    if len(answer) < 4:
+        return None
+    phrase = _DEGREE_PHRASE_RE.search(clue)
+    if phrase is None:
+        return None
+    complement = _letters_only(phrase.group(1))
+    if len(complement) < 3 or complement == answer:
+        return None
+    if answer in _degree_forms(complement):
+        return "tautological-degree-form"
+    return None
+
+
 def _clue_wordplay_issue(entry, clue):
     """Catch mechanically checkable clue/answer mismatches before play.
 
@@ -2921,6 +3014,9 @@ def _clue_wordplay_issue(entry, clue):
         return "answer-giveaway"
     if overlap is not None:
         return "answer-form-in-clue"
+    degree = _clue_degree_issue(entry, text)
+    if degree is not None:
+        return degree
     if (
         _GENERIC_TEMPLATE_PHRASE_RE.search(text)
         or _GENERIC_CLUE_RE.fullmatch(text)
