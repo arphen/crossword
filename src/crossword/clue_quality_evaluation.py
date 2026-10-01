@@ -89,6 +89,13 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
 
     source = _mapping(provenance, "provenance")
     quality = _mapping(source.get("clueQuality"), "provenance.clueQuality")
+    # The challenger flag is pinned per case so study runs are comparable:
+    # receipts that mix enabled and disabled challenger states cannot be.
+    # Older provenances predate the field and report None.
+    challenge = source.get("semanticClueChallenge")
+    challenge_enabled = None
+    if isinstance(challenge, dict) and isinstance(challenge.get("enabled"), bool):
+        challenge_enabled = challenge["enabled"]
     diversity = _mapping(quality.get("diversity"), "provenance.clueQuality.diversity")
     bundle = _mapping(
         quality.get("groundedClueBundle"),
@@ -217,6 +224,7 @@ def clue_case_from_provenance(provenance: Mapping[str, Any], seed: int) -> dict[
         "semanticStatus": _text(quality.get("diversity", {}).get("semanticStatus", "not-established"), "diversity.semanticStatus"),
         "familyCounts": family_counts,
         "familyCountsWitnessed": witnessed_counts,
+        "challengeEnabled": challenge_enabled,
         "nonDefinitionCount": non_definition,
         "nonDefinitionRate": observed_rate,
         "nonDefinitionFamilies": sorted(set(families)),
@@ -283,6 +291,7 @@ def evaluate_clue_quality_study(
     family_totals: Counter[str] = Counter()
     witnessed_totals: Counter[str] = Counter()
     witnessed_cases = 0
+    challenge_states: set = set()
     signal_totals: Counter[str] = Counter()
     issue_totals: Counter[str] = Counter()
     totals = Counter()
@@ -298,6 +307,9 @@ def evaluate_clue_quality_study(
         if isinstance(witnessed, dict):
             witnessed_totals.update(witnessed)
             witnessed_cases += 1
+        challenge_state = item.get("challengeEnabled")
+        if isinstance(challenge_state, bool):
+            challenge_states.add(challenge_state)
         signal_totals.update(item.get("signalCounts", {}))
         issue_totals.update(item.get("issueCounts", {}))
         for key in ("entryCount", "grammarCheckedCount", "grammarIssueCount", "fallbackCount", "nonDefinitionCount"):
@@ -352,6 +364,8 @@ def evaluate_clue_quality_study(
             if witnessed_cases
             else None,
             "witnessedCases": witnessed_cases,
+            "challengeStates": sorted(challenge_states),
+            "challengeComparable": len(challenge_states) <= 1,
             "witnessGap": {
                 family: family_totals.get(family, 0) - witnessed_totals.get(family, 0)
                 for family in sorted(set(family_totals) | set(witnessed_totals))

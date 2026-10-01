@@ -19,7 +19,9 @@ JS/TS line-based declaration/method heuristic (may omit multiline declarations o
 Other files and tests are path-only. At most 16 symbols/file; `+N more` means search that file.
 Paths sorted deterministically; no timestamps or source bodies. Read source to confirm line hints.
 Only owned trees are scanned; dependency/VCS/private/cache/report/build directories and symlinks
-are pruned before descent. Lockfiles, minified/bundled/generated code, fixtures/snapshots and binary
+are pruned before descent. Only git-tracked files are indexed, so untracked scratch never
+appears in the map or blocks a push; stage a new source file and the next regeneration picks
+it up. Lockfiles, minified/bundled/generated code, fixtures/snapshots and binary
 assets are excluded. Files over 256 KB or with lines over 1,000 characters are path-only.
 Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing.
 
@@ -65,7 +67,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 ## .scripts
 
-- `.scripts/generate-repo-map.py` — `allowed:32`, `candidates:47`, `symbols:65`, `render:88`, `main:137`
+- `.scripts/generate-repo-map.py` — `allowed:32`, `_tracked_files:47`, `_sort_key:76`, `candidates:81`, `symbols:105`, `render:128`, `main:179`
 - `.scripts/generate-repo-map.sh`
 
 ## apps
@@ -171,6 +173,10 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/vite.config.js`
 - `apps/react/vitest.setup.js` — `MemoryStorage:6`, `constructor:7`, `key:13`, `getItem:16`, `setItem:20`, `removeItem:23`, `clear:26`, `descriptorMissing:31`
 
+## design
+
+- `design/quiet-glass/index.html`
+
 ## docs
 
 - `docs/adr/0001-static-react-solver-boundary.md`
@@ -181,7 +187,6 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/model-evaluation-holdout-v1.structural.json`
 - `docs/evidence/private-clue-candidate-lane-v1.llama3.2-3b-20261001.json`
 - `docs/evidence/private-clue-corpus-attestation-v1.20261001.json`
-- `docs/evidence/private-clue-corpus-v1.local.json`
 - `docs/evidence/private-clue-counter-reresolution-v1.offline.json`
 - `docs/evidence/private-clue-genre-census-v1.offline.json`
 - `docs/evidence/private-clue-leak-gate-v1.synthetic.json`
@@ -334,7 +339,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `src/crossword/clue_genre.py` — `_text:132`, `observe_clue_genre:136`, `census_genres:203`
 - `src/crossword/clue_grammar_bridge.py` — `_issue:73`, `_signals:80`, `_surface_signal_present:87`, `_signal_matches_literal:110`, `validate_surface_clue_family:129`, `summarize_surface_clue_families:237`
 - `src/crossword/clue_grounding_validators.py` — `_letters_only:57`, `_span:61`, `_validator_base:84`, `_mechanical_validator:100`, `validate_private_clue_witnesses:153`
-- `src/crossword/clue_quality_evaluation.py` — `canonical_clue_quality_json:29`, `_digest:39`, `_seed:45`, `_count:51`, `_text:57`, `_mapping:63`, `_counts:69`, `_number:81`, `clue_case_from_provenance:87`, `evaluate_clue_quality_study:256`
+- `src/crossword/clue_quality_evaluation.py` — `canonical_clue_quality_json:29`, `_digest:39`, `_seed:45`, `_count:51`, `_text:57`, `_mapping:63`, `_counts:69`, `_number:81`, `clue_case_from_provenance:87`, `evaluate_clue_quality_study:264`
 - `src/crossword/clue_review_bundle.py` — `canonical_review_json:26`, `_digest:36`, `_text:42`, `_mapping:51`, `_json_copy:57`, `build_clue_review_bundle:64`, `verify_clue_review_bundle:176`
 - `src/crossword/clue_semantic_challenger.py` — `_codes:50`, `_mechanical_statuses:56`, `_model_projection:69`, `challenge_private_clue_pair:118`, `summarize_challenge_classifications:217`
 - `src/crossword/clue_witness.py` — `_letters_only:118`, `_tokens:122`, `ledger_senses:126`, `witness_pun:133`, `witness_fill_blank:163`, `_quoted_spans:176`, `witness_spoken_equivalent:183`, `witness_nonverbal_expression:205`, `witness_metalinguistic:218`, `witness_factual_relation:231`, `witness_hidden_word_span:247`, `witness_clue_family:265`
@@ -453,6 +458,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `tests/test_publication_review.py`
 - `tests/test_reference_solver.py`
 - `tests/test_reflection_api.py`
+- `tests/test_repo_map_traps.py`
 - `tests/test_reviewed_samples.py`
 - `tests/test_reviewer_auth.py`
 - `tests/test_reviewer_config.py`
