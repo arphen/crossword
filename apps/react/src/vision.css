@@ -828,6 +828,23 @@
   }
 }
 
+/* Best-effort glow: while a fresh selection lands (data-glow off, set by the
+   view for a frame or two after the active word changes), the selection's
+   blurred shadows and breathing animations stay out so the cursor, letters
+   and washes paint on the cheap first frame. The cursor cell keeps its full
+   chrome throughout — it is one element and must never blink. One blanket
+   kill-switch rather than per-rule gates, so the light always returns whole;
+   washes, chips, rails and verdicts are flat paint and never dimmed here. */
+#app.react-desktop-app[data-glow='off']
+  :is(
+    .grid-cell[data-entry-index]:not(:focus-within),
+    li .state[data-entry-index]:not(.cursor-cell),
+    li.highlighted-clue .clue-number
+  ) {
+  box-shadow: none !important;
+  animation: none !important;
+}
+
 /* ==========================================================================
    2. The springs.
    One coil between every pair of neighbouring chips, drawn by ClueSpring from

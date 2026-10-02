@@ -180,6 +180,33 @@ export default function CrosswordView({
     const activeEntry = app.activeClueNumber && app.activeDirection
         ? app.getEntryByClueNumber(app.activeClueNumber, app.activeDirection)
         : null;
+    // Best-effort glow: the selection's light (blurred shadows, breathing
+    // animations) is the most expensive paint on the board, so a fresh
+    // selection first lands without it — cursor, letters and washes stay
+    // live on the cheap first frame — and the glow catches up a couple of
+    // frames later. Fast repeated navigation cancels the catch-up and
+    // re-arms it, so the glow never blocks the cursor; it settles in when
+    // the reader pauses. Keystrokes inside a word never change the key, so
+    // typing never dims the light.
+    const selectionKey = `${app.activeClueNumber}|${app.activeDirection}`;
+    const [litKey, setLitKey] = useState(selectionKey);
+    useEffect(() => {
+        if (litKey === selectionKey) return undefined;
+        if (typeof requestAnimationFrame === 'undefined') {
+            setLitKey(selectionKey);
+            return undefined;
+        }
+        let first = 0;
+        let second = 0;
+        first = requestAnimationFrame(() => {
+            second = requestAnimationFrame(() => setLitKey(selectionKey));
+        });
+        return () => {
+            cancelAnimationFrame(first);
+            cancelAnimationFrame(second);
+        };
+    }, [litKey, selectionKey]);
+    const glowOn = litKey === selectionKey;
     const selection = createSelectionPresentation(activeEntry);
     // A lit square carries the active entry's rank alongside its coordinate, so
     // every representation of the selection — board squares and answer boxes —
@@ -407,6 +434,7 @@ export default function CrosswordView({
     return (
         <div id="app" className={classes({ 'half-completed': app.isHalfCompleted, 'react-desktop-app': true })}
             data-direction={app.activeDirection || 'across'}
+            data-glow={glowOn ? 'on' : 'off'}
             {...viewAttributes(settings)}
             style={/** @type {React.CSSProperties} */ ({
                 '--grid-columns': grid[0]?.length || 15,

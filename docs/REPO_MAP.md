@@ -75,7 +75,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/index.html`
 - `apps/react/package.json`
 - `apps/react/src/ClueSpring.jsx` — `readCentres:11`, `readHeight:24`, `ClueSpring:31`, `redraw:48`, `signature:71`, `schedule:87`, `retrace:96`
-- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:15`, `clueSignalKind:31`, `renderClueSurface:41`, `classes:69`, `CrosswordView:79`, `changeSettings:104`, `describeRebusInput:109`, `entryContainsCell:126`, `entryAtCell:131`, `directional:132`, `tokenAt:145`, `displayGridValue:148`, `gridValues:173`, `clueClasses:176`, `cellPresentation:187`, `activeEntryCellClasses:193` (+18 more)
+- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:15`, `clueSignalKind:31`, `renderClueSurface:41`, `classes:69`, `CrosswordView:79`, `changeSettings:104`, `describeRebusInput:109`, `entryContainsCell:126`, `entryAtCell:131`, `directional:132`, `tokenAt:145`, `displayGridValue:148`, `gridValues:173`, `clueClasses:176`, `cellPresentation:214`, `activeEntryCellClasses:220` (+18 more)
 - `apps/react/src/CrosswordView.test.jsx`
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
 - `apps/react/src/Rapture.jsx` — `RaptureSparks:11`, `RaptureLayer:34`, `Confetti:50`, `Finale:73`
