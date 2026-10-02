@@ -1,6 +1,6 @@
 {
   "version": "private-clue-benchmark-v1",
-  "generatedAt": "2026-10-02T16:49:20+00:00",
+  "generatedAt": "2026-10-02T16:58:05+00:00",
   "kind": "counts-only",
   "claim": "one AutoResearch iteration: fixed 15-answer benchmark, deterministic scoring only",
   "iterations": [
@@ -43,6 +43,71 @@
       "compareCalls": 11,
       "redraftSteeringRounds": 1,
       "wallSeconds": 47.6,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    },
+    {
+      "label": "iter-002-redraft-2",
+      "entries": 15,
+      "admitted": 15,
+      "scaffold": 0,
+      "admissionRate": 1.0,
+      "guardHits": 0,
+      "families": {
+        "definition": 13,
+        "factual-relation": 1,
+        "genre:plain-definition": 14,
+        "genre:sound-or-action-cue": 1,
+        "pseudo-pun": 1
+      },
+      "draftCalls": 6,
+      "compareCalls": 12,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 48.828,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    },
+    {
+      "label": "iter-003-drafts-6",
+      "entries": 15,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 12,
+        "factual-relation": 2,
+        "genre:plain-definition": 12,
+        "genre:quotational": 1,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 8,
+      "compareCalls": 12,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 64.35,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    },
+    {
+      "label": "iter-004-no-redraft",
+      "entries": 15,
+      "admitted": 12,
+      "scaffold": 3,
+      "admissionRate": 0.8,
+      "guardHits": 0,
+      "families": {
+        "definition": 11,
+        "factual-relation": 1,
+        "genre:plain-definition": 11,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 4,
+      "compareCalls": 12,
+      "redraftSteeringRounds": 0,
+      "wallSeconds": 45.482,
       "model": "llama3.2:3b",
       "weekday": "monday",
       "seed": 6200
