@@ -7,6 +7,7 @@ import {
   entryStartingAt,
   groupRuns,
   groupSizes,
+  spotlightCues,
 } from './boardCues';
 
 const entry = (answer) => ({
@@ -128,5 +129,37 @@ describe('board cues', () => {
   it('keeps quiet off the edge of the grid', () => {
     expect(cellCues([], 0, 0)).toEqual({});
     expect(cellCues(grid, 9, 9)).toEqual({});
+  });
+
+  it('measures each word through a square from its start', () => {
+    const entries = [
+      { clue_number: 1, direction: 'across', start_x: 0, start_y: 0 },
+      { clue_number: 1, direction: 'down', start_x: 1, start_y: 0 },
+      { clue_number: 2, direction: 'across', start_x: 0, start_y: 2 },
+    ];
+    // Row 0 runs ABC left to right, column 1 runs B-D-E top to bottom, and
+    // row 2 runs its own three-wide answer: rank 1 sits at 0, rank 2 at 1.
+    const ramp = createClueRamp(entries);
+    expect(spotlightCues(grid, entries, ramp, 0, 2)).toEqual({
+      style: { '--spot-arank': '0', '--spot-adist': '2' },
+    });
+    expect(spotlightCues(grid, entries, ramp, 1, 1)).toEqual({
+      style: { '--spot-drank': '0', '--spot-ddist': '1' },
+    });
+    expect(spotlightCues(grid, entries, ramp, 2, 1)).toEqual({
+      style: {
+        '--spot-arank': '1',
+        '--spot-adist': '1',
+        '--spot-drank': '0',
+        '--spot-ddist': '2',
+      },
+    });
+    expect(spotlightCues(grid, entries, ramp, 0, 0)).toEqual({
+      style: { '--spot-arank': '0', '--spot-adist': '0' },
+    });
+    // A black square, a word the entries do not name, and thin air stay dark.
+    expect(spotlightCues(grid, entries, ramp, 1, 0)).toEqual({});
+    expect(spotlightCues(grid, [], ramp, 0, 1)).toEqual({});
+    expect(spotlightCues(grid, entries, ramp, 9, 9)).toEqual({});
   });
 });

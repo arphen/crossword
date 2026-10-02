@@ -139,6 +139,48 @@ export function entryStartingAt(entries, startY, startX, direction) {
   );
 }
 
+/** Spotlight distances for one white square: how far along its Across word
+ *  (eastward from the word's start) and its Down word (southward) the square
+ *  sits, each paired with that word's rank for the wash hue. The stylesheet
+ *  turns distance into falloff, so every answer carries its own fading light.
+ *  A black square, a square in no word, or a word the entries do not name
+ *  publishes nothing — its light stays out. Distances count from 0 on the
+ *  word's first square.
+ */
+export function spotlightCues(grid, entries, ramp, rowIndex, cellIndex) {
+  if (!Array.isArray(grid) || !grid[rowIndex]) return {};
+  if (!isOpen(grid, rowIndex, cellIndex)) return {};
+  const style = {};
+  /** @type {Array<[string, number, number, string, string]>} */
+  const runs = [
+    ['across', 0, -1, '--spot-arank', '--spot-adist'],
+    ['down', -1, 0, '--spot-drank', '--spot-ddist'],
+  ];
+  for (const [direction, dy, dx, rankKey, distKey] of runs) {
+    let startY = rowIndex;
+    let startX = cellIndex;
+    while (isOpen(grid, startY + dy, startX + dx)) {
+      startY += dy;
+      startX += dx;
+    }
+    let length = 0;
+    let y = startY;
+    let x = startX;
+    while (isOpen(grid, y, x)) {
+      length += 1;
+      y -= dy;
+      x -= dx;
+    }
+    if (length < 2) continue;
+    const entry = entryStartingAt(entries, startY, startX, direction);
+    const rank = entry ? ramp?.get(entry.clue_number) : undefined;
+    if (rank === undefined) continue;
+    style[rankKey] = String(rank);
+    style[distKey] = String(rowIndex - startY + (cellIndex - startX));
+  }
+  return Object.keys(style).length > 0 ? { style } : {};
+}
+
 const OPEN_SIDES = [
   ['north', 'n', -1, 0],
   ['east', 'e', 0, 1],

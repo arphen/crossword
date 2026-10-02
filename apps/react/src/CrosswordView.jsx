@@ -8,7 +8,7 @@ import { Finale, RaptureLayer, RaptureSparks } from './Rapture';
 import { useRapture } from './useRapture';
 import { cssVars } from './cssVars';
 import { createSelectionPresentation } from './selectionPresentation';
-import { cellCues, clueRampStyle, createClueRamp, entryStartingAt, groupRuns } from './boardCues';
+import { cellCues, clueRampStyle, createClueRamp, entryStartingAt, groupRuns, spotlightCues } from './boardCues';
 import { normalizeViewSettings, readViewSettings, VIEW_DEFAULTS, viewAttributes, writeViewSettings } from './viewSettings';
 import { normalizeFutureKey } from './future/languageInput';
 
@@ -268,10 +268,16 @@ export default function CrosswordView({
             if (eastRank !== undefined) gates['--gate-across'] = String(eastRank);
             if (southRank !== undefined) gates['--gate-down'] = String(southRank);
         }
+        // Each answer carries its own fading light: how far this square sits
+        // along its words, with each word's rank for the hue. Stubs and black
+        // squares publish nothing (section 4 of vision.css).
+        const spot = settings.cues && settings.ramp
+            ? spotlightCues(app.grid, app.crossword, clueRamp, rowIndex, cellIndex)
+            : {};
         return {
             ...presentation,
             ...withStyle,
-            style: { ...style, ...cues.style, ...gates },
+            style: { ...style, ...cues.style, ...gates, ...spot.style },
             'data-start': cues.dataStart
         };
     };

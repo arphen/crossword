@@ -229,6 +229,32 @@ it('paints each gate tick in the hue of the word it opens', async () => {
   expect(rankOf(south, '--gate-down')).toBe(chipRank(2));
 });
 
+it('publishes each answer\u2019s fading light on its squares', async () => {
+  const host = await mountBoard();
+  const white = [...host.querySelectorAll('.grid-cell:not(.black-cell)')];
+  // The far end of the eleven-wide top answer still names its rank and reach.
+  const far = white.find((cell) => {
+    const style = cell.getAttribute('style') || '';
+    return (
+      /--spot-adist:\s*10(?![\d.])/.test(style) &&
+      /--spot-arank:\s*0(?![\d.])/.test(style)
+    );
+  });
+  expect(far).toBeDefined();
+  // The foot of the five-high Down answer names its own rank and reach.
+  const tail = white.find((cell) => {
+    const style = cell.getAttribute('style') || '';
+    return (
+      /--spot-ddist:\s*4(?![\d.])/.test(style) &&
+      /--spot-drank:\s*0(?![\d.])/.test(style)
+    );
+  });
+  expect(tail).toBeDefined();
+  for (const cell of host.querySelectorAll('.grid-cell.black-cell')) {
+    expect(cell.getAttribute('style') || '').not.toMatch(/--spot-(a|d)(rank|dist)/);
+  }
+});
+
 it('hands the appearance back to CSS when a view choice changes', async () => {
   const host = await mountBoard();
   await choose(host, 'Letter track', 'Solid');
