@@ -565,51 +565,99 @@
   animation: clue-breath 2.1s ease-in-out infinite;
 }
 
-/* The grid's selection wash breathes the highlighted word's hue: the clue leads
-   and the direction's fill steadies it from underneath, keeping the
+/* The grid's selection wash is the clue's own light: mostly the highlighted
+   word's tint, steadied by a breath of the direction fill that keeps the
    along-the-word position gradient. Without an active rank the tint is
    invalid and desktop.css's wash stands untouched. */
 #app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index] {
   background: color-mix(
     in oklab,
-    var(--entry-fill) 42%,
+    var(--entry-fill) 22%,
     var(--active-clue-tint)
   ) !important;
 }
 
 /* Selection speaks the clue first and spends the direction as an accent: the
-   word's edge, its boxes' edge and the cursor's fill wash in the clue's flame
-   over the direction tone, while the thin rings, the lane bar and the halo
-   keep the direction readable at a glance. Number colours off keeps
-   desktop.css's direction fills untouched. */
+   word's edge and its boxes' edge wash in the clue's flame over the direction
+   tone — close enough to read as the chip's own colour, never a muddy
+   midpoint — while the thin rings, the rails and the halo keep the direction
+   readable at a glance. Check verdicts keep their red and green edges.
+   Number colours off keeps desktop.css's direction fills untouched. */
 #app.react-desktop-app[data-ramp='on']
   li
-  .state[data-entry-index]:not(.cursor-cell) {
+  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green) {
   border-color: color-mix(
     in oklab,
-    var(--clue-flame) 55%,
+    var(--clue-flame) 85%,
     var(--entry-tone)
   ) !important;
 }
 #app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index] {
   border-color: color-mix(
     in oklab,
-    var(--clue-flame) 55%,
+    var(--clue-flame) 85%,
     color-mix(in oklab, var(--entry-tone) 40%, var(--entry-fill))
   ) !important;
 }
-#app.react-desktop-app[data-ramp='on'] li .state.cursor-cell {
+
+/* Lit boxes and squares take their lettering dark, exactly like the selected
+   chip does on its solid flame: pale ink would drown on a light wash. Check
+   verdicts and the cursor keep their own ink — red, green and white stay
+   exactly as legible as desktop.css sets them. */
+#app.react-desktop-app[data-ramp='on']
+  li
+  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green),
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:not(:focus-within),
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:not(:focus-within)
+  .clue-index {
+  color: var(--react-bg) !important;
+}
+:root[style*='color-scheme: light']
+  #app.react-desktop-app[data-ramp='on']
+  li
+  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green),
+:root[style*='color-scheme: light']
+  #app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:not(:focus-within),
+:root[style*='color-scheme: light']
+  #app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:not(:focus-within)
+  .clue-index {
+  color: var(--react-ink) !important;
+}
+
+/* The track's wash matches the grid's: mostly the box's own flame — the
+   active word's in its row, the crossing word's in an affected row — over a
+   breath of direction fill. */
+#app.react-desktop-app[data-ramp='on']
+  li.highlighted-clue
+  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green),
+#app.react-desktop-app[data-ramp='on']
+  li.affected-clue
+  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green) {
   background: color-mix(
     in oklab,
-    var(--cursor-fill) 45%,
-    var(--active-clue-tint)
+    var(--entry-fill) 22%,
+    var(--clue-flame)
   ) !important;
 }
-#app.react-desktop-app[data-ramp='on'] .grid-cell:focus-within {
+
+/* Dimmed screens deepen every selection wash back toward the direction fill
+   so lit words never bloom, with the dark lettering above staying put. */
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])[data-ramp='on']
+  .grid-cell[data-entry-index],
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])[data-ramp='on']
+  li.highlighted-clue
+  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green),
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])[data-ramp='on']
+  li.affected-clue
+  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green) {
   background: color-mix(
     in oklab,
-    var(--cursor-fill) 45%,
-    var(--active-clue-tint)
+    var(--entry-fill) 60%,
+    var(--clue-flame, var(--active-clue-tint))
   ) !important;
 }
 
@@ -637,6 +685,15 @@
     var(--active-clue-tint) 20%,
     rgba(33, 150, 243, 0.75)
   );
+}
+
+/* The lane's direction bar steps aside while Number colours are on: the halo,
+   rails and ticks already say the direction, and a solid orange bar would
+   fight the clue's own colour. Off, desktop.css's bar stays. */
+#app.react-desktop-app[data-ramp='on']
+  :is(#across, #down)
+  li.highlighted-clue::before {
+  content: none;
 }
 
 /* The selected chip spends the highlight split, not the lane's: Across brighter,
@@ -685,6 +742,12 @@
   :is(#across, #down)
   li
   :is(.state.red, .state.green) {
+  box-shadow: none;
+}
+#app.react-desktop-app[data-ramp='on']
+  :is(#across, #down)
+  li
+  .state:is(.red, .green)[data-entry-index] {
   box-shadow: none;
 }
 
