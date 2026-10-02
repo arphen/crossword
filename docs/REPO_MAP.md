@@ -194,6 +194,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/private-clue-counter-reresolution-v1.offline.json`
 - `docs/evidence/private-clue-genre-census-v1.offline.json`
 - `docs/evidence/private-clue-leak-gate-v1.synthetic.json`
+- `docs/evidence/private-clue-nyt-census-v1.20261002.json`
 - `docs/evidence/private-clue-regex-redundancy-v1.offline.json`
 - `docs/evidence/private-clue-witness-audit-v1.offline.json`
 - `docs/evidence/private-current-source-live-smoke-v1.20260928.json`
@@ -316,6 +317,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/private-clue-corpus.py` — `_today:39`, `_file_digest:43`, `attest_body:47`, `collect_study_artifacts:65`, `reresolve_body:81`, `main:92`
 - `scripts/private-clue-derivation-gate.py` — `build_pairs:111`, `evaluate:155`, `degree_rule_gaps:174`, `corpus_digest:191`, `real_corpus_status:196`, `receipt_body:217`, `main:276`
 - `scripts/private-clue-genre-census.py` — `audit_matrix:64`, `audit_corpus:75`, `receipt_body:98`, `main:126`
+- `scripts/private-clue-nyt-census.py` — `archive_path:50`, `main:55`
 - `scripts/private-clue-real-harvest.py` — `harvest_path:39`, `entry_answers:43`, `run_arm:62`, `is_real_surface:78`, `main:86`
 - `scripts/private-clue-regex-redundancy.py` — `_fires:58`, `_other_enforcement:74`, `main:102`
 - `scripts/private-clue-review-export.py` — `main:26`

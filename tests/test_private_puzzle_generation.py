@@ -1513,6 +1513,28 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
         )
         == "generic-clue"
     )
+    # A language qualifier is a genuine route, not a content-free template:
+    # "Common Latin word" -> ERAT (census, NYT Monday).
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "ERAT"}, "Common Latin word")
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "ETRE"}, "Common French word")
+        is None
+    )
+    # A possessed qualifier or a definite for/of referent names a route;
+    # an indefinite object points nowhere (census, NYT Monday).
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "SPOT"}, "Common dog's name")
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "LYE"}, "Common name for sodium hydroxide"
+        )
+        is None
+    )
     # Q08 retired the three anchored name-shape blockers from the wordplay
     # guard: unsourced name slots are refused downstream by the
     # factual-surface guard and the genre cap (name-slot-without-source),
@@ -1592,6 +1614,24 @@ def test_clue_morphology_guard_reads_plain_language_plural_and_tense_markers():
             {"answer": "RAN"}, "Move (future tense)"
         )
         == "future-tense-marker-with-past-shape"
+    )
+    # Bare past/present/future are the definiendum, not a tense marker:
+    # "Past" -> AGO, "Past, to poets" -> AGONE (census, NYT Monday).
+    assert (
+        private_generation._clue_morphology_issue({"answer": "AGO"}, "Past")
+        is None
+    )
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "AGONE"}, "Past, to poets"
+        )
+        is None
+    )
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "RUN"}, "Move in the past tense"
+        )
+        == "past-tense-marker-with-nonpast-shape"
     )
 
 
@@ -2538,6 +2578,25 @@ def test_pun_surface_accepts_only_a_terminal_question_mark():
     )
     assert private_generation._clue_surface_issues("Branch specialist?!") == [
         "question-mark-placement"
+    ]
+    # A closing quotation belongs to the quoted cue: the question still ends
+    # the clue. Census: '"___ really mean it?"' (NYT, Monday).
+    assert private_generation._clue_surface_issues('"___ really mean it?"') == []
+    assert private_generation._clue_surface_issues('"Wie ___ es Ihnen?"') == []
+    # A parenthetical aside or an attribution tail carries its own question.
+    assert private_generation._clue_surface_issues("Resident (in Tarrytown?)") == []
+    assert private_generation._clue_surface_issues('"O earth! What ___?": Hamlet') == []
+    assert private_generation._clue_surface_issues('"Could ___ Be Magic?" (1957 hit)') == []
+    assert private_generation._clue_surface_issues('"Quo Vadis?" character') == []
+    assert private_generation._clue_surface_issues('"Ain\'t She Sweet?" composer') == []
+    assert private_generation._clue_surface_issues("Air that makes you go [cough, cough]") == []
+    assert private_generation._clue_surface_issues("Couldn't shpeak shtraight [hic]?") == []
+    # Braces as spaced subjects are legitimate ("{ }, in mathematics" ->
+    # NULL); unspaced brace shapes are model debris.
+    assert private_generation._clue_surface_issues("{ }, in mathematics") == []
+    assert private_generation._clue_surface_issues("Math items represented using { and }") == []
+    assert private_generation._clue_surface_issues("Sound adjustment (6)},{") == [
+        "syntax-debris",
     ]
 
 

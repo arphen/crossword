@@ -205,6 +205,46 @@ _GENERIC_TEMPLATE_PHRASE_RE = re.compile(
     r"(?:names?|terms?|words?|designations?|labels?)\b",
     re.IGNORECASE,
 )
+# A language qualifier turns a content-free template into a genuine route:
+# "Common Latin word" is standard Monday crosswordese with a real solving
+# path, while "Common male name" names no route at all. The census over
+# 1.2M published pairs confirms editors use the qualified form routinely.
+_GENERIC_LANGUAGE_ROUTE_RE = re.compile(
+    r"\b(?:latin|french|german|spanish|italian|dutch|portuguese|japanese|"
+    r"greek|hebrew|yiddish|russian|chinese|arabic)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_generic_template(text):
+    """Decide whether a clue is a content-free generic template.
+
+    The anchored fullmatch forms always count. The broader phrase form
+    counts unless a language qualifier inside the matched span supplies a
+    route to the solver.
+    """
+    if not isinstance(text, str):
+        return False
+    if _GENERIC_CLUE_RE.fullmatch(text) or _GENERIC_NO_ROUTE_CLUE_RE.fullmatch(text):
+        return True
+    match = _GENERIC_TEMPLATE_PHRASE_RE.search(text)
+    if match is None:
+        return False
+    span = match.group(0)
+    if _GENERIC_LANGUAGE_ROUTE_RE.search(span):
+        return False
+    # A possessed qualifier names its route ("Common dog's name" -> SPOT),
+    # as does a for/of phrase with a definite referent ("Common name for
+    # sodium hydroxide" -> LYE). An indefinite object ("a gas") stays
+    # generic: it points at no route.
+    if re.search(r"['’]s\b", span):
+        return False
+    tail = text[match.end():]
+    if re.match(r"\s+(?:for|of)\s+(?!a\b|an\b)\S", tail, re.IGNORECASE):
+        return False
+    return True
+
+
 # The three anchored name-shape guards lived here and were retired in Q08:
 # name-shaped clues without a source-backed sense are refused downstream by
 # the factual-surface guard and the genre cap (name-slot-without-source),
@@ -410,15 +450,15 @@ _PLURAL_MARKER_RE = re.compile(
     re.IGNORECASE,
 )
 _PAST_TENSE_MARKER_RE = re.compile(
-    r"\bpast(?:\s+tense)?\b|[\[(]\s*past(?:\s+tense)?\s*[\])]",
+    r"\bpast\s+tense\b|[\[(]\s*past(?:\s+tense)?\s*[\])]",
     re.IGNORECASE,
 )
 _PRESENT_TENSE_MARKER_RE = re.compile(
-    r"\bpresent(?:\s+tense)?\b|[\[(]\s*present(?:\s+tense)?\s*[\])]",
+    r"\bpresent\s+tense\b|[\[(]\s*present(?:\s+tense)?\s*[\])]",
     re.IGNORECASE,
 )
 _FUTURE_TENSE_MARKER_RE = re.compile(
-    r"\bfuture(?:\s+tense)?\b|[\[(]\s*future(?:\s+tense)?\s*[\])]",
+    r"\bfuture\s+tense\b|[\[(]\s*future(?:\s+tense)?\s*[\])]",
     re.IGNORECASE,
 )
 _COMPARATIVE_MARKER_RE = re.compile(
@@ -2888,7 +2928,7 @@ def _salvage_clue_entries(raw_clues, entry_ids):
         if not 2 <= len(text) <= 180:
             reasons[clue_id] = "invalid-clue-text"
             continue
-        if "{" in text or "}" in text:
+        if _has_syntax_debris(text):
             reasons[clue_id] = "syntax-debris"
             continue
         clues[clue_id] = text
@@ -2939,6 +2979,19 @@ def _contains_clue_fact_term(clue):
     )
 
 
+# JSON-structural brace debris from a fumbled model response. Braces only
+# survive spaced as ordinary set-notation subjects ("{ }, in mathematics",
+# "using { and }"); anything else brace-shaped is model debris.
+_SPACED_BRACE_SUBJECT_RE = re.compile(r"\{\s+[^{}]*\s*\}|\{[^{}]*\s+\}")
+
+
+def _has_syntax_debris(text):
+    if not isinstance(text, str):
+        return False
+    bare = _SPACED_BRACE_SUBJECT_RE.sub("", text)
+    return "{" in bare or "}" in bare
+
+
 def _clue_surface_issues(clue):
     """Check visible punctuation conventions without claiming semantics."""
     text = clue if isinstance(clue, str) else ""
@@ -2950,13 +3003,34 @@ def _clue_surface_issues(clue):
     right_brackets = text.count("]")
     if left_brackets != right_brackets:
         issues.append("unbalanced-brackets")
-    elif left_brackets and not (
-        text.strip().startswith("[") and text.strip().endswith("]")
-    ):
-        issues.append("bracket-scope")
-    if "?" in text and not text.rstrip().endswith("?"):
-        issues.append("question-mark-placement")
-    if "{" in text or "}" in text:
+    elif left_brackets:
+        # A bracketed aside may wrap the clue whole or trail it to the end
+        # ("Air ... [cough, cough]", "... [hic]?"); a span stranded
+        # mid-clue is not a convention.
+        core = re.sub(r"\s*[:—–-]\s+(?=[A-Z0-9“\"])[^?]*$", "", text.rstrip()).rstrip()
+        core = core.rstrip("\"'“”‘’").rstrip()
+        core = re.sub(r"[?!]+$", "", core).rstrip()
+        if not (text.strip().startswith("[") or core.endswith("]")):
+            issues.append("bracket-scope")
+    if "?" in text:
+        # The question must terminate its clause: end of clue, before
+        # closers, inside a parenthetical aside, or before an attribution
+        # tail (": Hamlet", "(1957 hit)"). A closing quotation belongs to
+        # the quoted cue.
+        tail = re.sub(r"\s*[:—–-]\s+(?=[A-Z0-9“\"])[^?]*$", "", text.rstrip()).rstrip()
+        tail = re.sub(r"\s*\([^()?]*\)\s*$", "", tail).rstrip()
+        tail = re.sub(r"[\)\]}>\"'“”‘’\s]+$", "", tail)
+        if not tail.endswith("?"):
+            # A quoted question with a short role tail ("Quo Vadis?"
+            # character) still asks at its quote.
+            quoted = re.match(
+                r"""^(['"])(?P<inner>.*)\1\s+\S+(?:\s+\S+){0,2}\s*$""",
+                text.rstrip(),
+            )
+            inner = quoted.group("inner").rstrip() if quoted else ""
+            if not inner.endswith("?"):
+                issues.append("question-mark-placement")
+    if _has_syntax_debris(text):
         issues.append("syntax-debris")
     return issues
 
@@ -3280,11 +3354,7 @@ def _clue_wordplay_issue(entry, clue):
     # source-backed senses instead of scaffolding them. The generic and
     # low-information blockers below stay: nothing else catches a bare
     # "Common name", and removing them would admit it to players.
-    if (
-        _GENERIC_TEMPLATE_PHRASE_RE.search(text)
-        or _GENERIC_CLUE_RE.fullmatch(text)
-        or _GENERIC_NO_ROUTE_CLUE_RE.fullmatch(text)
-    ):
+    if _is_generic_template(text):
         return "generic-clue"
 
     anagram = _ANAGRAM_RE.search(text)
