@@ -204,6 +204,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/private-fill-quality-study-v1.real-gemma4-26b-wednesday-recovery-20260928.json`
 - `docs/evidence/private-fill-quality-study-v1.synthetic.json`
 - `docs/evidence/private-foothold-seed-plan-smoke-v1.20260928.json`
+- `docs/evidence/private-full-board-validation-v1.20261002.json`
 - `docs/evidence/private-host-model-tiers-v1.m3-16gb-20261001.json`
 - `docs/evidence/private-tuesday-clue-quality-study-live-smoke-retry.gemma4-26b-20260928.json`
 - `docs/evidence/private-tuesday-clue-quality-study-live-smoke.gemma4-26b-20260928.json`
@@ -322,6 +323,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/private-clue-study.py` — `_base_url:37`, `_request:48`, `main:75`
 - `scripts/private-clue-witness-audit.py` — `audit_matrix:67`, `audit_corpus:93`, `hidden_word_probe:115`, `receipt_body:124`, `main:162`
 - `scripts/private-fill-study.py` — `_request_puzzle:31`, `_validate_local_base_url:62`, `_case_from_response:73`, `main:93`
+- `scripts/private-full-board-validation.py` — `summarize_board:41`, `run_board:79`, `main:112`
 - `scripts/private-host-model-tiers.py` — `_get:40`, `_post:47`, `_installed_models:60`, `_probe_tag:67`, `_parse_size:92`, `_resident_bytes:100`, `_host:127`, `_board_summary:156`, `receipt_body:177`, `main:232`
 - `scripts/private-weekday-mechanic-study.py` — `_canonical:34`, `_digest:44`, `_validate_loopback:48`, `_request:59`, `_evaluate:88`, `main:140`
 - `scripts/reflection-bridge.cjs`
