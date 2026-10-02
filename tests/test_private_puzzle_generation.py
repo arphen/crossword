@@ -1653,6 +1653,98 @@ def test_clue_guard_rejects_exact_multiword_answer_surfaces():
     )
 
 
+def test_extract_json_candidate_handles_model_prose_wrapping():
+    assert private_generation._extract_json_candidate('{"a": 1}') == '{"a": 1}'
+    fenced = '```json\n{"title": "T", "clues": []}\n```'
+    assert private_generation._extract_json_candidate(fenced) == '{"title": "T", "clues": []}'
+    prose = 'Here you go:\n{"title": "T"} trailing words'
+    assert private_generation._extract_json_candidate(prose) == '{"title": "T"}'
+    assert private_generation._extract_json_candidate('{"a": 1') is None
+    assert private_generation._extract_json_candidate('no braces here') is None
+    assert private_generation._extract_json_candidate(None) is None
+    assert private_generation._extract_json_candidate('{"a": "brace } inside"}') == '{"a": "brace } inside"}'
+
+
+def test_lenient_json_loads_prefers_strict_parsing():
+    value, salvaged = private_generation._lenient_json_loads('{"a": 1}')
+    assert (value, salvaged) == ({"a": 1}, False)
+    value, salvaged = private_generation._lenient_json_loads('```json\n{"a": 1}\n```')
+    assert (value, salvaged) == ({"a": 1}, True)
+    with pytest.raises(ValueError):
+        private_generation._lenient_json_loads('just words')
+
+
+def test_salvage_clue_entries_validates_per_entry_not_per_board():
+    clues, report = private_generation._salvage_clue_entries(
+        [
+            {"id": "1A", "text": "Without light"},
+            {"id": "2D", "text": "x"},
+            {"id": "1A", "text": "Duplicate"},
+            {"id": "9Z", "text": "Bad shape"},
+            {"id": "3A", "text": "Line\nbreak", "extra": "tolerated"},
+            {"id": "4D", "text": "Draft with },{ debris"},
+            "garbage",
+            None,
+        ],
+        ["1A", "2D", "3A", "4D"],
+    )
+    assert clues == {"1A": "Without light", "3A": "Line break"}
+    assert report["reasons"] == {"2D": "invalid-clue-text", "4D": "syntax-debris"}
+    assert report["ignored"] == 4
+
+
+def test_make_clues_salvages_partial_boards_and_defaults_title(monkeypatch):
+    def partial_chat(*_args, **_kwargs):
+        return {
+            "title": "x",
+            "clues": [
+                {"id": "1A", "text": "Without light"},
+                {"id": "2D", "text": "x"},
+            ],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", partial_chat)
+    context = {}
+    title, clues = private_generation._make_clues(
+        "gemma4:26b",
+        [
+            {"id": "1A", "answer": "DARK", "length": 4},
+            {"id": "2D", "answer": "MOSS", "length": 4},
+            {"id": "3A", "answer": "ECHO", "length": 4},
+        ],
+        context,
+        "monday",
+    )
+    assert title == "Monday Clues"
+    assert clues["1A"] == "Without light"
+    assert clues["2D"] == "Entry supported by its crossings (4 letters)"
+    assert clues["3A"] == "Entry supported by its crossings (4 letters)"
+    salvage = context["_clue_generation_salvage"]
+    assert salvage["usable"] == 1
+    assert salvage["scaffolded"] == ["2D", "3A"]
+    assert salvage["reasons"] == {"2D": "invalid-clue-text", "3A": "missing-clue"}
+    assert salvage["titleDefaulted"] is True
+    assert context["_clue_safety_fallbacks"]["2D"] == ["salvage:invalid-clue-text"]
+
+
+def test_make_clues_without_usable_entries_keeps_whole_board_fallback(monkeypatch):
+    def empty_chat(*_args, **_kwargs):
+        return {"title": "T", "clues": [{"id": "1A", "text": "x"}]}
+
+    monkeypatch.setattr(private_generation, "_chat", empty_chat)
+    context = {}
+    title, clues = private_generation._make_clues(
+        "gemma4:26b",
+        [{"id": "1A", "answer": "ECHO", "length": 4}],
+        context,
+        "monday",
+    )
+    assert title == "Monday Clues"
+    assert clues == {"1A": "Entry supported by its crossings (4 letters)"}
+    assert "_clue_generation_salvage" not in context
+    assert context["_clue_generation_fallback"] == "Local model returned no usable clues"
+
+
 def test_malformed_clue_model_response_falls_back_to_answer_free_scaffolds(monkeypatch):
     def malformed_chat(*_args, **_kwargs):
         raise ValueError("invalid clue text")
@@ -2743,6 +2835,9 @@ def test_clue_surface_checks_and_normalization_preserve_the_answer_free_surface(
     ]
     assert private_generation._clue_surface_issues("A [sound] that bounces back") == [
         "bracket-scope",
+    ]
+    assert private_generation._clue_surface_issues("Sound adjustment (6)},{") == [
+        "syntax-debris",
     ]
     assert (
         private_generation._normalize_clue_surface("[Sound? that bounces back")

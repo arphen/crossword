@@ -874,7 +874,7 @@ def _local_origin():
     return origin is not None and origin == request.host_url.rstrip("/")
 
 
-def _response_json(response):
+def _response_json(response, *, lenient=False):
     if len(response.content) > MAX_OLLAMA_RESPONSE_BYTES:
         raise ValueError("Local model response is too large")
     response.raise_for_status()
@@ -884,7 +884,68 @@ def _response_json(response):
     )
     if not isinstance(content, str) or not content.strip():
         raise ValueError("Local model response is empty")
-    return json.loads(content)
+    if not lenient:
+        return json.loads(content)
+    value, _salvaged = _lenient_json_loads(content)
+    return value
+
+
+def _extract_json_candidate(content):
+    """Return the most plausible JSON document span inside model prose.
+
+    Strict parsing always runs first; this only runs after it fails. It
+    strips markdown fences, then brace-matches from the first ``{`` while
+    respecting string literals. Returns None when no balanced span exists.
+    Truncated JSON is never completed — guessing the model's ending would
+    fabricate clue text.
+    """
+    if not isinstance(content, str):
+        return None
+    text = content.strip()
+    fence = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL | re.IGNORECASE)
+    if fence and fence.group(1).strip():
+        text = fence.group(1).strip()
+    start = text.find("{")
+    if start < 0:
+        return None
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : index + 1]
+    return None
+
+
+def _lenient_json_loads(content):
+    """Parse JSON strictly first, then from an extracted document span.
+
+    Returns ``(value, salvaged)`` where salvaged flags the lenient path.
+    Raises the original error when nothing parses, so callers that cannot
+    use partial content keep their existing fallback reason.
+    """
+    try:
+        return json.loads(content), False
+    except (ValueError, TypeError) as strict_error:
+        candidate = _extract_json_candidate(content)
+        if candidate is None:
+            raise strict_error
+        return json.loads(candidate), True
 
 
 _EXPLICIT_MODEL_TAGS = (
@@ -1999,7 +2060,7 @@ def _theme_exposure_receipt(context, theme_entries):
     }
 
 
-def _chat(model, messages, schema, *, timeout, tokens, temperature, seed=None, top_p=None, num_ctx=None):
+def _chat(model, messages, schema, *, timeout, tokens, temperature, seed=None, top_p=None, num_ctx=None, lenient=False):
     sampling = _tier_sampling(model)
     if top_p is None:
         top_p = sampling.get("topP")
@@ -2026,7 +2087,7 @@ def _chat(model, messages, schema, *, timeout, tokens, temperature, seed=None, t
             "messages": messages,
         },
     )
-    return _response_json(response)
+    return _response_json(response, lenient=lenient)
 
 
 def _clue_token_budget(entry_count, *, per_entry=None):
@@ -2778,6 +2839,65 @@ def _clue_schema(entry_ids):
     }
 
 
+_SALVAGE_VERSION = "private-clue-salvage-v1"
+
+
+def _normalize_salvage_text(text):
+    """Collapse whitespace runs so newline-bearing drafts stay usable.
+
+    A newline inside a clue is never meaningful; repairing it here keeps a
+    structurally fine draft out of the scaffold instead of rejecting it.
+    """
+    if not isinstance(text, str):
+        return ""
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _salvage_clue_entries(raw_clues, entry_ids):
+    """Split one clue list into usable drafts plus per-id salvage reasons.
+
+    Returns ``(clues, report)`` where clues maps entry id to draft text and
+    report carries ``reasons`` (scaffolded entry id to short reason) and an
+    ``ignored`` count for items that name no known entry. Validation is as
+    strict as the old whole-board gate — same id shape, same text bounds —
+    but applies per entry: one bad draft scaffolds its own entry instead of
+    the board. The first valid text wins a duplicated id; extra object keys
+    are ignored. Downstream repair and safety run unchanged over whatever
+    survives, so a blurting draft still meets the leak gate per entry.
+    """
+    clues: dict = {}
+    reasons: dict = {}
+    ignored = 0
+    items = raw_clues if isinstance(raw_clues, list) else []
+    for item in items:
+        if not isinstance(item, dict):
+            ignored += 1
+            continue
+        clue_id = item.get("id")
+        if (
+            not isinstance(clue_id, str)
+            or not _CLUE_ID.fullmatch(clue_id)
+            or clue_id not in entry_ids
+        ):
+            ignored += 1
+            continue
+        if clue_id in clues or clue_id in reasons:
+            ignored += 1
+            continue
+        text = _normalize_salvage_text(item.get("text"))
+        if not 2 <= len(text) <= 180:
+            reasons[clue_id] = "invalid-clue-text"
+            continue
+        if "{" in text or "}" in text:
+            reasons[clue_id] = "syntax-debris"
+            continue
+        clues[clue_id] = text
+    for clue_id in entry_ids:
+        if clue_id not in clues and clue_id not in reasons:
+            reasons[clue_id] = "missing-clue"
+    return clues, {"reasons": reasons, "ignored": ignored}
+
+
 def _clue_challenge_schema(entry_ids):
     """Return the bounded schema for the optional advisory clue pass."""
     return {
@@ -2836,6 +2956,8 @@ def _clue_surface_issues(clue):
         issues.append("bracket-scope")
     if "?" in text and not text.rstrip().endswith("?"):
         issues.append("question-mark-placement")
+    if "{" in text or "}" in text:
+        issues.append("syntax-debris")
     return issues
 
 
@@ -4772,8 +4894,9 @@ def _use_candidate_path(model) -> bool:
 
     Local-small models fumble whole-board single-request JSON (74/74
     scaffolded on both small tags here) while writing clean small batches, so
-    they draft per-entry candidates. Large tags keep the proven single-draft
-    path byte-identical. ``CROSSWORD_CLUE_CANDIDATES=1`` forces the candidate
+    they draft per-entry candidates. Salvage recovers the usable entries from
+    a fumbled single response, but the candidate path stays the default lane.
+    Large tags keep the proven single-draft path byte-identical. ``CROSSWORD_CLUE_CANDIDATES=1`` forces the candidate
     path (A/B runs), ``=0`` forces the legacy path.
     """
     override = os.environ.get("CROSSWORD_CLUE_CANDIDATES", "").strip().casefold()
@@ -5278,6 +5401,7 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
                     len(entries), per_entry=policy["clueTokensPerEntry"]
                 ),
                 temperature=0.65,
+                lenient=True,
             )
         clue_timing["primaryWriter"] = round(
             max(0.0, monotonic() - primary_started), 3
@@ -5296,44 +5420,45 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
         return _fallback_private_clues(
             entries, weekday, context, f"{type(error).__name__}: {error}"
         )
-    if not isinstance(value, dict) or not isinstance(value.get("clues"), list):
+    if not isinstance(value, dict):
         publish_timing()
         return _fallback_private_clues(
             entries, weekday, context, "Local model returned an incomplete clue set"
         )
-    clues = {}
-    for clue in value["clues"]:
-        if not isinstance(clue, dict) or set(clue) != {"id", "text"}:
-            publish_timing()
-            return _fallback_private_clues(
-                entries, weekday, context, "Local model returned malformed clues"
-            )
-        clue_id = clue["id"]
-        text = clue["text"].strip() if isinstance(clue["text"], str) else ""
-        if (
-            not isinstance(clue_id, str)
-            or not _CLUE_ID.fullmatch(clue_id)
-            or clue_id not in entry_ids
-            or not 2 <= len(text) <= 180
-            or clue_id in clues
-            or "\n" in text
-        ):
-            publish_timing()
-            return _fallback_private_clues(
-                entries, weekday, context, "Local model returned invalid clue text"
-            )
-        clues[clue_id] = text
-    if set(clues) != set(entry_ids):
-        publish_timing()
-        return _fallback_private_clues(
-            entries, weekday, context, "Local model did not clue every entry"
-        )
+    # Salvage what the model actually delivered: one malformed draft used to
+    # scaffold the whole board. Valid entries continue through repair and
+    # safety; invalid or missing ones scaffold individually with per-id
+    # reasons in the receipt. Only a payload with zero usable clues keeps
+    # the whole-board fallback.
+    clues, salvage = _salvage_clue_entries(value.get("clues"), entry_ids)
+    salvage_reasons = dict(salvage["reasons"])
     title = value.get("title")
+    title_defaulted = False
     if not isinstance(title, str) or not 2 <= len(title.strip()) <= 64:
+        title = f"{weekday.title()} Clues"
+        title_defaulted = True
+    if not clues:
         publish_timing()
         return _fallback_private_clues(
-            entries, weekday, context, "Local model returned an invalid title"
+            entries, weekday, context, "Local model returned no usable clues"
         )
+    by_id = {
+        entry["id"]: entry
+        for entry in entries
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str)
+    }
+    for clue_id in entry_ids:
+        if clue_id not in clues:
+            clues[clue_id] = _source_free_foothold(by_id.get(clue_id) or {})
+    context["_clue_generation_salvage"] = {
+        "version": _SALVAGE_VERSION,
+        "requested": len(entry_ids),
+        "usable": len(entry_ids) - len(salvage_reasons),
+        "scaffolded": sorted(salvage_reasons),
+        "reasons": salvage_reasons,
+        "ignoredItems": salvage["ignored"],
+        "titleDefaulted": title_defaulted,
+    }
     repair_started = monotonic()
     repaired = _repair_risky_clues(model, entries, clues, context, weekday)
     clue_timing["riskRepair"] = round(max(0.0, monotonic() - repair_started), 3)
@@ -5430,6 +5555,11 @@ def _make_clues(model, entries, context, weekday, *, reviewed_pack=None):
             }
     context["_clue_diversity_repair"] = diversity_repair
     safety_fallbacks = {}
+    # Carry the parse-stage salvage reasons into the safety receipt so every
+    # visible scaffold names its cause. Safety overwrites an id's reasons
+    # when it replaces that id's surface itself.
+    for clue_id, reason in salvage_reasons.items():
+        safety_fallbacks[clue_id] = [f"salvage:{reason}"]
     safety_started = monotonic()
     safe_clues = _enforce_private_clue_safety(
         entries,
