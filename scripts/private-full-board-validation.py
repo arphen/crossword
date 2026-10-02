@@ -146,16 +146,42 @@ def main() -> int:
         "version": RECEIPT_VERSION,
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "kind": "live-model",
-        "model": args.model,
-        "weekday": args.weekday,
-        "seed": args.seed,
         "claim": "full production boards per clue arm: scaffold vs real counts only",
-        "arms": arms,
+        "runs": [],
         "knownLimits": [
             "counts only; clue text stays local and is never committed",
+            "single-arm variance is across runs (temperature 0.65, one shot each)",
             "boards also enter the operator corpus via the production capture",
         ],
     }
+    if args.out.is_file():
+        try:
+            prior = json.loads(args.out.read_text(encoding="utf-8"))
+            if isinstance(prior, dict):
+                if isinstance(prior.get("runs"), list):
+                    receipt["runs"].extend(prior["runs"])
+                else:
+                    # Migrate the original single-run receipt shape.
+                    receipt["runs"].append(
+                        {
+                            "seed": prior.get("seed"),
+                            "weekday": prior.get("weekday"),
+                            "model": prior.get("model"),
+                            "generatedAt": prior.get("generatedAt"),
+                            "arms": prior.get("arms", {}),
+                        }
+                    )
+        except (OSError, ValueError):
+            pass
+    receipt["runs"].append(
+        {
+            "seed": args.seed,
+            "weekday": args.weekday,
+            "model": args.model,
+            "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "arms": arms,
+        }
+    )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
     args.log.parent.mkdir(parents=True, exist_ok=True)
