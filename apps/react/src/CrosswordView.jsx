@@ -181,15 +181,6 @@ export default function CrosswordView({
         const active = settings.ramp ? clueRampStyle(clueRamp, activeEntry.clue_number) : {};
         return { style: { ...cell.style, ...active }, 'data-entry-index': cell.index, title: cell.title };
     };
-    // A crossing box belongs to two words but the ladder reads hue as identity:
-    // inside an affected row it wears its own row's rank at flame strength,
-    // while the board and the active row burn in the active word.
-    const boxPresentation = (entry, rowIndex, cellIndex) => {
-        const base = cellPresentation(rowIndex, cellIndex);
-        if (base['data-entry-index'] === undefined) return base;
-        if (!settings.ramp || !app.isClueAffected(entry)) return base;
-        return { ...base, style: { ...base.style, ...clueRampStyle(clueRamp, entry.clue_number) } };
-    };
     const activeEntryCellClasses = (rowIndex, cellIndex) => {
         const cell = selection.get(`${rowIndex},${cellIndex}`);
         if (!cell) return {};
@@ -293,7 +284,7 @@ export default function CrosswordView({
             const col = entry.start_x + (entry.direction === 'across' ? index : 0);
             const rawChar = app.grid[row]?.[col] || ' ';
             const char = displayGridValue(rawChar, row, col) || ' ';
-            return <span key={index} {...boxPresentation(entry, row, col)} className={classes('state', {
+            return <span key={index} {...cellPresentation(row, col)} className={classes('state', {
                 red: app.isChecking && rawChar.toLowerCase() !== character.letters.toLowerCase() && rawChar !== ' ',
                 green: app.isChecking && rawChar.toLowerCase() === character.letters.toLowerCase() && rawChar !== ' ',
                 'intersection-cell-across': app.activeDirection === 'across' && app.isCellInAffectedClue(entry, index),

@@ -185,14 +185,14 @@ it("lights the selection in the active clue's rank, not the square's own", async
     expect(boxes.length).toBeGreaterThan(0);
     for (const box of boxes) expect(rankOf(box)).toBe(activeRamp);
   }
-  // Crossing boxes keep their own row's hue at flame strength.
+  // Crossing boxes burn in the active word too, matching the grid square for
+  // square — one selection, one hue, on both surfaces.
   const affected = [...host.querySelectorAll('li.affected-clue')];
   expect(affected.length).toBeGreaterThan(0);
   for (const row of affected) {
-    const rowRank = rankOf(row.querySelector('.clue-number'));
     const boxes = [...row.querySelectorAll('.state[data-entry-index]')];
     expect(boxes.length).toBeGreaterThan(0);
-    for (const box of boxes) expect(rankOf(box)).toBe(rowRank);
+    for (const box of boxes) expect(rankOf(box)).toBe(activeRamp);
   }
 });
 
