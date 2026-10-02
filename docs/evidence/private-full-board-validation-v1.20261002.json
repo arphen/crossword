@@ -1,35 +1,59 @@
 {
   "version": "private-full-board-validation-v1",
-  "generatedAt": "2026-10-02T15:04:22+00:00",
+  "generatedAt": "2026-10-02T17:33:18+00:00",
   "kind": "live-model",
-  "model": "llama3.2:3b",
-  "weekday": "monday",
-  "seed": 6111,
   "claim": "full production boards per clue arm: scaffold vs real counts only",
-  "arms": {
-    "single": {
-      "entries": 74,
-      "clues": 74,
-      "scaffold": 74,
-      "real": 0,
-      "wallSeconds": 182.265,
-      "salvage": null,
-      "generationFallback": null,
-      "candidateCalls": null
+  "runs": [
+    {
+      "seed": 6111,
+      "weekday": "monday",
+      "model": "llama3.2:3b",
+      "generatedAt": "2026-10-02T15:04:22+00:00",
+      "arms": {
+        "single": {
+          "entries": 74,
+          "clues": 74,
+          "scaffold": 74,
+          "real": 0,
+          "wallSeconds": 182.265,
+          "salvage": null,
+          "generationFallback": null,
+          "candidateCalls": null
+        },
+        "candidate": {
+          "entries": 72,
+          "clues": 72,
+          "scaffold": 1,
+          "real": 71,
+          "wallSeconds": 242.065,
+          "salvage": null,
+          "generationFallback": null,
+          "candidateCalls": null
+        }
+      }
     },
-    "candidate": {
-      "entries": 72,
-      "clues": 72,
-      "scaffold": 1,
-      "real": 71,
-      "wallSeconds": 242.065,
-      "salvage": null,
-      "generationFallback": null,
-      "candidateCalls": null
+    {
+      "seed": 6112,
+      "weekday": "monday",
+      "model": "llama3.2:3b",
+      "generatedAt": "2026-10-02T17:33:18+00:00",
+      "arms": {
+        "candidate": {
+          "entries": 72,
+          "clues": 72,
+          "scaffold": 2,
+          "real": 70,
+          "wallSeconds": 264.949,
+          "salvage": null,
+          "generationFallback": null,
+          "candidateCalls": null
+        }
+      }
     }
-  },
+  ],
   "knownLimits": [
     "counts only; clue text stays local and is never committed",
+    "single-arm variance is across runs (temperature 0.65, one shot each)",
     "boards also enter the operator corpus via the production capture"
   ]
 }
