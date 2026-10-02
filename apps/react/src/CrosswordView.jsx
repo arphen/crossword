@@ -114,6 +114,15 @@ export default function CrosswordView({
             ? normalized
             : { accepted: false, display: value, fill: value };
     };
+    // Read-once locals for the render below: every app.* access crosses the
+    // controller's observable proxy, so the hot loops work from these instead of
+    // paying the trap per square and per letter. Event handlers keep reading
+    // live controller state; these are only the render's snapshot.
+    const grid = app.grid;
+    const entries = app.crossword || [];
+    const isChecking = app.isChecking;
+    const completedWords = app.completedWords;
+    const tokenCells = app.currentPuzzleTokenManifest?.cells ?? null;
     const entryContainsCell = (entry, rowIndex, cellIndex) => entry?.characters.some((_, index) => (
         entry.direction === 'across'
             ? entry.start_y === rowIndex && entry.start_x + index === cellIndex
@@ -133,7 +142,7 @@ export default function CrosswordView({
     // Future token manifests keep canonical fill values in the controller,
     // while this view can show the declared display grapheme. The lookup is
     // inert for the daily route, which has no token manifest.
-    const tokenAt = (rowIndex, cellIndex) => app.currentPuzzleTokenManifest?.cells?.find(cell => (
+    const tokenAt = (rowIndex, cellIndex) => tokenCells?.find(cell => (
         cell.row === rowIndex && cell.column === cellIndex
     )) || null;
     const displayGridValue = (value, rowIndex, cellIndex) => {
@@ -161,12 +170,12 @@ export default function CrosswordView({
         rebusColumn,
         app.currentPuzzleTokenManifest,
     ]);
-    const gridValues = () => new Map(app.grid.flatMap((row, rowIndex) => row.flatMap((value, cellIndex) => (
+    const gridValues = () => new Map(grid.flatMap((row, rowIndex) => row.flatMap((value, cellIndex) => (
         value === null ? [] : [[`r${rowIndex}c${cellIndex}`, value ? String(value) : null]]
     ))));
     const clueClasses = entry => classes({
         'highlighted-clue': app.isActiveClue(entry),
-        'affected-clue': app.isClueAffected(entry)
+        'affected-clue': isClueAffected(entry)
     });
     const activeEntry = app.activeClueNumber && app.activeDirection
         ? app.getEntryByClueNumber(app.activeClueNumber, app.activeDirection)
@@ -196,12 +205,93 @@ export default function CrosswordView({
     // by value: the ladder anchor and the square index at that number read as the
     // same colour, so a hue is learned once and points at the board either way.
     const clueRamp = useMemo(() => createClueRamp(app.crossword), [app.crossword]);
+    // Where each numbered square starts, first entry wins — the same answer
+    // app.find_index gives, without scanning the entries per square per render.
+    const startNumbers = useMemo(() => {
+        const starts = new Map();
+        for (const entry of entries) {
+            const key = `${entry.start_y},${entry.start_x}`;
+            if (!starts.has(key)) starts.set(key, entry.clue_number);
+        }
+        return starts;
+    }, [entries]);
+    // The opposite-lane clues the active word crosses, as a set of
+    // `direction:clue_number` keys. app.isClueAffected rebuilds this from nested
+    // scans on every call — once per row, several times per render — so it is
+    // built once per selection here and probed as a set below. Same membership,
+    // same null guards, no repeated work.
+    const affectedKeys = useMemo(() => {
+        const keys = new Set();
+        if (!activeEntry) return keys;
+        const opposite = activeEntry.direction === 'across' ? 'down' : 'across';
+        const byCell = new Map();
+        for (const entry of entries) {
+            if (entry.direction !== opposite) continue;
+            const length = entry.characters.length;
+            for (let index = 0; index < length; index++) {
+                const x = opposite === 'across' ? entry.start_x + index : entry.start_x;
+                const y = opposite === 'across' ? entry.start_y : entry.start_y + index;
+                const key = `${x},${y}`;
+                let list = byCell.get(key);
+                if (!list) { list = []; byCell.set(key, list); }
+                list.push(entry);
+            }
+        }
+        const length = activeEntry.characters.length;
+        for (let index = 0; index < length; index++) {
+            const x = activeEntry.direction === 'across' ? activeEntry.start_x + index : activeEntry.start_x;
+            const y = activeEntry.direction === 'across' ? activeEntry.start_y : activeEntry.start_y + index;
+            for (const entry of byCell.get(`${x},${y}`) || []) {
+                keys.add(`${entry.direction}:${entry.clue_number}`);
+            }
+        }
+        return keys;
+    }, [entries, activeEntry]);
+    const isClueAffected = entry => affectedKeys.has(`${entry.direction}:${entry.clue_number}`);
+    // The neighbour-derived cues for every square — edge slots, gate ticks,
+    // spotlight distances — depend only on the puzzle definition, never on the
+    // selection or the typed letters, so they are walked once per load and read
+    // back per square instead of re-walked on every render.
+    const staticCues = useMemo(() => {
+        const cues = new Map();
+        const rows = grid.length;
+        const columns = grid[0]?.length || 0;
+        for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+            for (let cellIndex = 0; cellIndex < columns; cellIndex++) {
+                const cuesForCell = cellCues(grid, rowIndex, cellIndex);
+                const gates = {};
+                if (cuesForCell.style && ('--open-e' in cuesForCell.style || '--open-s' in cuesForCell.style)) {
+                    // A gate tick names the word it opens: the east tick the Across
+                    // word starting to the east, the south tick the Down word starting
+                    // below. Stubs that open no word publish nothing and keep the
+                    // quiet direction colour (section 4 of vision.css).
+                    const east = entryStartingAt(entries, rowIndex, cellIndex + 1, 'across');
+                    const south = entryStartingAt(entries, rowIndex + 1, cellIndex, 'down');
+                    const eastRank = east ? clueRamp.get(east.clue_number) : undefined;
+                    const southRank = south ? clueRamp.get(south.clue_number) : undefined;
+                    if (eastRank !== undefined) gates['--gate-across'] = String(eastRank);
+                    if (southRank !== undefined) gates['--gate-down'] = String(southRank);
+                }
+                const spot = spotlightCues(grid, entries, clueRamp, rowIndex, cellIndex);
+                // The pieces stay separate so the render can withhold the
+                // rank-derived ones (gates, spotlight) while Number colours are
+                // off, exactly as the per-square guards used to.
+                cues.set(`${rowIndex},${cellIndex}`, {
+                    style: cuesForCell.style,
+                    gates,
+                    spot: spot.style,
+                    dataStart: cuesForCell.dataStart
+                });
+            }
+        }
+        return cues;
+    }, [entries, clueRamp, grid.length, grid[0]?.length]);
     // The clues still on the ladder: a solved clue leaves it, and the springs
     // follow the same list so the chips either side of the gap are joined directly.
     // Clues a check has just solved are held a moment so they can celebrate.
     const rapture = useRapture(app);
     const held = rapture.active?.holding ? rapture.active.order : undefined;
-    const laneEntries = direction => app.crossword.filter(entry => entry.direction === direction && (!app.completedWords.has(entry.clue_text) || held?.has(entry.clue_text)));
+    const laneEntries = direction => entries.filter(entry => entry.direction === direction && (!completedWords.has(entry.clue_text) || held?.has(entry.clue_text)));
     const raptureRow = entry => {
         const index = held?.get(entry.clue_text);
         if (index === undefined) return {};
@@ -223,7 +313,7 @@ export default function CrosswordView({
         const index = held?.get(entry.clue_text);
         return index === undefined ? null : <RaptureSparks specs={rapture.active.sparks} index={index} />;
     };
-    const springState = entry => (held?.has(entry.clue_text) ? 'rapture' : app.isActiveClue(entry) ? 'active' : app.isClueAffected(entry) ? 'affected' : '');
+    const springState = entry => (held?.has(entry.clue_text) ? 'rapture' : app.isActiveClue(entry) ? 'active' : isClueAffected(entry) ? 'affected' : '');
     const laneSprings = (direction, entries) => settings.rail && (
         <ClueSpring
             lane={direction}
@@ -235,41 +325,28 @@ export default function CrosswordView({
     // Everything a square needs to be drawn: the selection styling the controller
     // already knows about, plus the neighbour-derived cues. JS only names what a
     // square is (where a word starts, which black squares open a slot); the
-    // appearance belongs to vision.css.
+    // appearance belongs to vision.css. The static cues are precomputed per
+    // puzzle above; the per-square work here is map lookups, not walks.
     const gridCellProps = (rowIndex, cellIndex) => {
         const presentation = cellPresentation(rowIndex, cellIndex);
         // A numbered square wears its own clue's rank; the selection style is
         // spread over it afterwards, so a lit square shows the active clue's
         // hue instead — interaction over identity, on the same property.
-        const clueNumber = settings.ramp ? app.find_index(rowIndex, cellIndex) : null;
+        const clueNumber = settings.ramp ? startNumbers.get(`${rowIndex},${cellIndex}`) ?? null : null;
         const style = { ...(clueNumber ? clueRampStyle(clueRamp, clueNumber) : {}), ...presentation.style };
         const withStyle = Object.keys(style).length > 0 ? { style } : {};
         if (!settings.cues) return { ...presentation, ...withStyle };
-        const cues = cellCues(app.grid, rowIndex, cellIndex);
-        const gates = {};
-        if (settings.ramp && cues.style && ('--open-e' in cues.style || '--open-s' in cues.style)) {
-            // A gate tick names the word it opens: the east tick the Across
-            // word starting to the east, the south tick the Down word starting
-            // below. Stubs that open no word publish nothing and keep the
-            // quiet direction colour (section 4 of vision.css).
-            const east = entryStartingAt(app.crossword, rowIndex, cellIndex + 1, 'across');
-            const south = entryStartingAt(app.crossword, rowIndex + 1, cellIndex, 'down');
-            const eastRank = east ? clueRamp.get(east.clue_number) : undefined;
-            const southRank = south ? clueRamp.get(south.clue_number) : undefined;
-            if (eastRank !== undefined) gates['--gate-across'] = String(eastRank);
-            if (southRank !== undefined) gates['--gate-down'] = String(southRank);
-        }
-        // Each answer carries its own fading light: how far this square sits
-        // along its words, with each word's rank for the hue. Stubs and black
-        // squares publish nothing (section 4 of vision.css).
-        const spot = settings.cues && settings.ramp
-            ? spotlightCues(app.grid, app.crossword, clueRamp, rowIndex, cellIndex)
-            : {};
+        const cached = staticCues.get(`${rowIndex},${cellIndex}`);
         return {
             ...presentation,
             ...withStyle,
-            style: { ...style, ...cues.style, ...gates, ...spot.style },
-            'data-start': cues.dataStart
+            style: {
+                ...style,
+                ...cached?.style,
+                ...(settings.ramp ? cached?.gates : null),
+                ...(settings.ramp ? cached?.spot : null)
+            },
+            'data-start': cached?.dataStart
         };
     };
     const isCursorCell = (entry, index) => {
@@ -278,17 +355,27 @@ export default function CrosswordView({
         const cellIndex = entry.direction === 'across' ? entry.start_x + index : entry.start_x;
         return cursorCell.rowIndex === rowIndex && cursorCell.cellIndex === cellIndex;
     };
+    // Whether one box of an opposite-lane row sits on the active word: the
+    // selection map already answers it, so this is a coordinate lookup instead
+    // of the controller's per-letter scan. Same guards (no active word, or the
+    // row's own lane, is never a crossing).
+    const isCellInActiveSelection = (entry, index) => {
+        if (!activeEntry || entry.direction === activeEntry.direction) return false;
+        const x = entry.direction === 'across' ? entry.start_x + index : entry.start_x;
+        const y = entry.direction === 'across' ? entry.start_y : entry.start_y + index;
+        return selection.has(`${y},${x}`);
+    };
     const answer = entry => {
         const letters = entry.characters.map((character, index) => {
             const row = entry.start_y + (entry.direction === 'down' ? index : 0);
             const col = entry.start_x + (entry.direction === 'across' ? index : 0);
-            const rawChar = app.grid[row]?.[col] || ' ';
+            const rawChar = grid[row]?.[col] || ' ';
             const char = displayGridValue(rawChar, row, col) || ' ';
             return <span key={index} {...cellPresentation(row, col)} className={classes('state', {
-                red: app.isChecking && rawChar.toLowerCase() !== character.letters.toLowerCase() && rawChar !== ' ',
-                green: app.isChecking && rawChar.toLowerCase() === character.letters.toLowerCase() && rawChar !== ' ',
-                'intersection-cell-across': app.activeDirection === 'across' && app.isCellInAffectedClue(entry, index),
-                'intersection-cell-down': app.activeDirection === 'down' && app.isCellInAffectedClue(entry, index),
+                red: isChecking && rawChar.toLowerCase() !== character.letters.toLowerCase() && rawChar !== ' ',
+                green: isChecking && rawChar.toLowerCase() === character.letters.toLowerCase() && rawChar !== ' ',
+                'intersection-cell-across': app.activeDirection === 'across' && isCellInActiveSelection(entry, index),
+                'intersection-cell-down': app.activeDirection === 'down' && isCellInActiveSelection(entry, index),
                 'cursor-cell': isCursorCell(entry, index),
                 'rebus-state': rawChar.length > 1
             })} onClick={event => {
@@ -322,8 +409,8 @@ export default function CrosswordView({
             data-direction={app.activeDirection || 'across'}
             {...viewAttributes(settings)}
             style={/** @type {React.CSSProperties} */ ({
-                '--grid-columns': app.grid[0]?.length || 15,
-                '--grid-rows': app.grid.length || 15,
+                '--grid-columns': grid[0]?.length || 15,
+                '--grid-rows': grid.length || 15,
                 // The highlighted word's rank for the background layers — lane
                 // watermarks and grid wash — that have no rank of their own.
                 // A distinct property, never --clue-ramp itself, so nothing
@@ -371,7 +458,7 @@ export default function CrosswordView({
                         <div className="menu-row indicator-bar">
                             <div className="stat-item blue-stat">
                                 <span className="stat-label">Completed</span>
-                                <span className="stat-value">{app.completedWords.size} / {app.crossword.length}</span>
+                                <span className="stat-value">{completedWords.size} / {entries.length}</span>
                             </div>
                             <div className="stat-item blue-stat">
                                 <span className="stat-label">Checks</span>
@@ -435,24 +522,24 @@ export default function CrosswordView({
 
                     {/* Crossword Grid */}
                     <div id="crossword-container">
-                        <div className="grid" style={{ gridTemplateRows: `repeat(${app.grid.length}, var(--cell-size))` }}>
-                            {app.grid.map((row, rowIndex) => (
+                        <div className="grid" style={{ gridTemplateRows: `repeat(${grid.length}, var(--cell-size))` }}>
+                            {grid.map((row, rowIndex) => (
                                 <div className="grid-row" key={rowIndex} style={{ gridTemplateColumns: `repeat(${row.length}, var(--cell-size))` }}>
                                     {row.map((cell, cellIndex) => (
                                         <div key={cellIndex} {...gridCellProps(rowIndex, cellIndex)} className={classes('grid-cell', app.getCellClasses(rowIndex, cellIndex), {
                                             'black-cell': cell === null,
                                             'has-letter': Boolean(cell),
-                                            'highlighted-cell': app.isCellInActiveEntry(rowIndex, cellIndex),
+                                            'highlighted-cell': selection.has(`${rowIndex},${cellIndex}`),
                                             'future-token-cell': Boolean(tokenAt(rowIndex, cellIndex)),
                                             ...activeEntryCellClasses(rowIndex, cellIndex)
                                         })} data-token-display={tokenAt(rowIndex, cellIndex)?.displayToken || undefined}>
                                             {/* The square carries the rank (see gridCellProps); the index just inherits its tone. */}
-                                            {Boolean(app.find_index(rowIndex, cellIndex)) && <span className="clue-index">{app.find_index(rowIndex, cellIndex)}</span>}
+                                            {Boolean(startNumbers.get(`${rowIndex},${cellIndex}`)) && <span className="clue-index">{startNumbers.get(`${rowIndex},${cellIndex}`)}</span>}
                                             {cell !== null && (
                                                 <>
                                                 <input ref={element => { app.setRef('input-' + rowIndex + '-' + cellIndex, element); }} type="text"
                                                         maxLength={app.isRebus(cellIndex, rowIndex) ? 10 : 1}
-                                                        value={displayGridValue(app.grid[rowIndex][cellIndex], rowIndex, cellIndex)}
+                                                        value={displayGridValue(grid[rowIndex][cellIndex], rowIndex, cellIndex)}
                                                         aria-label={tokenAt(rowIndex, cellIndex)
                                                             ? `grid cell ${rowIndex}-${cellIndex}, declared token ${tokenAt(rowIndex, cellIndex).displayToken}`
                                                             : 'grid cell ' + rowIndex + '-' + cellIndex}
