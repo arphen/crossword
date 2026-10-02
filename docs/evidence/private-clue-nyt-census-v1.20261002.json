@@ -1,6 +1,6 @@
 {
   "version": "private-clue-nyt-census-v1",
-  "generatedAt": "2026-10-02T11:28:32+00:00",
+  "generatedAt": "2026-10-02T15:43:50+00:00",
   "kind": "counts-only",
   "archive": {
     "files": 14547,
@@ -35,7 +35,6 @@
       "guardHits": {
         "anagram-mismatch": 3,
         "answer-form-in-clue": 1,
-        "answer-giveaway": 1,
         "comparative-marker-with-noncomparative-shape": 1,
         "generic-clue": 6,
         "past-tense-marker-with-nonpast-shape": 2,
@@ -74,7 +73,6 @@
       },
       "guardHits": {
         "anagram-mismatch": 3,
-        "answer-form-in-clue": 1,
         "answer-giveaway": 1,
         "comparative-marker-with-noncomparative-shape": 4,
         "generic-clue": 8,
@@ -112,7 +110,7 @@
         "x-e-g": 2181
       },
       "guardHits": {
-        "answer-form-in-clue": 1,
+        "answer-form-in-clue": 2,
         "answer-giveaway": 1,
         "comparative-marker-with-noncomparative-shape": 4,
         "generic-clue": 9,
@@ -154,7 +152,7 @@
       },
       "guardHits": {
         "anagram-mismatch": 5,
-        "answer-form-in-clue": 3,
+        "answer-form-in-clue": 2,
         "answer-giveaway": 2,
         "comparative-marker-with-noncomparative-shape": 6,
         "generic-clue": 27,
@@ -240,7 +238,6 @@
       },
       "guardHits": {
         "anagram-mismatch": 2,
-        "answer-form-in-clue": 1,
         "answer-giveaway": 4,
         "comparative-marker-with-noncomparative-shape": 2,
         "generic-clue": 13,
@@ -282,7 +279,7 @@
       },
       "guardHits": {
         "anagram-mismatch": 2,
-        "answer-form-in-clue": 2,
+        "answer-form-in-clue": 1,
         "answer-giveaway": 1,
         "comparative-marker-with-noncomparative-shape": 4,
         "generic-clue": 7,

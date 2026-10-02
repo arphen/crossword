@@ -3225,6 +3225,14 @@ def _answer_lexical_forms(answer):
     return {form for form in forms if len(form) >= 3}
 
 
+# Grammatical glue carries no answer information: matching "AND" inside a
+# clue is a stopword coincidence, not a leak (census: ANDES / "Locale of
+# Pular and Pili").
+_OVERLAP_STOPWORDS = frozenset(
+    {"A", "AN", "THE", "AND", "OR", "OF", "TO", "IN", "ON", "AT", "FOR", "WITH", "FROM"}
+)
+
+
 def _clue_answer_overlap(entry, clue):
     """Return the answer form leaked into a clue, if any."""
     if not isinstance(entry, dict) or not isinstance(clue, str):
@@ -3241,8 +3249,47 @@ def _clue_answer_overlap(entry, clue):
         if re.search(rf"(?<![A-Z]){phrase}(?![A-Z])", text):
             return _letters_only(answer)
     for form in sorted(_answer_lexical_forms(answer), key=len, reverse=True):
+        if form in _OVERLAP_STOPWORDS:
+            continue
         if re.search(rf"(?<![A-Z]){re.escape(form)}(?![A-Z])", text):
             return form
+    bare = _letters_only(answer)
+    if len(bare) >= 6:
+        # Single-token answers that are really phrases ("MAKESNICE",
+        # "ICANTGOON"): the clue spaces what the grid joins, so match the
+        # letter stream, not tokens. The match must run token-boundary to
+        # token-boundary — "HAMLIN" spanning "AbraHAM"+"LINcoln" is two
+        # words apart, not a leak. Short answers stay exempt: tiny strings
+        # cross word boundaries by coincidence constantly.
+        stream = re.sub(r"[^A-Z]+", "", text)
+        boundaries = set()
+        cursor = 0
+        for token in re.findall(r"[A-Z]+", text):
+            boundaries.add(cursor)
+            cursor += len(token)
+        boundaries.add(cursor)
+        index = stream.find(bare)
+        while index >= 0:
+            if index in boundaries and index + len(bare) in boundaries:
+                return bare
+            index = stream.find(bare, index + 1)
+    if len(bare) >= 5:
+        # A stem smuggled in as a simile vehicle ("smooth as a seam" for
+        # SEAMLESS) restates the answer instead of clueing it. Narrow to the
+        # as/like frame: shared genus words ("evil" in "Evil spirit") and
+        # double-duty words ("part" in "Part of G.O.P.") are fair routes.
+        for token in set(re.findall(r"[A-Z]{4,}", text)):
+            if (
+                token != bare
+                and token in bare
+                and len(token) >= len(bare) - 4
+                and re.search(
+                    rf"\b(?:as|like)\s+(?:a\s+)?{re.escape(token)}\b",
+                    text,
+                    re.IGNORECASE,
+                )
+            ):
+                return token
     return None
 
 
@@ -4998,6 +5045,11 @@ _REDRAFT_AVOIDANCE = (
     ),
     (
         "answer-giveaway",
+        "Do not repeat the answer, its parts, or its inflected forms "
+        "anywhere in the clue.",
+    ),
+    (
+        "answer-form-in-clue",
         "Do not repeat the answer, its parts, or its inflected forms "
         "anywhere in the clue.",
     ),

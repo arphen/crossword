@@ -1523,6 +1523,55 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
         private_generation._clue_wordplay_issue({"answer": "ETRE"}, "Common French word")
         is None
     )
+    # Single-token answers that are really phrases leak across the space:
+    # browser board seed 521546848.
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "MAKESNICE"},
+            "Polite phrase, or 'makes nice' answer in etiquette",
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "ICANTGOON"},
+            "I don't go to, or 'i can't go on' answer in travel",
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "SEAMLESS"}, "Smooth, as a seam"
+        )
+        == "answer-form-in-clue"
+    )
+    # Short answers and incidental overlaps stay exempt.
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "ARE"}, "They ___ here")
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "CATER"}, "Provide food")
+        is None
+    )
+    # Stream matches must run token-boundary to token-boundary: "HAMLIN"
+    # spanning "AbraHAM"+"LINcoln" is two words apart, not a leak.
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "HAMLIN"},
+            "Hannibal ___, vice president under Abraham Lincoln",
+        )
+        is None
+    )
+    # Shared genus and double-duty words are fair routes, not leaks.
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "DEVIL"}, "Evil spirit")
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "PARTY"}, "Part of G.O.P.")
+        is None
+    )
     # A possessed qualifier or a definite for/of referent names a route;
     # an indefinite object points nowhere (census, NYT Monday).
     assert (
