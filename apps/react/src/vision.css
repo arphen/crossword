@@ -478,11 +478,12 @@
       );
 }
 
-/* The cursor box keeps its amber ring and its shadow, the flame inside and the
-   direction's halo outside: position and interaction, told apart at a glance. */
+/* The cursor box keeps its shadow, the flame inside and the direction's halo
+   outside — with the ring and fill above speaking the clue — so position and
+   interaction stay told apart at a glance. */
 #app.react-desktop-app[data-ramp='on'] li .state.cursor-cell {
   box-shadow:
-    0 0 0 1px var(--cursor-edge),
+    0 0 0 1px var(--active-clue-flame, var(--cursor-edge)),
     0 2px 8px var(--selection-shadow),
     inset 0 0 6px
       color-mix(
@@ -552,9 +553,30 @@
   animation: clue-breath 2.9s ease-in-out infinite;
 }
 
-/* The cursor square is the brightest light on the board: the same softened
-   bars, the flame inside, the direction's halo outside, a wider and faster
-   breath. */
+/* The cursor speaks the clue: outline, ring and fill in the active word's
+   hue, so the current square is primary-coloured like the rest of the
+   selection. Each falls back to its direction colour when no word is lit yet
+   (focus without a selection), which renders exactly desktop.css. White
+   lettering stays put: the mixed fill stays dark by construction. */
+#app.react-desktop-app[data-ramp='on'] .grid-cell:focus-within {
+  outline-color: var(--active-clue-flame, var(--cursor-edge));
+  background: color-mix(
+    in oklab,
+    var(--cursor-fill) 55%,
+    var(--active-clue-flame, var(--cursor-fill))
+  ) !important;
+}
+#app.react-desktop-app[data-ramp='on'] .grid-cell:focus-within::before {
+  border-color: var(--active-clue-flame, var(--cursor-edge));
+}
+#app.react-desktop-app[data-ramp='on'] li .state.cursor-cell {
+  border-color: var(--active-clue-flame, var(--cursor-edge)) !important;
+  background: color-mix(
+    in oklab,
+    var(--cursor-fill) 55%,
+    var(--active-clue-flame, var(--cursor-fill))
+  ) !important;
+}
 #app.react-desktop-app[data-ramp='on'] .grid-cell:focus-within {
   box-shadow:
     inset var(--entry-left, 0px) 0 0
