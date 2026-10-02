@@ -5024,6 +5024,19 @@ def _use_candidate_path(model) -> bool:
     return _model_tier(model) == "local-small"
 
 
+def _bounded_rounds(override, default, *, low, high):
+    """Clamp a host round-budget override into a sane range.
+
+    Invalid values fall back to the policy default; the loop uses this for
+    ablations without touching model policy tables.
+    """
+    try:
+        value = int(str(override).strip())
+    except (TypeError, ValueError, AttributeError):
+        return int(default)
+    return max(low, min(high, value))
+
+
 def _candidate_draft_seed(base_seed, round_index, batch_index):
     """Deterministic per-round seed so candidate receipts replay."""
     try:
@@ -5154,7 +5167,12 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
     from .clue_witness import witness_clue_family
 
     policy = _model_generation_policy(model)
-    rounds = int(policy.get("candidateDraftRounds", CANDIDATE_DRAFT_ROUNDS))
+    rounds = _bounded_rounds(
+        os.environ.get("CROSSWORD_CANDIDATE_DRAFT_ROUNDS"),
+        policy.get("candidateDraftRounds", CANDIDATE_DRAFT_ROUNDS),
+        low=1,
+        high=8,
+    )
     batch_size = int(policy.get("candidateBatchSize", CANDIDATE_BATCH_SIZE))
     draft_tokens = int(
         policy.get("candidateDraftTokensPerEntry", CANDIDATE_DRAFT_TOKENS_PER_ENTRY)
@@ -5168,7 +5186,12 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
     compare_temperature = float(
         policy.get("candidateCompareTemperature", CANDIDATE_COMPARE_TEMPERATURE)
     )
-    redraft_rounds = int(policy.get("candidateRedraftRounds", CANDIDATE_REDRAFT_ROUNDS))
+    redraft_rounds = _bounded_rounds(
+        os.environ.get("CROSSWORD_CANDIDATE_REDRAFT_ROUNDS"),
+        policy.get("candidateRedraftRounds", CANDIDATE_REDRAFT_ROUNDS),
+        low=0,
+        high=4,
+    )
     voice = _DIFFICULTY[weekday]["voice"]
     base_seed = context.get("_candidate_base_seed") if isinstance(context, dict) else None
     clue_timing = {

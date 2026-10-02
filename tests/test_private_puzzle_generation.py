@@ -1867,6 +1867,39 @@ def test_redraft_steering_maps_rejection_families_to_constraints():
     assert any("direct definition" in line for line in steering["avoid"])
 
 
+def test_candidate_round_budgets_are_host_overridable(monkeypatch):
+    calls = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append(True)
+        return {"title": "Monday Crossword", "clues": [{"id": "1A", "text": "SEATTLE city"}]}
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    context = {"_candidate_base_seed": 6107}
+    monkeypatch.setenv("CROSSWORD_CANDIDATE_DRAFT_ROUNDS", "2")
+    monkeypatch.setenv("CROSSWORD_CANDIDATE_REDRAFT_ROUNDS", "0")
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b",
+        [{"id": "1A", "answer": "SEATTLE", "length": 7}],
+        context,
+        "monday",
+    )
+    assert clues["1A"].startswith("Entry supported by its crossings")
+    assert len(calls) == 2
+    assert context["_candidate_generation"]["rounds"] == 2
+    assert context["_candidate_generation"]["redraftRounds"] == 0
+
+    monkeypatch.setenv("CROSSWORD_CANDIDATE_REDRAFT_ROUNDS", "not-a-number")
+    context = {"_candidate_base_seed": 6107}
+    private_generation._make_candidate_clues(
+        "llama3.2:3b",
+        [{"id": "1A", "answer": "SEATTLE", "length": 7}],
+        context,
+        "monday",
+    )
+    assert context["_candidate_generation"]["redraftRounds"] == 1
+
+
 def test_candidate_redraft_steering_disables_via_env(monkeypatch):
     calls = []
 
