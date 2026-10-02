@@ -25,19 +25,24 @@ _WEEKDAYS = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday",
 # has a checked crossing and there is no external provider or model dependency.
 _WORDS = ("SATOR", "AREPO", "TENET", "OPERA", "ROTAS")
 _ACROSS_NUMBERS = (1, 6, 7, 8, 9)
+# Every clue must stand on its own route: the old set described each line
+# by its position in the square ("A line in the five-line square"), which
+# is solvable only by solvers who already know the whole square. AREPO has
+# no English meaning, so both its clues say so openly and let the crossings
+# carry it — the one deliberate obscurity, flagged, not hidden.
 _ACROSS_CLUES = (
-    "Maker, in a classical inscription",
-    "A line in the five-line square",
-    "The centered line of the inscription",
-    "A line whose letters also form a word",
-    "The closing line of the inscription",
+    "Sower, in Latin",
+    "Enigmatic second word of the Sator Square",
+    "Principle",
+    "Carmen, for one",
+    "Wheels, in Latin",
 )
 _DOWN_CLUES = (
-    "The opening vertical line",
-    "The second vertical line",
-    "The vertical center of the square",
-    "The fourth vertical line",
-    "The final vertical line",
+    "Planter",
+    "Mysterious name in the Latin word square",
+    "Creed",
+    "La Scala offering",
+    "Turns",
 )
 
 
