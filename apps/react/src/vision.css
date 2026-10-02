@@ -455,12 +455,20 @@
 /* The selection: every box of the word — in its own lane and where it crosses
    another — burns in the active clue's hue inside, which each lit box carries
    inline, and wears the direction's halo outside: the flame names the clue,
-   the halo names the lane. Board and ladder agree square for square. */
+   the halo names the lane. Board and ladder agree square for square, and the
+   inner light steps down along the word like the wash does. */
 #app.react-desktop-app[data-ramp='on'] li .state[data-entry-index] {
   box-shadow:
     inset 0 1px 0 var(--surface-glint),
     inset 0 0 5px
-      color-mix(in oklab, var(--clue-flame) var(--flame-alpha), transparent),
+      color-mix(
+        in oklab,
+        var(--clue-flame)
+          calc(
+            var(--flame-alpha) * (1 - var(--entry-position, 0%) / 100% * 0.7)
+          ),
+        transparent
+      ),
     0 0 9px
       color-mix(
         in oklab,
@@ -493,17 +501,41 @@
 #app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index] {
   box-shadow:
     inset var(--entry-left, 0px) 0 0
-      color-mix(in oklab, var(--entry-tone, transparent) 55%, transparent),
+      color-mix(
+        in oklab,
+        var(--entry-tone, transparent)
+          calc(55% - var(--entry-position, 0%) * 0.35),
+        transparent
+      ),
     inset calc(-1 * var(--entry-right, 0px)) 0 0
-      color-mix(in oklab, var(--entry-tone, transparent) 55%, transparent),
+      color-mix(
+        in oklab,
+        var(--entry-tone, transparent)
+          calc(55% - var(--entry-position, 0%) * 0.35),
+        transparent
+      ),
     inset 0 var(--entry-top, 0px) 0
-      color-mix(in oklab, var(--entry-tone, transparent) 55%, transparent),
+      color-mix(
+        in oklab,
+        var(--entry-tone, transparent)
+          calc(55% - var(--entry-position, 0%) * 0.35),
+        transparent
+      ),
     inset 0 calc(-1 * var(--entry-bottom, 0px)) 0
-      color-mix(in oklab, var(--entry-tone, transparent) 55%, transparent),
+      color-mix(
+        in oklab,
+        var(--entry-tone, transparent)
+          calc(55% - var(--entry-position, 0%) * 0.35),
+        transparent
+      ),
     inset 0 0 6px
       color-mix(
         in oklab,
-        var(--clue-flame) calc(var(--flame-alpha) * var(--glow-pulse, 1)),
+        var(--clue-flame)
+          calc(
+            var(--flame-alpha) * (1 - var(--entry-position, 0%) / 100% * 0.7) *
+              var(--glow-pulse, 1)
+          ),
         transparent
       ),
     0 0 11px
@@ -548,15 +580,15 @@
    gradient from the word's start so neighbouring squares read apart instead
    of melting into one flat wash. Without an active rank the tint is invalid
    and desktop.css's wash stands untouched. */
-#app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index] {
+#app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index]:not(:focus-within) {
   background: color-mix(
     in oklab,
-    var(--entry-fill) 65%,
+    var(--entry-fill) 55%,
     var(--active-clue-tint)
   ) !important;
 }
 #app.react-desktop-app[data-direction='across'][data-cues='on'][data-ramp='on']
-  .grid-cell[data-entry-index] {
+  .grid-cell[data-entry-index]:not(:focus-within) {
   background-image: linear-gradient(
     90deg,
     color-mix(
@@ -581,7 +613,7 @@
   ) !important;
 }
 #app.react-desktop-app[data-direction='down'][data-cues='on'][data-ramp='on']
-  .grid-cell[data-entry-index] {
+  .grid-cell[data-entry-index]:not(:focus-within) {
   background-image: linear-gradient(
     180deg,
     color-mix(
@@ -617,14 +649,17 @@
   .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green) {
   border-color: color-mix(
     in oklab,
-    var(--clue-flame) 85%,
+    var(--clue-flame)
+      calc(85% - var(--entry-position, 0%) * 0.6),
     var(--entry-tone)
   ) !important;
 }
-#app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index] {
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:not(:focus-within) {
   border-color: color-mix(
     in oklab,
-    var(--clue-flame) 85%,
+    var(--clue-flame)
+      calc(85% - var(--entry-position, 0%) * 0.6),
     color-mix(in oklab, var(--entry-tone) 40%, var(--entry-fill))
   ) !important;
 }
@@ -692,7 +727,7 @@
   .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green) {
   background: color-mix(
     in oklab,
-    var(--entry-fill) 70%,
+    var(--entry-fill) 60%,
     var(--clue-flame, var(--active-clue-tint))
   ) !important;
 }
