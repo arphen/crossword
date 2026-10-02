@@ -3226,12 +3226,13 @@ def _answer_lexical_forms(answer):
 
 
 # Hedged definitions refuse to commit ("Academic achievement, in some
-# circles" for ACE): the qualifier spends words to say less. Shipped on a
-# real board; editors commit to the definition.
+# circles" for ACE): the qualifier spends words to say less. Census
+# discipline narrowed this hard: "kind of", "in a way" and "so to speak"
+# are legitimate NYT categorizers and play-signals (12k hits), while the
+# unverifiable-circles qualifier never appears in 1.2M pairs. Only the
+# circles shape counts.
 _HEDGED_DEFINITION_RE = re.compile(
-    r"\b(?:in\s+(?:some|certain)\s+circles|in\s+(?:a|some)\s+sense|"
-    r"sort\s+of|kind\s+of|in\s+(?:a\s+)?way|in\s+some\s+ways|"
-    r"so\s+to\s+speak|as\s+it\s+were)\b",
+    r"\bin\s+(?:some|certain)\s+circles\b",
     re.IGNORECASE,
 )
 

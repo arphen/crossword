@@ -1593,8 +1593,13 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
         is None
     )
     assert private_generation._hedged_definition("Academic achievement, in some circles")
+    assert private_generation._hedged_definition("Idiom, in certain circles")
     assert not private_generation._hedged_definition("Academic achievement")
     assert not private_generation._hedged_definition("Circle of friends")
+    # Census: legitimate categorizers and play-signals, never hedges.
+    assert not private_generation._hedged_definition("Kind of transit")
+    assert not private_generation._hedged_definition("Fiancées, in a way")
+    assert not private_generation._hedged_definition("Tom Seaver, so to speak")
     # A possessed qualifier or a definite for/of referent names a route;
     # an indefinite object points nowhere (census, NYT Monday).
     assert (
