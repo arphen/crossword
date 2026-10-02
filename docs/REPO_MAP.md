@@ -81,9 +81,10 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/Rapture.jsx` — `RaptureSparks:11`, `RaptureLayer:34`, `Confetti:50`, `Finale:73`
 - `apps/react/src/ViewControls.jsx` — `optionValue:88`, `ViewControls:90`, `choose:91`
 - `apps/react/src/behavior/complete.test.js`
+- `apps/react/src/behavior/desktop-cache.test.js`
 - `apps/react/src/behavior/desktop-focus.test.js`
 - `apps/react/src/behavior/desktop.d.ts` — `createOptions:2`
-- `apps/react/src/behavior/desktop.js` — `focusCell:9`, `scroll:28`, `focusEntryStart:35`, `createOptions:38`, `data:41`, `isHalfCompleted:120`, `weekdayOptions:126`, `selectedWeekday:137`, `activeDirection:140`, `created:149`, `beforeUnmount:179`, `checkAndStartCaching:186`, `needsMore:189`, `handleOnlineStatus:217`, `updateCachedCounts:226`, `updateSolvedCounts:233` (+83 more)
+- `apps/react/src/behavior/desktop.js` — `focusCell:9`, `scroll:28`, `focusEntryStart:35`, `createOptions:38`, `data:41`, `isHalfCompleted:120`, `weekdayOptions:126`, `selectedWeekday:137`, `activeDirection:140`, `created:149`, `beforeUnmount:179`, `checkAndStartCaching:186`, `needsMore:189`, `handleOnlineStatus:217`, `updateCachedCounts:226`, `updateSolvedCounts:233` (+85 more)
 - `apps/react/src/behavior/mobile.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/mobile.js` — `createOptions:3`, `myEntries:19`, `sortedEntries:23`, `checkButtonLabel:33`, `toggleCheck:38`, `clearIncorrectAndMarkSolved:48`, `isPerfect:57`, `isEntryFilled:91`, `isCellCorrect:96`, `loadPuzzle:102`, `getCellValue:111`, `getCoordinates:115`, `selectEntry:125`, `focusInput:134`, `handleInput:143`, `handleKeydown:167` (+3 more)
 - `apps/react/src/board-presentation.test.jsx`

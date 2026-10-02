@@ -276,6 +276,9 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 localStorage.setItem(storageKey, JSON.stringify(solvedPuzzles));
                 this.updateSolvedCounts(); // This might need adjustment if it just counts length
             }
+            // Evict the solved puzzle from the offline stock so the retained
+            // cache holds playable puzzles; the freed quota goes to fresh ones.
+            this.evictCachedPuzzle(day, puzzleId);
 
             // Also save to backend database
             try {
@@ -291,6 +294,16 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             } catch (error) {
                 console.error('Error saving puzzle completion to backend:', error);
                 // Don't fail if backend is unavailable - localStorage already has it
+            }
+        },
+        evictCachedPuzzle(day, puzzleId) {
+            if (!puzzleId) return;
+            const storageKey = `crosswords_${day}`;
+            const puzzles = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            const kept = puzzles.filter(puzzle => this.getPuzzleId(puzzle.metadata) !== puzzleId);
+            if (kept.length !== puzzles.length) {
+                localStorage.setItem(storageKey, JSON.stringify(kept));
+                this.updateCachedCounts();
             }
         },
         getPuzzleId(puzzleMetadata) {
@@ -387,11 +400,22 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 // entry model. Older puzzle responses remain unchanged.
                 this.currentPuzzleManifest = response.data.puzzleManifest ?? null;
 
-                // Cache the whole puzzle object (metadata + entries)
-                this.cacheCrossword(day, response.data);
+                // Cache the whole puzzle object (metadata + entries).
+                // Best-effort: a full or unavailable store must never
+                // displace the fresh puzzle just fetched.
+                try {
+                    this.cacheCrossword(day, response.data);
+                } catch (error) {
+                    console.error('Error caching crossword:', error);
+                }
 
                 this.init();
                 this.lastLoadedWeekday = day;
+                // Top the offline stock back up while online: a drained cache
+                // refills during normal play instead of waiting for the next
+                // offline-to-online transition. The low-stock gate and the
+                // hourly cooldown inside keep this a no-op otherwise.
+                if (!this.isOffline) this.checkAndStartCaching();
             } catch (error) {
                 console.error(`Error loading ${day} crossword:`, error);
                 // If fetch fails, try to load from cache
@@ -402,42 +426,48 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             const storageKey = `crosswords_${day}`;
             let puzzles = JSON.parse(localStorage.getItem(storageKey) || '[]');
 
-            // Don't cache invalid puzzles
+            // Don't cache invalid puzzles. Returns whether the stock grew, so
+            // refill loops can tell progress from a dry well.
             if (!this.isValidPuzzle(puzzleData)) {
                 console.error('Attempting to cache invalid puzzle, skipping...');
-                return;
+                return false;
             }
 
             const puzzleId = this.getPuzzleId(puzzleData.metadata);
 
             // Don't cache if we've already solved it
             if (puzzleId && this.isPuzzleSolved(day, puzzleId)) {
-                return;
+                return false;
             }
 
             // Check if we already have this puzzle cached
             const isDuplicate = puzzles.some(p => this.getPuzzleId(p.metadata) === puzzleId);
 
-            if (!isDuplicate) {
-                // Add new puzzle and keep only the latest 50
-                puzzles.push(puzzleData);
-                if (puzzles.length > 50) {
-                    puzzles = puzzles.slice(-50);
-                }
+            if (isDuplicate) {
+                return false;
+            }
 
-                try {
+            // Add new puzzle and keep only the latest 50
+            puzzles.push(puzzleData);
+            if (puzzles.length > 50) {
+                puzzles = puzzles.slice(-50);
+            }
+
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(puzzles));
+                this.updateCachedCounts();
+            } catch (e) {
+                console.error('Error caching crossword:', e);
+                // If storage is full, remove the oldest puzzle and try again
+                if (e.name === 'QuotaExceededError') {
+                    puzzles.shift();
                     localStorage.setItem(storageKey, JSON.stringify(puzzles));
                     this.updateCachedCounts();
-                } catch (e) {
-                    console.error('Error caching crossword:', e);
-                    // If storage is full, remove the oldest puzzle and try again
-                    if (e.name === 'QuotaExceededError') {
-                        puzzles.shift();
-                        localStorage.setItem(storageKey, JSON.stringify(puzzles));
-                        this.updateCachedCounts();
-                    }
+                } else {
+                    throw e;
                 }
             }
+            return true;
         },
         loadCachedCrossword(day, attempt = 1) { // Add attempt counter for safety
             const storageKey = `crosswords_${day}`;
@@ -448,7 +478,11 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 return;
             }
 
-            if (attempt > puzzles.length + 1 || attempt > 10) { // Safety break for recursion
+            // Backstop only: every recursion below evicts at least one entry
+            // (or loads terminally), so an empty stock always terminates
+            // through the branch above. Bounding by the shrinking list would
+            // trip while bad entries are still being cleared.
+            if (attempt > 10) {
                 alert(`Could not find an unsolved ${day} crossword in the cache.`);
                 return;
             }
@@ -490,18 +524,20 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             this.currentPuzzleManifest = selectedPuzzle.puzzleManifest ?? null;
             this.crossword = selectedPuzzle.entries; // Set entries
 
-            // Remove the used puzzle from cache
-            puzzles.splice(randomIndex, 1);
-            localStorage.setItem(storageKey, JSON.stringify(puzzles));
-            this.updateCachedCounts();
-
-            // If we're online and cache is getting low, fill it up
-            if (!this.isOffline && puzzles.length < 25) {
-                this.fillCache(day, 50 - puzzles.length);
-            }
-
+            // The played puzzle stays cached: offline stock is retained across
+            // sessions and only solved or invalid entries are evicted, so a
+            // trip offline ends with the same stock it started with. Topping
+            // up happens online below and after online loads.
             this.init();
             this.lastLoadedWeekday = day;
+
+            // If we're online and cache is getting low, fill it up
+            if (!this.isOffline) {
+                this.updateCachedCounts();
+                if (puzzles.length < 25) {
+                    this.fillCache(day, 50 - puzzles.length);
+                }
+            }
         },
         handleWeekdayClick(day) {
             this.attemptLoadDay(day);
@@ -1243,13 +1279,22 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
 
             this.activeCaching[day] = true;
             let successfulCaches = 0;
+            // Refusals (solved, duplicate, invalid) are not progress: after a
+            // run of them the well is dry for now, so stop instead of burning
+            // the backend until the request count runs out.
+            let consecutiveSkips = 0;
 
             try {
                 for (let i = 0; i < count && this.cachedCrosswordsCount[day] < 50; i++) {
                     try {
                         const response = await axios.get(`${this.baseUrl}/random_crossword/${day}`);
-                        await this.cacheCrossword(day, response.data);
-                        successfulCaches++;
+                        if (await this.cacheCrossword(day, response.data)) {
+                            successfulCaches++;
+                            consecutiveSkips = 0;
+                        } else {
+                            consecutiveSkips++;
+                            if (consecutiveSkips >= 8) break;
+                        }
                         this.cachingErrors[day] = 0;
                         await new Promise(resolve => setTimeout(resolve, 100));
                     } catch (error) {
