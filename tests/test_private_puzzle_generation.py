@@ -1867,6 +1867,39 @@ def test_redraft_steering_maps_rejection_families_to_constraints():
     assert any("direct definition" in line for line in steering["avoid"])
 
 
+def test_candidate_redraft_steering_disables_via_env(monkeypatch):
+    calls = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append([message.get("content", "") for message in messages])
+        if "clues" not in (schema.get("properties", {}) if isinstance(schema, dict) else {}):
+            return {"pick": "r0-0", "difference": "clearer"}
+        if len(calls) <= 4:
+            return {
+                "title": "Monday Crossword",
+                "clues": [{"id": "1A", "text": "SEATTLE city"}],
+            }
+        return {
+            "title": "Monday Crossword",
+            "clues": [{"id": "1A", "text": "Pacific Northwest metropolis"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setenv("CROSSWORD_REDRAFT_STEERING", "0")
+    context = {"_candidate_base_seed": 6107}
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b",
+        [{"id": "1A", "answer": "SEATTLE", "length": 7}],
+        context,
+        "monday",
+    )
+    assert clues["1A"] == "Pacific Northwest metropolis"
+    assert not any(
+        "Avoid the rejected routes" in part for contents in calls for part in contents
+    )
+    assert context["_candidate_generation"]["redraftSteering"][0]["groups"][0]["avoid"] == []
+
+
 def test_candidate_redraft_carries_rejection_steering(monkeypatch):
     calls = []
 

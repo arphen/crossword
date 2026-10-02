@@ -5344,6 +5344,10 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
         for entry in pour
         if not any(item.get("admitted") is True for item in records.get(entry["id"], []))
     ]
+    steering_enabled = (
+        os.environ.get("CROSSWORD_REDRAFT_STEERING", "").strip().casefold()
+        not in {"0", "false", "no", "off"}
+    )
     redraft_steering: list = []
     for extra in range(max(0, redraft_rounds)):
         if not failed:
@@ -5351,10 +5355,12 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
         # Group failures by avoidance lines so each redraft batch carries the
         # constraints its entries actually tripped. Unsteerable failures
         # (call errors, malformed drafts) retry with the base instruction.
+        # CROSSWORD_REDRAFT_STEERING=0 disables steering for ablation runs;
+        # production default is steered.
         groups: dict = {}
         for entry in failed:
             clue_id = entry.get("id")
-            steering = _redraft_steering(records.get(clue_id, []))
+            steering = _redraft_steering(records.get(clue_id, [])) if steering_enabled else None
             key = "\n".join(steering["avoid"]) if steering else ""
             slot = groups.setdefault(key, {"avoid": {}, "entries": []})
             slot["entries"].append(entry)
