@@ -316,7 +316,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/forbidden-content.json`
 - `scripts/live-model-holdout.py` — `_Response:33`, `_Response.__init__:34`, `_Response.raise_for_status:38`, `_Response.json:42`, `_Session:46`, `_Session.request:47`, `_Session.get:62`, `_Session.post:65`, `_canonical:69`, `_sha256:79`, `_text:83`, `_shape_gate:87`, `_tags:142`, `_observation:156`, `main:229`
 - `scripts/model-evaluation-report.py` — `main:18`
-- `scripts/private-clue-benchmark.py` — `run_iteration:40`, `main:97`
+- `scripts/private-clue-benchmark.py` — `run_iteration:40`, `main:101`
 - `scripts/private-clue-candidate-lane.py` — `entry_set:50`, `diagnose:72`, `run_arm:104`, `decide:134`, `main:148`
 - `scripts/private-clue-corpus.py` — `_today:39`, `_file_digest:43`, `attest_body:47`, `collect_study_artifacts:65`, `reresolve_body:81`, `main:92`
 - `scripts/private-clue-derivation-gate.py` — `build_pairs:111`, `evaluate:155`, `degree_rule_gaps:174`, `corpus_digest:191`, `real_corpus_status:196`, `receipt_body:217`, `main:276`

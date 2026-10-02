@@ -1,6 +1,6 @@
 {
   "version": "private-clue-benchmark-v1",
-  "generatedAt": "2026-10-02T16:58:05+00:00",
+  "generatedAt": "2026-10-02T17:04:05+00:00",
   "kind": "counts-only",
   "claim": "one AutoResearch iteration: fixed 15-answer benchmark, deterministic scoring only",
   "iterations": [
@@ -111,6 +111,160 @@
       "model": "llama3.2:3b",
       "weekday": "monday",
       "seed": 6200
+    },
+    {
+      "label": "iter-champ-seed-6201",
+      "entries": 15,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 12,
+        "factual-relation": 2,
+        "genre:plain-definition": 13,
+        "genre:quotational": 1
+      },
+      "draftCalls": 6,
+      "compareCalls": 10,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 50.846,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6201
+    },
+    {
+      "label": "iter-champ-seed-6202",
+      "entries": 15,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 14,
+        "genre:plain-definition": 13,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 5,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 41.108,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6202
+    },
+    {
+      "label": "iter-champ-seed-6203",
+      "entries": 15,
+      "admitted": 15,
+      "scaffold": 0,
+      "admissionRate": 1.0,
+      "guardHits": 0,
+      "families": {
+        "definition": 14,
+        "factual-relation": 1,
+        "genre:plain-definition": 13,
+        "genre:quotational": 1,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 5,
+      "compareCalls": 13,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 46.469,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6203
+    },
+    {
+      "label": "iter-champ-seed-6204",
+      "entries": 15,
+      "admitted": 15,
+      "scaffold": 0,
+      "admissionRate": 1.0,
+      "guardHits": 0,
+      "families": {
+        "definition": 13,
+        "factual-relation": 1,
+        "genre:plain-definition": 13,
+        "genre:quotational": 1,
+        "genre:sound-or-action-cue": 1,
+        "pseudo-pun": 1
+      },
+      "draftCalls": 5,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 41.541,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6204
+    },
+    {
+      "label": "iter-champ-seed-6205",
+      "entries": 15,
+      "admitted": 15,
+      "scaffold": 0,
+      "admissionRate": 1.0,
+      "guardHits": 0,
+      "families": {
+        "definition": 12,
+        "factual-relation": 1,
+        "genre:abbreviation": 1,
+        "genre:plain-definition": 12,
+        "genre:quotational": 1,
+        "genre:sound-or-action-cue": 1,
+        "metalinguistic": 1,
+        "pseudo-pun": 1
+      },
+      "draftCalls": 5,
+      "compareCalls": 14,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 45.629,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6205
+    },
+    {
+      "label": "iter-010-strict",
+      "entries": 15,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 13,
+        "genre:abbreviation": 1,
+        "genre:plain-definition": 12,
+        "genre:sound-or-action-cue": 1,
+        "metalinguistic": 1
+      },
+      "draftCalls": 6,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 52.079,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    },
+    {
+      "label": "iter-011-strict",
+      "entries": 15,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 13,
+        "factual-relation": 1,
+        "genre:plain-definition": 13,
+        "genre:quotational": 1
+      },
+      "draftCalls": 6,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 44.618,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6201
     }
   ],
   "knownLimits": [

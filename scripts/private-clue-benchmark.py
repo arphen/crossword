@@ -79,9 +79,13 @@ def run_iteration(label, model, weekday, seed):
         families[family] = families.get(family, 0) + 1
         families[f"genre:{genre}"] = families.get(f"genre:{genre}", 0) + 1
     candidate = context.get("_candidate_generation") or {}
+    strict = os.environ.get("CROSSWORD_STRICT_ADMISSION", "").strip().casefold() in {
+        "1", "true", "yes", "on",
+    }
     return {
         "label": label,
         "entries": len(entries),
+        "strictAdmission": strict,
         "admitted": admitted,
         "scaffold": len(entries) - admitted,
         "admissionRate": round(admitted / len(entries), 4),

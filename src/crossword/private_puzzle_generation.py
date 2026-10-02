@@ -5199,6 +5199,8 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
         os.environ.get("CROSSWORD_STRICT_ADMISSION", "").strip().casefold()
         in {"1", "true", "yes", "on"}
     )
+    # Strict also holds every weekday to Tuesday's low-information floor:
+    # content-free surfaces ("A thing") are scaffolds anywhere.
     voice = _DIFFICULTY[weekday]["voice"]
     base_seed = context.get("_candidate_base_seed") if isinstance(context, dict) else None
     clue_timing = {
@@ -5341,7 +5343,11 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     for code in (
                         _clue_wordplay_issue(entry, text),
                         _clue_morphology_issue(entry, text),
-                        _clue_information_issue(entry, text, weekday=weekday),
+                        _clue_information_issue(
+                            entry,
+                            text,
+                            weekday="tuesday" if strict_admission else weekday,
+                        ),
                     )
                     if isinstance(code, str) and code
                 ]
