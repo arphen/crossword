@@ -3225,6 +3225,22 @@ def _answer_lexical_forms(answer):
     return {form for form in forms if len(form) >= 3}
 
 
+# Hedged definitions refuse to commit ("Academic achievement, in some
+# circles" for ACE): the qualifier spends words to say less. Shipped on a
+# real board; editors commit to the definition.
+_HEDGED_DEFINITION_RE = re.compile(
+    r"\b(?:in\s+(?:some|certain)\s+circles|in\s+(?:a|some)\s+sense|"
+    r"sort\s+of|kind\s+of|in\s+(?:a\s+)?way|in\s+some\s+ways|"
+    r"so\s+to\s+speak|as\s+it\s+were)\b",
+    re.IGNORECASE,
+)
+
+
+def _hedged_definition(text):
+    """Detect qualifier hedges that dilute a definition into vagueness."""
+    return isinstance(text, str) and _HEDGED_DEFINITION_RE.search(text) is not None
+
+
 # Abbreviation frames whose expansion hands the answer's head:
 # "Short for notification" for NOTI quotes the answer's first four
 # letters. Exact initialisms ("Portable document format" for PDF) stay
@@ -5390,6 +5406,8 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                 genre = observe_clue_genre(text).get("genre")
                 if strict_admission and verdict["family"] == "pseudo-pun":
                     decision = {"admitted": False, "reasons": ["pseudo-pun"]}
+                elif strict_admission and _hedged_definition(text):
+                    decision = {"admitted": False, "reasons": ["hedged-definition"]}
                 else:
                     decision = admit_candidate(
                         text,

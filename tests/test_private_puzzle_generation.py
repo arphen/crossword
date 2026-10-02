@@ -1592,6 +1592,9 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
         )
         is None
     )
+    assert private_generation._hedged_definition("Academic achievement, in some circles")
+    assert not private_generation._hedged_definition("Academic achievement")
+    assert not private_generation._hedged_definition("Circle of friends")
     # A possessed qualifier or a definite for/of referent names a route;
     # an indefinite object points nowhere (census, NYT Monday).
     assert (
