@@ -3225,6 +3225,33 @@ def _answer_lexical_forms(answer):
     return {form for form in forms if len(form) >= 3}
 
 
+# Abbreviation frames whose expansion hands the answer's head:
+# "Short for notification" for NOTI quotes the answer's first four
+# letters. Exact initialisms ("Portable document format" for PDF) stay
+# fair: the expansion never contains the answer, only its initials.
+_ABBREV_FRAME_RE = re.compile(
+    r"\bshort\s+for\s+[\"“”']?([A-Za-z][A-Za-z'’\s-]*?)[\"“”']?\s*$"
+    r"|\bfor\s+short\s*$",
+    re.IGNORECASE,
+)
+
+
+def _abbreviation_head_overlap(answer, text):
+    """Catch expansions that start with the answer itself."""
+    if not isinstance(answer, str) or not isinstance(text, str):
+        return None
+    bare = _letters_only(answer)
+    if len(bare) < 4:
+        return None
+    match = _ABBREV_FRAME_RE.search(text)
+    if match is None:
+        return None
+    expansion = _letters_only(match.group(1) or "")
+    if len(expansion) >= 4 and expansion[:4] == bare[:4]:
+        return bare
+    return None
+
+
 # Grammatical glue carries no answer information: matching "AND" inside a
 # clue is a stopword coincidence, not a leak (census: ANDES / "Locale of
 # Pular and Pili").
@@ -3253,6 +3280,9 @@ def _clue_answer_overlap(entry, clue):
             continue
         if re.search(rf"(?<![A-Z]){re.escape(form)}(?![A-Z])", text):
             return form
+    head = _abbreviation_head_overlap(answer, text)
+    if head is not None:
+        return head
     bare = _letters_only(answer)
     if len(bare) >= 6:
         # Single-token answers that are really phrases ("MAKESNICE",

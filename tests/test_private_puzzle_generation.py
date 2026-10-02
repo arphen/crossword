@@ -1572,6 +1572,26 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
         private_generation._clue_wordplay_issue({"answer": "PARTY"}, "Part of G.O.P.")
         is None
     )
+    # Abbreviation expansions that start with the answer hand it over;
+    # exact initialisms stay fair.
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NOTI"}, "Short for notification"
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "PDF"}, "Portable document format file extension"
+        )
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "MTN"}, "Mountain range abbreviation"
+        )
+        is None
+    )
     # A possessed qualifier or a definite for/of referent names a route;
     # an indefinite object points nowhere (census, NYT Monday).
     assert (
