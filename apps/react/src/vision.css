@@ -74,8 +74,9 @@
      along the word. Quiet by design: dozens of answers carry it at once. */
   --spot-alpha: 16%;
   /* The same falloff poured over a lit word, strong enough to part
-     neighbouring squares. */
-  --spot-selected-alpha: 55%;
+     neighbouring squares: bright at the word's start, about a tenth of it
+     left at the far end. */
+  --spot-selected-alpha: 80%;
   /* Fallback for engines without @property; the initial value lives above. */
   --glow-pulse: 1;
   --clue-letter-scale: 1;
@@ -126,7 +127,8 @@
   --cursor-alpha: 36%;
   --halo-alpha: 14%;
   --spot-alpha: 10%;
-  --spot-selected-alpha: 40%;
+  --spot-selected-alpha: 60%;
+}
 }
 #app.react-desktop-app[data-vibrance='bold'] {
   --ramp-chroma: 0.2;
@@ -138,7 +140,8 @@
   --cursor-alpha: 50%;
   --halo-alpha: 24%;
   --spot-alpha: 22%;
-  --spot-selected-alpha: 65%;
+  --spot-selected-alpha: 95%;
+}
 }
 
 /* Paper takes colour as ink: on a light ground the whole arc sits deeper so a
@@ -548,7 +551,7 @@
 #app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index] {
   background: color-mix(
     in oklab,
-    var(--entry-fill) 60%,
+    var(--entry-fill) 65%,
     var(--active-clue-tint)
   ) !important;
 }
@@ -560,7 +563,7 @@
         in oklab,
         var(--clue-flame)
           calc(
-            var(--spot-selected-alpha) / (1 + var(--spot-adist, 999) * 0.55)
+            var(--spot-selected-alpha) / (1 + var(--spot-adist, 999) * 0.9)
           ),
         transparent
       )
@@ -570,7 +573,7 @@
         var(--clue-flame)
           calc(
             var(--spot-selected-alpha) /
-              (1 + (var(--spot-adist, 999) + 1) * 0.55)
+              (1 + (var(--spot-adist, 999) + 1) * 0.9)
           ),
         transparent
       )
@@ -585,7 +588,7 @@
         in oklab,
         var(--clue-flame)
           calc(
-            var(--spot-selected-alpha) / (1 + var(--spot-ddist, 999) * 0.55)
+            var(--spot-selected-alpha) / (1 + var(--spot-ddist, 999) * 0.9)
           ),
         transparent
       )
@@ -595,7 +598,7 @@
         var(--clue-flame)
           calc(
             var(--spot-selected-alpha) /
-              (1 + (var(--spot-ddist, 999) + 1) * 0.55)
+              (1 + (var(--spot-ddist, 999) + 1) * 0.9)
           ),
         transparent
       )
@@ -689,7 +692,7 @@
   .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green) {
   background: color-mix(
     in oklab,
-    var(--entry-fill) 60%,
+    var(--entry-fill) 70%,
     var(--clue-flame, var(--active-clue-tint))
   ) !important;
 }
@@ -1454,7 +1457,7 @@
   --cursor-alpha: 15%;
   --halo-alpha: 6%;
   --spot-alpha: 0%;
-  --spot-selected-alpha: 20%;
+  --spot-selected-alpha: 25%;
 }
 
 /* The ambient wash, the lane watermark and the lit spine are the three largest
