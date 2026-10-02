@@ -5192,6 +5192,13 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
         low=0,
         high=4,
     )
+    # Strict admission rejects bare-? surfaces the witness cannot ground
+    # ("Alpine town?"). Off by default: witness is measurement, and flipping
+    # it into a gate costs scaffolds — the loop measures exactly that cost.
+    strict_admission = (
+        os.environ.get("CROSSWORD_STRICT_ADMISSION", "").strip().casefold()
+        in {"1", "true", "yes", "on"}
+    )
     voice = _DIFFICULTY[weekday]["voice"]
     base_seed = context.get("_candidate_base_seed") if isinstance(context, dict) else None
     clue_timing = {
@@ -5345,12 +5352,15 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     _clue_family_observation(text).get("family", "definition"), text
                 )
                 genre = observe_clue_genre(text).get("genre")
-                decision = admit_candidate(
-                    text,
-                    issue_codes=issue_codes,
-                    witnessed_family=verdict["family"],
-                    admitted_texts=admitted_texts,
-                )
+                if strict_admission and verdict["family"] == "pseudo-pun":
+                    decision = {"admitted": False, "reasons": ["pseudo-pun"]}
+                else:
+                    decision = admit_candidate(
+                        text,
+                        issue_codes=issue_codes,
+                        witnessed_family=verdict["family"],
+                        admitted_texts=admitted_texts,
+                    )
                 item["admitted"] = decision["admitted"]
                 item["reasons"] = decision["reasons"]
                 item["witnessedFamily"] = verdict["family"]

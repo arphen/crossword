@@ -1867,6 +1867,36 @@ def test_redraft_steering_maps_rejection_families_to_constraints():
     assert any("direct definition" in line for line in steering["avoid"])
 
 
+def test_candidate_strict_admission_rejects_pseudo_pun(monkeypatch):
+    def fake_chat(_model, messages, schema, **_kwargs):
+        if "clues" not in (schema.get("properties", {}) if isinstance(schema, dict) else {}):
+            return {"pick": "r0-0", "difference": "clearer"}
+        return {
+            "title": "Monday Crossword",
+            "clues": [{"id": "1A", "text": "Alpine town?"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    entries = [{"id": "1A", "answer": "ALTA", "length": 4}]
+
+    context = {"_candidate_base_seed": 6107}
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b", entries, context, "monday"
+    )
+    assert clues["1A"] == "Alpine town?"
+
+    monkeypatch.setenv("CROSSWORD_STRICT_ADMISSION", "1")
+    context = {"_candidate_base_seed": 6107}
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b", entries, context, "monday"
+    )
+    assert clues["1A"].startswith("Entry supported by its crossings")
+    candidates = context["_candidate_generation"]["entries"]["1A"]["candidates"]
+    assert any(
+        item.get("reasons") == ["pseudo-pun"] for item in candidates if isinstance(item, dict)
+    )
+
+
 def test_candidate_round_budgets_are_host_overridable(monkeypatch):
     calls = []
 
