@@ -554,23 +554,27 @@
 }
 
 /* The active lane's watermark breathes the highlighted word's hue the same
-   gentle way: the direction's own wash, adjusted toward the selection. The
-   :has guard means the tint only applies while a word is actually lit — with
-   no selection the invalid tint would otherwise inherit ink instead of
-   falling back to desktop.css's direction wash. */
+   gentle way: the direction's own wash, barely adjusted toward the selection.
+   Both the mix and the opacity stay low — at 190px a saturated tint would
+   shout over the chips and boxes, and distant hues mix muddy. The :has guard
+   means the tint only applies while a word is actually lit — with no
+   selection the invalid tint would otherwise inherit ink instead of falling
+   back to desktop.css's direction wash. */
 #app.react-desktop-app[data-ramp='on']:has(.grid-cell[data-entry-index])
   .clue-column[data-label='ACROSS'].active::before {
+  opacity: 0.22;
   color: color-mix(
     in oklab,
-    var(--active-clue-tint) 45%,
+    var(--active-clue-tint) 20%,
     rgba(255, 152, 0, 0.75)
   );
 }
 #app.react-desktop-app[data-ramp='on']:has(.grid-cell[data-entry-index])
   .clue-column[data-label='DOWN'].active::before {
+  opacity: 0.22;
   color: color-mix(
     in oklab,
-    var(--active-clue-tint) 45%,
+    var(--active-clue-tint) 20%,
     rgba(33, 150, 243, 0.75)
   );
 }
