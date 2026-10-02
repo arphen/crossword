@@ -4916,6 +4916,94 @@ def _candidate_draft_seed(base_seed, round_index, batch_index):
     return (base + round_index * 7919 + batch_index * 131) % 2147483647
 
 
+# Rejection reason families mapped to redraft avoidance lines. The redraft
+# prompt repeats the failure mode back as a constraint so a failing entry
+# gets a steered retry, not another blind roll of the same dice.
+_REDRAFT_AVOIDANCE = (
+    (
+        "unsupported-factual-surface",
+        "State no facts about the answer: no cities it is, teams it has, "
+        "people or works it names, no translations claimed. Clue spelling, "
+        "sound, function, or clearly signalled wordplay instead.",
+    ),
+    (
+        "answer-giveaway",
+        "Do not repeat the answer, its parts, or its inflected forms "
+        "anywhere in the clue.",
+    ),
+    (
+        "name-slot-without-source",
+        "Do not clue this as a famous name; clue spelling, sound, or "
+        "wordplay instead.",
+    ),
+    (
+        "low-information-surface",
+        "Give a concrete definition or mechanism, not a vague template.",
+    ),
+    (
+        "duplicate-draft",
+        "Vary the approach from the rejected drafts below.",
+    ),
+)
+
+_REDRAFT_AVOIDANCE_FALLBACK = (
+    "Vary the approach from the rejected drafts below; when in doubt write "
+    "a direct definition."
+)
+
+# Reasons that carry no steerable signal: a bare retry is the only move.
+_REDRAFT_UNSTEERABLE_PREFIXES = ("draft-call-failed", "malformed-draft")
+
+
+def _redraft_steering(rejected):
+    """Build avoidance steering from an entry's rejected drafts.
+
+    ``rejected`` is the entry's receipt item list. Returns a dict with
+    ``avoid`` (up to three constraint lines plus the fallback when a
+    steerable reason exists) and ``examples`` (up to three rejected
+    ``{text, reasons}`` pairs), or None when nothing steerable failed.
+    Pure and offline.
+    """
+    seen: dict = {}
+    for item in rejected or []:
+        if not isinstance(item, dict) or item.get("admitted") is not False:
+            continue
+        reasons = item.get("reasons")
+        if not isinstance(reasons, list):
+            continue
+        for reason in reasons:
+            if isinstance(reason, str) and reason:
+                seen.setdefault(reason, item.get("text"))
+    steerable = [
+        reason
+        for reason in seen
+        if not reason.startswith(_REDRAFT_UNSTEERABLE_PREFIXES)
+    ]
+    if not steerable:
+        return None
+    lines: list = []
+    for family, line in _REDRAFT_AVOIDANCE:
+        if any(reason == family or reason.startswith(family + ":") for reason in steerable):
+            lines.append(line)
+        if len(lines) >= 2:
+            break
+    if not lines:
+        lines.append(_REDRAFT_AVOIDANCE_FALLBACK)
+    examples = []
+    for item in rejected or []:
+        if not isinstance(item, dict) or item.get("admitted") is not False:
+            continue
+        text = item.get("text")
+        reasons = item.get("reasons")
+        if isinstance(text, str) and text and isinstance(reasons, list) and reasons:
+            examples.append({"text": text[:120], "reasons": sorted(set(
+                r for r in reasons if isinstance(r, str)
+            ))[:4]})
+        if len(examples) >= 3:
+            break
+    return {"avoid": lines[:3], "examples": examples}
+
+
 def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=None):
     """Draft k shortlisted clues per entry, admit deterministically, compare.
 
@@ -5009,30 +5097,34 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
             "Reply as JSON with a short title and a clues array of {id, text}."
         )
 
-    def run_draft_round(round_index, target_entries):
+    def run_draft_round(round_index, target_entries, instruction=None, avoid_by_id=None):
         nonlocal title, draft_calls
         ids = [entry["id"] for entry in target_entries]
         for batch_index in range(0, len(target_entries), batch_size):
             batch = target_entries[batch_index : batch_index + batch_size]
             batch_ids = [entry["id"] for entry in batch]
             seed = _candidate_draft_seed(base_seed, round_index, batch_index)
+            system = instruction or draft_instruction()
+            payload_entries = []
+            for entry in batch:
+                item = {
+                    "id": entry["id"],
+                    "answer": entry["answer"],
+                    "length": entry.get("length"),
+                }
+                if isinstance(avoid_by_id, dict) and entry["id"] in avoid_by_id:
+                    item["avoid"] = avoid_by_id[entry["id"]]
+                payload_entries.append(item)
             try:
                 value = _chat(
                     model,
                     [
-                        {"role": "system", "content": draft_instruction()},
+                        {"role": "system", "content": system},
                         {
                             "role": "user",
                             "content": json.dumps(
                                 {
-                                    "entries": [
-                                        {
-                                            "id": entry["id"],
-                                            "answer": entry["answer"],
-                                            "length": entry.get("length"),
-                                        }
-                                        for entry in batch
-                                    ]
+                                    "entries": payload_entries,
                                 },
                                 ensure_ascii=False,
                                 separators=(",", ":"),
@@ -5130,10 +5222,44 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
         for entry in pour
         if not any(item.get("admitted") is True for item in records.get(entry["id"], []))
     ]
+    redraft_steering: list = []
     for extra in range(max(0, redraft_rounds)):
         if not failed:
             break
-        run_draft_round(rounds + extra, failed)
+        # Group failures by avoidance lines so each redraft batch carries the
+        # constraints its entries actually tripped. Unsteerable failures
+        # (call errors, malformed drafts) retry with the base instruction.
+        groups: dict = {}
+        for entry in failed:
+            clue_id = entry.get("id")
+            steering = _redraft_steering(records.get(clue_id, []))
+            key = "\n".join(steering["avoid"]) if steering else ""
+            slot = groups.setdefault(key, {"avoid": {}, "entries": []})
+            slot["entries"].append(entry)
+            if steering:
+                slot["avoid"][clue_id] = {
+                    "constraints": steering["avoid"],
+                    "rejected": steering["examples"],
+                }
+        for key, slot in groups.items():
+            instruction = (
+                f"{draft_instruction()} Avoid the rejected routes: {key}"
+                if key
+                else None
+            )
+            run_draft_round(
+                rounds + extra, slot["entries"],
+                instruction=instruction, avoid_by_id=slot["avoid"] or None,
+            )
+        redraft_steering.append(
+            {
+                "round": rounds + extra,
+                "groups": [
+                    {"avoid": key.split("\n") if key else [], "ids": [e.get("id") for e in slot["entries"]]}
+                    for key, slot in groups.items()
+                ],
+            }
+        )
         admit_round()
         failed = [
             entry
@@ -5212,6 +5338,7 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
         "baseSeed": base_seed,
         "draftCalls": draft_calls,
         "compareCalls": compare_calls,
+        "redraftSteering": redraft_steering,
         "challengeEnv": challenge_raw,
         "challengeEnabled": challenge_raw.strip().casefold() in {"1", "true", "yes", "on"},
         "entries": {

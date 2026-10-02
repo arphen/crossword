@@ -1745,6 +1745,74 @@ def test_make_clues_without_usable_entries_keeps_whole_board_fallback(monkeypatc
     assert context["_clue_generation_fallback"] == "Local model returned no usable clues"
 
 
+def test_redraft_steering_maps_rejection_families_to_constraints():
+    factual = [
+        {"text": "City of coffee", "admitted": False, "reasons": ["unsupported-factual-surface"]},
+    ]
+    steering = private_generation._redraft_steering(factual)
+    assert steering is not None
+    assert any("State no facts" in line for line in steering["avoid"])
+    assert steering["examples"][0]["text"] == "City of coffee"
+
+    giveaway = [
+        {"text": "SEATTLE city", "admitted": False, "reasons": ["answer-giveaway"]},
+        {"text": "Seattle town", "admitted": False, "reasons": ["answer-giveaway"]},
+    ]
+    steering = private_generation._redraft_steering(giveaway)
+    assert any("Do not repeat the answer" in line for line in steering["avoid"])
+    assert len(steering["examples"]) == 2
+
+    assert private_generation._redraft_steering([
+        {"text": None, "admitted": False, "reasons": ["draft-call-failed:ValueError"]},
+    ]) is None
+    assert private_generation._redraft_steering([
+        {"text": "Fine", "admitted": True, "reasons": []},
+    ]) is None
+    assert private_generation._redraft_steering([]) is None
+
+    unknown = [
+        {"text": "Odd surface", "admitted": False, "reasons": ["comparative-marker-with-noncomparative-shape"]},
+    ]
+    steering = private_generation._redraft_steering(unknown)
+    assert steering is not None
+    assert any("direct definition" in line for line in steering["avoid"])
+
+
+def test_candidate_redraft_carries_rejection_steering(monkeypatch):
+    calls = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append([message.get("content", "") for message in messages])
+        if "clues" not in (schema.get("properties", {}) if isinstance(schema, dict) else {}):
+            return {"pick": "r0-0", "difference": "clearer"}
+        if len(calls) <= 4:
+            return {
+                "title": "Monday Crossword",
+                "clues": [{"id": "1A", "text": "SEATTLE city"}],
+            }
+        return {
+            "title": "Monday Crossword",
+            "clues": [{"id": "1A", "text": "Pacific Northwest metropolis"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    context = {"_candidate_base_seed": 6107}
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b",
+        [{"id": "1A", "answer": "SEATTLE", "length": 7}],
+        context,
+        "monday",
+    )
+    assert clues["1A"] == "Pacific Northwest metropolis"
+    redraft_calls = [contents for contents in calls if any("Avoid the rejected routes" in part for part in contents)]
+    assert len(redraft_calls) == 1
+    assert any("Do not repeat the answer" in part for part in redraft_calls[0])
+    assert any("SEATTLE city" in part for part in redraft_calls[0])
+    receipt = context["_candidate_generation"]
+    assert receipt["redraftSteering"][0]["groups"][0]["ids"] == ["1A"]
+    assert context["_clue_safety_fallbacks"] == {}
+
+
 def test_malformed_clue_model_response_falls_back_to_answer_free_scaffolds(monkeypatch):
     def malformed_chat(*_args, **_kwargs):
         raise ValueError("invalid clue text")
