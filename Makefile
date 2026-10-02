@@ -159,8 +159,8 @@ clean: ## Remove generated caches and browser assets
 	@rm -rf .coverage htmlcov .uv_cache src/crossword/static/lib src/crossword/static/react
 	@echo "$(GREEN)Generated files cleaned; lockfiles and source are unchanged.$(NC)"
 
-run-prod: check-uv ## Run the WSGI app on the continuity port (5001)
-	uv run uvicorn src.crossword.app:app --host 0.0.0.0 --port 5001
+run-prod: check-uv ## Serve the built app with a production WSGI server (CROSSWORD_PORT, default 5001)
+	uv run --no-sync gunicorn -w 1 --threads 4 --bind "0.0.0.0:$${CROSSWORD_PORT:-5001}" src.crossword.app:app
 
 shell: check-uv ## Open a Python shell inside the uv environment
 	uv run python

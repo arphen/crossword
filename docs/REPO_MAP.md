@@ -473,6 +473,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `tests/test_reviewed_samples.py`
 - `tests/test_reviewer_auth.py`
 - `tests/test_reviewer_config.py`
+- `tests/test_run_prod.py`
 - `tests/test_runtime_doctor.py`
 - `tests/test_runtime_readiness.py`
 - `tests/test_session_journal.py`
