@@ -82,20 +82,18 @@ describe('desktop reference contracts (controller method tests)', () => {
     expect(app.find_solution(2, 0)).toBe('D');
   });
 
-  it('focuses on the next render tick and preserves stale clue highlighting on mini-cell click', () => {
-    const { app, controller } = fresh();
+  it('focuses synchronously and preserves stale clue highlighting on mini-cell click', () => {
+    const { app } = fresh();
     const refsDescriptor = Object.getOwnPropertyDescriptor(app, '$refs');
     expect(refsDescriptor).toMatchObject({ configurable: false, writable: false });
     expect(app.$refs).toBe(refsDescriptor.value); // Proxy must return exact fixed property value
     app.handle_clue_click({}, app.crossword[1]);
-    expect(document.activeElement).not.toBe(input(app, 0, 0));
-    controller.flush();
+    // The live grid node takes focus in the handler, not on a later tick.
     expect(document.activeElement).toBe(input(app, 0, 0));
     expect([app.direction, app.activeClueNumber, app.activeDirection]).toEqual(['down', 1, 'down']);
     const event = key('');
     app.handle_cell_click(event, app.crossword[0], 2);
     expect(event.stopPropagation).toHaveBeenCalledOnce();
-    controller.flush();
     expect(document.activeElement).toBe(input(app, 0, 2));
     expect([app.direction, app.activeClueNumber, app.activeDirection]).toEqual(['across', 1, 'down']);
     expect(document.body.dataset.activeDirection).toBe('down');

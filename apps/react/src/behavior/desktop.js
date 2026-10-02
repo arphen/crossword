@@ -1,5 +1,40 @@
 // Solver behavior for the React desktop client (frozen port; the Vue
 // originals are shelved in git history).
+//
+// Writable-first focus: grid inputs persist across renders (stable keys), so
+// handlers focus the live node synchronously instead of waiting for the
+// selection commit — the cursor accepts input while the paint catches up.
+// Far jumps (ladder to board) skip the focus scroll and meet the view on the
+// next frame; adjacent moves keep the native scroll.
+export function focusCell(controller, rowIndex, cellIndex, { deferScroll = false } = {}) {
+    const input = controller.$refs[`input-${rowIndex}-${cellIndex}`]?.[0];
+    if (!input) {
+        // Grid still loading: focus after the render commits, as before.
+        controller.$nextTick(() => {
+            controller.$refs[`input-${rowIndex}-${cellIndex}`]?.[0]?.focus();
+        });
+        return false;
+    }
+    if (deferScroll) {
+        try {
+            input.focus({ preventScroll: true });
+        } catch {
+            input.focus();
+        }
+    } else {
+        input.focus();
+    }
+    if (deferScroll) {
+        const scroll = () => input.scrollIntoView?.({ block: 'nearest' });
+        if (typeof requestAnimationFrame === 'undefined') scroll();
+        else requestAnimationFrame(scroll);
+    }
+    return true;
+}
+
+export function focusEntryStart(controller, entry) {
+    return focusCell(controller, entry.start_y, entry.start_x, { deferScroll: true });
+}
 export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout, clearTimeout, setInterval, clearInterval, requestAnimationFrame, cancelAnimationFrame }) {
   return {
     delimiters: ['[[', ']]'],
@@ -888,13 +923,12 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             this.activeClueNumber = entry.clue_number;
             this.activeDirection = entry.direction;
 
-            // Focus on the first cell of this entry
-            this.$nextTick(() => {
-                const input = this.$refs[`input-${entry.start_y}-${entry.start_x}`];
-                if (input) {
-                    input[0].focus();
-                }
-            });
+            // The cursor goes writable first: the grid node already exists, so
+            // focus it synchronously instead of waiting for the selection
+            // render to commit — this also folds the cursor render into the
+            // same commit. The view scrolls to meet it best-effort on the
+            // next frame; input is accepted meanwhile.
+            focusEntryStart(this, entry);
         },
         handle_cell_click(event, entry, cellIndex) {
             // Stop event propagation so it doesn't trigger the clue wrapper click
@@ -907,13 +941,9 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             const x = entry.direction === 'across' ? entry.start_x + cellIndex : entry.start_x;
             const y = entry.direction === 'across' ? entry.start_y : entry.start_y + cellIndex;
 
-            // Focus on the specific cell
-            this.$nextTick(() => {
-                const input = this.$refs[`input-${y}-${x}`];
-                if (input) {
-                    input[0].focus();
-                }
-            });
+            // Focus on the specific cell, synchronously like a clue click: the
+            // node exists, so the cursor is writable before the commit.
+            focusCell(this, y, x, { deferScroll: true });
         },
         getCurrentAnswer(entry) {
             // Get current user input for an entry
@@ -993,14 +1023,11 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             let targetY = rowIndex + sign * (this.direction === 'down');
             let targetCell = this.grid[targetY][targetX];
 
-            // If target is a valid cell (not black square), move there
+            // If target is a valid cell (not black square), move there. The
+            // focus lands synchronously — adjacent cell, native scroll — so
+            // the keystroke's letter and the cursor commit together.
             if (targetCell !== null) {
-                this.$nextTick(() => {
-                    const nextInput = this.$refs[`input-${targetY}-${targetX}`];
-                    if (nextInput) {
-                        nextInput[0].focus();
-                    }
-                });
+                focusCell(this, targetY, targetX);
                 this.selectWordAt(targetY, targetX);
             } else {
                 // Target is a black square, skip over it recursively
