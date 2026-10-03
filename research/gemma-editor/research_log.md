@@ -16,3 +16,27 @@
   at 15/15 vs this replicate 0.6175 at 14/15); keep-policy correctly refuses
   to keep a no-gain lane. Logs: /tmp/iter1-json6200.json,
   /tmp/iter1-delim6200.json, /tmp/iter1-verify.out.
+
+## Iter2 — CROSSWORD_WEEKDAY_EXEMPLARS ablation (REVERT)
+- Change: Monday style anchors in the draft prompt (`_weekday_exemplars`
+  from pack `CROSSWORD_EXEMPLAR_PACK` w/ route-index fallback, verbatim
+  copies rejected as duplicate drafts), off by default, measured with
+  `CROSSWORD_WEEKDAY_EXEMPLARS=1`.
+- Generation seed 6200 strict (`llama3.2:3b`): admitted 14/15, guardHits 0,
+  draftCalls 5, compareCalls 12, families definition 13 + metalinguistic 1
+  (plain-definition genre 11/14), D=0.6821, gen wall 62s.
+- Behavioural critic (`gemma3:4b`, paced, 14 non-scaffold judged):
+  trivial 2, unresolved 7, unfair 5, gold 0 => T=0.8571, W=0.0.
+- Score 0.30*0.9333+0.30*0.8571+0.25*0+0.15*0.6821 = 0.6395, delta -0.006
+  vs best 0.6455, below keep 0.6655 -> REVERT src + tests to champion.
+- Reading: anchors made misses obscure rather than witty (unfair 5 vs
+  gold 0); trivial rate fell (2/14) but W stays 0.0 — harder-but-fair
+  still unsolved. Next mapped: for-some gate, genre caps, k-draft rounds.
+- Probe ops: prior driver left two probes — a duplicate under system
+  python (no flask, every entry error) killed before its end-of-run write
+  could clobber the verdict file; the healthy probe died at 8/15 (cause
+  unknown, judge tested healthy after). Remaining 13 entries resumed via
+  /tmp/iter2-rerun.py (resume from buckets.json, 8s pacing, 90s timeouts,
+  2 retries, per-entry error isolation, incremental writes), 0 errors,
+  judge wall 706s. Logs: /tmp/iter2-gen-log.json, /tmp/iter2-buckets.json,
+  /tmp/iter2-rerun.log.
