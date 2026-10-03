@@ -325,6 +325,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `research/gemma-editor/metric-v2/METRIC_V2.md`
 - `research/gemma-editor/metric-v2/anchors.json`
 - `research/gemma-editor/prototype_delimited.py` — `_parse_delimited_drafts:10`, `_self_test:59`
+- `research/gemma-editor/rescore/table.md`
 - `research/gemma-editor/research.md`
 - `research/gemma-editor/research_log.md`
 
