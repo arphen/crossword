@@ -59,3 +59,20 @@
   keep-policy still refuses (no gain). For-some stays strict-only watch.
 - Judge via reusable /tmp/judge15.py (resume-capable, incremental writes):
   clean 15/15, 0 errors, wall 606s.
+
+## Iter4 — CROSSWORD_PLAIN_DEF_CAP ablation (REVERT, guard fail, no judge)
+- Change: `CROSSWORD_PLAIN_DEF_CAP=1` extends the Q05 over-cap scaffold
+  pattern to plain-definition (keep first half in entry order, scaffold
+  the rest as `plain-definition-over-cap`; reviewed-exact exempt).
+  Unit test drives `_enforce_private_clue_safety` directly: cap off keeps
+  all 4 synthetic plain surfaces; cap on keeps the first 2 and scaffolds
+  the last 2 with the reason code.
+- Generation seed 6200 strict: admitted 7/15, guardHits 0, A=0.4667,
+  families definition 7 (plain genre 6 + sound-cue 1), draftCalls 6,
+  gen wall 116s. Cap binds as designed (6 plain admitted <= cap 7).
+- Guard floor is admitted>=13/15: 7/15 fails -> keep impossible, judge
+  skipped (no T/W/D computed) -> REVERT src + tests to champion.
+- Reading: plain definition is the bulk surface (13/14 in replicates), so
+  any binding cap costs ~7 admission. Genre variety must come from
+  drafting livelier surfaces (k-draft rounds), not from scaffolding plain
+  ones. Log /tmp/iter4-gen-log.json (clue text stays in /tmp).
