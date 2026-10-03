@@ -5187,11 +5187,13 @@ def _bounded_rounds(override, default, *, low, high):
 _ROUTE_INDEX_CACHE: dict = {}
 
 
-def _route_signifiers(answer, limit=2):
+def _route_signifiers(answer, limit=2, divergent=False):
     """Sample historical routes for one answer from the local-only index.
 
     Returns up to ``limit`` published clue texts as sense material. Empty
-    when the index is absent or the answer is unknown. Local prompt context
+    when the index is absent or the answer is unknown. With ``divergent``,
+    picks the least-overlapping pair (maximum domain divergence on the
+    exact answer string) instead of the first entries. Local prompt context
     only; never committed, never redistributed.
     """
     if not isinstance(answer, str) or not answer.isalpha():
@@ -5210,11 +5212,24 @@ def _route_signifiers(answer, limit=2):
             records = None
         _ROUTE_INDEX_CACHE[path] = records if isinstance(records, dict) else {}
     entries = _ROUTE_INDEX_CACHE[path].get(answer.upper(), [])
-    return [
+    texts = [
         entry["clue"]
-        for entry in entries[:limit]
+        for entry in entries[: max(limit, 4)]
         if isinstance(entry, dict) and isinstance(entry.get("clue"), str)
     ]
+    if divergent and len(texts) >= 2:
+        from .clue_candidate_admission import token_overlap
+
+        best, best_score = (texts[0], texts[1]), 1.0
+        for left in texts:
+            for right in texts:
+                if left >= right:
+                    continue
+                score = token_overlap(left, right)
+                if score < best_score:
+                    best, best_score = (left, right), score
+        return list(best[:limit])
+    return texts[:limit]
 
 
 def _candidate_draft_seed(base_seed, round_index, batch_index):
@@ -5439,6 +5454,10 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
         os.environ.get("CROSSWORD_ROUTE_CONTEXT", "").strip().casefold()
         in {"1", "true", "yes", "on"}
     )
+    routes_divergent = (
+        os.environ.get("CROSSWORD_ROUTE_DIVERGE", "").strip().casefold()
+        in {"1", "true", "yes", "on"}
+    )
     routes_by_id: dict = {}
     base_instruction = draft_instruction()
     if routes_enabled:
@@ -5447,6 +5466,12 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
             "showing senses and routes editors used. Absorb their senses and "
             "write fresh clues in your own words; never copy a signifier."
         )
+        if routes_divergent:
+            base_instruction += (
+                " Collide two senses: frame one signifier's meaning inside "
+                "the other's domain, and end with ? only when the "
+                "misdirection is real."
+            )
 
     def run_draft_round(round_index, target_entries, instruction=None, avoid_by_id=None):
         nonlocal title, draft_calls
@@ -5587,7 +5612,9 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
             clue_id = entry.get("id") if isinstance(entry, dict) else None
             answer = entry.get("answer") if isinstance(entry, dict) else None
             if isinstance(clue_id, str):
-                routes_by_id[clue_id] = _route_signifiers(answer)
+                routes_by_id[clue_id] = _route_signifiers(
+                    answer, divergent=routes_divergent
+                )
     for round_index in range(max(1, rounds)):
         run_draft_round(round_index, pour)
         admit_round()
@@ -5721,6 +5748,7 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
         "redraftSteering": redraft_steering,
         "routeContext": {
             "enabled": routes_enabled,
+            "divergent": routes_divergent,
             "entriesWithRoutes": sum(1 for routes in routes_by_id.values() if routes),
         },
         "challengeEnv": challenge_raw,

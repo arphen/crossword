@@ -2068,8 +2068,40 @@ def test_route_context_reaches_drafts_and_blocks_verbatim_copies(tmp_path, monke
     assert clues["1A"].startswith("Entry supported by its crossings")
     assert context["_candidate_generation"]["routeContext"] == {
         "enabled": True,
+        "divergent": False,
         "entriesWithRoutes": 1,
     }
+
+
+def test_route_signifiers_divergent_picks_least_overlapping_pair(tmp_path, monkeypatch):
+    index = tmp_path / "routes.local.json"
+    index.write_text(
+        json.dumps(
+            {
+                "version": "private-clue-routes-v1",
+                "routes": {
+                    "PITCH": [
+                        {"clue": "Baseball throw", "weekday": "monday"},
+                        {"clue": "Baseball toss", "weekday": "tuesday"},
+                        {"clue": "Executive presentation", "weekday": "saturday"},
+                    ]
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CROSSWORD_CLUE_ROUTE_INDEX_PATH", str(index))
+    private_generation._ROUTE_INDEX_CACHE.clear()
+    try:
+        assert private_generation._route_signifiers("PITCH") == [
+            "Baseball throw",
+            "Baseball toss",
+        ]
+        divergent = private_generation._route_signifiers("PITCH", divergent=True)
+        assert "Executive presentation" in divergent
+        assert len(divergent) == 2
+    finally:
+        private_generation._ROUTE_INDEX_CACHE.clear()
 
 
 def test_candidate_redraft_steering_disables_via_env(monkeypatch):
