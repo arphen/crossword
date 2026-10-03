@@ -3070,6 +3070,17 @@ def test_pun_surface_accepts_only_a_terminal_question_mark():
     assert private_generation._clue_surface_issues("City named for a chief (7)") == []
     assert private_generation._clue_surface_issues("Common Latin word") == []
     assert private_generation._clue_surface_issues("Word with fish or grass") == []
+    # Possessive blanks with human-attribute nouns complete to nonsense
+    # ("GARDEN's favorite hobby") or unsourced trivia; plain possessive
+    # blanks ("___'s Day") stay fair.
+    assert private_generation._clue_surface_issues(
+        "Fruit of knowledge, or ___________'s favorite hobby?"
+    ) == [
+        "possessive-blank-attribute",
+    ]
+    assert private_generation._possessive_blank_attribute("___'s favorite hobby")
+    assert not private_generation._possessive_blank_attribute("___'s Day")
+    assert not private_generation._possessive_blank_attribute("___ voyage")
 
 
 def test_tuesday_recipe_reports_a_bounded_floor_shortfall(monkeypatch):

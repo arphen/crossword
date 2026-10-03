@@ -2992,6 +2992,24 @@ def _has_syntax_debris(text):
     return "{" in bare or "}" in bare
 
 
+# Possessive blanks carrying human-attribute nouns ("___'s favorite
+# hobby"): the completed phrase is either nonsense (inanimate possessor
+# with a preference: "GARDEN's favorite hobby") or unsourced trivia (a
+# person). Plain possessive blanks ("___'s Day", "___'s peak") stay
+# fair: only the closed attribute list fires, within a short window.
+_POSSESSIVE_BLANK_ATTRIBUTE_RE = re.compile(
+    r"(?:_{3,}|\.{3,}|…+)\s*['’]s\b[^?!.]{0,40}?"
+    r"\b(?:favorites?|hobb(?:y|ies)|dreams?|ambitions?|opinions?|"
+    r"preferences?|wishes|desires|memories|childhood)\b",
+    re.IGNORECASE,
+)
+
+
+def _possessive_blank_attribute(text):
+    """Detect possessive blanks with human-attribute nouns."""
+    return isinstance(text, str) and _POSSESSIVE_BLANK_ATTRIBUTE_RE.search(text) is not None
+
+
 # Spelled-out trailing enumerations ("Surprise, 3 letters") lean on the
 # count instead of clueing. Parenthetical "(7)" style is untouched: that is
 # editors' convention, this is the model's crutch.
@@ -3052,6 +3070,8 @@ def _clue_surface_issues(clue):
         issues.append("syntax-debris")
     if _TRAILING_ENUMERATION_RE.search(text):
         issues.append("trailing-enumeration")
+    if _possessive_blank_attribute(text):
+        issues.append("possessive-blank-attribute")
     return issues
 
 
@@ -5784,6 +5804,11 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     entry.get("answer"), text
                 ):
                     decision = {"admitted": False, "reasons": ["gerund-without-gerund"]}
+                elif strict_admission and _possessive_blank_attribute(text):
+                    decision = {
+                        "admitted": False,
+                        "reasons": ["possessive-blank-attribute"],
+                    }
                 else:
                     decision = admit_candidate(
                         text,
