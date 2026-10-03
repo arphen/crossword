@@ -318,6 +318,13 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `packages/persistence/src/sessionRepository.ts` — `SessionRepository:3`, `memoryRepository:18`, `requestResult:33`, `transactionComplete:40`, `openDatabase:48`, `migrateSnapshot:65`, `createIndexedDbSessionRepository:83`, `load:91`, `save:100`, `remove:107`, `close:113`
 - `packages/persistence/tsconfig.json`
 
+## research
+
+- `research/gemma-editor/SUBAGENT-POLICY.md`
+- `research/gemma-editor/evaluate.py` — `census_L1:32`, `main:36`
+- `research/gemma-editor/prototype_delimited.py` — `_parse_delimited_drafts:10`, `_self_test:59`
+- `research/gemma-editor/research.md`
+
 ## scripts
 
 - `scripts/autoresearch-decision.py` — `_guard_pass_rate:47`, `main:55`

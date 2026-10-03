@@ -1,0 +1,41 @@
+# Research: Small-Gemma editor matching NYT clue grammar, fixing too-easy boards
+
+## Goal
+Train/use a small Gemma editor (local-small tier, M3 16GB) that drafts clues with NYT-level grammar/quality and non-trivial difficulty, re-auditing the reverted guards instead of re-adding regexes. Success is harder-but-fair boards, not higher admission alone.
+
+## Success Metric
+- **Metric:** critic_score in [0,1], higher-is-better. `0.30*A + 0.30*T + 0.25*W + 0.15*D` where A=admissionRate (15-answer benchmark), T=1-trivialRate, W=goldRate (cold-solver behavioural buckets, Python-classified), D=1-min(1,L1/0.5) vs NYT Monday family mix. Judge soundness excluded (40% precise, calibration-v1.20261003).
+- **Target:** >= 0.68 with admitted>=13/15 and guardHits==0
+- **Direction:** maximize
+
+## Constraints
+- **Max iterations:** 20
+- **Time budget per experiment:** 5 minutes (`timeout 5m`)
+- **Pause for review every:** 5
+- **Evaluator:** (none — agent + subagents judge manually; research/gemma-editor/evaluate.py critic score advisory only)
+- **Keep policy:** score_improvement (min_delta 0.02, noise_runs 3; mutation must clear champion-replicate spread)
+- **Guard:** guardHits==0, admitted>=13/15, `tests/test_private_puzzle_generation.py` green, census disagreement vs NYT <0.5% new hits, no clue text committed to docs/evidence (counts-only per clue_review_bundle.py:20,147)
+- **Noise runs:** 3
+- **Min delta:** 0.02
+
+## Current Approach
+Strict champion admits 13-14/15 (41/45 over fresh seeds, 70-72/72 full boards) with zero pseudo-puns and zero guard hits, but families are 12-14/15 definition + 10-14/15 plain-definition (`benchmark-v1.20261003.json`). Cold-solver: 16% Monday, gold 0.000 on known-good controls (broken as gold instrument, kept as trivial/gold behavioural buckets only). Census baseline 4193 hit-cells over 1,231,048 NYT pairs (gerund 2006 + for-some 580 + baseline 1601). Generator `llama3.2:3b`, critic `gemma3:4b` (both installed; 26B tiers absent).
+
+## Search Space
+- **Allowed changes:** anything — MLX/LoRA small-Gemma edit pass on NYT subsets (Fri/Sat misdirection), prompt/divergence/delimited-draft lanes, k-draft + comparison ranking, critic admission (gemma3:4b over 3b drafts), weekday exemplars, guard restores strictly via census (gerund strict-only keep; for-some strict-only watch; 0-hit gates keep; broad hedge/filler/bloat/obscure-head stay reverted per 13a7e0a/089bc71/deb1940)
+- **Forbidden changes:** hand-edit docs/REPO_MAP.md; commit answer-bearing clue text to docs/evidence; exceed host memory (no 26B pulls); live-provider data-gen without opt-in; break public package exports/worker schemas; weaken leak/duplicate-copy rejection
+
+## Context & References
+- Audit: 359 commits; revert chain c85e099->abf0ce3->ab39f30 (gerund/for-some operator override), 32c618d->deb1940 (identity 99:1 fair), 1a49bf7->089bc71 (vague-abstraction 11:1), 59f3d61->0afb376->13a7e0a (RIVER/vibe), 68b7bf6->a6b2d30 (hedge 12k->0 circles-only); finetuning-drop verdict 4c95e01 (portable core only); doctrine deletion 5c48f0a (code unchanged)
+- Too-easy roots: definition needs no witness (`clue_witness.py:287`), pun needs only `?`+ledger token (`:144-152`), ledger ~50 entries misses SEE/WEB/COLD (`:44-97`), genre census report-only (`clue_genre.py:203-225`), single-draft no comparison (`16_CLUE_QUALITY_RECOVERY.md:12`)
+- Harness: `scripts/private-clue-benchmark.py:40` run_iteration, `scripts/clue-cold-solver.py:231` probe + `:204` _classify, `scripts/autoresearch-decision.py:47` noise-floor rule, `scripts/autoresearch-loop.sh:1` loop, tiers `tiers-v1.m3-16gb-20261001.json:19-31`, calibration `judge-calibration-v1.20261003.json:10-17`
+- Dataset: `crossword_clue_answer_examples/` 14547 files / 14545 puzzles / 1231048 pairs (not 10M)
+
+---
+
+## History
+| # | Change | Metric | Result | Timestamp |
+|---|--------|--------|--------|-----------|
+| 0 | Baseline dry-run seed 6200: strict champ llama3.2:3b gen + gemma3:4b behavioural critic; A=1.0 (15/15), T=0.8, W=0.0, D=0.703, guardHits=0, wall 198s => score 0.6455, pass false (W=0 confirms too-easy) | 0.6455 | -- | 2026-10-03 |
+| 1a | Noise floor seeds 6201/6202 strict: 14/15 + 15/15, guardHits 0, draftCalls 5-6; admitted ceiling saturated — mutations must match 15/15 and improve secondary (W/T/D, draftCalls). Logs /tmp/clue-benchmark-noise620*.json | -- | measured | 2026-10-03 |
+| 1b | Prototypes (no src change): delimited parser research/gemma-editor/prototype_delimited.py self-test ok; exemplar pack /tmp/gemma-exemplars-20261003.json 12 items, dedupe 6/6 | -- | ready | 2026-10-03 |
