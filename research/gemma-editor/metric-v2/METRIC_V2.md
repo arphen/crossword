@@ -81,3 +81,12 @@ the gold-instrument fix remains the real next step.
 - `/tmp/friday_metric.py`: D_fri, v1/v2 scorers, Q01 stem gate, self-test
   (6/6 pairs, 5/5 anchor reproductions), `baseline_rescore()`.
 - `/tmp/friday_anchors.json`: /tmp-owned mirror of `anchors.json`.
+
+## 5. Promotion (restored W, 07834e9)
+
+Gold controls now score 8/10 (was 0/10): W restores 0.10→0.25 with v1
+weight shape and Friday anchor: score = 0.30A + 0.30T + 0.25W + 0.15D_fri.
+Reference rescale (A=1.0, T=0.85, W=0.05, D_fri=0.75):
+0.30+0.255+0.0125+0.1125 = 0.68 → target stays 0.68.
+v1-target KEEP (route-diverge+context 0.6818, 15/15) grandfathered as
+admission/de-trivialization champion; wit lane reopens under restored W.

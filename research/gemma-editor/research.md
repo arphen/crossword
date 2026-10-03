@@ -4,7 +4,7 @@
 Train/use a small Gemma editor (local-small tier, M3 16GB) that drafts clues with NYT-level grammar/quality and non-trivial difficulty, re-auditing the reverted guards instead of re-adding regexes. Success is harder-but-fair boards, not higher admission alone.
 
 ## Success Metric
-- **Metric:** critic_score in [0,1], higher-is-better. `0.30*A + 0.30*T + 0.25*W + 0.15*D` where A=admissionRate (15-answer benchmark), T=1-trivialRate, W=goldRate (cold-solver behavioural buckets, Python-classified), D=1-min(1,L1/0.5) vs NYT Monday family mix. Judge soundness excluded (40% precise, calibration-v1.20261003).
+- **Metric:** critic_score in [0,1], higher-is-better. `0.30*A + 0.30*T + 0.25*W + 0.15*D_fri` where A=admissionRate (15-answer benchmark), T=1-trivialRate, W=goldRate (recalibrated cold-solver behavioural buckets, 8/10 on witty controls per 07834e9), D_fri=1-min(1,L1_Friday/0.5) vs Friday-combined NYT family mix. v1 target MET by route-diverge+context (0.6818, 15/15, 404d7dd→597393f track); W weight restored after gold fix.
 - **Target:** >= 0.68 with admitted>=13/15 and guardHits==0
 - **Direction:** maximize
 
