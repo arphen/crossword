@@ -3001,24 +3001,13 @@ _TRAILING_ENUMERATION_RE = re.compile(
 )
 
 
-def _empty_word_head(text):
-    """Detect clues whose only content is "[X's] [modifiers] word".
-
-    "Regret's painful word" and "Apology's sincere word" route nowhere;
-    the head noun does all the work and says nothing. Language-qualified
-    heads ("Common Latin word") stay fair via the generic-template
-    exemption. "Word with fish or grass" has real content and never matches.
-    """
-    if not isinstance(text, str):
-        return False
-    core = _TRAILING_ENUMERATION_RE.sub("", text).strip()
-    if _GENERIC_LANGUAGE_ROUTE_RE.search(core):
-        return False
-    return re.fullmatch(
-        r"(?:\S+'s\s+)?(?:[\w-]+\s+){0,2}words?\s*[?.]?",
-        core,
-        re.IGNORECASE,
-    ) is not None
+# Falsified companions live here as a warning, not as code: filler
+# tails ("Go with the flow" is idiom), bloated-plain ceilings ("English
+# poet who gave his name to a chair" earns its length), obscure-head
+# scoring (frequency is not specificity: "Friendliness" for AMITY), and
+# empty word-heads ("Prayer word" enumerates canonically) are all
+# editors' fair game. Only the spelled-out trailing enumeration below
+# survived its census with zero hits.
 
 
 def _clue_surface_issues(clue):
@@ -3063,8 +3052,6 @@ def _clue_surface_issues(clue):
         issues.append("syntax-debris")
     if _TRAILING_ENUMERATION_RE.search(text):
         issues.append("trailing-enumeration")
-    if _empty_word_head(text):
-        issues.append("empty-word-head")
     return issues
 
 
@@ -3480,91 +3467,13 @@ def _vague_for_some(text):
     return isinstance(text, str) and _VAGUE_FOR_SOME_RE.search(text) is not None
 
 
-_FILL_WORD_SCORES_CACHE: dict = {}
-
-
-def _local_fill_word_scores():
-    """Map fill words to xfill scores; empty without the engine root."""
-    if "scores" not in _FILL_WORD_SCORES_CACHE:
-        root = os.environ.get("CROSSWORD_XFILL_ROOT")
-        scores: dict = {}
-        if isinstance(root, str) and root.strip():
-            from pathlib import Path as _Path
-
-            for filename in ("data/xwordlist.dict", "data/supplemental.txt"):
-                try:
-                    raw = (_Path(root) / filename).read_text(encoding="utf-8")
-                except (OSError, UnicodeError):
-                    continue
-                for line in raw.splitlines():
-                    if not line or line.startswith("#"):
-                        continue
-                    word, _, score = line.partition(";")
-                    word = word.strip().upper()
-                    try:
-                        scores[word] = max(scores.get(word, 0), int((score or "0").strip() or 0))
-                    except (ValueError, AttributeError):
-                        continue
-        _FILL_WORD_SCORES_CACHE["scores"] = scores
-    return _FILL_WORD_SCORES_CACHE["scores"]
-
-
-def _obscure_head_issue(answer, clue, scores=None):
-    """Flag definitions headed by a much rarer word than the answer.
-
-    "Watercourse with a steady flow" for RIVER (50 vs 90) defines the
-    common by the obscure. First content word scoring 25+ below the
-    answer fires; unlisted words never fire.
-    """
-    if not isinstance(answer, str) or not isinstance(clue, str):
-        return None
-    scores = scores if scores is not None else _local_fill_word_scores()
-    if not scores:
-        return None
-    bare = _letters_only(answer)
-    answer_score = scores.get(bare)
-    if not isinstance(answer_score, int) or answer_score <= 0:
-        return None
-    first = re.findall(r"[A-Za-z]{4,}", clue)
-    if not first:
-        return None
-    head_score = scores.get(first[0].upper())
-    if isinstance(head_score, int) and head_score > 0 and head_score <= answer_score - 25:
-        return "obscure-head"
-    return None
-
-
-# Trailing filler tails ("with a hint of formality", "for a peaceful
-# ambiance"): the tail phrase spends words to say nothing distinguishing.
-# Concrete attachments ("with a wick", "man with a plan", "expression for
-# gratitude") are load-bearing and unaffected: only the closed vibe-noun
-# list fires, and gratitude-style definitional objects are not vibe nouns.
-_FILLER_TAIL_RE = re.compile(
-    r"\b(?:with|for)\s+(?:a\s+)?(?:\w+\s+)?"
-    r"(?:hint|touch|twist|sense|air|feel|note|trace|flow|formality|"
-    r"respect|excitement|flair|ambiance|atmosphere|mood|vibe|aura)\b",
-    re.IGNORECASE,
-)
-
-
-def _filler_tail(text):
-    """Detect content-free with-/for-tails."""
-    return isinstance(text, str) and _FILLER_TAIL_RE.search(text) is not None
-
-
-# Long plain definitions ramble: NYT length is earned with wordplay or
-# punctuation, never spent on bare genus-stacking. Eight words of plain
-# definition is the ceiling.
-_BLOATED_PLAIN_WORDS = 8
-_PUNCTUATION_SIGNAL_RE = re.compile(r"[?!:;\"'“”‘’\[\]()—–-]")
-
-
-def _bloated_plain(text):
-    """Detect overlong signal-free definitions."""
-    if not isinstance(text, str):
-        return False
-    words = re.findall(r"[A-Za-z']+", text)
-    return len(words) > _BLOATED_PLAIN_WORDS and not _PUNCTUATION_SIGNAL_RE.search(text)
+# Falsified companions live here as a warning, not as code: filler
+# tails ("Go with the flow" is idiom), bloated-plain ceilings ("English
+# poet who gave his name to a chair" earns its length), obscure-head
+# scoring (frequency is not specificity: "Friendliness" for AMITY), and
+# empty word-heads ("Prayer word" enumerates canonically) are all
+# editors' fair game. Only the spelled-out trailing enumeration below
+# survived its census with zero hits.
 
 
 # Abbreviation frames whose expansion hands the answer's head:
@@ -5871,12 +5780,6 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     decision = {"admitted": False, "reasons": ["vague-for-some"]}
                 elif strict_admission and _vague_where(text):
                     decision = {"admitted": False, "reasons": ["vague-where"]}
-                elif strict_admission and _filler_tail(text):
-                    decision = {"admitted": False, "reasons": ["filler-tail"]}
-                elif strict_admission and _bloated_plain(text):
-                    decision = {"admitted": False, "reasons": ["bloated-plain"]}
-                elif strict_admission and _obscure_head_issue(entry.get("answer"), text):
-                    decision = {"admitted": False, "reasons": ["obscure-head"]}
                 elif strict_admission and _gerund_agreement_issue(
                     entry.get("answer"), text
                 ):

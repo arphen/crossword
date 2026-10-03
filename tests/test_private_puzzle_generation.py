@@ -1652,27 +1652,6 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
     assert not private_generation._hedged_definition("Tom Seaver, so to speak")
 
 
-def test_river_clue_fails_three_distinct_guards():
-    assert private_generation._filler_tail("Watercourse with a steady flow")
-    assert not private_generation._filler_tail("Light source with a wick")
-    assert not private_generation._filler_tail("Man with a plan")
-    assert private_generation._bloated_plain(
-        "This is a very long plain definition with no signal whatsoever in it"
-    )
-    assert not private_generation._bloated_plain("Without light")
-    assert not private_generation._bloated_plain("Branch specialist?")
-    scores = {"RIVER": 90, "WATERCOURSE": 50, "TIGER": 85, "STRIPED": 80}
-    assert (
-        private_generation._obscure_head_issue("RIVER", "Watercourse with a steady flow", scores)
-        == "obscure-head"
-    )
-    assert (
-        private_generation._obscure_head_issue("TIGER", "Striped forest dweller", scores)
-        is None
-    )
-    assert private_generation._obscure_head_issue("RIVER", "Stream", {}) is None
-
-
 def test_vague_where_flags_might_find_locations():
     assert private_generation._vague_where("Where you might find a swing")
     assert private_generation._vague_where("Where one might find peace")
@@ -3089,16 +3068,6 @@ def test_pun_surface_accepts_only_a_terminal_question_mark():
         "trailing-enumeration",
     ]
     assert private_generation._clue_surface_issues("City named for a chief (7)") == []
-    # Vibe tails decorate without distinguishing; concrete attachments
-    # and definitional objects ("for gratitude") stay fair.
-    assert private_generation._filler_tail("Light source for a peaceful ambiance")
-    assert private_generation._filler_tail("Farewell, with a hint of formality")
-    assert not private_generation._filler_tail("Light source with a wick")
-    assert not private_generation._filler_tail("Polite expression for gratitude")
-    # A head noun doing all the work with no content behind it.
-    assert private_generation._clue_surface_issues("Regret's painful word") == [
-        "empty-word-head",
-    ]
     assert private_generation._clue_surface_issues("Common Latin word") == []
     assert private_generation._clue_surface_issues("Word with fish or grass") == []
 
