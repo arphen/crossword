@@ -267,7 +267,6 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/plans/14_CLUE_GRAMMAR_MEANING_AND_ENJOYMENT.md`
 - `docs/plans/15_THE_SELF_CRITIQUE_OF_THE_CONCEPT.md`
 - `docs/plans/16_CLUE_QUALITY_RECOVERY.md`
-- `docs/plans/17_OPERATOR_QUALITY_DOCTRINE.md`
 - `docs/plans/README.md`
 
 ## packages
