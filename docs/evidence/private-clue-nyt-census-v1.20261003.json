@@ -1,6 +1,6 @@
 {
   "version": "private-clue-nyt-census-v1",
-  "generatedAt": "2026-10-03T08:58:46+00:00",
+  "generatedAt": "2026-10-03T12:26:36+00:00",
   "kind": "counts-only",
   "archive": {
     "files": 14547,
@@ -45,8 +45,7 @@
         "superlative-marker-with-nonsuperlative-shape": 2,
         "surface:bracket-scope": 3,
         "surface:question-mark-placement": 51,
-        "surface:unbalanced-quotation": 7,
-        "vague-abstraction": 2
+        "surface:unbalanced-quotation": 7
       }
     },
     "monday": {
@@ -84,8 +83,7 @@
         "risk:unbalanced-quotation": 13,
         "superlative-marker-with-nonsuperlative-shape": 2,
         "surface:question-mark-placement": 57,
-        "surface:unbalanced-quotation": 13,
-        "vague-abstraction": 3
+        "surface:unbalanced-quotation": 13
       }
     },
     "saturday": {
@@ -155,7 +153,7 @@
       "guardHits": {
         "anagram-mismatch": 5,
         "answer-form-in-clue": 2,
-        "answer-giveaway": 2,
+        "answer-giveaway": 5,
         "comparative-marker-with-noncomparative-shape": 6,
         "generic-clue": 27,
         "language-answer-mismatch": 1,
@@ -172,8 +170,7 @@
         "surface:question-mark-placement": 168,
         "surface:syntax-debris": 4,
         "surface:unbalanced-brackets": 2,
-        "surface:unbalanced-quotation": 72,
-        "vague-abstraction": 3
+        "surface:unbalanced-quotation": 72
       }
     },
     "thursday": {
@@ -213,8 +210,7 @@
         "superlative-marker-with-nonsuperlative-shape": 2,
         "surface:bracket-scope": 2,
         "surface:question-mark-placement": 80,
-        "surface:unbalanced-quotation": 14,
-        "vague-abstraction": 2
+        "surface:unbalanced-quotation": 14
       }
     },
     "tuesday": {
@@ -255,8 +251,7 @@
         "superlative-marker-with-nonsuperlative-shape": 1,
         "surface:bracket-scope": 4,
         "surface:question-mark-placement": 66,
-        "surface:unbalanced-quotation": 14,
-        "vague-abstraction": 2
+        "surface:unbalanced-quotation": 14
       }
     },
     "wednesday": {
@@ -283,9 +278,9 @@
         "x-e-g": 2185
       },
       "guardHits": {
-        "anagram-mismatch": 2,
+        "anagram-mismatch": 1,
         "answer-form-in-clue": 1,
-        "answer-giveaway": 1,
+        "answer-giveaway": 2,
         "comparative-marker-with-noncomparative-shape": 4,
         "generic-clue": 7,
         "hidden-word-mismatch": 1,
