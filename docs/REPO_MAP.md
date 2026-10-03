@@ -306,6 +306,9 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 ## scripts
 
+- `scripts/autoresearch-decision.py` — `_guard_pass_rate:47`, `main:55`
+- `scripts/autoresearch-recompute.py` — `_tallies:24`, `main:43`
+- `scripts/autoresearch-sweep.sh`
 - `scripts/calibration-validator.cjs`
 - `scripts/ci-server.py` — `deny_outbound:25`, `synthetic_puzzle:29`, `main:65`
 - `scripts/clue-cold-solver.py` — `_normalize:82`, `_salvage:86`, `_chat:100`, `_attempt_one:150`, `_attempt_two:166`, `_reveal:183`, `_classify:204`, `probe:231`, `main:263`
