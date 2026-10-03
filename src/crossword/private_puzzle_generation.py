@@ -3321,6 +3321,21 @@ def _hedged_definition(text):
     return isinstance(text, str) and _HEDGED_DEFINITION_RE.search(text) is not None
 
 
+# Identity assertions without a source ("Fruit whose name is a popular
+# drink brand" for STALE): the clue claims the answer IS something, which
+# no deterministic check can verify. Census decides whether editors print
+# this shape.
+_IDENTITY_CLAIM_RE = re.compile(
+    r"\bwhose\s+name\s+is\b",
+    re.IGNORECASE,
+)
+
+
+def _identity_claim(text):
+    """Detect unsourced X-is-Y identity assertions."""
+    return isinstance(text, str) and _IDENTITY_CLAIM_RE.search(text) is not None
+
+
 # Abbreviation frames whose expansion hands the answer's head:
 # "Short for notification" for NOTI quotes the answer's first four
 # letters. Exact initialisms ("Portable document format" for PDF) stay
@@ -5509,6 +5524,8 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     decision = {"admitted": False, "reasons": ["pseudo-pun"]}
                 elif strict_admission and _hedged_definition(text):
                     decision = {"admitted": False, "reasons": ["hedged-definition"]}
+                elif strict_admission and _identity_claim(text):
+                    decision = {"admitted": False, "reasons": ["identity-without-source"]}
                 else:
                     decision = admit_candidate(
                         text,
