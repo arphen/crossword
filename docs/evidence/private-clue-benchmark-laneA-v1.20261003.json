@@ -1,0 +1,78 @@
+{
+  "version": "private-clue-benchmark-v1",
+  "generatedAt": "2026-10-03T11:23:19+00:00",
+  "kind": "counts-only",
+  "claim": "one AutoResearch iteration: fixed 15-answer benchmark, deterministic scoring only",
+  "iterations": [
+    {
+      "label": "laneA-seed-6216",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 15,
+      "scaffold": 0,
+      "admissionRate": 1.0,
+      "guardHits": 0,
+      "families": {
+        "definition": 14,
+        "genre:plain-definition": 14,
+        "genre:sound-or-action-cue": 1,
+        "pun": 1
+      },
+      "draftCalls": 5,
+      "compareCalls": 12,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 128.682,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6216
+    },
+    {
+      "label": "laneA-seed-6217",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 14,
+        "genre:plain-definition": 12,
+        "genre:quotational": 1,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 6,
+      "compareCalls": 12,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 156.502,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6217
+    },
+    {
+      "label": "laneA-seed-6215",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 13,
+        "factual-relation": 1,
+        "genre:plain-definition": 12,
+        "genre:quotational": 2
+      },
+      "draftCalls": 6,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 128.837,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6215
+    }
+  ],
+  "knownLimits": [
+    "counts only; clue text stays local and is never committed",
+    "quality (wit) is not scored here; blind human verdicts score it"
+  ]
+}

@@ -191,6 +191,9 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/content-scan.md`
 - `docs/evidence/live-model-smoke-holdout-v1.20260928.json`
 - `docs/evidence/model-evaluation-holdout-v1.structural.json`
+- `docs/evidence/private-clue-benchmark-laneA-v1.20261003.json`
+- `docs/evidence/private-clue-benchmark-laneB-v1.20261003.json`
+- `docs/evidence/private-clue-benchmark-laneC-v1.20261003.json`
 - `docs/evidence/private-clue-benchmark-v1.20261002.json`
 - `docs/evidence/private-clue-benchmark-v1.20261003.json`
 - `docs/evidence/private-clue-candidate-lane-v1.llama3.2-3b-20261001.json`
