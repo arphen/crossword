@@ -1,6 +1,6 @@
 {
   "version": "private-clue-benchmark-v1",
-  "generatedAt": "2026-10-03T11:17:56+00:00",
+  "generatedAt": "2026-10-03T11:20:41+00:00",
   "kind": "counts-only",
   "claim": "one AutoResearch iteration: fixed 15-answer benchmark, deterministic scoring only",
   "iterations": [
@@ -375,6 +375,29 @@
       "model": "llama3.2:3b",
       "weekday": "monday",
       "seed": 6211
+    },
+    {
+      "label": "iter-loop-seed-6212",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 15,
+      "scaffold": 0,
+      "admissionRate": 1.0,
+      "guardHits": 0,
+      "families": {
+        "definition": 14,
+        "factual-relation": 1,
+        "genre:plain-definition": 12,
+        "genre:quotational": 2,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 6,
+      "compareCalls": 12,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 148.494,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6212
     }
   ],
   "knownLimits": [
