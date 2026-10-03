@@ -11,7 +11,7 @@ Train/use a small Gemma editor (local-small tier, M3 16GB) that drafts clues wit
 ## Constraints
 - **Max iterations:** 20
 - **Time budget per experiment:** 5 minutes (`timeout 5m`)
-- **Pause for review every:** 5
+- **Pause for review every:** never (fully unattended to max_iterations or target; progress noted, never blocked)
 - **Evaluator:** (none — agent + subagents judge manually; research/gemma-editor/evaluate.py critic score advisory only)
 - **Keep policy:** score_improvement (min_delta 0.02, noise_runs 3; mutation must clear champion-replicate spread)
 - **Guard:** guardHits==0, admitted>=13/15, `tests/test_private_puzzle_generation.py` green, census disagreement vs NYT <0.5% new hits, no clue text committed to docs/evidence (counts-only per clue_review_bundle.py:20,147)
