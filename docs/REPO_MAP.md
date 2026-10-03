@@ -194,6 +194,8 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/private-clue-benchmark-laneA-v1.20261003.json`
 - `docs/evidence/private-clue-benchmark-laneB-v1.20261003.json`
 - `docs/evidence/private-clue-benchmark-laneC-v1.20261003.json`
+- `docs/evidence/private-clue-benchmark-laneD-v1.20261003.json`
+- `docs/evidence/private-clue-benchmark-laneE-v1.20261003.json`
 - `docs/evidence/private-clue-benchmark-v1.20261002.json`
 - `docs/evidence/private-clue-benchmark-v1.20261003.json`
 - `docs/evidence/private-clue-candidate-lane-v1.llama3.2-3b-20261001.json`
