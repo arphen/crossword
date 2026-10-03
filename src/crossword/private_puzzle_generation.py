@@ -3419,6 +3419,20 @@ def _hedged_definition(text):
     return isinstance(text, str) and _HEDGED_DEFINITION_RE.search(text) is not None
 
 
+# Hedging for-some/for-many tails ("Dawn's earliest hour, for some"): the
+# tail qualifies instead of routing. "For one" is deliberately excluded:
+# canonical enumeration ("India, for one") is editors' fair game.
+_VAGUE_FOR_SOME_RE = re.compile(
+    r"\bfor\s+(?:some|many|most|few)\b",
+    re.IGNORECASE,
+)
+
+
+def _vague_for_some(text):
+    """Detect hedging for-some tails."""
+    return isinstance(text, str) and _VAGUE_FOR_SOME_RE.search(text) is not None
+
+
 # Abbreviation frames whose expansion hands the answer's head:
 # "Short for notification" for NOTI quotes the answer's first four
 # letters. Exact initialisms ("Portable document format" for PDF) stay
@@ -5719,6 +5733,8 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     decision = {"admitted": False, "reasons": ["pseudo-pun"]}
                 elif strict_admission and _hedged_definition(text):
                     decision = {"admitted": False, "reasons": ["hedged-definition"]}
+                elif strict_admission and _vague_for_some(text):
+                    decision = {"admitted": False, "reasons": ["vague-for-some"]}
                 elif strict_admission and _gerund_agreement_issue(
                     entry.get("answer"), text
                 ):

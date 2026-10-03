@@ -1652,6 +1652,13 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
     assert not private_generation._hedged_definition("Tom Seaver, so to speak")
 
 
+def test_vague_for_some_spots_hedging_tails_not_enumeration():
+    assert private_generation._vague_for_some("Dawn's earliest hour, for some")
+    assert private_generation._vague_for_some("Shelters for some Cubs")
+    assert not private_generation._vague_for_some("India, for one")
+    assert not private_generation._vague_for_some("Circle of friends")
+
+
 def _gerund_words():
     return {
         "RUN", "RUNS", "SING", "SINGS", "WRITE", "WRITES", "GO", "GOES",
