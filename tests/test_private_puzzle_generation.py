@@ -5283,3 +5283,42 @@ def test_private_generation_is_same_origin_only(api):
         headers={"Origin": "https://example.invalid"},
     )
     assert response.status_code == 403
+
+
+def test_utterance_blank_candidates_basic_blanking():
+    candidates = private_generation.utterance_blank_candidates(
+        "SEEN", ["I have seen it all"]
+    )
+
+    assert candidates == [
+        {"sentence": "I have seen it all", "blanked": "I have ___ it all"}
+    ]
+
+
+def test_utterance_blank_candidates_case_insensitive():
+    candidates = private_generation.utterance_blank_candidates(
+        "HELLO", ["hello there, friend"]
+    )
+
+    assert candidates == [
+        {"sentence": "hello there, friend", "blanked": "___ there, friend"}
+    ]
+
+
+def test_utterance_blank_candidates_word_boundary():
+    candidates = private_generation.utterance_blank_candidates(
+        "SEEN", ["The seenager arrived", "I have seen it"]
+    )
+
+    assert candidates == [
+        {"sentence": "I have seen it", "blanked": "I have ___ it"}
+    ]
+
+
+def test_utterance_blank_candidates_no_match_returns_empty():
+    assert (
+        private_generation.utterance_blank_candidates(
+            "SEEN", ["Nothing relevant here"]
+        )
+        == []
+    )

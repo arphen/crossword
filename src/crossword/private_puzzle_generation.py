@@ -6479,6 +6479,33 @@ def _legacy_puzzle(
     return crossword, manifest
 
 
+def utterance_blank_candidates(word, sentences):
+    """Build fill-blank candidates from sentences containing ``word``.
+
+    Pure, deterministic helper for spoken/fill-blank clue families: keeps
+    sentences containing ``word`` as a whole token (case-insensitive) and
+    blanks the first whole-word occurrence with ``___``. Returns at most
+    three ``{"sentence", "blanked"}`` dicts in input order. No model calls.
+    """
+    if not isinstance(word, str) or not word:
+        return []
+    if not isinstance(sentences, list):
+        return []
+    pattern = re.compile(r"\b" + re.escape(word) + r"\b", re.IGNORECASE)
+    candidates = []
+    for sentence in sentences:
+        if not isinstance(sentence, str):
+            continue
+        if not pattern.search(sentence):
+            continue
+        candidates.append(
+            {"sentence": sentence, "blanked": pattern.sub("___", sentence, count=1)}
+        )
+        if len(candidates) >= 3:
+            break
+    return candidates
+
+
 def _private_fill_violations(grid):
     """Return accidental construction artefacts before clue writing begins."""
     entries = grid.get("entries") if isinstance(grid, dict) else None
