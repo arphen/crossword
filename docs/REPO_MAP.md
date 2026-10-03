@@ -203,6 +203,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/private-clue-judge-calibration-v1.20261003.json`
 - `docs/evidence/private-clue-leak-gate-v1.synthetic.json`
 - `docs/evidence/private-clue-nyt-census-v1.20261002.json`
+- `docs/evidence/private-clue-nyt-census-v1.20261003.json`
 - `docs/evidence/private-clue-regex-redundancy-v1.offline.json`
 - `docs/evidence/private-clue-witness-audit-v1.offline.json`
 - `docs/evidence/private-cold-solver-v1.20261003.json`

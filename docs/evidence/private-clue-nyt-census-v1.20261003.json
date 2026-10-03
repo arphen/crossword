@@ -1,0 +1,309 @@
+{
+  "version": "private-clue-nyt-census-v1",
+  "generatedAt": "2026-10-03T08:58:46+00:00",
+  "kind": "counts-only",
+  "archive": {
+    "files": 14547,
+    "puzzles": 14545,
+    "pairs": 1231048
+  },
+  "claim": "this repo's deterministic guards run over the sibling NYT archive; hit rates by weekday calibrate false positives, family/genre mixes set measured drafting targets",
+  "weekdays": {
+    "friday": {
+      "puzzles": 2072,
+      "pairs": 148749,
+      "family": {
+        "definition": 134564,
+        "factual-relation": 1197,
+        "fill-blank": 8487,
+        "metalinguistic": 238,
+        "nonverbal-expression": 18,
+        "pseudo-pun": 4062,
+        "pun": 183
+      },
+      "genre": {
+        "abbreviation": 218,
+        "common-term": 9,
+        "fill-blank": 9934,
+        "name-slot": 66,
+        "plain-definition": 125719,
+        "quotational": 5652,
+        "role-plus-name": 3831,
+        "sound-or-action-cue": 1185,
+        "x-e-g": 2135
+      },
+      "guardHits": {
+        "anagram-mismatch": 3,
+        "answer-form-in-clue": 1,
+        "comparative-marker-with-noncomparative-shape": 1,
+        "generic-clue": 6,
+        "past-tense-marker-with-nonpast-shape": 2,
+        "reversal-mismatch": 1,
+        "risk:bracket-scope": 3,
+        "risk:question-mark-placement": 51,
+        "risk:unbalanced-quotation": 7,
+        "superlative-marker-with-nonsuperlative-shape": 2,
+        "surface:bracket-scope": 3,
+        "surface:question-mark-placement": 51,
+        "surface:unbalanced-quotation": 7,
+        "vague-abstraction": 2
+      }
+    },
+    "monday": {
+      "puzzles": 2088,
+      "pairs": 160468,
+      "family": {
+        "definition": 147571,
+        "factual-relation": 1389,
+        "fill-blank": 10321,
+        "metalinguistic": 144,
+        "nonverbal-expression": 22,
+        "pseudo-pun": 984,
+        "pun": 37
+      },
+      "genre": {
+        "abbreviation": 138,
+        "common-term": 16,
+        "fill-blank": 13107,
+        "name-slot": 50,
+        "plain-definition": 133513,
+        "quotational": 6081,
+        "role-plus-name": 3859,
+        "sound-or-action-cue": 1499,
+        "x-e-g": 2205
+      },
+      "guardHits": {
+        "anagram-mismatch": 3,
+        "answer-giveaway": 1,
+        "comparative-marker-with-noncomparative-shape": 4,
+        "generic-clue": 8,
+        "past-tense-marker-with-nonpast-shape": 1,
+        "plural-marker-with-singular-shape": 4,
+        "reversal-mismatch": 10,
+        "risk:question-mark-placement": 57,
+        "risk:unbalanced-quotation": 13,
+        "superlative-marker-with-nonsuperlative-shape": 2,
+        "surface:question-mark-placement": 57,
+        "surface:unbalanced-quotation": 13,
+        "vague-abstraction": 3
+      }
+    },
+    "saturday": {
+      "puzzles": 2076,
+      "pairs": 147883,
+      "family": {
+        "definition": 134150,
+        "factual-relation": 1207,
+        "fill-blank": 7958,
+        "metalinguistic": 260,
+        "nonverbal-expression": 20,
+        "pseudo-pun": 4101,
+        "pun": 187
+      },
+      "genre": {
+        "abbreviation": 253,
+        "common-term": 18,
+        "fill-blank": 9212,
+        "name-slot": 68,
+        "plain-definition": 125747,
+        "quotational": 5443,
+        "role-plus-name": 3800,
+        "sound-or-action-cue": 1161,
+        "x-e-g": 2181
+      },
+      "guardHits": {
+        "answer-form-in-clue": 2,
+        "answer-giveaway": 1,
+        "comparative-marker-with-noncomparative-shape": 4,
+        "generic-clue": 9,
+        "invalid-clue": 1,
+        "past-tense-marker-with-nonpast-shape": 2,
+        "plural-marker-with-singular-shape": 4,
+        "reversal-mismatch": 2,
+        "risk:bracket-scope": 1,
+        "risk:question-mark-placement": 52,
+        "risk:unbalanced-quotation": 9,
+        "superlative-marker-with-nonsuperlative-shape": 1,
+        "surface:bracket-scope": 1,
+        "surface:question-mark-placement": 52,
+        "surface:unbalanced-quotation": 9
+      }
+    },
+    "sunday": {
+      "puzzles": 2072,
+      "pairs": 299813,
+      "family": {
+        "definition": 268066,
+        "factual-relation": 2582,
+        "fill-blank": 18084,
+        "metalinguistic": 295,
+        "nonverbal-expression": 116,
+        "pseudo-pun": 10289,
+        "pun": 381
+      },
+      "genre": {
+        "abbreviation": 274,
+        "common-term": 46,
+        "fill-blank": 21854,
+        "name-slot": 100,
+        "plain-definition": 251246,
+        "quotational": 11528,
+        "role-plus-name": 8047,
+        "sound-or-action-cue": 2544,
+        "x-e-g": 4174
+      },
+      "guardHits": {
+        "anagram-mismatch": 5,
+        "answer-form-in-clue": 2,
+        "answer-giveaway": 2,
+        "comparative-marker-with-noncomparative-shape": 6,
+        "generic-clue": 27,
+        "language-answer-mismatch": 1,
+        "past-tense-marker-with-nonpast-shape": 2,
+        "plural-marker-with-singular-shape": 1,
+        "reversal-mismatch": 2,
+        "risk:bracket-scope": 4,
+        "risk:question-mark-placement": 168,
+        "risk:syntax-debris": 4,
+        "risk:unbalanced-brackets": 2,
+        "risk:unbalanced-quotation": 72,
+        "superlative-marker-with-nonsuperlative-shape": 6,
+        "surface:bracket-scope": 4,
+        "surface:question-mark-placement": 168,
+        "surface:syntax-debris": 4,
+        "surface:unbalanced-brackets": 2,
+        "surface:unbalanced-quotation": 72,
+        "vague-abstraction": 3
+      }
+    },
+    "thursday": {
+      "puzzles": 2070,
+      "pairs": 155430,
+      "family": {
+        "definition": 140413,
+        "factual-relation": 1234,
+        "fill-blank": 9753,
+        "metalinguistic": 179,
+        "nonverbal-expression": 63,
+        "pseudo-pun": 3658,
+        "pun": 130
+      },
+      "genre": {
+        "abbreviation": 169,
+        "common-term": 17,
+        "fill-blank": 11772,
+        "name-slot": 69,
+        "plain-definition": 129895,
+        "quotational": 5845,
+        "role-plus-name": 4004,
+        "sound-or-action-cue": 1395,
+        "x-e-g": 2264
+      },
+      "guardHits": {
+        "anagram-mismatch": 3,
+        "answer-form-in-clue": 2,
+        "answer-giveaway": 3,
+        "comparative-marker-with-noncomparative-shape": 1,
+        "generic-clue": 11,
+        "invalid-clue": 5,
+        "reversal-mismatch": 4,
+        "risk:bracket-scope": 2,
+        "risk:question-mark-placement": 80,
+        "risk:unbalanced-quotation": 14,
+        "superlative-marker-with-nonsuperlative-shape": 2,
+        "surface:bracket-scope": 2,
+        "surface:question-mark-placement": 80,
+        "surface:unbalanced-quotation": 14,
+        "vague-abstraction": 2
+      }
+    },
+    "tuesday": {
+      "puzzles": 2083,
+      "pairs": 159702,
+      "family": {
+        "definition": 146055,
+        "factual-relation": 1304,
+        "fill-blank": 9950,
+        "metalinguistic": 175,
+        "nonverbal-expression": 56,
+        "pseudo-pun": 2095,
+        "pun": 67
+      },
+      "genre": {
+        "abbreviation": 168,
+        "common-term": 19,
+        "fill-blank": 12553,
+        "name-slot": 40,
+        "plain-definition": 132980,
+        "quotational": 6175,
+        "role-plus-name": 4099,
+        "sound-or-action-cue": 1477,
+        "x-e-g": 2191
+      },
+      "guardHits": {
+        "anagram-mismatch": 2,
+        "answer-giveaway": 4,
+        "comparative-marker-with-noncomparative-shape": 2,
+        "generic-clue": 13,
+        "low-information-surface": 2,
+        "past-tense-marker-with-nonpast-shape": 2,
+        "plural-marker-with-singular-shape": 3,
+        "reversal-mismatch": 6,
+        "risk:bracket-scope": 4,
+        "risk:question-mark-placement": 66,
+        "risk:unbalanced-quotation": 14,
+        "superlative-marker-with-nonsuperlative-shape": 1,
+        "surface:bracket-scope": 4,
+        "surface:question-mark-placement": 66,
+        "surface:unbalanced-quotation": 14,
+        "vague-abstraction": 2
+      }
+    },
+    "wednesday": {
+      "puzzles": 2084,
+      "pairs": 159003,
+      "family": {
+        "definition": 144956,
+        "factual-relation": 1202,
+        "fill-blank": 9221,
+        "metalinguistic": 199,
+        "nonverbal-expression": 68,
+        "pseudo-pun": 3251,
+        "pun": 106
+      },
+      "genre": {
+        "abbreviation": 191,
+        "common-term": 14,
+        "fill-blank": 11633,
+        "name-slot": 55,
+        "plain-definition": 133125,
+        "quotational": 6240,
+        "role-plus-name": 4006,
+        "sound-or-action-cue": 1554,
+        "x-e-g": 2185
+      },
+      "guardHits": {
+        "anagram-mismatch": 2,
+        "answer-form-in-clue": 1,
+        "answer-giveaway": 1,
+        "comparative-marker-with-noncomparative-shape": 4,
+        "generic-clue": 7,
+        "hidden-word-mismatch": 1,
+        "plural-marker-with-singular-shape": 2,
+        "reversal-mismatch": 3,
+        "risk:bracket-scope": 2,
+        "risk:question-mark-placement": 54,
+        "risk:unbalanced-quotation": 10,
+        "superlative-marker-with-nonsuperlative-shape": 4,
+        "surface:bracket-scope": 2,
+        "surface:question-mark-placement": 54,
+        "surface:unbalanced-quotation": 10
+      }
+    }
+  },
+  "knownLimits": [
+    "archive coverage ends ~2018 with known gaps; style drift since is unmeasured",
+    "guard hits are detector disagreements with editors, not verdicts",
+    "no clue text committed; samples are local-only"
+  ]
+}
