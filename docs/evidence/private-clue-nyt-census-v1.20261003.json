@@ -1,6 +1,6 @@
 {
   "version": "private-clue-nyt-census-v1",
-  "generatedAt": "2026-10-03T13:29:50+00:00",
+  "generatedAt": "2026-10-03T15:13:59+00:00",
   "kind": "counts-only",
   "archive": {
     "files": 14547,
@@ -37,6 +37,7 @@
         "answer-form-in-clue": 1,
         "comparative-marker-with-noncomparative-shape": 1,
         "generic-clue": 6,
+        "gerund-without-gerund": 317,
         "past-tense-marker-with-nonpast-shape": 2,
         "reversal-mismatch": 1,
         "risk:bracket-scope": 3,
@@ -45,7 +46,8 @@
         "superlative-marker-with-nonsuperlative-shape": 2,
         "surface:bracket-scope": 3,
         "surface:question-mark-placement": 51,
-        "surface:unbalanced-quotation": 7
+        "surface:unbalanced-quotation": 7,
+        "vague-for-some": 101
       }
     },
     "monday": {
@@ -76,6 +78,7 @@
         "answer-giveaway": 1,
         "comparative-marker-with-noncomparative-shape": 4,
         "generic-clue": 8,
+        "gerund-without-gerund": 187,
         "past-tense-marker-with-nonpast-shape": 1,
         "plural-marker-with-singular-shape": 4,
         "reversal-mismatch": 10,
@@ -83,7 +86,9 @@
         "risk:unbalanced-quotation": 13,
         "superlative-marker-with-nonsuperlative-shape": 2,
         "surface:question-mark-placement": 57,
-        "surface:unbalanced-quotation": 13
+        "surface:unbalanced-quotation": 13,
+        "vague-for-some": 35,
+        "vague-where": 1
       }
     },
     "saturday": {
@@ -114,6 +119,7 @@
         "answer-giveaway": 1,
         "comparative-marker-with-noncomparative-shape": 4,
         "generic-clue": 9,
+        "gerund-without-gerund": 334,
         "invalid-clue": 1,
         "past-tense-marker-with-nonpast-shape": 2,
         "plural-marker-with-singular-shape": 4,
@@ -124,7 +130,8 @@
         "superlative-marker-with-nonsuperlative-shape": 1,
         "surface:bracket-scope": 1,
         "surface:question-mark-placement": 52,
-        "surface:unbalanced-quotation": 9
+        "surface:unbalanced-quotation": 9,
+        "vague-for-some": 106
       }
     },
     "sunday": {
@@ -156,6 +163,7 @@
         "answer-giveaway": 5,
         "comparative-marker-with-noncomparative-shape": 6,
         "generic-clue": 27,
+        "gerund-without-gerund": 533,
         "language-answer-mismatch": 1,
         "past-tense-marker-with-nonpast-shape": 2,
         "plural-marker-with-singular-shape": 1,
@@ -170,7 +178,9 @@
         "surface:question-mark-placement": 168,
         "surface:syntax-debris": 4,
         "surface:unbalanced-brackets": 2,
-        "surface:unbalanced-quotation": 72
+        "surface:unbalanced-quotation": 72,
+        "vague-for-some": 122,
+        "vague-where": 1
       }
     },
     "thursday": {
@@ -202,6 +212,7 @@
         "answer-giveaway": 3,
         "comparative-marker-with-noncomparative-shape": 1,
         "generic-clue": 11,
+        "gerund-without-gerund": 271,
         "invalid-clue": 5,
         "reversal-mismatch": 4,
         "risk:bracket-scope": 2,
@@ -210,7 +221,9 @@
         "superlative-marker-with-nonsuperlative-shape": 2,
         "surface:bracket-scope": 2,
         "surface:question-mark-placement": 80,
-        "surface:unbalanced-quotation": 14
+        "surface:unbalanced-quotation": 14,
+        "vague-for-some": 86,
+        "vague-where": 2
       }
     },
     "tuesday": {
@@ -241,6 +254,7 @@
         "answer-giveaway": 4,
         "comparative-marker-with-noncomparative-shape": 2,
         "generic-clue": 13,
+        "gerund-without-gerund": 185,
         "low-information-surface": 2,
         "past-tense-marker-with-nonpast-shape": 2,
         "plural-marker-with-singular-shape": 3,
@@ -251,7 +265,9 @@
         "superlative-marker-with-nonsuperlative-shape": 1,
         "surface:bracket-scope": 4,
         "surface:question-mark-placement": 66,
-        "surface:unbalanced-quotation": 14
+        "surface:unbalanced-quotation": 14,
+        "vague-for-some": 71,
+        "vague-where": 2
       }
     },
     "wednesday": {
@@ -283,6 +299,7 @@
         "answer-giveaway": 2,
         "comparative-marker-with-noncomparative-shape": 4,
         "generic-clue": 7,
+        "gerund-without-gerund": 179,
         "hidden-word-mismatch": 1,
         "plural-marker-with-singular-shape": 2,
         "reversal-mismatch": 3,
@@ -292,7 +309,8 @@
         "superlative-marker-with-nonsuperlative-shape": 4,
         "surface:bracket-scope": 2,
         "surface:question-mark-placement": 54,
-        "surface:unbalanced-quotation": 10
+        "surface:unbalanced-quotation": 10,
+        "vague-for-some": 59
       }
     }
   },
