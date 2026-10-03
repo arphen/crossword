@@ -315,6 +315,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 ## scripts
 
 - `scripts/autoresearch-decision.py` — `_guard_pass_rate:47`, `main:55`
+- `scripts/autoresearch-loop.sh`
 - `scripts/autoresearch-recompute.py` — `_tallies:24`, `main:43`
 - `scripts/autoresearch-sweep.sh`
 - `scripts/calibration-validator.cjs`
