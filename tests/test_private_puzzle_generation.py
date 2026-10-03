@@ -1681,21 +1681,6 @@ def test_clue_gerund_spotting_reads_true_gerunds_only():
     assert spotted("Going fast", words) is True
     assert spotted("Morning exercise", words) is False
     assert spotted("Vocal performance", words) is False
-
-
-def test_gerund_agreement_flags_action_answers_without_actions():
-    issue = private_generation._gerund_agreement_issue
-    words = _gerund_words()
-    assert issue("SINGING", "Vocal performance", words) == "gerund-without-gerund"
-    assert issue("WRITING", "Author's craft", words) == "gerund-without-gerund"
-    assert issue("RUNNING", "Going fast, maybe", words) is None
-    assert issue("MORNING", "Dawn's earliest hour", words) is None
-
-
-def test_vague_for_some_spots_hedging_tails():
-    assert private_generation._vague_for_some("Dawn's earliest hour, for some")
-    assert private_generation._vague_for_some("A musician's tool, for one")
-    assert not private_generation._vague_for_some("Circle of friends")
     # A possessed qualifier or a definite for/of referent names a route;
     # an indefinite object points nowhere (census, NYT Monday).
     assert (

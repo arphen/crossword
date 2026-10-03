@@ -3229,32 +3229,10 @@ def _clue_has_gerund(text, words=None):
     return False
 
 
-def _gerund_agreement_issue(answer, clue, words=None):
-    """Flag gerund answers clued with no gerund in the clue.
-
-    A gerund names an action and must be met by one ("Going fast" for
-    RUNNING); plain -ing nouns (MORNING, SPRING) take plain definitions
-    and never trigger this. Measurement first: gating follows census data.
-    """
-    if not _is_gerund_answer(answer, words):
-        return None
-    if _clue_has_gerund(clue, words):
-        return None
-    return "gerund-without-gerund"
-
-
-# Vague for-some/for-one qualifiers ("Dawn's earliest hour, for some"):
-# the tail hedges instead of routing. Counted by the census; gating
-# follows its verdict.
-_VAGUE_FOR_SOME_RE = re.compile(
-    r"\bfor\s+(?:some|one|many|most|few)\b",
-    re.IGNORECASE,
-)
-
-
-def _vague_for_some(text):
-    """Detect hedging for-some/for-one tails."""
-    return isinstance(text, str) and _VAGUE_FOR_SOME_RE.search(text) is not None
+# Vague for-some/for-one qualifiers were falsified as a class: "for one"
+# is canonical enumeration ("India, for one") and "for some/many/most"
+# tails do playful work ("Place for some skeletons"). Reverted; the
+# census keeps the honest ledger.
 
 
 def _stem_clue_word(word):
