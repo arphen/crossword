@@ -159,3 +159,21 @@
   gate binds only on derivation leaks, so variety still depends on
   drafting livelier surfaces. Logs: /tmp/q01-benchmark-out.json,
   /tmp/q01-seed6200-log.json (clue text stays in /tmp, never committed).
+
+## Gold-recalibration addendum — final 9/10, 0 errors (verdict owner)
+- The sibling 8/10 commit (07834e9) landed mid-retry: the last judge-500
+  artifact (SCARECROWS) retried clean to gold on a quiet host, so
+  /tmp/gold-recalibration-buckets.json now reads final gold 9/10, unfair
+  1/10 (TORT), trivial 0, unresolved 0, errors 0. Rates over 10 controls.
+- Keep criterion re-checked on final numbers: gold 9/10 >= 2/10 MET;
+  previously-sound OVEREAT+TUMS both gold (no unfair-vs-gold inversion);
+  solver tests green (22 passed: solve_replay + clue_quality_evaluation +
+  reference_solver; test_private_puzzle_generation 263 passed) -> KEEP
+  stands, History row 7 added to research.md.
+- Metric-v2 W restores 0.10->0.25 (promoted fedecf6, target stays 0.68).
+- Ops note: sibling probe first failed all-10 with system-python
+  ModuleNotFoundError flask (same class as the iter2 rogue probe); reran
+  under project .venv. Two writers briefly overlapped on the file and
+  the host 500-flaked under load — future recalibrations should hold a
+  single writer. Caveat stands: 0/20 solves, golds all via generous
+  fair=yes with aha=no.
