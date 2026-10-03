@@ -131,6 +131,13 @@ def main() -> int:
                     hits.append(f"surface:{flag}")
                 if generation._hedged_definition(text):
                     hits.append("hedged-definition")
+                if generation._filler_tail(text):
+                    hits.append("filler-tail")
+                if generation._bloated_plain(text):
+                    hits.append("bloated-plain")
+                answer = entry.get("answer") if isinstance(entry, dict) else None
+                if generation._obscure_head_issue(answer, text) is not None:
+                    hits.append("obscure-head")
                 if generation._vague_where(text):
                     hits.append("vague-where")
                 if generation._vague_for_some(text):
