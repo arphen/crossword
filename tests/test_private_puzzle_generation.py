@@ -1624,6 +1624,19 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
         )
         is None
     )
+    # Glue-only coverage hands the solver nothing: TOTO from "to"+"to",
+    # ASWE from "as"+"we" stay fair, while a theme entry whose full wording
+    # sits in the clue still fires.
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "TOTO"}, "Dog that went to Oz")
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "THEREADLINES"}, "Read between the lines"
+        )
+        == "answer-giveaway"
+    )
     # Dangling short-for frames repair to the bare definition.
     assert (
         private_generation._normalize_clue_surface("Stance or opinion, short for that")

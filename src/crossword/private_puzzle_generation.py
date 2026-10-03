@@ -3214,16 +3214,20 @@ def _segmented_stem_overlap(answer, text):
             joins.add(stem + stems[index + 1] + stems[index + 2])
     covers = {part for part in joins if len(part) >= 2}
 
-    def _split(position, parts):
+    def _split(position, parts, best):
         if position == len(bare):
-            return parts >= 2
+            return best if parts >= 2 else 0
+        top = 0
         for end in range(position + 2, min(len(bare), position + 8) + 1):
             piece = bare[position:end]
-            if _stem_clue_word(piece) in covers and _split(end, parts + 1):
-                return True
-        return False
+            if _stem_clue_word(piece) in covers:
+                top = max(top, _split(end, parts + 1, max(best, len(piece))))
+        return top
 
-    if _split(0, 0):
+    # Glue-only coverage ("to"+"to" for TOTO) hands the solver nothing:
+    # some matched piece must carry real content. Theme entries whose full
+    # wording sits in the clue ("Read between the lines") still fire.
+    if _split(0, 0, 0) >= 4:
         return bare
     return None
 
