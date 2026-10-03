@@ -3153,6 +3153,110 @@ def _letters_only(value):
     return re.sub(r"[^A-Z]", "", str(value).upper())
 
 
+# Short auxiliaries the wordlist may not carry as stems (GO without GOS):
+# clue-side gerund spotting must still see "Going".
+_AUXILIARY_STEMS = frozenset({"BE", "DO", "GO", "HAVE"})
+
+
+def _verb_forms_present(stem, words):
+    """Check whether a stem inflects like a verb in the word list.
+
+    Tries the stem plus its e-restored variant (WRIT/WRITE) against -S
+    and -ED inflections. The -ING form itself never counts: every -ing
+    word trivially has one, which would make Morning a gerund.
+    """
+    if stem in _AUXILIARY_STEMS:
+        return True
+    if len(stem) < 3:
+        return False
+    variants = {stem, stem + "E"}
+    return any(
+        variant in words and (variant + "S" in words or variant + "ED" in words)
+        for variant in variants
+    )
+
+
+def _gerund_stem_candidates(bare):
+    """Candidate verb stems for an -ing answer (RUNNING -> RUN, WRITING -> WRITE)."""
+    core = bare[:-3]
+    candidates = set()
+    if len(core) >= 3:
+        candidates.add(core)
+    if len(core) >= 2 and core[-1] == core[-2]:
+        candidates.add(core[:-1])
+    if len(core) >= 3:
+        candidates.add(core + "E")
+    return candidates
+
+
+def _is_gerund_answer(answer, words=None):
+    """Decide whether an -ing answer names an action (gerund) or a thing.
+
+    RUNNING/SINGING/WRITING inflect as verbs; MORNING/SPRING/STRING do
+    not. EVENING is genuinely ambiguous (to even is rare) and resolves
+    verb-side; the census prices that edge. Short answers stay exempt.
+    """
+    bare = _letters_only(answer)
+    if len(bare) < 6 or not bare.endswith("ING"):
+        return False
+    if words is None:
+        words = _local_fill_word_set()
+    if not words:
+        return False
+    return any(
+        _verb_forms_present(stem, words)
+        for stem in _gerund_stem_candidates(bare)
+    )
+
+
+def _clue_has_gerund(text, words=None):
+    """Spot a true gerund in clue text (Going counts, Morning does not)."""
+    if not isinstance(text, str):
+        return False
+    if words is None:
+        words = _local_fill_word_set()
+    if not words:
+        return False
+    for raw in re.findall(r"[A-Za-z]+", text):
+        word = re.sub(r"[^A-Z]", "", raw.upper())
+        if len(word) < 5 or not word.endswith("ING"):
+            continue
+        core = word[:-3]
+        if len(core) >= 2 and core[-1] == core[-2]:
+            core = core[:-1]
+        if _verb_forms_present(core, words):
+            return True
+    return False
+
+
+def _gerund_agreement_issue(answer, clue, words=None):
+    """Flag gerund answers clued with no gerund in the clue.
+
+    A gerund names an action and must be met by one ("Going fast" for
+    RUNNING); plain -ing nouns (MORNING, SPRING) take plain definitions
+    and never trigger this. Measurement first: gating follows census data.
+    """
+    if not _is_gerund_answer(answer, words):
+        return None
+    if _clue_has_gerund(clue, words):
+        return None
+    return "gerund-without-gerund"
+
+
+# Vague for-some/for-one qualifiers ("Dawn's earliest hour, for some"):
+# the tail hedges instead of routing. Counted by the census; gating
+# follows its verdict.
+_VAGUE_FOR_SOME_RE = re.compile(
+    r"\bfor\s+(?:some|one|many|most|few)\b",
+    re.IGNORECASE,
+)
+
+
+def _vague_for_some(text):
+    """Detect hedging for-some/for-one tails."""
+    return isinstance(text, str) and _VAGUE_FOR_SOME_RE.search(text) is not None
+
+
 def _stem_clue_word(word):
     """Reduce one word to a coarse stem for leak comparison.
 
@@ -5472,6 +5576,35 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                 "the other's domain, and end with ? only when the "
                 "misdirection is real."
             )
+    # Abbreviation lane: short answers are often abbreviations, and editors
+    # clue them with a small closed set of frames ("Marsupial, for short",
+    # "Geographical abbr."). Lane G measured for-short at 0.40% and
+    # Abbr.-suffix style at 1.15%: real shapes worth a dedicated frame set.
+    # Off by default; the loop ablates it.
+    abbrev_lane = (
+        os.environ.get("CROSSWORD_ABBREV_LANE", "").strip().casefold()
+        in {"1", "true", "yes", "on"}
+    )
+    if abbrev_lane:
+        base_instruction += (
+            " When the answer is short or reads as initials, prefer an "
+            "abbreviation frame: trail with ', for short', trail with "
+            "'Abbr.', or name what it abbreviates ('Therapy program, for "
+            "short'). Never invent the expansion: only expand what the "
+            "letters plainly spell."
+        )
+    # Gerund matching: actions meet actions. A gerund answer must meet a
+    # gerund in the clue; plain -ing nouns take plain definitions.
+    # Measurement only until the census prices it.
+    gerund_match = (
+        os.environ.get("CROSSWORD_GERUND_MATCH", "").strip().casefold()
+        in {"1", "true", "yes", "on"}
+    )
+    if gerund_match:
+        base_instruction += (
+            " Match gerunds with gerunds: when the answer names an action "
+            "in -ing form, include an -ing action word in the clue."
+        )
 
     def run_draft_round(round_index, target_entries, instruction=None, avoid_by_id=None):
         nonlocal title, draft_calls

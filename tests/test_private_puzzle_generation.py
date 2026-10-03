@@ -1650,6 +1650,52 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
     assert not private_generation._hedged_definition("Kind of transit")
     assert not private_generation._hedged_definition("Fiancées, in a way")
     assert not private_generation._hedged_definition("Tom Seaver, so to speak")
+
+
+def _gerund_words():
+    return {
+        "RUN", "RUNS", "SING", "SINGS", "WRITE", "WRITES", "GO", "GOES",
+        "DO", "MORN", "EVEN", "EVENS", "MAKE", "MAKES", "NICE", "FAST",
+        "VOCAL", "PERFORMANCE", "AUTHOR", "CRAFT",
+    }
+
+
+def test_gerund_answers_meet_verb_stems_in_the_wordlist():
+    gerund = private_generation._is_gerund_answer
+    words = _gerund_words()
+    assert gerund("RUNNING", words) is True
+    assert gerund("SINGING", words) is True
+    assert gerund("WRITING", words) is True
+    assert gerund("MORNING", words) is False
+    assert gerund("SPRING", words) is False
+    assert gerund("STRING", words) is False
+    # Genuinely ambiguous (to even is rare): resolves verb-side, priced
+    # by the census rather than special-cased here.
+    assert gerund("EVENING", words) is True
+    assert gerund("RUN", words) is False
+
+
+def test_clue_gerund_spotting_reads_true_gerunds_only():
+    spotted = private_generation._clue_has_gerund
+    words = _gerund_words()
+    assert spotted("Going fast", words) is True
+    assert spotted("Morning exercise", words) is False
+    assert spotted("Vocal performance", words) is False
+
+
+def test_gerund_agreement_flags_action_answers_without_actions():
+    issue = private_generation._gerund_agreement_issue
+    words = _gerund_words()
+    assert issue("SINGING", "Vocal performance", words) == "gerund-without-gerund"
+    assert issue("WRITING", "Author's craft", words) == "gerund-without-gerund"
+    assert issue("RUNNING", "Going fast, maybe", words) is None
+    assert issue("MORNING", "Dawn's earliest hour", words) is None
+
+
+def test_vague_for_some_spots_hedging_tails():
+    assert private_generation._vague_for_some("Dawn's earliest hour, for some")
+    assert private_generation._vague_for_some("A musician's tool, for one")
+    assert not private_generation._vague_for_some("Circle of friends")
     # A possessed qualifier or a definite for/of referent names a route;
     # an indefinite object points nowhere (census, NYT Monday).
     assert (
