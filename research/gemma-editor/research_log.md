@@ -139,3 +139,23 @@
   0.10->0.25 restoration is now due (per METRIC_V2.md s2: known-witty
   controls score gold) with target rescale; promotion stays a main-agent
   decision.
+
+## Q01 — answer-stem gate (KEEP, 14/15 admitted, guardHits 0)
+- Change: `_derivational_stem_set` + `_clue_answer_stem_issue` in
+  `private_puzzle_generation._clue_wordplay_issue` (Q01 chain, no judging):
+  suffix strip NESS/MENT/TION/LESS/FUL/IVE/LY/AL/EST/ER/ED/ING/ES/S
+  (remainder>=3, bare S skips SS), IER/IEST->Y, trailing I->Y, prefix
+  strip UN-/DIS-/MIS-/IM-/IN-/NON-/RE- (len>=7, remainder>=5); full-token
+  guard + len>=4 keeps short-word controls legal. New reasons
+  `answer-stem-in-clue` / `tautological-comparative`.
+- Unit tests: 40 leak pairs rejected with the new reasons, 40 controls
+  stay legal (81 Q01 cases incl. the WOES/Misfortunes PMID check); full
+  file 263 passed, ruff clean.
+- Generation seed 6200 strict (`llama3.2:3b`, Monday): admitted 14/15,
+  guardHits 0, draftCalls 6, compareCalls 10, families definition 13 +
+  factual-relation 1 (plain-definition genre 12/14), gen wall 404s.
+  Criterion admitted>=13/15 with guardHits==0 MET -> KEEP.
+- Honest caveat: plain-definition still dominates (12/14 admitted); the
+  gate binds only on derivation leaks, so variety still depends on
+  drafting livelier surfaces. Logs: /tmp/q01-benchmark-out.json,
+  /tmp/q01-seed6200-log.json (clue text stays in /tmp, never committed).
