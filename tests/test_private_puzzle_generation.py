@@ -1652,6 +1652,13 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
     assert not private_generation._hedged_definition("Tom Seaver, so to speak")
 
 
+def test_vague_where_flags_might_find_locations():
+    assert private_generation._vague_where("Where you might find a swing")
+    assert private_generation._vague_where("Where one might find peace")
+    assert not private_generation._vague_where("Where the heart is")
+    assert not private_generation._vague_where("Swing site")
+
+
 def test_vague_for_some_spots_hedging_tails_not_enumeration():
     assert private_generation._vague_for_some("Dawn's earliest hour, for some")
     assert private_generation._vague_for_some("Shelters for some Cubs")

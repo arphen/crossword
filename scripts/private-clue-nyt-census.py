@@ -131,6 +131,8 @@ def main() -> int:
                     hits.append(f"surface:{flag}")
                 if generation._hedged_definition(text):
                     hits.append("hedged-definition")
+                if generation._vague_where(text):
+                    hits.append("vague-where")
                 if generation._vague_for_some(text):
                     hits.append("vague-for-some")
                 answer = entry.get("answer") if isinstance(entry, dict) else None

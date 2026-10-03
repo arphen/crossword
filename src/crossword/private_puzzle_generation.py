@@ -3452,6 +3452,20 @@ def _hedged_definition(text):
     return isinstance(text, str) and _HEDGED_DEFINITION_RE.search(text) is not None
 
 
+# "Where you might find" clues fit anywhere: swings live in playgrounds,
+# parks, porches and gardens, so the frame isolates nothing. A location
+# clue must name what is characteristic, not what is possible.
+_VAGUE_WHERE_RE = re.compile(
+    r"\bwhere\s+(?:you|one|they|people)\s+might\s+find\b",
+    re.IGNORECASE,
+)
+
+
+def _vague_where(text):
+    """Detect might-find location frames that fit any location."""
+    return isinstance(text, str) and _VAGUE_WHERE_RE.search(text) is not None
+
+
 # Hedging for-some/for-many tails ("Dawn's earliest hour, for some"): the
 # tail qualifies instead of routing. "For one" is deliberately excluded:
 # canonical enumeration ("India, for one") is editors' fair game.
@@ -5768,6 +5782,8 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     decision = {"admitted": False, "reasons": ["hedged-definition"]}
                 elif strict_admission and _vague_for_some(text):
                     decision = {"admitted": False, "reasons": ["vague-for-some"]}
+                elif strict_admission and _vague_where(text):
+                    decision = {"admitted": False, "reasons": ["vague-where"]}
                 elif strict_admission and _gerund_agreement_issue(
                     entry.get("answer"), text
                 ):
