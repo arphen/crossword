@@ -99,3 +99,21 @@
   never lands misdirection-with-recovery. Next loop should calibrate the
   gold instrument first (known-witty control clues must score gold) before
   further draft-lane mutations. Best stays 0.6455 (baseline seed 6200).
+
+## Iter4r — CROSSWORD_ROUTE_DIVERGE (KEEP, 0.6818, TARGET MET)
+- Change: none in src (env-only on committed code): ROUTE_CONTEXT=1 +
+  ROUTE_DIVERGE=1 — divergent route collision in prompt, verbatim copies
+  blocked as duplicate-drafts, regenerate via normal redraft.
+- Seed 6200 strict: 15/15 admitted, guardHits 0, draftCalls 4 (fewest yet),
+  A=1.0 T=0.9333 W=0.0 D=0.6785 -> score 0.6818 vs bar 0.6655 -> KEEP.
+- Paced probe /tmp/iter4-probe.py: trivial 1, unresolved 6, unfair 8,
+  2 judge-500 artifacts (9A reveal, 10A attempt2) individually retried to
+  unfair/unresolved, 0 errors remaining. Only 1 trivial in 15.
+- Noise seeds: 6201 15/15 draftCalls 6; 6202 15/15 draftCalls 4 with a
+  witnessed pun + fill-blank — full admission on all 3 seeds, guardHits 0.
+- TARGET (score>=0.68 with admitted>=13) MET: 0.6818 with 15/15. Loop stops
+  per mission; my planned iter5 (draft depth) skipped.
+- Honest caveat: W=0.0 again, unfair 8/15 (worst fairness yet). The critic
+  gain is A+T (admit everything, rarely trivial), not gold. Do not mistake
+  for harder-but-fair; the gold-instrument fix the sibling log calls for
+  stays the priority.
