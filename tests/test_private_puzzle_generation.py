@@ -3089,6 +3089,12 @@ def test_pun_surface_accepts_only_a_terminal_question_mark():
         "trailing-enumeration",
     ]
     assert private_generation._clue_surface_issues("City named for a chief (7)") == []
+    # Vibe tails decorate without distinguishing; concrete attachments
+    # and definitional objects ("for gratitude") stay fair.
+    assert private_generation._filler_tail("Light source for a peaceful ambiance")
+    assert private_generation._filler_tail("Farewell, with a hint of formality")
+    assert not private_generation._filler_tail("Light source with a wick")
+    assert not private_generation._filler_tail("Polite expression for gratitude")
     # A head noun doing all the work with no content behind it.
     assert private_generation._clue_surface_issues("Regret's painful word") == [
         "empty-word-head",

@@ -3534,20 +3534,21 @@ def _obscure_head_issue(answer, clue, scores=None):
     return None
 
 
-# Trailing filler tails ("with a hint of formality", "with a steady
-# flow"): the with-phrase spends words to say nothing distinguishing.
-# Concrete attachments ("with a wick", "man with a plan") are load-bearing
-# and unaffected: only the closed abstract-filler nouns fire.
+# Trailing filler tails ("with a hint of formality", "for a peaceful
+# ambiance"): the tail phrase spends words to say nothing distinguishing.
+# Concrete attachments ("with a wick", "man with a plan", "expression for
+# gratitude") are load-bearing and unaffected: only the closed vibe-noun
+# list fires, and gratitude-style definitional objects are not vibe nouns.
 _FILLER_TAIL_RE = re.compile(
-    r"\bwith\s+(?:a\s+)?(?:\w+\s+)?"
+    r"\b(?:with|for)\s+(?:a\s+)?(?:\w+\s+)?"
     r"(?:hint|touch|twist|sense|air|feel|note|trace|flow|formality|"
-    r"respect|excitement|flair)\b",
+    r"respect|excitement|flair|ambiance|atmosphere|mood|vibe|aura)\b",
     re.IGNORECASE,
 )
 
 
 def _filler_tail(text):
-    """Detect content-free with-tails."""
+    """Detect content-free with-/for-tails."""
     return isinstance(text, str) and _FILLER_TAIL_RE.search(text) is not None
 
 

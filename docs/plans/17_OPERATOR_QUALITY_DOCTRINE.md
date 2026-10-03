@@ -26,6 +26,15 @@ beside the rule rather than used to kill it.
 | hedged-definition (circles) | ACE/in some circles | Zero NYT hits | LIVE |
 | short-for repair | TENET/short for that | Translates, never scaffolds | LIVE |
 
+## Literalism doctrine (operator-stated)
+
+Literal description is licensed only twice: for ambiguous answers the
+description fits several fills of (iota/atad/atom as small amount;
+Ava/Eve as names), where crossings disambiguate, and for precise
+technical facts ("bohr, in physics"). Everyday words clued by bare
+literal description ("Light source for a peaceful ambiance" for CANDLE)
+are unlicensed: no ambiguity, no technicality, no route.
+
 ## Mission queue (subagent-ready work units)
 
 1. **Abbreviation drafting lane.** Prompt variant with abbreviation frames
