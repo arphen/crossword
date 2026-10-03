@@ -1592,6 +1592,43 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
         )
         is None
     )
+    # Word-split leaks: the answer distributed across clue words sharing
+    # its stems (chat judgements, operator session).
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "MAKESNICE"}, "Making a nice impression"
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "BRAIDS"}, "Style of braiding hair"
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NOTI"}, "Four-letter notification"
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "DEVIL"}, "Evil spirit"
+        )
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "LETLIVE"}, "Live and ___"
+        )
+        is None
+    )
+    # Dangling short-for frames repair to the bare definition.
+    assert (
+        private_generation._normalize_clue_surface("Stance or opinion, short for that")
+        == "Stance or opinion"
+    )
     assert private_generation._hedged_definition("Academic achievement, in some circles")
     assert private_generation._hedged_definition("Idiom, in certain circles")
     assert not private_generation._hedged_definition("Academic achievement")

@@ -3153,6 +3153,81 @@ def _letters_only(value):
     return re.sub(r"[^A-Z]", "", str(value).upper())
 
 
+def _stem_clue_word(word):
+    """Reduce one word to a coarse stem for leak comparison.
+
+    A tiny deterministic stemmer (plural/inflection stripping with the
+    common e-restoration and double-consonant rules). It over-stems by
+    design: both clue and answer pass through it, so only shared stems
+    match, and the census validates the fallout.
+    """
+    word = re.sub(r"[^A-Z]", "", str(word).upper())
+    if len(word) > 4 and word.endswith("IES"):
+        return word[:-3] + "Y"
+    if len(word) > 5 and word.endswith("ING"):
+        base = word[:-3]
+        if len(base) >= 2 and base[-1] == base[-2]:
+            return base[:-1]
+        if len(base) == 3:
+            return base + "E"
+        return base
+    if len(word) > 4 and word.endswith("ED"):
+        base = word[:-2]
+        if len(base) >= 2 and base[-1] == base[-2]:
+            return base[:-1]
+        return base
+    if len(word) > 4 and word.endswith("ES") and (
+        word[-3] in "SXZO" or word[-4:-2] in ("CH", "SH")
+    ):
+        return word[:-2]
+    if len(word) > 3 and word.endswith("S") and not word.endswith("SS"):
+        return word[:-1]
+    return word
+
+
+def _segmented_stem_overlap(answer, text):
+    """Catch the answer distributed across clue words sharing its stems.
+
+    "Making a nice impression" for MAKESNICE never places the answer in
+    one token, but every answer part (MAKES/NICE) shares a stem with a
+    clue word (making/nice). Returns the answer when its stem matches one
+    clue word whole, or when the answer splits into 2-4 parts (each at
+    least 2 letters) whose stems each match a clue word or a join of up to
+    three consecutive clue words ("i can't" covers ICANT). Single-token and
+    fairness behavior is unchanged: genus words, double-duty words, and
+    fill-blank completions do not fully cover their answers.
+    """
+    bare = _letters_only(answer)
+    if len(bare) < 4 or not isinstance(text, str):
+        return None
+    words = re.findall(r"[A-Za-z]+", text)
+    stems = [_stem_clue_word(word) for word in words]
+    answer_stem = _stem_clue_word(bare)
+    if len(answer_stem) >= 4 and answer_stem in stems:
+        return bare
+    joins = set()
+    for index, stem in enumerate(stems):
+        joins.add(stem)
+        if index + 1 < len(stems):
+            joins.add(stem + stems[index + 1])
+        if index + 2 < len(stems):
+            joins.add(stem + stems[index + 1] + stems[index + 2])
+    covers = {part for part in joins if len(part) >= 2}
+
+    def _split(position, parts):
+        if position == len(bare):
+            return parts >= 2
+        for end in range(position + 2, min(len(bare), position + 8) + 1):
+            piece = bare[position:end]
+            if _stem_clue_word(piece) in covers and _split(end, parts + 1):
+                return True
+        return False
+
+    if _split(0, 0):
+        return bare
+    return None
+
+
 def _answer_lexical_forms(answer):
     """Return high-confidence lexical forms that must stay out of a clue.
 
@@ -3251,6 +3326,10 @@ _ABBREV_FRAME_RE = re.compile(
     r"|\bfor\s+short\s*$",
     re.IGNORECASE,
 )
+_ENUM_LETTER_FRAME_RE = re.compile(
+    r"\b(?:\w+)-letter\s+(.+?)\s*$",
+    re.IGNORECASE,
+)
 
 
 def _abbreviation_head_overlap(answer, text):
@@ -3260,12 +3339,17 @@ def _abbreviation_head_overlap(answer, text):
     bare = _letters_only(answer)
     if len(bare) < 4:
         return None
+    expansions = []
     match = _ABBREV_FRAME_RE.search(text)
-    if match is None:
-        return None
-    expansion = _letters_only(match.group(1) or "")
-    if len(expansion) >= 4 and expansion[:4] == bare[:4]:
-        return bare
+    if match is not None and match.group(1):
+        expansions.append(match.group(1))
+    enum = _ENUM_LETTER_FRAME_RE.search(text)
+    if enum is not None:
+        expansions.append(enum.group(1))
+    for expansion in expansions:
+        headed = _letters_only(expansion)
+        if len(headed) >= 4 and headed[:4] == bare[:4]:
+            return bare
     return None
 
 
@@ -3300,6 +3384,9 @@ def _clue_answer_overlap(entry, clue):
     head = _abbreviation_head_overlap(answer, text)
     if head is not None:
         return head
+    segmented = _segmented_stem_overlap(answer, text)
+    if segmented is not None:
+        return segmented
     bare = _letters_only(answer)
     if len(bare) >= 6:
         # Single-token answers that are really phrases ("MAKESNICE",
@@ -4682,6 +4769,15 @@ def _normalize_clue_surface(clue):
     if not isinstance(clue, str):
         return clue
     text = clue.strip()
+    # A dangling short-for frame names no expansion ("Stance or opinion,
+    # short for that"): the definition stands alone without it, so drop the
+    # frame rather than scaffolding a fair definition.
+    text = re.sub(
+        r",\s*short\s+for\s+(?:that|this|it)\s*[?.]?\s*$",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    ).strip()
     issues = _clue_surface_issues(text)
     if not issues:
         return text
