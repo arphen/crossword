@@ -40,3 +40,22 @@
   2 retries, per-entry error isolation, incremental writes), 0 errors,
   judge wall 706s. Logs: /tmp/iter2-gen-log.json, /tmp/iter2-buckets.json,
   /tmp/iter2-rerun.log.
+
+## Iter3 — CROSSWORD_RELAX_FOR_SOME ablation (REVERT)
+- Change: `CROSSWORD_RELAX_FOR_SOME=1` skips the strict `vague-for-some`
+  rejection (drafts fall through to `admit_candidate`); receipt carries
+  `forSomeRelaxed` flag. Unit test drives `_make_candidate_clues` with a
+  mocked chat: strict rejects `... for some ...` as vague-for-some and
+  scaffolds; relaxed admits it cleanly.
+- Generation seed 6200 strict: admitted 14/15, guardHits 0, draftCalls 6,
+  families definition 13 + factual-relation 1 (plain-definition genre 13),
+  D=0.7131, gen wall 126s.
+- Behavioural critic (14 judged): trivial 3, unresolved 6, unfair 5,
+  gold 0 => T=0.7857, W=0.0.
+- Score 0.30*0.9333+0.30*0.7857+0+0.15*0.7131 = 0.6227, delta -0.023
+  vs best 0.6455 -> REVERT src + tests to champion.
+- Reading: zero admitted clues use for-some tails, so the gate never binds
+  at this seed — the ablation is uninformative rather than harmful, but
+  keep-policy still refuses (no gain). For-some stays strict-only watch.
+- Judge via reusable /tmp/judge15.py (resume-capable, incremental writes):
+  clean 15/15, 0 errors, wall 606s.
