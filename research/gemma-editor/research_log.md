@@ -76,3 +76,26 @@
   any binding cap costs ~7 admission. Genre variety must come from
   drafting livelier surfaces (k-draft rounds), not from scaffolding plain
   ones. Log /tmp/iter4-gen-log.json (clue text stays in /tmp).
+
+## Iter5 — k-draft breadth env-only probe (REVERT, nothing in tree)
+- Change: none in src (rounds already env-wired at ~:5610-5630). Measured
+  with `CROSSWORD_CANDIDATE_DRAFT_ROUNDS=6 CROSSWORD_CANDIDATE_REDRAFT_ROUNDS=2`
+  (champion defaults 4/1). A code attempt raising the llama3.2:3b tier
+  defaults was tried first and abandoned: 3 champion-pinned redraft tests
+  assert the 4/1 schedule, so the default change ships only on a keep.
+- Generation seed 6200 strict: admitted 15/15, guardHits 0, draftCalls 9,
+  compareCalls 12, families definition 13 + factual-relation 2
+  (plain-definition genre 13), gen wall 85s. Full admission at 6 rounds.
+- Behavioural critic (15 judged, no scaffolds): trivial 3, unresolved 6,
+  unfair 6, gold 0 => T=0.8, W=0.0. D=0.5013 (factual 2/15 overshoots
+  the Monday 0.00866 share).
+- Score 0.30*1.0+0.30*0.8+0+0.15*0.5013 = 0.6152, delta -0.030 vs best
+  0.6455, below keep 0.6655 -> REVERT (env-only; src+tests untouched,
+  champion tree intact).
+- Loop-level reading (iters 2-5 + sibling 3r): W=0 in all five judged
+  verdicts (0 gold over 71 non-scaffold entries) while unfair absorbs the
+  misses (5,5,5,7,6). Either the 4b blind judge's gold bar (solve-attempt-2
+  or fair+aha) is unreachable for 3b drafts, or small-model wit genuinely
+  never lands misdirection-with-recovery. Next loop should calibrate the
+  gold instrument first (known-witty control clues must score gold) before
+  further draft-lane mutations. Best stays 0.6455 (baseline seed 6200).
