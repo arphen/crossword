@@ -1,6 +1,6 @@
 {
   "version": "private-clue-benchmark-v1",
-  "generatedAt": "2026-10-03T06:54:32+00:00",
+  "generatedAt": "2026-10-03T08:49:35+00:00",
   "kind": "counts-only",
   "claim": "one AutoResearch iteration: fixed 15-answer benchmark, deterministic scoring only",
   "iterations": [
@@ -133,6 +133,116 @@
       "compareCalls": 11,
       "redraftSteeringRounds": 1,
       "wallSeconds": 49.165,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    },
+    {
+      "label": "arm-noise-1",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 12,
+        "factual-relation": 2,
+        "genre:plain-definition": 13,
+        "genre:quotational": 1
+      },
+      "draftCalls": 6,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 55.853,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6201
+    },
+    {
+      "label": "arm-noise-2",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 14,
+        "genre:plain-definition": 13,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 5,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 50.072,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6202
+    },
+    {
+      "label": "arm-draft-rounds-6",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 13,
+        "factual-relation": 1,
+        "genre:plain-definition": 12,
+        "genre:quotational": 1,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 8,
+      "compareCalls": 12,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 71.382,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    },
+    {
+      "label": "arm-challenge-on",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 13,
+        "factual-relation": 1,
+        "genre:plain-definition": 13,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 6,
+      "compareCalls": 10,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 54.24,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    },
+    {
+      "label": "arm-steering-off",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 13,
+      "scaffold": 2,
+      "admissionRate": 0.8667,
+      "guardHits": 0,
+      "families": {
+        "definition": 12,
+        "factual-relation": 1,
+        "genre:plain-definition": 11,
+        "genre:sound-or-action-cue": 2
+      },
+      "draftCalls": 5,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 52.199,
       "model": "llama3.2:3b",
       "weekday": "monday",
       "seed": 6200

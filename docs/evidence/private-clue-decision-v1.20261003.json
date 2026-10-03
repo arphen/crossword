@@ -1,6 +1,6 @@
 {
   "version": "private-clue-decision-v1",
-  "generatedAt": "2026-10-03T07:01:32+00:00",
+  "generatedAt": "2026-10-03T08:52:16+00:00",
   "kind": "counts-only",
   "claim": "champion decision rule over one single-variable sweep",
   "rule": {
@@ -19,18 +19,18 @@
   },
   "noiseFloor": {
     "replicates": 2,
-    "usableReplicates": 1,
+    "usableReplicates": 0,
     "goldRate": [
-      0.0,
-      0.0
+      null,
+      null
     ],
     "unfairRate": [
-      0.4286,
-      0.4286
+      null,
+      null
     ],
     "trivialRate": [
-      0.1429,
-      0.1429
+      null,
+      null
     ],
     "guardPassRate": [
       1.0,
@@ -40,30 +40,30 @@
   },
   "verdicts": [
     {
-      "label": "arm-challenge-on",
+      "label": "arm-draft-rounds-6",
       "seed": 6200,
       "admitted": 14,
       "guardPassRate": 1.0,
-      "goldRate": 0.0,
-      "trivialRate": 0.2143,
-      "unfairRate": 0.2857,
-      "unfairRateJudgeDiscounted": 0.1143,
-      "soundRate": 0.4286,
+      "goldRate": null,
+      "trivialRate": null,
+      "unfairRate": null,
+      "unfairRateJudgeDiscounted": null,
+      "soundRate": null,
       "gateGuard": true,
       "gateGold": false,
       "gateUnfair": false,
       "decision": "REVERT"
     },
     {
-      "label": "arm-draft-rounds-6",
+      "label": "arm-challenge-on",
       "seed": 6200,
       "admitted": 14,
       "guardPassRate": 1.0,
-      "goldRate": 0.0,
-      "trivialRate": 0.2143,
-      "unfairRate": 0.4286,
-      "unfairRateJudgeDiscounted": 0.1714,
-      "soundRate": 0.5,
+      "goldRate": null,
+      "trivialRate": null,
+      "unfairRate": null,
+      "unfairRateJudgeDiscounted": null,
+      "soundRate": null,
       "gateGuard": true,
       "gateGold": false,
       "gateUnfair": false,
@@ -74,11 +74,11 @@
       "seed": 6200,
       "admitted": 13,
       "guardPassRate": 1.0,
-      "goldRate": 0.0,
-      "trivialRate": 0.1538,
-      "unfairRate": 0.3077,
-      "unfairRateJudgeDiscounted": 0.1231,
-      "soundRate": 0.3846,
+      "goldRate": null,
+      "trivialRate": null,
+      "unfairRate": null,
+      "unfairRateJudgeDiscounted": null,
+      "soundRate": null,
       "gateGuard": true,
       "gateGold": false,
       "gateUnfair": false,

@@ -1600,6 +1600,13 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
     assert not private_generation._hedged_definition("Kind of transit")
     assert not private_generation._hedged_definition("Fiancées, in a way")
     assert not private_generation._hedged_definition("Tom Seaver, so to speak")
+
+
+def test_vague_abstraction_flags_differentia_free_definitions():
+    assert private_generation._vague_abstraction("Academic achievement")
+    assert private_generation._vague_abstraction("Major event?")
+    assert not private_generation._vague_abstraction("Academic achievement in Oslo")
+    assert not private_generation._vague_abstraction("Achievement")
     # A possessed qualifier or a definite for/of referent names a route;
     # an indefinite object points nowhere (census, NYT Monday).
     assert (

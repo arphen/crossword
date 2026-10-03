@@ -1,6 +1,6 @@
 {
   "version": "private-clue-cold-solver-v1",
-  "generatedAt": "2026-10-03T06:56:51+00:00",
+  "generatedAt": "2026-10-03T08:52:15+00:00",
   "kind": "counts-only",
   "claim": "blind cold-solver solvability probe; behaviour-derived buckets, no style score",
   "method": {
@@ -18,21 +18,21 @@
     "label": "arm-steering-off",
     "judge": "gemma3:4b",
     "buckets": {
-      "unresolved": 7,
+      "unresolved": 6,
       "trivial": 2,
       "scaffold": 2,
-      "unfair": 4
+      "unfair": 5
     },
     "judged": 13,
     "goldRate": 0.0,
     "trivialRate": 0.1538,
-    "unfairRate": 0.3077,
-    "unresolvedRate": 0.5385,
+    "unfairRate": 0.3846,
+    "unresolvedRate": 0.4615,
     "definitionSoundness": {
       "sound": 5,
       "unsound": 8
     },
     "soundRate": 0.3846,
-    "wallSeconds": 138.633
+    "wallSeconds": 159.781
   }
 }

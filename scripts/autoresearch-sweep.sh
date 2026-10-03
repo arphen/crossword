@@ -23,11 +23,16 @@ run_arm() {
   env "$@" CROSSWORD_STRICT_ADMISSION=1 $PY scripts/private-clue-benchmark.py \
       --label "$label" --seed "$seed" --weekday "$DAY" >/dev/null 2>&1
   local bench_rc=$?
+  # The probe is established-broken (gold 0.000 on known-good controls):
+  # skip its model calls by default; set SKIP_SOLVER=0 to replicate.
+  local solver_rc=-1
+  if [ "${SKIP_SOLVER:-1}" != "1" ]; then
   $PY scripts/clue-cold-solver.py \
       --log /tmp/clue-benchmark.json --judge "$JUDGE" \
       --out "docs/evidence/private-clue-cold-solver-v1.${STAMP}.json" \
       --verdicts-out "/tmp/verdicts-${label}.json" >/dev/null 2>&1
-  local solver_rc=$?
+  solver_rc=$?
+  fi
   $PY - "$label" "$seed" "$bench_rc" "$solver_rc" "$RESULTS" "$STAMP" <<'PYTHON'
 import json, sys
 from pathlib import Path

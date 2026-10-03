@@ -105,6 +105,11 @@ def main() -> int:
     }
 
     baseline = next((r.get("goldRate") for r in noise if r.get("goldRate") is not None), None)
+    solver_usable = any(r.get("goldRate") is not None for r in records)
+    admitted_hi = max(
+        [r.get("admitted") for r in noise if isinstance(r.get("admitted"), int)],
+        default=None,
+    )
     verdicts = []
     for record in arms:
         guard = record.get("__guard__")
@@ -114,13 +119,30 @@ def main() -> int:
             None if unfair is None else min(1.0, unfair * JUDGE_UNSOUND_PRECISION)
         )
         guard_ok = guard is not None and (guard_lo is None or guard >= guard_lo)
-        gold_ok = (
-            gold is not None
-            and baseline is not None
-            and gold > baseline
-            and (gold_hi is None or gold > gold_hi)
-        )
-        unfair_ok = unfair is not None and adjusted_unfair < UNFAIR_CEILING
+        admitted = record.get("admitted")
+        if solver_usable:
+            gold_ok = (
+                gold is not None
+                and baseline is not None
+                and gold > baseline
+                and (gold_hi is None or gold > gold_hi)
+            )
+            unfair_ok = unfair is not None and adjusted_unfair < UNFAIR_CEILING
+            accept = guard_ok and gold_ok and unfair_ok
+            rule_variant = "solver-gold"
+        else:
+            # The probe yielded no rates: acceptance falls back to clearing
+            # the admission noise ceiling with guards holding. A fallback
+            # ACCEPT is weaker than a gold ACCEPT and says so in the receipt.
+            gold_ok = False
+            unfair_ok = False
+            accept = (
+                guard_ok
+                and isinstance(admitted, int)
+                and admitted_hi is not None
+                and admitted > admitted_hi
+            )
+            rule_variant = "admission-fallback"
         verdicts.append(
             {
                 "label": record["label"],
@@ -137,7 +159,8 @@ def main() -> int:
                 "gateGuard": guard_ok,
                 "gateGold": gold_ok,
                 "gateUnfair": unfair_ok,
-                "decision": "ACCEPT" if (guard_ok and gold_ok and unfair_ok) else "REVERT",
+                "ruleVariant": rule_variant,
+                "decision": "ACCEPT" if accept else "REVERT",
             }
         )
 
@@ -151,6 +174,8 @@ def main() -> int:
         "rule": {
             "accept": "guardPassRate >= noise floor AND goldRate > champion "
             "replicate max AND unfairRate(judge-discounted) < 5%",
+            "acceptFallback": "probe yielded no rates: admitted above noise "
+            "ceiling with guards holding (weaker than gold ACCEPT)",
             "revert": "otherwise",
         },
         "amendments": [
@@ -158,6 +183,9 @@ def main() -> int:
             "so the champion does not reproduce run to run",
             "judge-unsoundness discount: the 4b judge's unsound flag measured "
             "~40% precise against known-good clues",
+            "admission fallback: when the probe yields no rates, ACCEPT "
+            "requires admitted above the noise ceiling with guards holding; "
+            "a fallback ACCEPT is weaker than a gold ACCEPT",
         ],
         "instrumentVerdict": {
             "judgeCalibrated": judge_fit,
