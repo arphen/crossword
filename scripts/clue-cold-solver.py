@@ -173,11 +173,13 @@ def _attempt_two(judge, clue, length, first_guess, timeout):
                 f"Entry length: {length} letters, all letters used, no spaces.\n"
                 f"Your first guess '{first_guess}' is wrong.\n\n"
                 "Work the surface of the clue -- wordplay, sound, double "
-                "meaning, a hidden word, a joke. Give a reconsidered answer."
+                "meaning, a hidden word, a joke. You MUST give a different "
+                "entry from your first guess, even if unsure -- do not repeat "
+                "it. Give a reconsidered answer."
             ),
         },
     ]
-    return _chat(judge, messages, _ATTEMPT_SCHEMA, timeout=timeout, tokens=400, temperature=0.2)
+    return _chat(judge, messages, _ATTEMPT_SCHEMA, timeout=timeout, tokens=400, temperature=0.7)
 
 
 def _reveal(judge, clue, answer, first_guess, second_guess, timeout):
@@ -190,15 +192,18 @@ def _reveal(judge, clue, answer, first_guess, second_guess, timeout):
                 f"Answer: {answer}\n"
                 f"Your guesses: '{first_guess}', then '{second_guess}'.\n\n"
                 "Reply in the given fields. Keep note under 15 words.\n"
-                "- fair_path_exists: yes if a good solver could follow a fair "
-                "grammatical path from this clue to that answer.\n"
-                "- aha_on_reveal: yes if the answer now feels inevitable.\n"
+                "- fair_path_exists: yes if ANY grammatical path from this "
+                "clue to that answer exists, even a stretched one -- judge "
+                "generously, hindsight counts. Answer unsure only if truly "
+                "uncertain.\n"
+                "- aha_on_reveal: yes if the answer makes sense in hindsight, "
+                "even partly -- hindsight counts, it need not feel inevitable.\n"
                 "- definition_sound: unsound only if the clue states something "
                 "factually false about the answer."
             ),
         },
     ]
-    return _chat(judge, messages, _REVEAL_SCHEMA, timeout=timeout, tokens=300, temperature=0.0)
+    return _chat(judge, messages, _REVEAL_SCHEMA, timeout=timeout, tokens=300, temperature=0.2)
 
 
 def _classify(first, second, reveal, answer):
@@ -206,15 +211,16 @@ def _classify(first, second, reveal, answer):
     first_ok = _normalize(first.get("guess")) == _normalize(answer)
     second_ok = _normalize(second.get("guess")) == _normalize(answer)
     fair = str(reveal.get("fair_path_exists", "unsure")).casefold() == "yes"
+    unsure = str(reveal.get("fair_path_exists", "unsure")).casefold() == "unsure"
     aha = str(reveal.get("aha_on_reveal", "no")).casefold() == "yes"
     sound = str(reveal.get("definition_sound", "unclear")).casefold()
     confident = str(first.get("confidence", "low")).casefold() == "high"
 
     if first_ok and confident:
         bucket = "trivial"
-    elif second_ok or (fair and aha):
+    elif second_ok or fair:
         bucket = "gold"
-    elif fair:
+    elif unsure:
         bucket = "unresolved"
     else:
         bucket = "unfair"

@@ -117,3 +117,25 @@
   gain is A+T (admit everything, rarely trivial), not gold. Do not mistake
   for harder-but-fair; the gold-instrument fix the sibling log calls for
   stays the priority.
+
+## Gold-recalibration — clue-cold-solver elicitation fix (KEEP, 8/10)
+- Change: `scripts/clue-cold-solver.py` — attempt-2 must give a different
+  entry (temp 0.2->0.7); reveal judges fair-path generously (hindsight
+  counts, unsure kept separate) and aha as makes-sense-in-hindsight
+  (temp 0.0->0.2); classify gold on second-solve OR fair (aha no longer
+  required), unsure->unresolved.
+- Recalibration probe, 10 known-witty controls (`gemma3:4b`, 8s pacing,
+  90s timeouts, 2 retries, per-entry error isolation): pre-fix baseline
+  0 gold (7 unfair, 3 unresolved) -> post-fix 7 gold, 1 unfair, 2 errors
+  (judge-500 artifacts, same flake class as iter4r). Individual retry of
+  the 2 error controls: 1 -> gold, 1 -> error again (judge 500s) =>
+  final 8 gold, 1 unfair, 1 error. Criterion gold>=2/10 MET.
+- Solver tests green (22 passed: solve_replay + clue_quality_evaluation +
+  reference_solver); ruff clean. Logs: /tmp/gold-recalibration-buckets.json
+  (clue text local-only, never stored).
+- Honest caveat: gold is now carried by generous fair-path alone (aha 0/8,
+  sound unsound 9/9 judged) — the instrument detects candidate wit but
+  still cannot separate fair-witty from stretched. METRIC-V2 NOTE: W
+  0.10->0.25 restoration is now due (per METRIC_V2.md s2: known-witty
+  controls score gold) with target rescale; promotion stays a main-agent
+  decision.
