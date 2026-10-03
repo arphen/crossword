@@ -5486,3 +5486,138 @@ def test_utterance_blank_candidates_no_match_returns_empty():
         )
         == []
     )
+
+
+# Q01 answer-stem gate (prototype, single variable, no judging). Derivation
+# chain follows /tmp/friday_metric.py: -ER/-EST/-IER/-Y/-NESS/-LY plus
+# UN-/DIS-/MIS-/RE- (full: NESS/MENT/TION/LESS/FUL/IVE/LY/AL/EST/ER/ED/ING/
+# ES/S + UN-/DIS-/MIS-/IM-/IN-/NON-/RE-). 40 leak pairs must be rejected
+# with the new reasons; 40 control pairs must stay legal.
+_Q01_STEM_LEAKS = [
+    ("SHADINESS", "Shady business practices", "answer-stem-in-clue"),
+    ("HAPPINESS", "happy feeling", "answer-stem-in-clue"),
+    ("DARKNESS", "dark alley", "answer-stem-in-clue"),
+    ("KINDNESS", "kind gesture", "answer-stem-in-clue"),
+    ("CALMNESS", "calm morning", "answer-stem-in-clue"),
+    ("BRIGHTNESS", "bright light", "answer-stem-in-clue"),
+    ("LONELINESS", "lonely night", "answer-stem-in-clue"),
+    ("QUIETNESS", "quiet room", "answer-stem-in-clue"),
+    ("QUICKLY", "quick response", "answer-stem-in-clue"),
+    ("SLOWLY", "slow walk", "answer-stem-in-clue"),
+    ("BRIGHTLY", "bright idea", "answer-stem-in-clue"),
+    ("QUIETLY", "quiet plea", "answer-stem-in-clue"),
+    ("HAPPILY", "happy crowd", "answer-stem-in-clue"),
+    ("HAPPY", "unhappy feeling", "answer-stem-in-clue"),
+    ("CLEAR", "unclear remark", "answer-stem-in-clue"),
+    ("HONEST", "dishonest answer", "answer-stem-in-clue"),
+    ("LOYAL", "disloyal rival", "answer-stem-in-clue"),
+    ("FORTUNE", "misfortune strikes", "answer-stem-in-clue"),
+    ("PRINT", "misprint error", "answer-stem-in-clue"),
+    ("WRITE", "rewrite draft", "answer-stem-in-clue"),
+    ("BUILD", "rebuild city", "answer-stem-in-clue"),
+    ("TEACHER", "teach class", "answer-stem-in-clue"),
+    ("LEADER", "lead role", "answer-stem-in-clue"),
+    ("PAINTER", "paint portrait", "answer-stem-in-clue"),
+    ("READER", "read book", "answer-stem-in-clue"),
+    ("FASTEST", "fast car", "answer-stem-in-clue"),
+    ("BRIGHTEST", "bright star", "answer-stem-in-clue"),
+    ("QUIETEST", "quiet corner", "answer-stem-in-clue"),
+    ("HAPPIEST", "happy days", "answer-stem-in-clue"),
+    ("SHADIER", "shady business", "answer-stem-in-clue"),
+    ("HAPPIER", "happy camper", "answer-stem-in-clue"),
+    ("DIRTIER", "dirty floor", "answer-stem-in-clue"),
+    ("NOISIER", "noisy room", "answer-stem-in-clue"),
+    ("SHADIER", "more shady", "tautological-comparative"),
+    ("SHADIEST", "most shady", "tautological-comparative"),
+    ("HAPPINESS", "more happy", "tautological-comparative"),
+    ("DARKNESS", "more dark", "tautological-comparative"),
+    ("QUICKLY", "more quick", "tautological-comparative"),
+    ("SORRIER", "sorry excuse", "answer-stem-in-clue"),
+    ("HAPPIER", "most happy", "tautological-comparative"),
+]
+
+_Q01_STEM_CONTROLS = [
+    ("WOES", "Misfortunes"),
+    ("WOES", "Grief"),
+    ("SAD", "Unhappy feeling"),
+    ("EARLY", "ear of corn"),
+    ("FORMER", "more formal"),
+    ("LATTER", "more formal"),
+    ("COVER", "cove by the sea"),
+    ("CASHIER", "clerk at a till"),
+    ("PIONEER", "early settler"),
+    ("MINER", "worker in a pit"),
+    ("BIGGER", "large in scope"),
+    ("LEADER", "head of the team"),
+    ("CARPET", "rug in the hall"),
+    ("DEVIL", "Evil spirit"),
+    ("PARTY", "Part of G.O.P."),
+    ("CATER", "Provide food"),
+    ("ARE", "They ___ here"),
+    ("HAMLIN", "Vice president from Maine"),
+    ("TOTO", "Dog that went to Oz"),
+    ("ERAT", "Common Latin word"),
+    ("ETRE", "Common French word"),
+    ("SHADIER", "more bright"),
+    ("SHADIER", "suspicious-looking"),
+    ("NICER", "more dull"),
+    ("OLDER", "more young"),
+    ("LARGER", "more tiny"),
+    ("DARKER", "more pale"),
+    ("QUIETER", "more shrill"),
+    ("HAPPIER", "more grim"),
+    ("EARLIER", "more later"),
+    ("SIMPLER", "more ornate"),
+    ("WISER", "more foolish"),
+    ("FASTER", "quick runner"),
+    ("BEST", "more good"),
+    ("BETTER", "more good"),
+    ("MEN", "more manly"),
+    ("QUIET", "hush falls"),
+    ("ODD", "stranger than fiction"),
+    ("DEEP", "bottom of the sea"),
+    ("COOLER", "more hot"),
+]
+
+_Q01_LEAK_REASONS = {
+    "answer-giveaway",
+    "answer-form-in-clue",
+    "tautological-degree-form",
+    "answer-stem-in-clue",
+    "tautological-comparative",
+}
+
+
+def test_q01_shadier_more_shady_flags_and_woes_misfortunes_legal():
+    assert private_generation._clue_answer_stem_issue(
+        {"answer": "SHADIER"}, "more shady"
+    ) == "tautological-comparative"
+    assert private_generation._clue_wordplay_issue(
+        {"answer": "SHADIER"}, "more shady"
+    ) in _Q01_LEAK_REASONS
+    assert private_generation._clue_answer_stem_issue(
+        {"answer": "WOES"}, "Misfortunes"
+    ) is None
+    assert private_generation._clue_wordplay_issue(
+        {"answer": "WOES"}, "Misfortunes"
+    ) is None
+
+
+@pytest.mark.parametrize(("answer", "clue", "reason"), _Q01_STEM_LEAKS)
+def test_q01_answer_stem_gate_rejects_derivation_leaks(answer, clue, reason):
+    assert private_generation._clue_answer_stem_issue(
+        {"answer": answer}, clue
+    ) == reason
+    assert private_generation._clue_wordplay_issue(
+        {"answer": answer}, clue
+    ) in _Q01_LEAK_REASONS
+
+
+@pytest.mark.parametrize(("answer", "clue"), _Q01_STEM_CONTROLS)
+def test_q01_answer_stem_gate_keeps_controls_legal(answer, clue):
+    assert private_generation._clue_answer_stem_issue(
+        {"answer": answer}, clue
+    ) is None
+    assert private_generation._clue_wordplay_issue(
+        {"answer": answer}, clue
+    ) is None

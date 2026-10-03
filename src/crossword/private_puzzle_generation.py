@@ -473,6 +473,28 @@ _SUPERLATIVE_MARKER_RE = re.compile(
 _DEGREE_PHRASE_RE = re.compile(
     r"\b(?:more|most|less|least)\s+([A-Za-z][A-Za-z]{2,})\b", re.IGNORECASE
 )
+# Q01 answer-stem chain (prototype, single variable, no judging). Suffixes
+# and prefixes follow /tmp/friday_metric.py: NESS/MENT/TION/LESS/FUL/IVE/
+# LY/AL/EST/ER/ED/ING/ES/S plus UN-/DIS-/MIS-/IM-/IN-/NON-/RE-, with
+# IER/IEST -> Y and trailing I -> Y for -NESS y->i forms (SHADINESS->SHADY).
+_DERIVATION_SUFFIXES = (
+    "NESS",
+    "MENT",
+    "TION",
+    "LESS",
+    "FUL",
+    "IVE",
+    "LY",
+    "AL",
+    "EST",
+    "ER",
+    "ED",
+    "ING",
+    "ES",
+    "S",
+)
+_DERIVATION_PREFIXES = ("MIS", "DIS", "NON", "UN", "IM", "IN", "RE")
+_DERIVATION_COMPARATIVES = frozenset({"MORE", "MOST", "LESS", "LEAST"})
 # A short-vowel monosyllable such as BIG, FAT or HOT: single consonant, single
 # vowel, single consonant. Those are the bases that double the final consonant
 # before -ER/-EST. A final W, X or Y is excluded because those letters do not
@@ -3684,6 +3706,94 @@ def _clue_degree_issue(entry, clue):
     return None
 
 
+def _derivational_stem_set(word):
+    """Derivational stem variants of one word (Q01 chain, uppercase).
+
+    IER/IEST -> Y (SHADIER->SHADY); suffix loop with remainder>=3 guard
+    (bare S skips SS); UN-/DIS-/MIS-/IM-/IN-/NON-/RE- strip only for
+    len>=7 forms with remainder>=5, tried on each suffix variant so
+    DISHONEST still yields HONEST; trailing I also yields Y (SHADI->SHADY).
+    """
+    bare = _letters_only(word)
+    if not bare:
+        return set()
+    if bare.endswith("IEST") and len(bare) > 5:
+        return {bare[:-4] + "Y"}
+    if bare.endswith("IER") and len(bare) > 4:
+        return {bare[:-3] + "Y"}
+    variants = {bare}
+    cur = bare
+    changed = True
+    while changed:
+        changed = False
+        for suffix in _DERIVATION_SUFFIXES:
+            if cur.endswith(suffix) and len(cur) - len(suffix) >= 3:
+                if suffix == "S" and cur.endswith("SS"):
+                    continue
+                cur = cur[: -len(suffix)]
+                variants.add(cur)
+                changed = True
+                break
+    for base in list(variants):
+        if len(base) >= 7:
+            for prefix in _DERIVATION_PREFIXES:
+                if base.startswith(prefix) and len(base) - len(prefix) >= 5:
+                    variants.add(base[len(prefix):])
+                    break
+    out = set(variants)
+    for variant in list(variants):
+        if variant.endswith("I") and len(variant) >= 3:
+            out.add(variant[:-1] + "Y")
+    return out
+
+
+def _clue_answer_stem_issue(entry, clue):
+    """Reject a clue containing an answer stem (Q01, no judging).
+
+    A clue token that is itself a derivational stem of the answer (SHADY
+    inside SHADINESS, QUICK inside QUICKLY, HAPPY inside UNHAPPY) leaks the
+    answer even with no verbatim overlap. A comparative/superlative
+    paraphrase over such a stem (more/most/less/least + stem) is
+    ``tautological-comparative``. Full-token guard (clue token in answer
+    stems or answer token in clue stems) plus len>=4 keeps EARLY/ear,
+    FORMER/more formal and WOES/Misfortunes legal.
+    """
+    if not isinstance(entry, dict) or not isinstance(clue, str):
+        return None
+    answer = _letters_only(entry.get("answer", ""))
+    if len(answer) < 4:
+        return None
+    answer_tokens = re.findall(r"[A-Z]+", str(entry.get("answer", "")).upper())
+    clue_tokens = re.findall(r"[A-Z]+", clue.upper())
+    if not answer_tokens or not clue_tokens:
+        return None
+    answer_stems = set()
+    for token in answer_tokens:
+        if len(token) >= 3:
+            answer_stems |= _derivational_stem_set(token)
+    has_comparative = any(
+        token in _DERIVATION_COMPARATIVES for token in clue_tokens
+    )
+    for token in clue_tokens:
+        if token in _OVERLAP_STOPWORDS:
+            continue
+        if len(token) < 4 or token in answer_tokens:
+            continue
+        token_stems = _derivational_stem_set(token)
+        hit = token in answer_stems
+        if not hit:
+            for form in answer_tokens:
+                if len(form) >= 4 and form in token_stems:
+                    hit = True
+                    break
+        if not hit:
+            continue
+        if has_comparative:
+            return "tautological-comparative"
+        return "answer-stem-in-clue"
+    return None
+
+
 def _clue_wordplay_issue(entry, clue):
     """Catch mechanically checkable clue/answer mismatches before play.
 
@@ -3707,6 +3817,9 @@ def _clue_wordplay_issue(entry, clue):
     degree = _clue_degree_issue(entry, text)
     if degree is not None:
         return degree
+    stem_issue = _clue_answer_stem_issue(entry, text)
+    if stem_issue is not None:
+        return stem_issue
     # The three anchored name-shape guards lived here and were removed in
     # Q08: name-shaped clues without a source-backed sense are refused
     # downstream by the factual-surface guard and the genre cap
