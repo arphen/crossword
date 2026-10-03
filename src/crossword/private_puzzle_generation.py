@@ -3242,22 +3242,6 @@ def _hedged_definition(text):
     return isinstance(text, str) and _HEDGED_DEFINITION_RE.search(text) is not None
 
 
-# Abstractions without differentia ("Academic achievement" for ACE): an
-# adjective plus an abstract noun names no route. Census decides whether
-# editors ever print this shape.
-_VAGUE_ABSTRACTION_RE = re.compile(
-    r"^\s*(?:academic|major|great|big|small|notable|noteworthy|significant|"
-    r"important)\s+(?:achievement|accomplishment|event|occurrence|thing|"
-    r"matter|affair)s?\s*[?.]?\s*$",
-    re.IGNORECASE,
-)
-
-
-def _vague_abstraction(text):
-    """Detect differentia-free abstract definitions."""
-    return isinstance(text, str) and _VAGUE_ABSTRACTION_RE.match(text) is not None
-
-
 # Abbreviation frames whose expansion hands the answer's head:
 # "Short for notification" for NOTI quotes the answer's first four
 # letters. Exact initialisms ("Portable document format" for PDF) stay
@@ -5425,8 +5409,6 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     decision = {"admitted": False, "reasons": ["pseudo-pun"]}
                 elif strict_admission and _hedged_definition(text):
                     decision = {"admitted": False, "reasons": ["hedged-definition"]}
-                elif strict_admission and _vague_abstraction(text):
-                    decision = {"admitted": False, "reasons": ["vague-abstraction"]}
                 else:
                     decision = admit_candidate(
                         text,

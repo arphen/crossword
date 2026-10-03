@@ -131,8 +131,6 @@ def main() -> int:
                     hits.append(f"surface:{flag}")
                 if generation._hedged_definition(text):
                     hits.append("hedged-definition")
-                if generation._vague_abstraction(text):
-                    hits.append("vague-abstraction")
                 for flag in generation._clue_risk_flags(entry, text) or []:
                     if flag not in {"foothold-required", "unsupported-factual-surface"}:
                         hits.append(f"risk:{flag}")
