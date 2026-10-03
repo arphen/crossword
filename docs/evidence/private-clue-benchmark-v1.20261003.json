@@ -1,6 +1,6 @@
 {
   "version": "private-clue-benchmark-v1",
-  "generatedAt": "2026-10-03T13:40:12+00:00",
+  "generatedAt": "2026-10-03T14:04:45+00:00",
   "kind": "counts-only",
   "claim": "one AutoResearch iteration: fixed 15-answer benchmark, deterministic scoring only",
   "iterations": [
@@ -752,6 +752,47 @@
       "compareCalls": 11,
       "redraftSteeringRounds": 1,
       "wallSeconds": 50.825,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    },
+    {
+      "label": "iter-routes-first2",
+      "entries": 15,
+      "strictAdmission": false,
+      "admitted": 15,
+      "scaffold": 0,
+      "admissionRate": 1.0,
+      "guardHits": 0,
+      "families": {
+        "definition": 15,
+        "genre:plain-definition": 11,
+        "genre:sound-or-action-cue": 4
+      },
+      "draftCalls": 5,
+      "compareCalls": 14,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 65.287,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    },
+    {
+      "label": "iter-routes-divergent",
+      "entries": 15,
+      "strictAdmission": false,
+      "admitted": 15,
+      "scaffold": 0,
+      "admissionRate": 1.0,
+      "guardHits": 0,
+      "families": {
+        "definition": 15,
+        "genre:plain-definition": 15
+      },
+      "draftCalls": 4,
+      "compareCalls": 14,
+      "redraftSteeringRounds": 0,
+      "wallSeconds": 55.39,
       "model": "llama3.2:3b",
       "weekday": "monday",
       "seed": 6200
