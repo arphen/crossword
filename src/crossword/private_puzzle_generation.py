@@ -2992,6 +2992,35 @@ def _has_syntax_debris(text):
     return "{" in bare or "}" in bare
 
 
+# Spelled-out trailing enumerations ("Surprise, 3 letters") lean on the
+# count instead of clueing. Parenthetical "(7)" style is untouched: that is
+# editors' convention, this is the model's crutch.
+_TRAILING_ENUMERATION_RE = re.compile(
+    r",\s*\d+\s+letters?\s*$",
+    re.IGNORECASE,
+)
+
+
+def _empty_word_head(text):
+    """Detect clues whose only content is "[X's] [modifiers] word".
+
+    "Regret's painful word" and "Apology's sincere word" route nowhere;
+    the head noun does all the work and says nothing. Language-qualified
+    heads ("Common Latin word") stay fair via the generic-template
+    exemption. "Word with fish or grass" has real content and never matches.
+    """
+    if not isinstance(text, str):
+        return False
+    core = _TRAILING_ENUMERATION_RE.sub("", text).strip()
+    if _GENERIC_LANGUAGE_ROUTE_RE.search(core):
+        return False
+    return re.fullmatch(
+        r"(?:\S+'s\s+)?(?:[\w-]+\s+){0,2}words?\s*[?.]?",
+        core,
+        re.IGNORECASE,
+    ) is not None
+
+
 def _clue_surface_issues(clue):
     """Check visible punctuation conventions without claiming semantics."""
     text = clue if isinstance(clue, str) else ""
@@ -3032,6 +3061,10 @@ def _clue_surface_issues(clue):
                 issues.append("question-mark-placement")
     if _has_syntax_debris(text):
         issues.append("syntax-debris")
+    if _TRAILING_ENUMERATION_RE.search(text):
+        issues.append("trailing-enumeration")
+    if _empty_word_head(text):
+        issues.append("empty-word-head")
     return issues
 
 
@@ -5597,9 +5630,9 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
         base_instruction += (
             " When the answer is short or reads as initials, prefer an "
             "abbreviation frame: trail with ', for short', trail with "
-            "'Abbr.', or name what it abbreviates ('Therapy program, for "
-            "short'). Never invent the expansion: only expand what the "
-            "letters plainly spell."
+            "'Abbr.', or name what the letters plainly spell "
+            "('Therapy program, for short'). Never invent the expansion: "
+            "only expand what the letters plainly spell."
         )
     # Gerund matching: actions meet actions. A gerund answer must meet a
     # gerund in the clue; plain -ing nouns take plain definitions.
@@ -5898,6 +5931,7 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
             "divergent": routes_divergent,
             "entriesWithRoutes": sum(1 for routes in routes_by_id.values() if routes),
         },
+        "abbrevLane": abbrev_lane,
         "challengeEnv": challenge_raw,
         "challengeEnabled": challenge_raw.strip().casefold() in {"1", "true", "yes", "on"},
         "entries": {

@@ -136,9 +136,6 @@ def main() -> int:
                 answer = entry.get("answer") if isinstance(entry, dict) else None
                 if generation._gerund_agreement_issue(answer, text) is not None:
                     hits.append("gerund-without-gerund")
-                answer = entry.get("answer") if isinstance(entry, dict) else None
-                if generation._gerund_agreement_issue(answer, text) is not None:
-                    hits.append("gerund-without-gerund")
                 for flag in generation._clue_risk_flags(entry, text) or []:
                     if flag not in {"foothold-required", "unsupported-factual-surface"}:
                         hits.append(f"risk:{flag}")

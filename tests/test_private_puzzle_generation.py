@@ -2151,6 +2151,66 @@ def test_route_context_reaches_drafts_and_blocks_verbatim_copies(tmp_path, monke
     }
 
 
+def test_candidate_abbrev_lane_prefers_for_short_frames(monkeypatch):
+    captured = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        captured.extend(
+            message.get("content", "")
+            for message in messages
+            if message.get("role") == "system"
+        )
+        if "clues" not in (schema.get("properties", {}) if isinstance(schema, dict) else {}):
+            return {"pick": "r0-0", "difference": "clearer"}
+        return {
+            "title": "T",
+            "clues": [{"id": "1A", "text": "Therapy program, for short"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setenv("CROSSWORD_ABBREV_LANE", "1")
+    context = {"_candidate_base_seed": 6107}
+    private_generation._make_candidate_clues(
+        "llama3.2:3b",
+        [{"id": "1A", "answer": "PTA", "length": 3}],
+        context,
+        "monday",
+    )
+
+    assert any("for short" in part for part in captured)
+    assert context["_candidate_generation"]["abbrevLane"] is True
+
+
+def test_candidate_abbrev_lane_off_by_default(monkeypatch):
+    captured = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        captured.extend(
+            message.get("content", "")
+            for message in messages
+            if message.get("role") == "system"
+        )
+        if "clues" not in (schema.get("properties", {}) if isinstance(schema, dict) else {}):
+            return {"pick": "r0-0", "difference": "clearer"}
+        return {
+            "title": "T",
+            "clues": [{"id": "1A", "text": "Therapy program, for short"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.delenv("CROSSWORD_ABBREV_LANE", raising=False)
+    context = {"_candidate_base_seed": 6107}
+    private_generation._make_candidate_clues(
+        "llama3.2:3b",
+        [{"id": "1A", "answer": "PTA", "length": 3}],
+        context,
+        "monday",
+    )
+
+    assert all("for short" not in part for part in captured)
+    assert context["_candidate_generation"]["abbrevLane"] is False
+
+
 def test_route_signifiers_divergent_picks_least_overlapping_pair(tmp_path, monkeypatch):
     index = tmp_path / "routes.local.json"
     index.write_text(
@@ -2995,6 +3055,18 @@ def test_pun_surface_accepts_only_a_terminal_question_mark():
     assert private_generation._clue_surface_issues("Sound adjustment (6)},{") == [
         "syntax-debris",
     ]
+    # Spelled-out trailing counts lean on the number, not the clue; NYT
+    # parenthetical enumeration stays untouched.
+    assert private_generation._clue_surface_issues("Surprise, 3 letters") == [
+        "trailing-enumeration",
+    ]
+    assert private_generation._clue_surface_issues("City named for a chief (7)") == []
+    # A head noun doing all the work with no content behind it.
+    assert private_generation._clue_surface_issues("Regret's painful word") == [
+        "empty-word-head",
+    ]
+    assert private_generation._clue_surface_issues("Common Latin word") == []
+    assert private_generation._clue_surface_issues("Word with fish or grass") == []
 
 
 def test_tuesday_recipe_reports_a_bounded_floor_shortfall(monkeypatch):
