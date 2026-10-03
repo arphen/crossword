@@ -192,10 +192,15 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/evidence/live-model-smoke-holdout-v1.20260928.json`
 - `docs/evidence/model-evaluation-holdout-v1.structural.json`
 - `docs/evidence/private-clue-benchmark-v1.20261002.json`
+- `docs/evidence/private-clue-benchmark-v1.20261003.json`
 - `docs/evidence/private-clue-candidate-lane-v1.llama3.2-3b-20261001.json`
+- `docs/evidence/private-clue-cold-solver-v1.20261003.json`
 - `docs/evidence/private-clue-corpus-attestation-v1.20261001.json`
 - `docs/evidence/private-clue-counter-reresolution-v1.offline.json`
+- `docs/evidence/private-clue-decision-v1.20261003.json`
+- `docs/evidence/private-clue-family-chisquare-v1.20261003.json`
 - `docs/evidence/private-clue-genre-census-v1.offline.json`
+- `docs/evidence/private-clue-judge-calibration-v1.20261003.json`
 - `docs/evidence/private-clue-leak-gate-v1.synthetic.json`
 - `docs/evidence/private-clue-nyt-census-v1.20261002.json`
 - `docs/evidence/private-clue-regex-redundancy-v1.offline.json`

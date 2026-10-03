@@ -1,0 +1,90 @@
+{
+  "version": "private-clue-decision-v1",
+  "generatedAt": "2026-10-03T07:01:32+00:00",
+  "kind": "counts-only",
+  "claim": "champion decision rule over one single-variable sweep",
+  "rule": {
+    "accept": "guardPassRate >= noise floor AND goldRate > champion replicate max AND unfairRate(judge-discounted) < 5%",
+    "revert": "otherwise"
+  },
+  "amendments": [
+    "noise floor from champion replicates: tier sampling pins no seed, so the champion does not reproduce run to run",
+    "judge-unsoundness discount: the 4b judge's unsound flag measured ~40% precise against known-good clues"
+  ],
+  "instrumentVerdict": {
+    "judgeCalibrated": true,
+    "judgeSoundnessPrecision": 0.4,
+    "fitForAcceptance": false,
+    "reason": "the probe returned gold=0.000 and unfair~0.40 on the hand-written known-good clue set as well as on the drafted clues, so it does not separate the two populations; a REVERT from this sweep records an instrument that cannot yet accept anything, not proof that these mutations are harmful"
+  },
+  "noiseFloor": {
+    "replicates": 2,
+    "usableReplicates": 1,
+    "goldRate": [
+      0.0,
+      0.0
+    ],
+    "unfairRate": [
+      0.4286,
+      0.4286
+    ],
+    "trivialRate": [
+      0.1429,
+      0.1429
+    ],
+    "guardPassRate": [
+      1.0,
+      1.0
+    ],
+    "note": "same config, fresh seeds; a mutation must clear this spread"
+  },
+  "verdicts": [
+    {
+      "label": "arm-challenge-on",
+      "seed": 6200,
+      "admitted": 14,
+      "guardPassRate": 1.0,
+      "goldRate": 0.0,
+      "trivialRate": 0.2143,
+      "unfairRate": 0.2857,
+      "unfairRateJudgeDiscounted": 0.1143,
+      "soundRate": 0.4286,
+      "gateGuard": true,
+      "gateGold": false,
+      "gateUnfair": false,
+      "decision": "REVERT"
+    },
+    {
+      "label": "arm-draft-rounds-6",
+      "seed": 6200,
+      "admitted": 14,
+      "guardPassRate": 1.0,
+      "goldRate": 0.0,
+      "trivialRate": 0.2143,
+      "unfairRate": 0.4286,
+      "unfairRateJudgeDiscounted": 0.1714,
+      "soundRate": 0.5,
+      "gateGuard": true,
+      "gateGold": false,
+      "gateUnfair": false,
+      "decision": "REVERT"
+    },
+    {
+      "label": "arm-steering-off",
+      "seed": 6200,
+      "admitted": 13,
+      "guardPassRate": 1.0,
+      "goldRate": 0.0,
+      "trivialRate": 0.1538,
+      "unfairRate": 0.3077,
+      "unfairRateJudgeDiscounted": 0.1231,
+      "soundRate": 0.3846,
+      "gateGuard": true,
+      "gateGold": false,
+      "gateUnfair": false,
+      "decision": "REVERT"
+    }
+  ],
+  "accepted": [],
+  "championUnchanged": true
+}

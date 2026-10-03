@@ -1,0 +1,145 @@
+{
+  "version": "private-clue-benchmark-v1",
+  "generatedAt": "2026-10-03T06:54:32+00:00",
+  "kind": "counts-only",
+  "claim": "one AutoResearch iteration: fixed 15-answer benchmark, deterministic scoring only",
+  "iterations": [
+    {
+      "label": "probe-champ-strict4-seed-6200",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 14,
+        "genre:plain-definition": 13,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 6,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 52.267,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    },
+    {
+      "label": "arm-noise-1",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 13,
+        "factual-relation": 1,
+        "genre:plain-definition": 13,
+        "genre:quotational": 1
+      },
+      "draftCalls": 6,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 52.02,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6201
+    },
+    {
+      "label": "arm-noise-2",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 13,
+        "factual-relation": 1,
+        "genre:plain-definition": 12,
+        "genre:quotational": 1,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 5,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 51.197,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6202
+    },
+    {
+      "label": "arm-draft-rounds-6",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 13,
+        "factual-relation": 1,
+        "genre:plain-definition": 12,
+        "genre:quotational": 1,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 8,
+      "compareCalls": 12,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 68.49,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    },
+    {
+      "label": "arm-challenge-on",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 13,
+        "factual-relation": 1,
+        "genre:plain-definition": 13,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 6,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 48.403,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    },
+    {
+      "label": "arm-steering-off",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 13,
+      "scaffold": 2,
+      "admissionRate": 0.8667,
+      "guardHits": 0,
+      "families": {
+        "definition": 12,
+        "factual-relation": 1,
+        "genre:plain-definition": 11,
+        "genre:sound-or-action-cue": 2
+      },
+      "draftCalls": 5,
+      "compareCalls": 11,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 49.165,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6200
+    }
+  ],
+  "knownLimits": [
+    "counts only; clue text stays local and is never committed",
+    "quality (wit) is not scored here; blind human verdicts score it"
+  ]
+}
