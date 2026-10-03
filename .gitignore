@@ -95,6 +95,7 @@ docs/evidence/*.local.json
 /private-clue-specimens-v1.local.json
 /private-clue-specimens-v1.round*.local.json
 /private-clue-real-v1.local.json
+/private-clue-routes-v1.local.json
 reports/mutation/
 .npm-cache/
 .shots/

@@ -2008,6 +2008,70 @@ def test_candidate_round_budgets_are_host_overridable(monkeypatch):
     assert context["_candidate_generation"]["redraftRounds"] == 1
 
 
+def test_route_signifiers_come_from_the_local_index_only(tmp_path, monkeypatch):
+    index = tmp_path / "routes.local.json"
+    index.write_text(
+        json.dumps(
+            {
+                "version": "private-clue-routes-v1",
+                "routes": {"SEATTLE": [{"clue": "Puget Sound port", "weekday": "wednesday"}]},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CROSSWORD_CLUE_ROUTE_INDEX_PATH", str(index))
+    private_generation._ROUTE_INDEX_CACHE.clear()
+    assert private_generation._route_signifiers("SEATTLE") == ["Puget Sound port"]
+    assert private_generation._route_signifiers("UNKNOWN") == []
+    private_generation._ROUTE_INDEX_CACHE.clear()
+
+
+def test_route_context_reaches_drafts_and_blocks_verbatim_copies(tmp_path, monkeypatch):
+    index = tmp_path / "routes.local.json"
+    index.write_text(
+        json.dumps(
+            {
+                "version": "private-clue-routes-v1",
+                "routes": {"SEATTLE": [{"clue": "Puget Sound port", "weekday": "wednesday"}]},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CROSSWORD_CLUE_ROUTE_INDEX_PATH", str(index))
+    monkeypatch.setenv("CROSSWORD_ROUTE_CONTEXT", "1")
+    monkeypatch.setenv("CROSSWORD_CANDIDATE_DRAFT_ROUNDS", "1")
+    monkeypatch.setenv("CROSSWORD_CANDIDATE_REDRAFT_ROUNDS", "0")
+    private_generation._ROUTE_INDEX_CACHE.clear()
+    calls = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append([message.get("content", "") for message in messages])
+        return {
+            "title": "Monday Crossword",
+            "clues": [{"id": "1A", "text": "Puget Sound port"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    context = {"_candidate_base_seed": 6107}
+    try:
+        _title, clues = private_generation._make_candidate_clues(
+            "llama3.2:3b",
+            [{"id": "1A", "answer": "SEATTLE", "length": 7}],
+            context,
+            "monday",
+        )
+    finally:
+        private_generation._ROUTE_INDEX_CACHE.clear()
+    assert any("signifiers" in part for contents in calls for part in contents)
+    assert any("never copy a signifier" in part for contents in calls for part in contents)
+    # The verbatim reproduction is rejected as a duplicate draft.
+    assert clues["1A"].startswith("Entry supported by its crossings")
+    assert context["_candidate_generation"]["routeContext"] == {
+        "enabled": True,
+        "entriesWithRoutes": 1,
+    }
+
+
 def test_candidate_redraft_steering_disables_via_env(monkeypatch):
     calls = []
 

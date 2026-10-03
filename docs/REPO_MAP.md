@@ -350,6 +350,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `scripts/private-fill-study.py` — `_request_puzzle:31`, `_validate_local_base_url:62`, `_case_from_response:73`, `main:93`
 - `scripts/private-full-board-validation.py` — `summarize_board:41`, `run_board:79`, `main:112`
 - `scripts/private-host-model-tiers.py` — `_get:40`, `_post:47`, `_installed_models:60`, `_probe_tag:67`, `_parse_size:92`, `_resident_bytes:100`, `_host:127`, `_board_summary:156`, `receipt_body:177`, `main:232`
+- `scripts/private-route-index.py` — `index_path:39`, `main:46`
 - `scripts/private-weekday-mechanic-study.py` — `_canonical:34`, `_digest:44`, `_validate_loopback:48`, `_request:59`, `_evaluate:88`, `main:140`
 - `scripts/reflection-bridge.cjs`
 - `scripts/runtime_doctor.py` — `_preferred_model_tags:53`, `_sha512_integrity:74`, `_load_json:82`, `_check_runtime_archive:90`, `_check_runtime_cli:126`, `_configured_xfill_root:161`, `_check_xfill_engine:171`, `_ollama_url:195`, `_check_ollama:211`, `_private_hint_fill_words:249`, `_check_private_domain_hints:268`, `collect_report:301`, `_print_report:318`, `main:342`

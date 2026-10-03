@@ -5184,6 +5184,39 @@ def _bounded_rounds(override, default, *, low, high):
     return max(low, min(high, value))
 
 
+_ROUTE_INDEX_CACHE: dict = {}
+
+
+def _route_signifiers(answer, limit=2):
+    """Sample historical routes for one answer from the local-only index.
+
+    Returns up to ``limit`` published clue texts as sense material. Empty
+    when the index is absent or the answer is unknown. Local prompt context
+    only; never committed, never redistributed.
+    """
+    if not isinstance(answer, str) or not answer.isalpha():
+        return []
+    override = os.environ.get("CROSSWORD_CLUE_ROUTE_INDEX_PATH", "").strip()
+    from pathlib import Path as _Path
+
+    path = str(_Path(override) if override else "private-clue-routes-v1.local.json")
+    if path not in _ROUTE_INDEX_CACHE:
+        root = _Path(__file__).resolve().parents[2]
+        target = _Path(path) if _Path(path).is_absolute() else root / path
+        try:
+            payload = json.loads(target.read_text(encoding="utf-8"))
+            records = payload.get("routes") if isinstance(payload, dict) else None
+        except (OSError, ValueError):
+            records = None
+        _ROUTE_INDEX_CACHE[path] = records if isinstance(records, dict) else {}
+    entries = _ROUTE_INDEX_CACHE[path].get(answer.upper(), [])
+    return [
+        entry["clue"]
+        for entry in entries[:limit]
+        if isinstance(entry, dict) and isinstance(entry.get("clue"), str)
+    ]
+
+
 def _candidate_draft_seed(base_seed, round_index, batch_index):
     """Deterministic per-round seed so candidate receipts replay."""
     try:
@@ -5398,6 +5431,23 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
             "Reply as JSON with a short title and a clues array of {id, text}."
         )
 
+    # Route context: published historical clues as sense material for the
+    # small model to absorb, never to copy. Off by default; the loop
+    # ablates it. Signifiers also seed duplicate detection, so a verbatim
+    # reproduction is rejected as a duplicate draft, not admitted.
+    routes_enabled = (
+        os.environ.get("CROSSWORD_ROUTE_CONTEXT", "").strip().casefold()
+        in {"1", "true", "yes", "on"}
+    )
+    routes_by_id: dict = {}
+    base_instruction = draft_instruction()
+    if routes_enabled:
+        base_instruction += (
+            " Each entry may carry signifiers: published historical clues "
+            "showing senses and routes editors used. Absorb their senses and "
+            "write fresh clues in your own words; never copy a signifier."
+        )
+
     def run_draft_round(round_index, target_entries, instruction=None, avoid_by_id=None):
         nonlocal title, draft_calls
         ids = [entry["id"] for entry in target_entries]
@@ -5405,7 +5455,7 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
             batch = target_entries[batch_index : batch_index + batch_size]
             batch_ids = [entry["id"] for entry in batch]
             seed = _candidate_draft_seed(base_seed, round_index, batch_index)
-            system = instruction or draft_instruction()
+            system = instruction or base_instruction
             payload_entries = []
             for entry in batch:
                 item = {
@@ -5413,6 +5463,9 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     "answer": entry["answer"],
                     "length": entry.get("length"),
                 }
+                signifiers = routes_by_id.get(entry["id"], [])
+                if signifiers:
+                    item["signifiers"] = signifiers
                 if isinstance(avoid_by_id, dict) and entry["id"] in avoid_by_id:
                     item["avoid"] = avoid_by_id[entry["id"]]
                 payload_entries.append(item)
@@ -5481,6 +5534,11 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                 for item in records.get(clue_id, [])
                 if item.get("admitted") is True
             ]
+            # Seed duplicate detection with the entry's signifiers so a
+            # verbatim reproduction of published text is rejected here.
+            for signifier in routes_by_id.get(clue_id, []):
+                if signifier not in admitted_texts:
+                    admitted_texts.append(signifier)
             for item in records.get(clue_id, []):
                 if item.get("admitted") is not None or item.get("text") is None:
                     continue
@@ -5524,6 +5582,12 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     admitted_texts.append(text)
 
     pour = [entry for entry in entries if draftable(entry)]
+    if routes_enabled:
+        for entry in pour:
+            clue_id = entry.get("id") if isinstance(entry, dict) else None
+            answer = entry.get("answer") if isinstance(entry, dict) else None
+            if isinstance(clue_id, str):
+                routes_by_id[clue_id] = _route_signifiers(answer)
     for round_index in range(max(1, rounds)):
         run_draft_round(round_index, pour)
         admit_round()
@@ -5655,6 +5719,10 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
         "draftCalls": draft_calls,
         "compareCalls": compare_calls,
         "redraftSteering": redraft_steering,
+        "routeContext": {
+            "enabled": routes_enabled,
+            "entriesWithRoutes": sum(1 for routes in routes_by_id.values() if routes),
+        },
         "challengeEnv": challenge_raw,
         "challengeEnabled": challenge_raw.strip().casefold() in {"1", "true", "yes", "on"},
         "entries": {
