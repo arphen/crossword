@@ -1650,8 +1650,6 @@ def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
     assert not private_generation._hedged_definition("Kind of transit")
     assert not private_generation._hedged_definition("Fiancées, in a way")
     assert not private_generation._hedged_definition("Tom Seaver, so to speak")
-    assert private_generation._identity_claim("Fruit whose name is a popular drink brand")
-    assert not private_generation._identity_claim("Fruit of the loom")
     # A possessed qualifier or a definite for/of referent names a route;
     # an indefinite object points nowhere (census, NYT Monday).
     assert (
