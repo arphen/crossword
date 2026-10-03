@@ -1681,6 +1681,46 @@ def test_clue_gerund_spotting_reads_true_gerunds_only():
     assert spotted("Going fast", words) is True
     assert spotted("Morning exercise", words) is False
     assert spotted("Vocal performance", words) is False
+
+
+def test_gerund_agreement_flags_action_answers_without_actions():
+    issue = private_generation._gerund_agreement_issue
+    words = _gerund_words()
+    assert issue("SINGING", "Vocal performance", words) == "gerund-without-gerund"
+    assert issue("WRITING", "Author's craft", words) == "gerund-without-gerund"
+    assert issue("RUNNING", "Going fast, maybe", words) is None
+    assert issue("MORNING", "Dawn's earliest hour", words) is None
+
+
+def test_strict_admission_rejects_gerund_without_gerund(monkeypatch):
+    def fake_chat(_model, messages, schema, **_kwargs):
+        if "clues" not in (schema.get("properties", {}) if isinstance(schema, dict) else {}):
+            return {"pick": "r0-0", "difference": "clearer"}
+        return {
+            "title": "Monday Crossword",
+            "clues": [{"id": "1A", "text": "Vocal performance"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_local_fill_word_set",
+        lambda: frozenset({"SING", "SINGS", "VOCAL", "PERFORMANCE"}),
+    )
+    entries = [{"id": "1A", "answer": "SINGING", "length": 7}]
+
+    context = {"_candidate_base_seed": 6107}
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b", entries, context, "monday"
+    )
+    assert clues["1A"] == "Vocal performance"
+
+    monkeypatch.setenv("CROSSWORD_STRICT_ADMISSION", "1")
+    context = {"_candidate_base_seed": 6107}
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b", entries, context, "monday"
+    )
+    assert clues["1A"].startswith("Entry supported by its crossings")
     # A possessed qualifier or a definite for/of referent names a route;
     # an indefinite object points nowhere (census, NYT Monday).
     assert (

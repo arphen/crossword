@@ -3229,6 +3229,22 @@ def _clue_has_gerund(text, words=None):
     return False
 
 
+def _gerund_agreement_issue(answer, clue, words=None):
+    """Flag gerund answers clued with no gerund in the clue.
+
+    Operator demand: gerund answers must meet a gerund ("Going fast" for
+    RUNNING); "Vocal performance" for SINGING fails it. The census
+    disagrees at large (editors clue gerunds without gerunds fairly:
+    "Slalom sport"), so this gates strict-only, where maximal fairness
+    outranks editorial looseness. Plain -ing nouns never trigger it.
+    """
+    if not _is_gerund_answer(answer, words):
+        return None
+    if _clue_has_gerund(clue, words):
+        return None
+    return "gerund-without-gerund"
+
+
 # Vague for-some/for-one qualifiers were falsified as a class: "for one"
 # is canonical enumeration ("India, for one") and "for some/many/most"
 # tails do playful work ("Place for some skeletons"). Reverted; the
@@ -5703,6 +5719,10 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     decision = {"admitted": False, "reasons": ["pseudo-pun"]}
                 elif strict_admission and _hedged_definition(text):
                     decision = {"admitted": False, "reasons": ["hedged-definition"]}
+                elif strict_admission and _gerund_agreement_issue(
+                    entry.get("answer"), text
+                ):
+                    decision = {"admitted": False, "reasons": ["gerund-without-gerund"]}
                 else:
                     decision = admit_candidate(
                         text,
