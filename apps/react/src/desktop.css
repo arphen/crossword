@@ -7,7 +7,7 @@
     --slot-fill: #23262d;
     --slot-edge: #525760;
     --surface-glint: #ffffff13;
-    --cell-glint: #ffffff05;
+    --cell-glint: #ffffff0d;
     --panel-lowlight: #00000030;
     --panel-shadow: #00000038;
     --board-shadow: #00000030;
@@ -32,7 +32,7 @@
     /* The squares are the paper: the lightest surface in the console, a step
        above the panel and bezel around them. */
     --react-cell: #343a45;
-    --react-cell-edge: #4b525e;
+    --react-cell-edge: #1e232a;
     --react-ink: #f2f2f6;
     --react-muted: #aeb6c2;
     --react-orange: #ffad32;
