@@ -108,3 +108,11 @@ coverage/
 playwright-report/
 test-results/
 .stryker-tmp/
+target/
+.ruff_cache/
+.cache/
+*.tsbuildinfo
+# All generated reports stay out of source control (parity screenshots,
+# SBOM/audit JSON, mutation HTML/JSON); only docs/evidence attestations
+# are tracked.
+reports/
