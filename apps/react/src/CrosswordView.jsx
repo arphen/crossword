@@ -489,21 +489,37 @@ export default function CrosswordView({
         // behind it; each reads the ranks from its own style.
         const wearers = [panel, glowRef.current].filter(element => element instanceof HTMLElement);
         const publish = (name, value) => {
+            const next = value === null ? null : String(Math.round(value * 100) / 100);
             for (const wearer of wearers) {
-                if (value === null) wearer.style.removeProperty(name);
-                else wearer.style.setProperty(name, String(value));
+                const current = wearer.style.getPropertyValue(name);
+                if (next === null) {
+                    if (current === '') continue;
+                    wearer.style.removeProperty(name);
+                } else {
+                    if (current === next) continue;
+                    wearer.style.setProperty(name, next);
+                }
             }
         };
         const measure = () => {
             frame = 0;
             for (const [lane, list] of lanes) {
-                const box = list.getBoundingClientRect();
+                // Layout positions, not bounding rects: rects include the
+                // celebration transforms (rapture lift, FLIP settle), so a
+                // re-read taken while rows are still moving would capture
+                // mid-animation rows as the lane's corners and keep them.
+                // offsetTop is relative to the positioned list, which is
+                // exactly the scroll coordinate space below; at rest both
+                // readings agree.
+                const top = list.scrollTop;
+                const bottom = top + list.clientHeight;
                 let first = null;
                 let last = null;
                 for (const row of list.children) {
                     if (row.tagName !== 'LI') continue;
-                    const rect = row.getBoundingClientRect();
-                    if (rect.bottom <= box.top || rect.top >= box.bottom) continue;
+                    const cell = /** @type {HTMLElement} */ (row);
+                    const rowTop = cell.offsetTop;
+                    if (rowTop + cell.offsetHeight <= top || rowTop >= bottom) continue;
                     first ??= row;
                     last = row;
                 }
@@ -526,10 +542,16 @@ export default function CrosswordView({
         };
     }, [entries, settings.ramp]);
     // Rows also leave a lane without any scroll (a check solves them), so the
-    // corners are re-read after every render too - still one frame per burst.
+    // corners are re-read when the solved set changes size and when the
+    // celebration releases its held rows: a check marks words solved while
+    // their rows are still listed (held for the rapture), and the rows only
+    // leave the lane when holding ends — measuring on size alone would keep
+    // the holding-era corners. Typing a letter moves no row, so keystrokes
+    // skip the measure (still one frame per burst when it does run).
+    const holding = Boolean(rapture.active?.holding);
     useEffect(() => {
         scheduleTerritory.current();
-    });
+    }, [completedWords.size, holding]);
     // The last notch becomes the fireworks: the board remembers which words
     // were still open, and when the puzzle completes the finale bursts from the
     // opening of the last of them (the black square's edge or the board's rim
