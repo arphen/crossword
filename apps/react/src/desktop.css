@@ -449,25 +449,44 @@
     font-weight: 700;
 }
 
-/* A bevel and a recessed board give depth without live blur or moving light. */
+/* The console: one quiet panel around the board. The squares are the
+   brightest surface in it (the paper), the panel a step below, and nothing
+   inside it is framed twice. Corner radii are concentric — the panel's radius
+   minus its padding is the radius of anything sitting in its corners — so
+   the nested shapes read as one object. Every control shares one motion
+   curve and two durations. */
+#app.react-desktop-app {
+    --console-radius: 24px;
+    --console-pad: 16px;
+    --inner-radius: calc(var(--console-radius) - var(--console-pad));
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --dur-quick: 140ms;
+    --dur-settle: 260ms;
+    --track-empty: color-mix(in oklab, var(--react-ink) 9%, var(--react-panel));
+}
+
 #app.react-desktop-app .center-column {
     display: flex;
     flex: none;
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
+    align-self: center;
     gap: 14px;
     width: auto;
     height: fit-content;
     min-height: 0;
     max-height: calc(100dvh - 32px);
     margin: 16px 0;
-    padding: 18px;
+    padding: var(--console-pad);
     overflow: hidden;
     border: 1px solid var(--react-panel-edge);
-    border-radius: 22px;
-    background: linear-gradient(150deg, var(--panel-light), var(--react-panel) 65%);
-    box-shadow: inset 0 1px 0 var(--surface-glint), inset 0 -1px 0 var(--panel-lowlight), 0 16px 40px var(--panel-shadow);
+    border-radius: var(--console-radius);
+    background: linear-gradient(180deg, var(--panel-light), var(--react-panel) 70%);
+    box-shadow:
+        inset 0 1px 0 var(--surface-glint),
+        0 2px 6px var(--panel-lowlight),
+        0 28px 56px -20px var(--panel-shadow);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
 }
@@ -483,76 +502,90 @@
     backdrop-filter: none;
 }
 
+/* Masthead: the puzzle's name on the left, the two numbers a solver glances
+   at on the right, and the completion line across the foot. */
 #app.react-desktop-app #menu-top {
     position: relative;
     box-sizing: border-box;
+    display: grid;
     flex: 0 0 auto;
-    padding: 0 56px 14px 2px;
-    border-bottom: 1px solid var(--react-panel-edge);
-}
-
-#app.react-desktop-app #menu-top > .theme-switch {
-    position: absolute;
-    z-index: 2;
-    top: 0;
-    right: 0;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+        "info time score"
+        "progress progress progress";
+    align-items: end;
+    column-gap: 22px;
+    row-gap: 12px;
+    padding: 2px 4px 0;
+    border: 0;
 }
 
 #app.react-desktop-app .info-bar {
+    grid-area: info;
     display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    min-height: 26px;
-    padding: 0 0 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
     border: 0;
-    gap: 8px;
-    flex-wrap: nowrap;
     overflow: hidden;
-}
-
-#app.react-desktop-app .info-bar :is(.puzzle-date, .puzzle-weekday, .puzzle-authors, .puzzle-separator) {
-    color: var(--react-muted);
-    font-size: 0.78rem;
-    font-style: normal;
-    line-height: 1.2;
 }
 
 #app.react-desktop-app .info-bar .puzzle-weekday {
     color: var(--react-ink);
-    font-size: 0.9rem;
-    font-weight: 700;
+    font-family: var(--react-face, inherit);
+    font-size: 1.12rem;
+    font-weight: 650;
+    letter-spacing: -0.005em;
+    line-height: 1.1;
 }
 
-/* The authors ride the far edge, so the separator before them has nothing to
-   separate and would dangle after the weekday. */
-#app.react-desktop-app .info-bar .puzzle-separator:has(+ .puzzle-authors) { display: none; }
-
-#app.react-desktop-app .info-bar .puzzle-authors {
-    margin-left: auto;
-    max-width: 48%;
-    overflow: hidden;
-    text-overflow: ellipsis;
+#app.react-desktop-app .puzzle-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    max-width: 100%;
+    color: var(--react-muted);
+    font-size: 0.76rem;
+    line-height: 1.2;
     white-space: nowrap;
 }
 
-#app.react-desktop-app .indicator-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 12px;
-    padding: 4px 0 0;
-    border: 0;
-    flex-wrap: nowrap;
+#app.react-desktop-app .puzzle-meta :is(.puzzle-date, .puzzle-separator, .puzzle-authors) {
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
 }
+
+#app.react-desktop-app .puzzle-meta .puzzle-authors {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#app.react-desktop-app .puzzle-notepad {
+    max-width: 100%;
+    color: var(--react-muted);
+    font-size: 0.72rem;
+    line-height: 1.3;
+}
+
+/* The stats' wrapper dissolves, so each stat takes its own place in the
+   masthead grid (the completion line in particular runs full width). */
+#app.react-desktop-app .indicator-bar { display: contents; }
 
 #app.react-desktop-app .puzzle-loader-header { display: none; }
 
-#app.react-desktop-app :is(.stat-item, .blue-stat, .orange-stat) {
+#app.react-desktop-app .stat-item {
     display: flex;
-    flex: 0 1 auto;
-    flex-direction: row;
-    align-items: baseline;
-    gap: 6px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
     min-width: 0;
     padding: 0;
     border: 0;
@@ -564,25 +597,119 @@
 #app.react-desktop-app .stat-value {
     order: 1;
     color: var(--react-ink);
-    font-family: var(--react-mono);
-    font-size: 0.95rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
+    font-family: var(--react-face, inherit);
+    font-size: 1.4rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.01em;
+    line-height: 1;
     white-space: nowrap;
 }
 
 #app.react-desktop-app .stat-label {
     order: 2;
     color: var(--react-muted);
-    font-size: 0.72rem;
-    font-weight: 400;
-    letter-spacing: 0;
-    text-transform: lowercase;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    text-transform: uppercase;
     white-space: nowrap;
 }
 
-#app.react-desktop-app .blue-stat .stat-value { color: var(--react-blue); }
-#app.react-desktop-app .orange-stat .stat-value { color: var(--react-orange); }
+#app.react-desktop-app .stat-time { grid-area: time; }
+
+/* The score carries its own receipt: what it was built from (checks and
+   reveals) waits behind it and appears on hover or focus. */
+#app.react-desktop-app .score-cluster {
+    position: relative;
+    grid-area: score;
+    border-radius: 6px;
+    outline: none;
+    cursor: default;
+}
+#app.react-desktop-app .score-cluster:focus-visible {
+    outline: 2px solid var(--react-blue);
+    outline-offset: 4px;
+}
+#app.react-desktop-app .stat-score .stat-label {
+    text-decoration: underline dotted color-mix(in oklab, var(--react-muted) 70%, transparent);
+    text-underline-offset: 3px;
+}
+#app.react-desktop-app .stat-detail {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 10px);
+    right: -8px;
+    display: flex;
+    gap: 16px;
+    padding: 10px 14px;
+    border: 1px solid var(--react-panel-edge);
+    border-radius: 12px;
+    background: linear-gradient(180deg, var(--panel-light), var(--react-panel));
+    box-shadow: 0 14px 30px -12px #000000cc;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition:
+        opacity var(--dur-quick) var(--ease-out),
+        transform var(--dur-settle) var(--ease-out),
+        visibility 0s linear var(--dur-quick);
+    pointer-events: none;
+}
+#app.react-desktop-app .score-cluster:is(:hover, :focus-visible, :focus-within) .stat-detail {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+        opacity var(--dur-quick) var(--ease-out),
+        transform var(--dur-settle) var(--ease-out),
+        visibility 0s;
+}
+#app.react-desktop-app .stat-detail .stat-item {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+}
+#app.react-desktop-app .stat-detail .stat-value { font-size: 0.95rem; }
+
+/* Completion: the two rainbows end to end, uncovered as answers are found. */
+#app.react-desktop-app .stat-progress {
+    grid-area: progress;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    column-gap: 8px;
+}
+#app.react-desktop-app .stat-progress .progress-track { order: 0; }
+#app.react-desktop-app .stat-progress .stat-value {
+    color: var(--react-ink);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+#app.react-desktop-app .stat-progress .stat-label { order: 3; }
+#app.react-desktop-app .progress-track {
+    position: relative;
+    height: 4px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: linear-gradient(
+        90deg in oklch increasing hue,
+        oklch(0.78 0.12 2),
+        oklch(0.84 0.12 142),
+        oklch(0.74 0.12 183),
+        oklch(0.76 0.12 323)
+    );
+}
+#app.react-desktop-app .progress-track::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--track-empty);
+    transform: scaleX(calc(1 - var(--progress, 0)));
+    transform-origin: right center;
+    transition: transform 700ms var(--ease-out);
+}
 
 #app.react-desktop-app #crossword-container {
     display: flex;
@@ -598,7 +725,7 @@
     width: fit-content;
     padding: 5px;
     border: 1px solid var(--board-edge);
-    border-radius: 12px;
+    border-radius: var(--inner-radius);
     background: var(--board-bezel);
     box-shadow: inset 0 2px 4px var(--panel-shadow), 0 1px 0 var(--surface-glint), 0 8px 18px var(--board-shadow);
     overflow: hidden;
@@ -699,6 +826,7 @@
     animation: react-focus-in 180ms ease-out both;
 }
 
+/* Commands: the three a solver reaches for mid-solve, as equal keys. */
 #app.react-desktop-app .action-bar {
     display: flex;
     flex: 0 0 auto;
@@ -706,53 +834,151 @@
     padding: 0;
 }
 
-#app.react-desktop-app :is(.action-button, .menu-section button, .theme-switch, .select-wrapper select) {
+#app.react-desktop-app .action-button {
     position: relative;
     box-sizing: border-box;
     display: inline-flex;
+    flex: 1 1 0;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     min-height: 44px;
     padding: 8px 14px;
     border: 1px solid var(--control-edge);
-    border-radius: 11px;
+    border-radius: var(--inner-radius);
     background: linear-gradient(var(--control-top), var(--control-fill));
     color: var(--react-ink);
     box-shadow: inset 0 1px 0 var(--surface-glint), 0 2px 3px var(--control-shadow);
-    font-family: inherit;
-    font-size: 0.85rem;
-    font-weight: 500;
+    font-family: var(--react-face, inherit);
+    font-size: 0.86rem;
+    font-weight: 550;
     letter-spacing: 0;
     text-transform: none;
     text-decoration: none;
-    transition: transform 160ms ease, opacity 160ms ease;
+    transition:
+        transform var(--dur-quick) var(--ease-out),
+        border-color var(--dur-quick) var(--ease-out),
+        background-color var(--dur-quick) var(--ease-out);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
 }
-
-#app.react-desktop-app .action-button { flex: 1 1 0; gap: 8px; }
-#app.react-desktop-app :is(.action-button, .menu-section button)::after { content: none; }
-#app.react-desktop-app :is(.action-button, .menu-section button, .theme-switch):hover {
-    border-color: var(--react-muted);
+#app.react-desktop-app .action-button::after { content: none; }
+#app.react-desktop-app .action-button svg { opacity: 0.8; }
+#app.react-desktop-app .action-button:hover {
+    border-color: color-mix(in oklab, var(--react-muted) 70%, var(--control-edge));
     transform: translateY(-1px);
 }
-#app.react-desktop-app :is(.action-button, .menu-section button, .theme-switch):active { transform: translateY(1px); opacity: 0.8; }
-#app.react-desktop-app :is(button, select):focus-visible, #app.react-desktop-app .theme-switch:focus-within {
+#app.react-desktop-app .action-button:active {
+    transform: translateY(0) scale(0.97);
+    transition-duration: 60ms;
+}
+
+#app.react-desktop-app :is(button, select, a, summary):focus-visible,
+#app.react-desktop-app .theme-switch:focus-within {
     outline: 2px solid var(--react-blue);
     outline-offset: 3px;
 }
 
-#app.react-desktop-app #menu-bottom { flex: 0 0 auto; padding: 0; }
-#app.react-desktop-app .selection-row { display: flex; align-items: flex-end; gap: 8px; padding: 0; }
-#app.react-desktop-app .field-group { flex: 1 1 auto; gap: 7px; }
-#app.react-desktop-app .field-label { color: var(--react-muted); font-size: 0.65rem; letter-spacing: 0.12em; }
-#app.react-desktop-app .select-wrapper select { width: 100%; min-width: 0; padding-right: 30px; font-weight: 600; }
+/* The tray: per-session things — which puzzle, the overview, sharing, the
+   solution, light or dark, and the view settings. Quiet glyphs on the panel
+   itself until the pointer finds them. */
+#app.react-desktop-app #menu-bottom {
+    flex: 0 0 auto;
+    padding: 0;
+}
+#app.react-desktop-app .selection-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0;
+}
+#app.react-desktop-app .menu-spacer { flex: 1 1 auto; }
+#app.react-desktop-app .field-group {
+    display: block;
+    flex: 0 1 auto;
+    margin: 0;
+}
+/* The label stays for assistive tech; the select's own text says it. */
+#app.react-desktop-app .field-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+#app.react-desktop-app .select-wrapper { position: relative; }
+#app.react-desktop-app .select-wrapper select {
+    box-sizing: border-box;
+    min-width: 128px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0 30px 0 12px;
+    border: 1px solid transparent;
+    border-radius: var(--inner-radius);
+    background: color-mix(in oklab, var(--react-ink) 6%, transparent);
+    color: var(--react-ink);
+    box-shadow: none;
+    font-family: var(--react-face, inherit);
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: background-color var(--dur-quick) var(--ease-out);
+}
+#app.react-desktop-app .select-wrapper select:hover {
+    background: color-mix(in oklab, var(--react-ink) 10%, transparent);
+}
 #app.react-desktop-app .select-wrapper::after { color: var(--react-muted); }
-#app.react-desktop-app #get-puzzle-button { flex: 0 0 44px; width: 44px; padding: 8px; }
-#app.react-desktop-app :is(.icon-button, .theme-switch) { flex: 0 0 44px; width: 44px; height: 44px; padding: 8px; }
-#app.react-desktop-app .theme-switch { display: flex; align-items: center; justify-content: center; }
-#app.react-desktop-app .theme-switch .switch { width: 100%; height: 100%; justify-content: center; }
-#app.react-desktop-app .theme-icon { width: 23px; height: 23px; color: var(--react-ink); filter: none; }
+
+#app.react-desktop-app :is(#get-puzzle-button, .icon-button, .theme-switch) {
+    position: relative;
+    box-sizing: border-box;
+    display: inline-flex;
+    flex: 0 0 36px;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--inner-radius);
+    background: transparent;
+    color: var(--react-muted);
+    box-shadow: none;
+    text-decoration: none;
+    transition:
+        color var(--dur-quick) var(--ease-out),
+        background-color var(--dur-quick) var(--ease-out),
+        transform var(--dur-quick) var(--ease-out);
+}
+#app.react-desktop-app :is(#get-puzzle-button, .icon-button, .theme-switch):hover {
+    background: color-mix(in oklab, var(--react-ink) 8%, transparent);
+    color: var(--react-ink);
+    box-shadow: none;
+}
+#app.react-desktop-app :is(#get-puzzle-button, .icon-button, .theme-switch):active {
+    transform: scale(0.94);
+    transition-duration: 60ms;
+}
+#app.react-desktop-app :is(#get-puzzle-button, .icon-button) svg {
+    width: 19px;
+    height: 19px;
+    stroke: currentColor;
+}
+#app.react-desktop-app #get-puzzle-button { margin-inline-start: 2px; }
+#app.react-desktop-app .theme-switch .switch {
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    cursor: pointer;
+}
+#app.react-desktop-app .theme-icon {
+    width: 19px;
+    height: 19px;
+    color: currentColor;
+    opacity: 1;
+    filter: none;
+}
 
 /* Validation wins over selection, including the cursor at an intersection. */
 #app.react-desktop-app .state.red { border-color: var(--react-red) !important; background: var(--error-fill) !important; color: var(--react-red) !important; box-shadow: none; }
@@ -829,13 +1055,6 @@
 
 :root[style*="color-scheme: light"] #app.react-desktop-app .clue-column.inactive::before { color: #52655a; opacity: 0.1; }
 :root[style*="color-scheme: light"] #app.react-desktop-app .clue-column.active::before { opacity: 0.24; }
-
-@media (max-width: 1500px) {
-    #app.react-desktop-app .indicator-bar { gap: 6px; }
-    #app.react-desktop-app .stat-item { gap: 4px; }
-    #app.react-desktop-app .stat-label { font-size: 0.65rem; }
-    #app.react-desktop-app .stat-value { font-size: 0.82rem; }
-}
 
 @media (max-width: 1180px) {
     #app.react-desktop-app #notmenu { min-width: 1180px; }

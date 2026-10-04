@@ -1738,9 +1738,9 @@ html[data-luma='veil'] {
 }
 
 /* ==========================================================================
-   6. The view cluster: three tiers of adjustment, matte, in the control bar.
-   It borrows the existing control material so it cannot be mistaken for a
-   different app, and it opens upward because the board owns the space below.
+   6. The view cluster: three tiers of adjustment, matte, in the console's
+   tray. Its button is a quiet tray glyph like its neighbours, and its panel
+   opens upward because the board owns the space above the tray.
    ========================================================================== */
 #app.react-desktop-app .view-cluster {
   position: relative;
@@ -1753,16 +1753,14 @@ html[data-luma='veil'] {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  /* Same height as the command buttons it sits beside, so the bar stays level. */
+  /* The tray's glyph height, so the tray stays level. */
   box-sizing: border-box;
-  min-height: 44px;
-  padding: 8px 12px;
-  border: 1px solid var(--control-edge);
-  border-radius: 11px;
-  background: linear-gradient(var(--control-top), var(--control-fill));
-  box-shadow:
-    inset 0 1px 0 var(--surface-glint),
-    0 2px 3px var(--control-shadow);
+  height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--inner-radius, 8px);
+  background: transparent;
+  box-shadow: none;
   color: var(--react-muted);
   font-size: 0.78rem;
   font-weight: 600;
@@ -1770,20 +1768,24 @@ html[data-luma='veil'] {
   list-style: none;
   cursor: pointer;
   transition:
-    transform 160ms ease,
-    opacity 160ms ease;
+    color var(--dur-quick, 140ms) var(--ease-out, ease),
+    background-color var(--dur-quick, 140ms) var(--ease-out, ease),
+    transform var(--dur-quick, 140ms) var(--ease-out, ease);
 }
 
 #app.react-desktop-app .view-cluster-summary::-webkit-details-marker {
   display: none;
 }
 #app.react-desktop-app .view-cluster-summary:hover {
-  border-color: var(--react-muted);
-  transform: translateY(-1px);
+  background: color-mix(in oklab, var(--react-ink) 8%, transparent);
+  color: var(--react-ink);
+}
+#app.react-desktop-app .view-cluster-summary:active {
+  transform: scale(0.96);
 }
 #app.react-desktop-app .view-cluster[open] .view-cluster-summary {
+  background: color-mix(in oklab, var(--react-ink) 10%, transparent);
   color: var(--react-ink);
-  border-color: var(--react-muted);
 }
 
 #app.react-desktop-app .view-cluster-panel {
@@ -1931,13 +1933,7 @@ html[data-luma='veil'] {
   grid-template-columns: minmax(0, 1fr) var(--board-budget) minmax(0, 1fr);
 }
 
-/* In the action bar the view cluster rides the right edge, away from the commands
- * a reader reaches for while solving, and its panel scrolls rather than running
- * past a short window. */
-#app.react-desktop-app .action-bar .view-cluster {
-  margin-inline-start: auto;
-}
-
+/* The view panel scrolls rather than running past a short window. */
 #app.react-desktop-app .view-cluster-panel {
   max-height: min(72dvh, 620px);
   overflow: auto;
@@ -1951,6 +1947,159 @@ html[data-luma='veil'] {
   li.affected-clue
   .clue-number {
   color: var(--react-ink) !important;
+}
+
+/* ==========================================================================
+   10. The console takes on the territory.
+   The two rainbows give every screen four corners of colour — the top and
+   bottom of the Across lane on the left, of the Down lane on the right — and
+   the reader learns where they are by them ("I'm in the yellow and the
+   purple"). The board's panel wears the same four: each of its corners takes
+   the hue of the clue showing in that corner of the screen, on the panel's
+   edge and as a faint wash inside it, and drifts as the lanes scroll, so the
+   middle of the screen carries the territory too. CrosswordView publishes
+   the four ranks on the panel; they are registered numbers so the hues glide
+   rather than jump, and they do not inherit, so a drifting corner restyles
+   the panel alone and never the board inside it. Number colours Off keeps
+   the plain edge.
+   ========================================================================== */
+@property --territory-across-top {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --territory-across-bottom {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --territory-down-top {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --territory-down-bottom {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --console-tl {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+@property --console-bl {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+@property --console-tr {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+@property --console-br {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+
+#app.react-desktop-app {
+  --territory-wash: 10%;
+  --territory-edge: 78%;
+}
+:root[style*='color-scheme: light'] #app.react-desktop-app {
+  --territory-wash: 9%;
+  --territory-edge: 70%;
+}
+#app.react-desktop-app[data-luma='dim'] {
+  --territory-wash: 6%;
+  --territory-edge: 60%;
+}
+#app.react-desktop-app[data-luma='veil'] {
+  --territory-wash: 4%;
+  --territory-edge: 48%;
+}
+
+#app.react-desktop-app[data-ramp='on'] .center-column {
+  --console-tl: oklch(
+    calc(var(--ramp-lightness) + var(--across-lift) + var(--across-l0) + var(--across-l1) * var(--territory-across-top) + var(--across-l2) * var(--territory-across-top) * var(--territory-across-top))
+      var(--ramp-chroma)
+      calc(var(--across-arc-start) + var(--territory-across-top) * (var(--across-arc-end) - var(--across-arc-start)))
+  );
+  --console-bl: oklch(
+    calc(var(--ramp-lightness) + var(--across-lift) + var(--across-l0) + var(--across-l1) * var(--territory-across-bottom) + var(--across-l2) * var(--territory-across-bottom) * var(--territory-across-bottom))
+      var(--ramp-chroma)
+      calc(var(--across-arc-start) + var(--territory-across-bottom) * (var(--across-arc-end) - var(--across-arc-start)))
+  );
+  --console-tr: oklch(
+    calc(var(--ramp-lightness) - var(--down-drop) + var(--down-l0) + var(--down-l1) * var(--territory-down-top) + var(--down-l2) * var(--territory-down-top) * var(--territory-down-top))
+      var(--ramp-chroma)
+      calc(var(--down-arc-start) + var(--territory-down-top) * (var(--down-arc-end) - var(--down-arc-start)))
+  );
+  --console-br: oklch(
+    calc(var(--ramp-lightness) - var(--down-drop) + var(--down-l0) + var(--down-l1) * var(--territory-down-bottom) + var(--down-l2) * var(--territory-down-bottom) * var(--territory-down-bottom))
+      var(--ramp-chroma)
+      calc(var(--down-arc-start) + var(--territory-down-bottom) * (var(--down-arc-end) - var(--down-arc-start)))
+  );
+  border-color: transparent;
+  background:
+    radial-gradient(
+        90% 50% at 0 0,
+        color-mix(in oklab, var(--console-tl) var(--territory-wash), transparent),
+        transparent 72%
+      )
+      padding-box,
+    radial-gradient(
+        90% 50% at 0 100%,
+        color-mix(in oklab, var(--console-bl) var(--territory-wash), transparent),
+        transparent 72%
+      )
+      padding-box,
+    radial-gradient(
+        90% 50% at 100% 0,
+        color-mix(in oklab, var(--console-tr) var(--territory-wash), transparent),
+        transparent 72%
+      )
+      padding-box,
+    radial-gradient(
+        90% 50% at 100% 100%,
+        color-mix(in oklab, var(--console-br) var(--territory-wash), transparent),
+        transparent 72%
+      )
+      padding-box,
+    linear-gradient(180deg, var(--panel-light), var(--react-panel) 70%)
+      padding-box,
+    radial-gradient(
+        75% 55% at 0 0,
+        color-mix(in oklab, var(--console-tl) var(--territory-edge), transparent),
+        transparent
+      )
+      border-box,
+    radial-gradient(
+        75% 55% at 0 100%,
+        color-mix(in oklab, var(--console-bl) var(--territory-edge), transparent),
+        transparent
+      )
+      border-box,
+    radial-gradient(
+        75% 55% at 100% 0,
+        color-mix(in oklab, var(--console-tr) var(--territory-edge), transparent),
+        transparent
+      )
+      border-box,
+    radial-gradient(
+        75% 55% at 100% 100%,
+        color-mix(in oklab, var(--console-br) var(--territory-edge), transparent),
+        transparent
+      )
+      border-box,
+    linear-gradient(var(--react-panel-edge), var(--react-panel-edge)) border-box;
+  transition:
+    --territory-across-top 900ms var(--ease-out, ease),
+    --territory-across-bottom 900ms var(--ease-out, ease),
+    --territory-down-top 900ms var(--ease-out, ease),
+    --territory-down-bottom 900ms var(--ease-out, ease);
 }
 
 /* ==========================================================================

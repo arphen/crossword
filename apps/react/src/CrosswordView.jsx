@@ -91,6 +91,10 @@ export default function CrosswordView({
     const [cursorCell, setCursorCell] = useState(null);
     const [rebusDisplayValue, setRebusDisplayValue] = useState('');
     const inputSources = useRef(new Map());
+    const consoleRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+    const acrossRef = useRef(/** @type {HTMLUListElement | null} */ (null));
+    const downRef = useRef(/** @type {HTMLUListElement | null} */ (null));
+    const scheduleTerritory = useRef(() => {});
     // Reader-adjustable view settings: presentation only, kept in local storage,
     // and published to the board root as data-* attributes so that vision.css can
     // own every visual consequence (see viewSettings.js). A first visit on a
@@ -427,6 +431,65 @@ export default function CrosswordView({
             return <span key={runIndex} className={classes('state-run', { 'word-end': run.wordEnd })}>{slice}</span>;
         });
     };
+    // The console takes on the territory: each corner of the board's panel
+    // wears the hue of the clue showing in that corner of the screen, so the
+    // middle says where the reader is in each lane - the yellow and purple
+    // corners, or the blue and green ones. Written straight onto the panel's
+    // style on scroll (one frame at most per burst), never through a React
+    // render; vision.css owns how much colour that becomes. Without number
+    // colours the rows carry no rank and the panel keeps its plain edge.
+    useEffect(() => {
+        const panel = consoleRef.current;
+        const across = acrossRef.current;
+        const down = downRef.current;
+        if (!panel || !across || !down || typeof requestAnimationFrame === 'undefined') return undefined;
+        /** @type {Array<[string, HTMLUListElement]>} */
+        const lanes = [['across', across], ['down', down]];
+        let frame = 0;
+        const rankOf = row => {
+            const value = Number.parseFloat(row?.style.getPropertyValue('--clue-ramp') ?? '');
+            return Number.isFinite(value) ? value : null;
+        };
+        const publish = (name, value) => {
+            if (value === null) panel.style.removeProperty(name);
+            else panel.style.setProperty(name, String(value));
+        };
+        const measure = () => {
+            frame = 0;
+            for (const [lane, list] of lanes) {
+                const box = list.getBoundingClientRect();
+                let first = null;
+                let last = null;
+                for (const row of list.children) {
+                    if (row.tagName !== 'LI') continue;
+                    const rect = row.getBoundingClientRect();
+                    if (rect.bottom <= box.top || rect.top >= box.bottom) continue;
+                    first ??= row;
+                    last = row;
+                }
+                publish(`--territory-${lane}-top`, rankOf(first));
+                publish(`--territory-${lane}-bottom`, rankOf(last));
+            }
+        };
+        const schedule = () => {
+            if (!frame) frame = requestAnimationFrame(measure);
+        };
+        schedule();
+        scheduleTerritory.current = schedule;
+        for (const [, list] of lanes) list.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('resize', schedule);
+        return () => {
+            scheduleTerritory.current = () => {};
+            cancelAnimationFrame(frame);
+            for (const [, list] of lanes) list.removeEventListener('scroll', schedule);
+            window.removeEventListener('resize', schedule);
+        };
+    }, [entries, settings.ramp]);
+    // Rows also leave a lane without any scroll (a check solves them), so the
+    // corners are re-read after every render too - still one frame per burst.
+    useEffect(() => {
+        scheduleTerritory.current();
+    });
     const selfClick = handler => event => {
         if (event.target === event.currentTarget) handler(event);
     };
@@ -449,7 +512,7 @@ export default function CrosswordView({
             })}>
             <div id="notmenu">
                 <div className={classes('clue-column', { active: app.direction === 'across', inactive: app.direction !== 'across' })} data-label="ACROSS">
-                    <ul id="across">
+                    <ul id="across" ref={acrossRef}>
                         {laneEntries('across').map(entry => (
                             <li key={'across-' + entry.clue_number} onClick={event => {
                                 app.handle_clue_click(event, entry);
@@ -467,42 +530,50 @@ export default function CrosswordView({
                     </ul>
                 </div>
 
-                <div className="center-column">
-                    {/* Top Control Panel - Three Bars */}
+                <div className="center-column" ref={consoleRef}>
+                    {/* Masthead: which puzzle this is, and the numbers a solver
+                        actually glances at. Checks and reveals are what the score
+                        is made of, so they sit behind it (hover or focus). */}
                     <div id="menu-top" className="menu-section">
-                        {/* Bar 1: Date and Authors */}
                         <div className="menu-row info-bar">
-                            {app.currentPuzzleMetadata && <span className="puzzle-date">{app.formatDate(app.currentPuzzleMetadata.date)}</span>}
-                            {app.currentPuzzleMetadata && <span className="puzzle-separator">•</span>}
                             {app.currentPuzzleMetadata && <span className="puzzle-weekday">{displayedPuzzleWeekday(app, displayWeekday)}</span>}
-                            {app.currentPuzzleMetadata && <span className="puzzle-separator">•</span>}
-                            {app.currentPuzzleMetadata && <span className="puzzle-authors" data-full-text={app.currentPuzzleMetadata.authors.join(', ')}>{app.currentPuzzleMetadata.authors.join(', ')}</span>}
+                            {app.currentPuzzleMetadata && (
+                                <span className="puzzle-meta">
+                                    <span className="puzzle-date">{app.formatDate(app.currentPuzzleMetadata.date)}</span>
+                                    <span className="puzzle-separator" aria-hidden="true">·</span>
+                                    <span className="puzzle-authors" data-full-text={app.currentPuzzleMetadata.authors.join(', ')} title={app.currentPuzzleMetadata.authors.join(', ')}>{app.currentPuzzleMetadata.authors.join(', ')}</span>
+                                </span>
+                            )}
                             {Boolean(app.currentPuzzleMetadata && app.currentPuzzleMetadata.notepad) && (
                                 <div className="puzzle-notepad">{app.currentPuzzleMetadata.notepad}</div>
                             )}
                         </div>
 
-                        {/* Bar 2: Indicator Bar (Statistics) */}
                         <div className="menu-row indicator-bar">
-                            <div className="stat-item blue-stat">
+                            <div className="stat-item stat-progress" style={/** @type {React.CSSProperties} */ ({ '--progress': entries.length ? completedWords.size / entries.length : 0 })}>
                                 <span className="stat-label">Completed</span>
                                 <span className="stat-value">{completedWords.size} / {entries.length}</span>
+                                <span className="progress-track" aria-hidden="true"></span>
                             </div>
-                            <div className="stat-item blue-stat">
-                                <span className="stat-label">Checks</span>
-                                <span className="stat-value">{app.checksUsed}</span>
-                            </div>
-                            <div className="stat-item blue-stat">
-                                <span className="stat-label">Reveals</span>
-                                <span className="stat-value">{app.revealsUsed}</span>
-                            </div>
-                            <div className="stat-item orange-stat">
-                                <span className="stat-label">Score</span>
-                                <span className="stat-value">{app.score}</span>
-                            </div>
-                            <div className="stat-item orange-stat">
+                            <div className="stat-item stat-time">
                                 <span className="stat-label">Time</span>
                                 <span className="stat-value">{app.formatTime(app.timer)}</span>
+                            </div>
+                            <div className="score-cluster" tabIndex={0} aria-label={`Score ${app.score}: ${app.checksUsed} checks, ${app.revealsUsed} reveals`}>
+                                <div className="stat-item stat-score">
+                                    <span className="stat-label">Score</span>
+                                    <span className="stat-value">{app.score}</span>
+                                </div>
+                                <div className="stat-detail">
+                                    <div className="stat-item">
+                                        <span className="stat-label">Checks</span>
+                                        <span className="stat-value">{app.checksUsed}</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Reveals</span>
+                                        <span className="stat-value">{app.revealsUsed}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -519,32 +590,6 @@ export default function CrosswordView({
                                     </svg>
                                 </button>
                             </div>
-
-                        <div className="theme-switch">
-                            <label className="switch">
-                                <input type="checkbox" checked={app.isDarkMode} onChange={event => {
-                                    app.isDarkMode = event.target.checked;
-                                    app.toggle_night_mode(event);
-                                }} aria-label="Toggle dark mode" />
-                                <svg className="theme-icon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24">
-                                    <mask id="moon-mask">
-                                        <rect x="0" y="0" width="100%" height="100%" fill="white" />
-                                        <circle className="mask-circle" cx="25" cy="12" r="8" fill="black" />
-                                    </mask>
-                                    <circle className="sun-disc" cx="12" cy="12" r="8" mask="url(#moon-mask)" fill="currentColor" />
-                                    <g className="sun-beams" stroke="currentColor">
-                                        <line x1="12" y1="1" x2="12" y2="3" />
-                                        <line x1="12" y1="21" x2="12" y2="23" />
-                                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                                        <line x1="1" y1="12" x2="3" y2="12" />
-                                        <line x1="21" y1="12" x2="23" y2="12" />
-                                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                                    </g>
-                                </svg>
-                            </label>
-                        </div>
 
                     </div>
 
@@ -680,7 +725,7 @@ export default function CrosswordView({
                         </div>
                     </div>
 
-                    {/* Actions sit beneath the board in the desktop solver spine. */}
+                    {/* The commands a solver reaches for mid-solve. */}
                     <div className="menu-row action-bar">
                         <button onClick={() => {
                             const wasChecking = app.isChecking;
@@ -709,26 +754,15 @@ export default function CrosswordView({
                             </svg>
                             <span>Reveal</span>
                         </button>
-                        {app.currentPuzzleMetadata && (
-                            <a href={app.getXWordInfoLink()} target="_blank" rel="noopener noreferrer" className="action-button center-action" title="View on XWord Info">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                </svg>
-                                <span>Solution</span>
-                            </a>
-                        )}
                         <button onClick={() => app.markCurrentPuzzleAsComplete(() => onComplete?.())} id="complete-button" className="action-button orange-action" title="Mark as Complete">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="20 6 9 17 4 12"></polyline>
                             </svg>
                             <span>Complete</span>
                         </button>
-                        <ViewControls settings={settings} onChange={changeSettings} onReset={() => changeSettings(VIEW_DEFAULTS)} />
                     </div>
 
-                    {/* Bottom Control Panel */}
+                    {/* The tray: per-session things, quiet until wanted. */}
                     <div id="menu-bottom" className="menu-section">
                         <div className="menu-row selection-row">
                             <div className="field-group weekday-group">
@@ -769,12 +803,48 @@ export default function CrosswordView({
                                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                                 </svg>
                             </button>
+                            {app.currentPuzzleMetadata && (
+                                <a href={app.getXWordInfoLink()} target="_blank" rel="noopener noreferrer" className="icon-button solution-link" title="View the solution on XWord Info" aria-label="View the solution on XWord Info">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                    </svg>
+                                </a>
+                            )}
+                            <div className="theme-switch">
+                                <label className="switch">
+                                    <input type="checkbox" checked={app.isDarkMode} onChange={event => {
+                                        app.isDarkMode = event.target.checked;
+                                        app.toggle_night_mode(event);
+                                    }} aria-label="Toggle dark mode" />
+                                    <svg className="theme-icon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24">
+                                        <mask id="moon-mask">
+                                            <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                                            <circle className="mask-circle" cx="25" cy="12" r="8" fill="black" />
+                                        </mask>
+                                        <circle className="sun-disc" cx="12" cy="12" r="8" mask="url(#moon-mask)" fill="currentColor" />
+                                        <g className="sun-beams" stroke="currentColor">
+                                            <line x1="12" y1="1" x2="12" y2="3" />
+                                            <line x1="12" y1="21" x2="12" y2="23" />
+                                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                                            <line x1="1" y1="12" x2="3" y2="12" />
+                                            <line x1="21" y1="12" x2="23" y2="12" />
+                                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                                        </g>
+                                    </svg>
+                                </label>
+                            </div>
+
+                            <ViewControls settings={settings} onChange={changeSettings} onReset={() => changeSettings(VIEW_DEFAULTS)} />
                         </div>
                     </div>
                 </div>
 
                 <div className={classes('clue-column', { active: app.direction === 'down', inactive: app.direction !== 'down' })} data-label="DOWN">
-                    <ul id="down">
+                    <ul id="down" ref={downRef}>
                         {laneEntries('down').map(entry => (
                             <li key={'down-' + entry.clue_number} onClick={event => {
                                 app.handle_clue_click(event, entry);
