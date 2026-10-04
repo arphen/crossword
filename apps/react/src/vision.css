@@ -5,14 +5,15 @@
    its saved settings (viewSettings.js); nothing here changes puzzle behaviour.
    Kept intact: the two-column zigzag with its +/-25px ladder, the ACROSS / DOWN
    watermarks, orange Across / blue Down, and matte surfaces that carry colour
-   as static paint — the clue ember/flame glow is box-shadow only, with a single
-   slow breathing pulse on the selection that stops under prefers-reduced-motion
-   and quiets on the low-bloom tiers.
+   as static paint — the clue ember/flame glow is box-shadow only, and a fresh
+   selection ignites once and settles: nothing on the board moves while the
+   reader is just reading. The ignition stops under prefers-reduced-motion and
+   quiets on the low-bloom tiers.
    Sections: 0 tokens, 1 number colour, 1b ember and flame, 2 springs, 3 letter
    track, 4 board notches, 5 low-bloom tiers, 6 view cluster, 8 board size.
    ========================================================================== */
 
-/* Registered so the selection's glow can ease between breaths instead of
+/* Registered so the selection's glow can ease as it ignites instead of
    blinking; every rule that animates it references this as a plain number. */
 @property --glow-pulse {
   syntax: '<number>';
@@ -408,8 +409,10 @@
    colour just inside and outside the borders of its number box, each box of
    its answer track, and the numbered square it starts from. The flame is the
    same colour saturated and widened while the clue — or its squares — are the
-   ones being worked, and the lit board squares breathe slowly so the
-   selection feels alive without anything moving. The resting light lives
+   ones being worked, and a new selection flares once and settles to its
+   resting light, so it lands with a little warmth and then holds still — a
+   board that kept pulsing would never let the eye rest, and would repaint
+   its blurred shadows every frame. The resting light lives
    mostly inside the border — tracks sit 3px apart with text 10px above, and
    positioned boxes paint over static text, so an outer bloom at rest would
    smear both. Around the selection sits a
@@ -421,7 +424,7 @@
    must unlearn.
    Number colours Off takes every light out; the low-bloom tiers keep only a
    quiet flame (sections 0 and 5). Paint only — box-shadow, no layout
-   consequence — and the breath stops under prefers-reduced-motion, which
+   consequence — and the ignition stops under prefers-reduced-motion, which
    desktop.css switches off for this whole tree (restated at the file's end).
    ========================================================================== */
 
@@ -564,7 +567,8 @@
 /* The word on the board: lit squares carry the flame in the active clue's hue
    inside and the direction's halo outside, over softened direction edge ticks
    — full-strength bars would plaster over the wash gradient on a small square —
-   breathing slowly. Inside names the clue, outside names the lane, and the
+   igniting once as the word lights. Inside names the clue, outside names the
+   lane, and the
    highlight split sets Across clearly brighter than Down. */
 #app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index] {
   box-shadow:
@@ -612,7 +616,7 @@
         var(--highlight-halo, transparent) var(--halo-alpha),
         transparent
       );
-  animation: clue-breath 2.9s ease-in-out infinite;
+  animation: clue-ignite 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 /* ==========================================================================
@@ -750,7 +754,7 @@
         var(--highlight-halo, transparent) var(--halo-alpha),
         transparent
       );
-  animation: clue-breath 2.1s ease-in-out infinite;
+  animation: clue-ignite 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 /* The active lane's watermark breathes the highlighted word's hue the same
@@ -800,7 +804,7 @@
 /* The selected chip: the clue's hue, saturated and solid, on the dark ground —
    easy to spot without washing the colour out, wrapped in its lane's halo so
    the direction reads around the clue. (Number colours off keeps
-   desktop.css's solid direction fill.) The breath lives in its own rule,
+   desktop.css's solid direction fill.) The ignition lives in its own rule,
    excluded while a solved row is dissolving so celebration.css keeps the
    last word on that one moment. */
 #app.react-desktop-app[data-ramp='on']
@@ -825,7 +829,7 @@
   :is(#across, #down)
   li.highlighted-clue:not([data-rapture])
   .clue-number {
-  animation: clue-breath 2.9s ease-in-out infinite;
+  animation: clue-ignite 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 /* A checked letter keeps the verdict to itself: right or wrong, the box drops
@@ -843,17 +847,23 @@
   box-shadow: none;
 }
 
-/* The breath: the light swells a little and settles. Nothing translates, so
-   reading and clicking stay perfectly still; only the glow's alpha moves. */
-@keyframes clue-breath {
-  50% {
-    --glow-pulse: 1.5;
+/* The ignition: the light flares once as a word lights and settles to rest.
+   Nothing translates, so reading and clicking stay perfectly still; only the
+   glow's alpha moves, and only once. The cursor shares the name with the lit
+   squares on purpose — moving it along the word re-lights nothing, so typing
+   stays calm (the letters carry their own arrival, desktop.css). */
+@keyframes clue-ignite {
+  from {
+    --glow-pulse: 2;
+  }
+  to {
+    --glow-pulse: 1;
   }
 }
 
 /* Best-effort glow: while a fresh selection lands (data-glow off, set by the
    view for a frame or two after the active word changes), the selection's
-   blurred shadows and breathing animations stay out so the cursor, letters
+   blurred shadows and ignition animations stay out so the cursor, letters
    and washes paint on the cheap first frame. The cursor cell keeps its full
    chrome throughout — it is one element and must never blink. One blanket
    kill-switch rather than per-rule gates, so the light always returns whole;
@@ -1821,9 +1831,9 @@ html[data-luma='veil'] {
 
 /* ==========================================================================
    9. Still light.
-   The selection's breath is decoration: under prefers-reduced-motion it stops
-   and only the light remains. desktop.css already switches off every animation
-   in this tree with !important; this mirrors the three breathing selectors
+   The selection's ignition is decoration: under prefers-reduced-motion it
+   stops and only the light remains. desktop.css already switches off every
+   animation in this tree with !important; this mirrors the three igniting selectors
    exactly (later, same specificity) so the rainbow's motion contract lives
    with the rainbow even if that blanket switch ever moves.
    ========================================================================== */

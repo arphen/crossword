@@ -180,7 +180,7 @@ export default function CrosswordView({
     const activeEntry = app.activeClueNumber && app.activeDirection
         ? app.getEntryByClueNumber(app.activeClueNumber, app.activeDirection)
         : null;
-    // Best-effort glow: the selection's light (blurred shadows, breathing
+    // Best-effort glow: the selection's light (blurred shadows, its ignition
     // animations) is the most expensive paint on the board, so a fresh
     // selection first lands without it — cursor, letters and washes stay
     // live on the cheap first frame — and the glow catches up a couple of
