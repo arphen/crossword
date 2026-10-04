@@ -964,7 +964,7 @@
 :root[style*='color-scheme: light'] #app.react-desktop-app {
   --strip-major: color-mix(
     in oklab,
-    var(--board-black) 55%,
+    var(--board-black) 28%,
     var(--react-cell-edge)
   );
   --strip-shadow: #233b3038;
