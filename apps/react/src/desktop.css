@@ -142,6 +142,9 @@
     padding: 0;
     overflow-y: auto;
     scrollbar-width: none;
+    /* Scope layout and paint to the lane that changed; the territory
+       measurement still reads real row boxes (no content-visibility). */
+    contain: layout paint;
 }
 
 #app.react-desktop-app #across::-webkit-scrollbar,
