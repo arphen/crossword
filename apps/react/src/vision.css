@@ -43,8 +43,26 @@
   --down-arc-end: 323;
   --arc-start-hue: var(--across-arc-start);
   --arc-end-hue: var(--across-arc-end);
-  --ramp-chroma: 0.155;
+  --arc-down: 0;
+  --ramp-chroma: 0.14;
   --ramp-lightness: 0.82;
+  /* The screen's colour solid is lopsided: at the lightness a numeral needs on
+       this dark ground, yellow and green hold a vivid chroma while pink, orange
+       and violet run out of colour well before it. One lightness for a whole
+       arc therefore clips the tight hues — paler, and shifted off their rank —
+       while the easy ones stay vivid, and the rainbow steps unevenly. So each
+       arc follows the solid's contour instead: a small lightness offset per
+       rank (l0 + l1·r + l2·r²) that lowers the tight hues just enough for the
+       ramp chroma to fit in sRGB, and lifts the generous ones back up. Across
+       rises from warm pink toward green; Down dips through blue and violet
+       and climbs again toward magenta. The lane's own plane — Across above
+       Down — stays the average the contour moves around. */
+  --across-l0: -0.115;
+  --across-l1: 0;
+  --across-l2: 0.105;
+  --down-l0: 0.035;
+  --down-l1: -0.24;
+  --down-l2: 0.24;
   /* Direction reads as value, never as a second hue: the lane a clue sits in
        lifts or quiets its colour without changing which colour it is — Across
        clearly brighter, Down clearly quieter, so the direction reads first
@@ -115,7 +133,7 @@
    rainbow down for tired eyes, Bold spends more of it everywhere. The
    low-bloom tiers still cap the light afterwards (section 5). */
 #app.react-desktop-app[data-vibrance='soft'] {
-  --ramp-chroma: 0.1;
+  --ramp-chroma: 0.095;
   --ember-chroma: 0.55;
   --flame-chroma: 1.4;
   --ember-alpha: 10%;
@@ -126,7 +144,7 @@
   --spot-alpha: 10%;
 }
 #app.react-desktop-app[data-vibrance='bold'] {
-  --ramp-chroma: 0.2;
+  --ramp-chroma: 0.18;
   --ember-chroma: 0.8;
   --flame-chroma: 1.9;
   --ember-alpha: 17%;
@@ -143,6 +161,24 @@
 :root[style*='color-scheme: light']
   #app.react-desktop-app[data-ramp='on'] {
   --ramp-lightness: 0.42;
+  /* On paper the solid's narrow places move: yellows and cyans hold colour
+     only when lifted, so Across bulges through its yellow middle and Down
+     starts high in cyan and settles toward violet. */
+  --ramp-chroma: 0.12;
+  --across-l0: -0.02;
+  --across-l1: 0.44;
+  --across-l2: -0.44;
+  --down-l0: 0.23;
+  --down-l1: -0.36;
+  --down-l2: 0.18;
+}
+:root[style*='color-scheme: light']
+  #app.react-desktop-app[data-ramp='on'][data-vibrance='soft'] {
+  --ramp-chroma: 0.085;
+}
+:root[style*='color-scheme: light']
+  #app.react-desktop-app[data-ramp='on'][data-vibrance='bold'] {
+  --ramp-chroma: 0.15;
 }
 
 /* ==========================================================================
@@ -165,11 +201,26 @@
     var(--arc-start-hue) +
       (var(--clue-ramp, 0) * (var(--arc-end-hue) - var(--arc-start-hue)))
   );
-  --clue-tint: oklch(var(--clue-lightness) var(--ramp-chroma) var(--clue-hue));
+  --clue-contour: calc(
+      (1 - var(--arc-down)) *
+        (
+          var(--across-l0) + var(--across-l1) * var(--clue-ramp, 0) + var(--across-l2) * var(--clue-ramp, 0) *
+            var(--clue-ramp, 0)
+        ) +
+        var(--arc-down) *
+        (var(--down-l0) + var(--down-l1) * var(--clue-ramp, 0) + var(--down-l2) * var(--clue-ramp, 0) * var(--clue-ramp, 0))
+    );
+  --clue-l: calc(var(--clue-lightness) + var(--clue-contour));
+  --clue-tint: oklch(var(--clue-l) var(--ramp-chroma) var(--clue-hue));
   /* The same rank on the Down half of the wheel, for marks that name a Down
      word from a square that is not in the Down lane (edge ticks). */
   --clue-down-tint: oklch(
-    calc(var(--ramp-lightness) - var(--down-drop)) var(--ramp-chroma)
+    calc(
+        var(--ramp-lightness) - var(--down-drop) + var(--down-l0) +
+          var(--down-l1) * var(--clue-ramp, 0) + var(--down-l2) *
+          var(--clue-ramp, 0) * var(--clue-ramp, 0)
+      )
+      var(--ramp-chroma)
       calc(
         var(--down-arc-start) +
           (
@@ -180,12 +231,12 @@
   );
   /* Ember: the resting light — the same hue, spent quietly. */
   --clue-ember: oklch(
-    var(--clue-lightness) calc(var(--ramp-chroma) * var(--ember-chroma))
+    var(--clue-l) calc(var(--ramp-chroma) * var(--ember-chroma))
       var(--clue-hue)
   );
   /* Flame: the same hue energised, so selection speaks in saturation. */
   --clue-flame: oklch(
-    var(--clue-lightness) calc(var(--ramp-chroma) * var(--flame-chroma))
+    var(--clue-l) calc(var(--ramp-chroma) * var(--flame-chroma))
       var(--clue-hue)
   );
 }
@@ -208,6 +259,7 @@
   --rail: var(--react-orange);
   /* Across sits a step brighter on its warm half of the wheel. */
   --arc-start-hue: var(--across-arc-start);
+  --arc-down: 0;
   --arc-end-hue: var(--across-arc-end);
   --clue-lightness: calc(var(--ramp-lightness) + var(--across-lift));
 }
@@ -217,6 +269,7 @@
      glance in hue as well as value, while every clue keeps the colour that
      is its own within its lane. */
   --arc-start-hue: var(--down-arc-start);
+  --arc-down: 1;
   --arc-end-hue: var(--down-arc-end);
   --clue-lightness: calc(var(--ramp-lightness) - var(--down-drop));
 }
@@ -227,20 +280,24 @@
    is no data-start and every square rests on the Across half.) */
 #app.react-desktop-app .grid-cell[data-start='across'] {
   --arc-start-hue: var(--across-arc-start);
+  --arc-down: 0;
   --arc-end-hue: var(--across-arc-end);
 }
 #app.react-desktop-app .grid-cell[data-start='down'] {
   --arc-start-hue: var(--down-arc-start);
+  --arc-down: 1;
   --arc-end-hue: var(--down-arc-end);
 }
 #app.react-desktop-app[data-direction='across']
   .grid-cell[data-start~='across'][data-start~='down'] {
   --arc-start-hue: var(--across-arc-start);
+  --arc-down: 0;
   --arc-end-hue: var(--across-arc-end);
 }
 #app.react-desktop-app[data-direction='down']
   .grid-cell[data-start~='across'][data-start~='down'] {
   --arc-start-hue: var(--down-arc-start);
+  --arc-down: 1;
   --arc-end-hue: var(--down-arc-end);
 }
 
@@ -253,12 +310,14 @@
 #app.react-desktop-app[data-direction='across'] [data-entry-index] {
   --clue-lightness: calc(var(--ramp-lightness) + var(--highlight-lift));
   --arc-start-hue: var(--across-arc-start);
+  --arc-down: 0;
   --arc-end-hue: var(--across-arc-end);
   --highlight-halo: var(--react-orange);
 }
 #app.react-desktop-app[data-direction='down'] [data-entry-index] {
   --clue-lightness: calc(var(--ramp-lightness) - var(--highlight-drop));
   --arc-start-hue: var(--down-arc-start);
+  --arc-down: 1;
   --arc-end-hue: var(--down-arc-end);
   --highlight-halo: var(--react-blue);
 }
@@ -276,7 +335,9 @@
           (var(--across-arc-end) - var(--across-arc-start))
       )
   );
-  --active-clue-lightness: calc(var(--ramp-lightness) + var(--highlight-lift));
+  --active-clue-lightness: calc(
+    var(--ramp-lightness) + var(--highlight-lift) + var(--across-l0) + var(--across-l1) * var(--active-clue-ramp) + var(--across-l2) * var(--active-clue-ramp) * var(--active-clue-ramp)
+  );
 }
 #app.react-desktop-app[data-direction='down'] {
   --active-clue-hue: calc(
@@ -286,7 +347,9 @@
           (var(--down-arc-end) - var(--down-arc-start))
       )
   );
-  --active-clue-lightness: calc(var(--ramp-lightness) - var(--highlight-drop));
+  --active-clue-lightness: calc(
+    var(--ramp-lightness) - var(--highlight-drop) + var(--down-l0) + var(--down-l1) * var(--active-clue-ramp) + var(--down-l2) * var(--active-clue-ramp) * var(--active-clue-ramp)
+  );
 }
 #app.react-desktop-app {
   --active-clue-tint: oklch(
@@ -1018,12 +1081,18 @@
       (var(--gate-down, 0) * (var(--down-arc-end) - var(--down-arc-start)))
   );
   --gate-across-tint: oklch(
-    calc(var(--ramp-lightness) + var(--across-lift)) var(--ramp-chroma)
-      var(--gate-across-hue)
+    calc(
+        var(--ramp-lightness) + var(--across-lift) +
+          var(--across-l0) + var(--across-l1) * var(--gate-across, 0) + var(--across-l2) * var(--gate-across, 0) * var(--gate-across, 0)
+      )
+      var(--ramp-chroma) var(--gate-across-hue)
   );
   --gate-down-tint: oklch(
-    calc(var(--ramp-lightness) - var(--down-drop)) var(--ramp-chroma)
-      var(--gate-down-hue)
+    calc(
+        var(--ramp-lightness) - var(--down-drop) +
+          var(--down-l0) + var(--down-l1) * var(--gate-down, 0) + var(--down-l2) * var(--gate-down, 0) * var(--gate-down, 0)
+      )
+      var(--ramp-chroma) var(--gate-down-hue)
   );
 }
 
@@ -1303,12 +1372,18 @@
       (var(--spot-drank, 0) * (var(--down-arc-end) - var(--down-arc-start)))
   );
   --spot-acolor: oklch(
-    calc(var(--ramp-lightness) + var(--across-lift)) var(--ramp-chroma)
-      var(--spot-ahue)
+    calc(
+        var(--ramp-lightness) + var(--across-lift) +
+          var(--across-l0) + var(--across-l1) * var(--spot-arank, 0) + var(--across-l2) * var(--spot-arank, 0) * var(--spot-arank, 0)
+      )
+      var(--ramp-chroma) var(--spot-ahue)
   );
   --spot-dcolor: oklch(
-    calc(var(--ramp-lightness) - var(--down-drop)) var(--ramp-chroma)
-      var(--spot-dhue)
+    calc(
+        var(--ramp-lightness) - var(--down-drop) +
+          var(--down-l0) + var(--down-l1) * var(--spot-drank, 0) + var(--down-l2) * var(--spot-drank, 0) * var(--spot-drank, 0)
+      )
+      var(--ramp-chroma) var(--spot-dhue)
   );
   background-image:
     linear-gradient(
