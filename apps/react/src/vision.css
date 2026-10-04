@@ -441,17 +441,12 @@
       color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent);
 }
 
-/* The answer track at rest: every box keeps its faint ember, kept inside the
-   border — boxes sit 3px apart with text 10px above, and an outer bloom
-   would paint over both (boxes are positioned, text is not). The outside
-   light is spent on selection instead, where few elements wear it. */
+/* The answer track at rest is a strip of the board itself (section 3), so
+   it rests the way the board's squares do — matte, with only the glint along
+   its top edge. Its colour arrives the way a square's does: from the notch
+   at its open end and the short spill of light from it. */
 #app.react-desktop-app[data-ramp='on'] .state {
-  box-shadow:
-    inset 0 1px 0 var(--surface-glint),
-    inset 0 0 4px
-      color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent),
-    0 0 3px
-      color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent);
+  box-shadow: inset 0 1px 0 var(--cell-glint);
 }
 
 /* A numbered square glows in the tone of the number it carries. Token squares
@@ -939,32 +934,59 @@
 }
 
 /* ==========================================================================
-   3. The letter track.
+   3. The letter track: a strip torn from the board.
+   The answer's boxes are the board's own squares, carried out to the clue:
+   square, in the board's material and seams, touching edge to edge with no
+   rounding, so an empty track frames its gap the way the grid does and a
+   finished one could be laid straight back into it. Their colour arrives the
+   way a square's does — a notch filament on the strip's open end and the
+   short spill of light from it (section 4 on the board) — and the strip
+   sits a hair above the lane, lifted out.
    Letters are grouped by word first and balanced into runs of at most five
-   second (boardCues.js), and each run is an unbreakable flex item while it
-   fits: a clue that has to wrap breaks between runs, never through one, so
-   the rhythm the reader learned survives the line break. The wider gap
-   between words is the same one the answer has on the board. A run wider
-   than its column — a Solid track, a narrow lane, Board size L — wraps
-   internally instead of spilling over the neighbouring clue: breaking a run
-   is the lesser evil next to painting over another answer.
+   second (boardCues.js). Inside a word a new run joins on a heavier seam —
+   the bezel ruler's major tick, so counting reads the same on both — and the
+   strip only tears open where the answer itself has a gap between words.
+   Each run is an unbreakable flex item while it fits: a clue that has to
+   wrap breaks between runs, never through one. A run wider than its column
+   — a Solid track, a narrow lane, Board size L — wraps internally instead of
+   spilling over the neighbouring clue.
    ========================================================================== */
+#app.react-desktop-app {
+  --strip-cell: calc(25px * var(--clue-letter-scale));
+  --strip-tear: calc(9px * var(--clue-letter-scale));
+  --strip-major: color-mix(
+    in oklab,
+    var(--board-black) 72%,
+    var(--react-cell-edge)
+  );
+  --strip-shadow: #000000b0;
+}
+:root[style*='color-scheme: light'] #app.react-desktop-app {
+  --strip-major: color-mix(
+    in oklab,
+    var(--board-black) 55%,
+    var(--react-cell-edge)
+  );
+  --strip-shadow: #233b3038;
+}
+
 #app.react-desktop-app .state-container {
   /* A definite width, so a wrapping track never depends on shrink-to-fit sizing
      to decide how tall its row is. Alignment is justify-content's job. */
   align-self: stretch;
   box-sizing: border-box;
-  gap: calc(5px * var(--clue-letter-scale)) calc(11px * var(--clue-letter-scale));
-  min-height: calc(25px * var(--clue-letter-scale));
+  gap: calc(6px * var(--clue-letter-scale)) 0;
+  min-height: var(--strip-cell);
 }
 
 #app.react-desktop-app .state-run {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: calc(3px * var(--clue-letter-scale));
+  gap: 0;
   max-width: 100%;
   min-width: 0;
+  box-shadow: 0 3px 8px -4px var(--strip-shadow);
 }
 
 #app.react-desktop-app #across li:nth-child(odd) .state-run,
@@ -972,22 +994,119 @@
   justify-content: flex-end;
 }
 
-/* A run that ends a word gets the wider gap: the boundary reads as a real gap
- * in the answer, not as another letter slot. */
+/* The tear: only where the answer has a real gap between words. */
 #app.react-desktop-app .state-run.word-end {
-  margin-inline-end: calc(8px * var(--clue-letter-scale));
+  margin-inline-end: var(--strip-tear);
 }
 
 #app.react-desktop-app .state-container .state {
-  flex: 0 0 calc(21px * var(--clue-letter-scale));
-  width: calc(21px * var(--clue-letter-scale));
-  height: calc(25px * var(--clue-letter-scale));
-  font-size: calc(0.85rem * var(--clue-letter-scale));
+  flex: 0 0 var(--strip-cell);
+  width: var(--strip-cell);
+  height: var(--strip-cell);
+  margin: 0 0 0 -1px;
+  padding: calc(var(--strip-cell) * 0.07) 0 0;
+  border: 1px solid var(--react-cell-edge);
+  border-radius: 0;
+  background-color: var(--react-cell);
+  font-family: var(--react-face);
+  font-size: calc(var(--strip-cell) * 0.54);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+#app.react-desktop-app .state-container .state-run > .state:first-child {
+  margin-inline-start: 0;
+}
+/* Inside a word, the next run joins on a heavier seam. */
+#app.react-desktop-app
+  .state-run:not(.word-end)
+  + .state-run
+  > .state:first-child {
+  margin-inline-start: -1px;
+  border-left: 2px solid var(--strip-major);
+}
+/* Shared seams paint in document order, so a lit, checked or cursor square
+   lifts its own edges above its neighbours'. */
+#app.react-desktop-app
+  .state-container
+  .state:is([data-entry-index], .red, .green) {
+  z-index: 1;
+}
+#app.react-desktop-app .state-container .state.cursor-cell {
+  z-index: 2;
+}
+/* A lit square keeps the board's hairline, not desktop.css's 2px frame: on the
+   board the word is outlined at its ends, not boxed letter by letter. */
+#app.react-desktop-app .state-container .state[data-entry-index] {
+  border-width: 1px !important;
 }
 
-#app.react-desktop-app [data-grouping='none'] .state-container,
-#app.react-desktop-app [data-grouping='none'] .state-run {
-  gap: calc(3px * var(--clue-letter-scale));
+/* The notch at the strip's open end: the same filament the board draws on
+   the black square in front of the word, in the word's own hue. */
+#app.react-desktop-app[data-cues='on']
+  .state-container
+  .state-run:first-child
+  > .state:first-child::after {
+  content: '';
+  position: absolute;
+  top: 31%;
+  left: -3px;
+  width: 2px;
+  height: 38%;
+  border-radius: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in oklab, var(--rail) 72%, transparent) 30%,
+    color-mix(in oklab, white 42%, var(--rail)) 50%,
+    color-mix(in oklab, var(--rail) 72%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 5px color-mix(in oklab, var(--rail) 55%, transparent);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .state-container
+  .state-run:first-child
+  > .state:first-child::after {
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in oklab, var(--clue-tint) 72%, transparent) 30%,
+    color-mix(in oklab, white 45%, var(--clue-tint)) 50%,
+    color-mix(in oklab, var(--clue-tint) 72%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 6px color-mix(in oklab, var(--clue-tint) 65%, transparent);
+}
+
+/* The notch's spill: the first squares of the strip carry the same short
+   fall of light the word's first squares carry on the board (section 4),
+   level for level, in the clue's own hue. */
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .state-container
+  .state-run:first-child
+  > .state:nth-child(-n + 3) {
+  --spill-from: var(--spot-alpha);
+  --spill-to: calc(var(--spot-alpha) * 0.58);
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--clue-tint) var(--spill-from), transparent),
+    color-mix(in oklab, var(--clue-tint) var(--spill-to), transparent)
+  );
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .state-container
+  .state-run:first-child
+  > .state:nth-child(2) {
+  --spill-from: calc(var(--spot-alpha) * 0.58);
+  --spill-to: calc(var(--spot-alpha) * 0.16);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .state-container
+  .state-run:first-child
+  > .state:nth-child(3) {
+  --spill-from: calc(var(--spot-alpha) * 0.16);
+  --spill-to: 0%;
 }
 
 /* The board speaks the same face as the ladder. */
