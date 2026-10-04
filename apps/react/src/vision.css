@@ -1109,10 +1109,15 @@
   --spill-to: 0%;
 }
 
-/* The board speaks the same face as the ladder. */
+/* The board speaks the same face as the ladder. The letter sits a little
+   below the square's centre and a touch smaller than the square allows, the
+   way a printed grid sets it, so the corner number has its own air instead of
+   touching the capital. */
 #app.react-desktop-app .grid-cell input {
+  box-sizing: border-box;
+  padding: calc(var(--cell-size) * 0.14) 0 0;
   font-family: var(--react-face);
-  font-size: calc(var(--cell-size) * 0.52);
+  font-size: calc(var(--cell-size) * 0.5);
   font-weight: 600;
   text-transform: uppercase;
 }
