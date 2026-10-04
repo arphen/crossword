@@ -92,6 +92,7 @@ export default function CrosswordView({
     const [rebusDisplayValue, setRebusDisplayValue] = useState('');
     const inputSources = useRef(new Map());
     const boardRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+    const glowRef = useRef(/** @type {HTMLDivElement | null} */ (null));
     const acrossRef = useRef(/** @type {HTMLUListElement | null} */ (null));
     const downRef = useRef(/** @type {HTMLUListElement | null} */ (null));
     const scheduleTerritory = useRef(() => {});
@@ -484,9 +485,14 @@ export default function CrosswordView({
             const value = Number.parseFloat(row?.style.getPropertyValue('--clue-ramp') ?? '');
             return Number.isFinite(value) ? value : null;
         };
+        // The grid wears the territory on its edge, the glow layer as the light
+        // behind it; each reads the ranks from its own style.
+        const wearers = [panel, glowRef.current].filter(element => element instanceof HTMLElement);
         const publish = (name, value) => {
-            if (value === null) panel.style.removeProperty(name);
-            else panel.style.setProperty(name, String(value));
+            for (const wearer of wearers) {
+                if (value === null) wearer.style.removeProperty(name);
+                else wearer.style.setProperty(name, String(value));
+            }
         };
         const measure = () => {
             frame = 0;
@@ -653,6 +659,7 @@ export default function CrosswordView({
 
                     {/* Crossword Grid */}
                     <div id="crossword-container">
+                        <div className="board-glow" ref={glowRef} aria-hidden="true"></div>
                         <div className="grid" ref={boardRef} style={{ gridTemplateRows: `repeat(${grid.length}, var(--cell-size))` }}>
                             {grid.map((row, rowIndex) => (
                                 <div className="grid-row" key={rowIndex} style={{ gridTemplateColumns: `repeat(${row.length}, var(--cell-size))` }}>

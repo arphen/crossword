@@ -2006,6 +2006,26 @@ html[data-luma='veil'] {
   inherits: false;
   initial-value: 1;
 }
+@property --lit-across-top {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --lit-across-bottom {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --lit-down-top {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --lit-down-bottom {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
 @property --corner-tl {
   syntax: '<color>';
   inherits: false;
@@ -2031,6 +2051,7 @@ html[data-luma='veil'] {
   --backlight: 34%;
   --edge-light: 85%;
   --board-drop: #000000;
+  --territory-spread: 2.4;
 }
 /* On paper light from behind reads as a stain, not a glow: the backlight
    stays faint and the board's shadow takes the paper's own green-grey. */
@@ -2048,29 +2069,75 @@ html[data-luma='veil'] {
   --edge-light: 48%;
 }
 
-#app.react-desktop-app[data-ramp='on'] .grid {
+/* Each element that wears the territory computes it from the ranks published
+   on itself. One screen shows only a third or so of a lane, so the clues at
+   its top and bottom sit close on the wheel; the light widens that gap around
+   the lane's middle (--territory-spread) so the four corners read as four
+   colours once blurred into a glow. The numerals and squares keep their own
+   exact hues; only the light exaggerates. */
+#app.react-desktop-app[data-ramp='on'] :is(.board-glow, .grid) {
+  --lit-across-top: clamp(
+    0,
+    calc(
+      (var(--territory-across-top) + var(--territory-across-bottom)) / 2 +
+        (var(--territory-across-top) - (var(--territory-across-top) + var(--territory-across-bottom)) / 2) * var(--territory-spread)
+    ),
+    1
+  );
+  --lit-across-bottom: clamp(
+    0,
+    calc(
+      (var(--territory-across-top) + var(--territory-across-bottom)) / 2 +
+        (var(--territory-across-bottom) - (var(--territory-across-top) + var(--territory-across-bottom)) / 2) * var(--territory-spread)
+    ),
+    1
+  );
+  --lit-down-top: clamp(
+    0,
+    calc(
+      (var(--territory-down-top) + var(--territory-down-bottom)) / 2 +
+        (var(--territory-down-top) - (var(--territory-down-top) + var(--territory-down-bottom)) / 2) * var(--territory-spread)
+    ),
+    1
+  );
+  --lit-down-bottom: clamp(
+    0,
+    calc(
+      (var(--territory-down-top) + var(--territory-down-bottom)) / 2 +
+        (var(--territory-down-bottom) - (var(--territory-down-top) + var(--territory-down-bottom)) / 2) * var(--territory-spread)
+    ),
+    1
+  );
   --corner-tl: oklch(
-    calc(var(--ramp-lightness) + var(--across-lift) + var(--across-l0) + var(--across-l1) * var(--territory-across-top) + var(--across-l2) * var(--territory-across-top) * var(--territory-across-top))
+    calc(var(--ramp-lightness) + var(--across-lift) + var(--across-l0) + var(--across-l1) * var(--lit-across-top) + var(--across-l2) * var(--lit-across-top) * var(--lit-across-top))
       var(--ramp-chroma)
-      calc(var(--across-arc-start) + var(--territory-across-top) * (var(--across-arc-end) - var(--across-arc-start)))
+      calc(var(--across-arc-start) + var(--lit-across-top) * (var(--across-arc-end) - var(--across-arc-start)))
   );
   --corner-bl: oklch(
-    calc(var(--ramp-lightness) + var(--across-lift) + var(--across-l0) + var(--across-l1) * var(--territory-across-bottom) + var(--across-l2) * var(--territory-across-bottom) * var(--territory-across-bottom))
+    calc(var(--ramp-lightness) + var(--across-lift) + var(--across-l0) + var(--across-l1) * var(--lit-across-bottom) + var(--across-l2) * var(--lit-across-bottom) * var(--lit-across-bottom))
       var(--ramp-chroma)
-      calc(var(--across-arc-start) + var(--territory-across-bottom) * (var(--across-arc-end) - var(--across-arc-start)))
+      calc(var(--across-arc-start) + var(--lit-across-bottom) * (var(--across-arc-end) - var(--across-arc-start)))
   );
   --corner-tr: oklch(
-    calc(var(--ramp-lightness) - var(--down-drop) + var(--down-l0) + var(--down-l1) * var(--territory-down-top) + var(--down-l2) * var(--territory-down-top) * var(--territory-down-top))
+    calc(var(--ramp-lightness) - var(--down-drop) + var(--down-l0) + var(--down-l1) * var(--lit-down-top) + var(--down-l2) * var(--lit-down-top) * var(--lit-down-top))
       var(--ramp-chroma)
-      calc(var(--down-arc-start) + var(--territory-down-top) * (var(--down-arc-end) - var(--down-arc-start)))
+      calc(var(--down-arc-start) + var(--lit-down-top) * (var(--down-arc-end) - var(--down-arc-start)))
   );
   --corner-br: oklch(
-    calc(var(--ramp-lightness) - var(--down-drop) + var(--down-l0) + var(--down-l1) * var(--territory-down-bottom) + var(--down-l2) * var(--territory-down-bottom) * var(--territory-down-bottom))
+    calc(var(--ramp-lightness) - var(--down-drop) + var(--down-l0) + var(--down-l1) * var(--lit-down-bottom) + var(--down-l2) * var(--lit-down-bottom) * var(--lit-down-bottom))
       var(--ramp-chroma)
-      calc(var(--down-arc-start) + var(--territory-down-bottom) * (var(--down-arc-end) - var(--down-arc-start)))
+      calc(var(--down-arc-start) + var(--lit-down-bottom) * (var(--down-arc-end) - var(--down-arc-start)))
   );
-  /* The edge: a conic sweep around the board's centre, so each side blends
-     from one corner's hue through the plain edge to the next corner's. */
+  transition:
+    --territory-across-top 900ms var(--ease-out, ease),
+    --territory-across-bottom 900ms var(--ease-out, ease),
+    --territory-down-top 900ms var(--ease-out, ease),
+    --territory-down-bottom 900ms var(--ease-out, ease);
+}
+
+/* The edge: a conic sweep around the board's centre, so each side blends from
+   one corner's hue through the plain edge to the next corner's. */
+#app.react-desktop-app[data-ramp='on'] .grid {
   border-image: conic-gradient(
       var(--board-edge) 0deg,
       color-mix(in oklab, var(--corner-tr) var(--edge-light), var(--board-edge)) 45deg,
@@ -2083,29 +2150,79 @@ html[data-luma='veil'] {
       var(--board-edge) 360deg
     )
     1;
-  /* The backlight: four soft lights offset toward the corners, each showing
-     only around its own corner and the two sides that meet there. */
-  box-shadow:
-    inset 0 2px 4px var(--panel-shadow),
-    calc(var(--cell-size) * -0.9) calc(var(--cell-size) * -0.9)
-      calc(var(--cell-size) * 3.2) calc(var(--cell-size) * -0.35)
-      color-mix(in oklab, var(--corner-tl) calc(var(--backlight) * max(var(--libido, 1), 0.3)), transparent),
-    calc(var(--cell-size) * 0.9) calc(var(--cell-size) * -0.9)
-      calc(var(--cell-size) * 3.2) calc(var(--cell-size) * -0.35)
-      color-mix(in oklab, var(--corner-tr) calc(var(--backlight) * max(var(--libido, 1), 0.3)), transparent),
-    calc(var(--cell-size) * -0.9) calc(var(--cell-size) * 0.9)
-      calc(var(--cell-size) * 3.2) calc(var(--cell-size) * -0.35)
-      color-mix(in oklab, var(--corner-bl) calc(var(--backlight) * max(var(--libido, 1), 0.3)), transparent),
-    calc(var(--cell-size) * 0.9) calc(var(--cell-size) * 0.9)
-      calc(var(--cell-size) * 3.2) calc(var(--cell-size) * -0.35)
-      color-mix(in oklab, var(--corner-br) calc(var(--backlight) * max(var(--libido, 1), 0.3)), transparent),
-    0 40px 110px -30px var(--board-drop);
-  transition:
-    --territory-across-top 900ms var(--ease-out, ease),
-    --territory-across-bottom 900ms var(--ease-out, ease),
-    --territory-down-top 900ms var(--ease-out, ease),
-    --territory-down-bottom 900ms var(--ease-out, ease);
 }
+
+/* The backlight: four lights on their own layer behind the board, each
+   centred on one of the board's corners and fading along the two sides that
+   meet there before the next corner's light begins. The layer reaches out
+   past the board by the glow's own room and fades to nothing at its rim, so
+   no light is ever cut off by a box edge. */
+#app.react-desktop-app #crossword-container {
+  position: relative;
+  isolation: isolate;
+}
+#app.react-desktop-app .board-glow {
+  display: none;
+}
+#app.react-desktop-app[data-ramp='on'] .board-glow {
+  --glow-room: calc(var(--cell-size) * 2.4);
+  position: absolute;
+  z-index: -1;
+  inset: calc(-1 * var(--glow-room))
+    calc(-1 * (var(--glow-room) + var(--overlap-px, 0px)));
+  display: block;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      50% 46% at var(--glow-room) var(--glow-room),
+      color-mix(
+          in oklab,
+          var(--corner-tl) calc(var(--backlight) * max(var(--libido, 1), 0.3)),
+          transparent
+        )
+        0,
+      transparent 100%
+    ),
+    radial-gradient(
+      50% 46% at calc(100% - var(--glow-room)) var(--glow-room),
+      color-mix(
+          in oklab,
+          var(--corner-tr) calc(var(--backlight) * max(var(--libido, 1), 0.3)),
+          transparent
+        )
+        0,
+      transparent 100%
+    ),
+    radial-gradient(
+      50% 46% at var(--glow-room) calc(100% - var(--glow-room)),
+      color-mix(
+          in oklab,
+          var(--corner-bl) calc(var(--backlight) * max(var(--libido, 1), 0.3)),
+          transparent
+        )
+        0,
+      transparent 100%
+    ),
+    radial-gradient(
+      50% 46% at calc(100% - var(--glow-room)) calc(100% - var(--glow-room)),
+      color-mix(
+          in oklab,
+          var(--corner-br) calc(var(--backlight) * max(var(--libido, 1), 0.3)),
+          transparent
+        )
+        0,
+      transparent 100%
+    );
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent, #000 var(--glow-room), #000 calc(100% - var(--glow-room)), transparent),
+    linear-gradient(180deg, transparent, #000 var(--glow-room), #000 calc(100% - var(--glow-room)), transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent, #000 var(--glow-room), #000 calc(100% - var(--glow-room)), transparent),
+    linear-gradient(180deg, transparent, #000 var(--glow-room), #000 calc(100% - var(--glow-room)), transparent);
+  mask-composite: intersect;
+}
+
 
 /* ==========================================================================
    11. Libido, and what remains.
