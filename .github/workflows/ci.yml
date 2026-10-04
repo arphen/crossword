@@ -113,6 +113,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Activate pinned npm
+        run: npm install --global "$(node -p 'require("./package.json").packageManager')"
       - uses: astral-sh/setup-uv@v6
         with:
           version: '0.12.7'
@@ -121,6 +128,11 @@ jobs:
           cache-dependency-glob: uv.lock
       - run: uv python install
       - run: uv sync --all-extras --frozen
+      - run: npm ci --ignore-scripts
+      # The build output is never committed; the production smoke test
+      # (tests/test_run_prod.py) serves the bundle built here.
+      - name: Build React frontend
+        run: npm run build
       - name: Test without live providers
         run: >-
           uv run --no-sync python -m pytest tests/ -m 'not live_provider'
