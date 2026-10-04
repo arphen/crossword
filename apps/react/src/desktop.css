@@ -449,50 +449,58 @@
     font-weight: 700;
 }
 
-/* The console: one quiet panel around the board. The squares are the
-   brightest surface in it (the paper), the panel a step below, and nothing
-   inside it is framed twice. Corner radii are concentric — the panel's radius
-   minus its padding is the radius of anything sitting in its corners — so
-   the nested shapes read as one object. Every control shares one motion
-   curve and two durations. */
+/* The stage: the grid is the ground everything else stands on. It is sized
+   by the window's height and sits beneath the two lanes, which reach over
+   its outer edge just far enough to cover the notches there — the map laid
+   over the territory, the overlap where neither owns the screen. The
+   instruments (masthead above, dock below) float over the board's edges as
+   glass. Nothing frames the board but its own bezel, lit from behind at its
+   corners by the territory on screen (vision.css section 10). Every control
+   shares one motion curve and two durations. */
 #app.react-desktop-app {
-    --console-radius: 24px;
-    --console-pad: 16px;
-    --inner-radius: calc(var(--console-radius) - var(--console-pad));
+    --top-band: 96px;
+    --bottom-band: 84px;
+    --bezel: 6px;
+    --overlap: 0.3;
+    /* The lanes are where the solver lives: they keep this much before the
+       board may grow. */
+    --lane-min: 390px;
+    --inner-radius: 8px;
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
     --dur-quick: 140ms;
     --dur-settle: 260ms;
     --track-empty: color-mix(in oklab, var(--react-ink) 9%, var(--react-panel));
+    --glass: color-mix(in oklab, var(--react-panel) 76%, transparent);
+    --glass-edge: color-mix(in oklab, var(--react-ink) 10%, transparent);
+    --smoke: color-mix(in oklab, var(--react-bg) 58%, transparent);
 }
 
 #app.react-desktop-app .center-column {
+    position: relative;
     display: flex;
     flex: none;
     flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    align-self: center;
-    gap: 14px;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    gap: 0;
     width: auto;
-    height: fit-content;
+    height: 100dvh;
     min-height: 0;
-    max-height: calc(100dvh - 32px);
-    margin: 16px 0;
-    padding: var(--console-pad);
-    overflow: hidden;
-    border: 1px solid var(--react-panel-edge);
-    border-radius: var(--console-radius);
-    background: linear-gradient(180deg, var(--panel-light), var(--react-panel) 70%);
-    box-shadow:
-        inset 0 1px 0 var(--surface-glint),
-        0 2px 6px var(--panel-lowlight),
-        0 28px 56px -20px var(--panel-shadow);
+    max-height: none;
+    margin: 0;
+    padding: var(--top-band) 0 var(--bottom-band);
+    box-sizing: border-box;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
 }
 
 #app.react-desktop-app .menu-section {
-    width: 100%;
     padding: 0;
     border: 0;
     border-radius: 0;
@@ -502,22 +510,68 @@
     backdrop-filter: none;
 }
 
+/* The lanes lie over the board's outer edge as light smoke: thickest at the
+   board's own edge, gone a little way past the notches, so what lies beneath
+   stays legible as a notch and the lane still reads as on top. */
+#app.react-desktop-app .clue-column {
+    z-index: 10;
+}
+#app.react-desktop-app .clue-column[data-label="ACROSS"] {
+    background: linear-gradient(
+        270deg,
+        color-mix(in oklab, var(--react-bg) 18%, transparent) 0,
+        var(--smoke) var(--overlap-px),
+        transparent var(--overlap-px)
+    );
+}
+#app.react-desktop-app .clue-column[data-label="DOWN"] {
+    background: linear-gradient(
+        90deg,
+        color-mix(in oklab, var(--react-bg) 18%, transparent) 0,
+        var(--smoke) var(--overlap-px),
+        transparent var(--overlap-px)
+    );
+}
+
+/* The dock floats over the foot of both lanes, so each lane keeps room to
+   scroll its last clues up clear of the glass. */
+#app.react-desktop-app :is(#across, #down) {
+    padding-bottom: calc(var(--bottom-band) + 8px);
+}
+
+/* Glass for the floating instruments: tinted, edged, lifted — and only these
+   large surfaces blur what lies beneath them. */
+#app.react-desktop-app :is(#menu-top, .action-bar, #menu-bottom) {
+    position: absolute;
+    z-index: 12;
+    box-sizing: border-box;
+    border: 1px solid var(--glass-edge);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+    box-shadow:
+        inset 0 1px 0 var(--surface-glint),
+        0 18px 40px -18px var(--panel-shadow),
+        0 2px 6px var(--panel-lowlight);
+}
+
 /* Masthead: the puzzle's name on the left, the two numbers a solver glances
    at on the right, and the completion line across the foot. */
 #app.react-desktop-app #menu-top {
-    position: relative;
-    box-sizing: border-box;
+    top: 14px;
+    left: 50%;
     display: grid;
-    flex: 0 0 auto;
+    width: clamp(560px, calc(var(--stage) - 24px), 780px);
     grid-template-columns: minmax(0, 1fr) auto auto;
     grid-template-areas:
         "info time score"
         "progress progress progress";
     align-items: end;
     column-gap: 22px;
-    row-gap: 12px;
-    padding: 2px 4px 0;
-    border: 0;
+    row-gap: 10px;
+    padding: 12px 18px 11px;
+    border-radius: 16px;
+    transform: translateX(-50%);
 }
 
 #app.react-desktop-app .info-bar {
@@ -711,23 +765,28 @@
     transition: transform 700ms var(--ease-out);
 }
 
+/* The board is wider than its column by the overlap on each side, and
+   centred on it, so its outer edge runs on beneath the lanes. */
 #app.react-desktop-app #crossword-container {
     display: flex;
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    width: 100%;
+    width: var(--stage);
     min-height: 0;
     padding: 0;
+    overflow: visible;
 }
 
+/* A square bezel: the grid of reality has no soft corners. */
 #app.react-desktop-app .grid {
+    flex: 0 0 auto;
     width: fit-content;
     padding: 5px;
     border: 1px solid var(--board-edge);
-    border-radius: var(--inner-radius);
+    border-radius: 0;
     background: var(--board-bezel);
-    box-shadow: inset 0 2px 4px var(--panel-shadow), 0 1px 0 var(--surface-glint), 0 8px 18px var(--board-shadow);
+    box-shadow: inset 0 2px 4px var(--panel-shadow), 0 40px 110px -30px var(--board-drop, #000);
     overflow: hidden;
 }
 
@@ -827,25 +886,33 @@
 }
 
 /* Commands: the three a solver reaches for mid-solve, as equal keys. */
+/* The dock: commands and tray as two glass capsules meeting at the centre
+   beneath the board. */
 #app.react-desktop-app .action-bar {
+    right: calc(50% + 4px);
+    bottom: 16px;
     display: flex;
-    flex: 0 0 auto;
-    gap: 8px;
-    padding: 0;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    width: auto;
+    gap: 4px;
+    padding: 5px;
+    border-radius: 14px;
+    white-space: nowrap;
 }
 
 #app.react-desktop-app .action-button {
     position: relative;
     box-sizing: border-box;
     display: inline-flex;
-    flex: 1 1 0;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 44px;
-    padding: 8px 14px;
+    min-height: 40px;
+    padding: 0 16px;
     border: 1px solid var(--control-edge);
-    border-radius: var(--inner-radius);
+    border-radius: 10px;
     background: linear-gradient(var(--control-top), var(--control-fill));
     color: var(--react-ink);
     box-shadow: inset 0 1px 0 var(--surface-glint), 0 2px 3px var(--control-shadow);
@@ -883,16 +950,21 @@
    solution, light or dark, and the view settings. Quiet glyphs on the panel
    itself until the pointer finds them. */
 #app.react-desktop-app #menu-bottom {
-    flex: 0 0 auto;
-    padding: 0;
+    bottom: 16px;
+    left: calc(50% + 4px);
+    width: auto;
+    padding: 5px;
+    border-radius: 14px;
+    white-space: nowrap;
 }
 #app.react-desktop-app .selection-row {
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 2px;
     padding: 0;
 }
-#app.react-desktop-app .menu-spacer { flex: 1 1 auto; }
+#app.react-desktop-app .menu-spacer { display: none; }
 #app.react-desktop-app .field-group {
     display: block;
     flex: 0 1 auto;
@@ -910,9 +982,9 @@
 #app.react-desktop-app .select-wrapper { position: relative; }
 #app.react-desktop-app .select-wrapper select {
     box-sizing: border-box;
-    min-width: 128px;
-    height: 36px;
-    min-height: 36px;
+    min-width: 112px;
+    height: 40px;
+    min-height: 40px;
     padding: 0 30px 0 12px;
     border: 1px solid transparent;
     border-radius: var(--inner-radius);
@@ -933,12 +1005,12 @@
     position: relative;
     box-sizing: border-box;
     display: inline-flex;
-    flex: 0 0 36px;
+    flex: 0 0 38px;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    min-height: 36px;
+    width: 38px;
+    height: 40px;
+    min-height: 40px;
     padding: 0;
     border: 0;
     border-radius: var(--inner-radius);

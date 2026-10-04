@@ -91,7 +91,7 @@ export default function CrosswordView({
     const [cursorCell, setCursorCell] = useState(null);
     const [rebusDisplayValue, setRebusDisplayValue] = useState('');
     const inputSources = useRef(new Map());
-    const consoleRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+    const boardRef = useRef(/** @type {HTMLDivElement | null} */ (null));
     const acrossRef = useRef(/** @type {HTMLUListElement | null} */ (null));
     const downRef = useRef(/** @type {HTMLUListElement | null} */ (null));
     const scheduleTerritory = useRef(() => {});
@@ -431,15 +431,15 @@ export default function CrosswordView({
             return <span key={runIndex} className={classes('state-run', { 'word-end': run.wordEnd })}>{slice}</span>;
         });
     };
-    // The console takes on the territory: each corner of the board's panel
-    // wears the hue of the clue showing in that corner of the screen, so the
-    // middle says where the reader is in each lane - the yellow and purple
-    // corners, or the blue and green ones. Written straight onto the panel's
+    // The board takes on the territory: each corner of the grid is lit from
+    // behind in the hue of the clue showing in that corner of the screen, so
+    // the middle says where the reader is in each lane - the yellow and purple
+    // corners, or the blue and green ones. Written straight onto the grid's
     // style on scroll (one frame at most per burst), never through a React
-    // render; vision.css owns how much colour that becomes. Without number
-    // colours the rows carry no rank and the panel keeps its plain edge.
+    // render; vision.css owns how much light that becomes. Without number
+    // colours the rows carry no rank and the board keeps its plain edge.
     useEffect(() => {
-        const panel = consoleRef.current;
+        const panel = boardRef.current;
         const across = acrossRef.current;
         const down = downRef.current;
         if (!panel || !across || !down || typeof requestAnimationFrame === 'undefined') return undefined;
@@ -530,7 +530,7 @@ export default function CrosswordView({
                     </ul>
                 </div>
 
-                <div className="center-column" ref={consoleRef}>
+                <div className="center-column">
                     {/* Masthead: which puzzle this is, and the numbers a solver
                         actually glances at. Checks and reveals are what the score
                         is made of, so they sit behind it (hover or focus). */}
@@ -595,7 +595,7 @@ export default function CrosswordView({
 
                     {/* Crossword Grid */}
                     <div id="crossword-container">
-                        <div className="grid" style={{ gridTemplateRows: `repeat(${grid.length}, var(--cell-size))` }}>
+                        <div className="grid" ref={boardRef} style={{ gridTemplateRows: `repeat(${grid.length}, var(--cell-size))` }}>
                             {grid.map((row, rowIndex) => (
                                 <div className="grid-row" key={rowIndex} style={{ gridTemplateColumns: `repeat(${row.length}, var(--cell-size))` }}>
                                     {row.map((cell, cellIndex) => (

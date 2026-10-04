@@ -107,19 +107,29 @@
   --ruler-minor: color-mix(in oklab, var(--react-ink) 18%, transparent);
   --ruler-major: color-mix(in oklab, var(--react-ink) 38%, transparent);
   --letter-glow: 0 0 14px rgba(180, 205, 235, 0.22);
-  /* Board size. The reader's choice scales the board column's budget (section
-       8), and the cell fits whichever budget is tightest: the column's width,
-       or the window's height. Height never grows with the choice — a larger
-       board widens its column, it does not run off the bottom of the window. */
+  /* Board size. The board is the ground (desktop.css): the cell fits the
+       window's height between the floating instruments, or its width once
+       the lanes have their minimum, whichever is tighter. The reader's choice
+       is a factor on that fit; height never grows with it, so a larger board
+       never slides under the instruments. The board is wider than its stage
+       column by the overlap — about the notches — on each side. */
   --board-scale: 1;
-  --board-budget: min(calc(min(42.4vw, 814px) * var(--board-scale)), 52vw);
   --cell-size: min(
-    calc(3.25rem * var(--board-scale)),
-    calc((var(--board-budget) - 52px) / var(--grid-columns)),
+    calc(5rem * var(--board-scale)),
     calc(
-      (100dvh - 310px) / var(--grid-rows) * min(var(--board-scale), 1)
+      (100dvh - var(--top-band) - var(--bottom-band) - 2 * var(--bezel)) /
+        var(--grid-rows) * min(var(--board-scale), 1)
+    ),
+    calc(
+      (100vw - 2 * var(--lane-min) - 2 * var(--bezel)) /
+        (var(--grid-columns) - 2 * var(--overlap)) * var(--board-scale)
     )
   );
+  --board-width: calc(
+    var(--cell-size) * var(--grid-columns) + 2 * var(--bezel)
+  );
+  --overlap-px: calc(var(--cell-size) * var(--overlap) + var(--bezel));
+  --stage: calc(var(--board-width) - 2 * var(--overlap-px));
 }
 
 #app.react-desktop-app[data-scale='compact'] {
@@ -1755,7 +1765,7 @@ html[data-luma='veil'] {
   gap: 6px;
   /* The tray's glyph height, so the tray stays level. */
   box-sizing: border-box;
-  height: 36px;
+  height: 40px;
   padding: 0 10px;
   border: 0;
   border-radius: var(--inner-radius, 8px);
@@ -1775,6 +1785,19 @@ html[data-luma='veil'] {
 
 #app.react-desktop-app .view-cluster-summary::-webkit-details-marker {
   display: none;
+}
+/* In the dock the cluster is a glyph like its neighbours; its title names it. */
+#app.react-desktop-app #menu-bottom .view-cluster-summary {
+  width: 38px;
+  padding: 0;
+  justify-content: center;
+}
+#app.react-desktop-app #menu-bottom .view-cluster-summary span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 #app.react-desktop-app .view-cluster-summary:hover {
   background: color-mix(in oklab, var(--react-ink) 8%, transparent);
@@ -1922,15 +1945,14 @@ html[data-luma='veil'] {
 
 /* ==========================================================================
    8. Board size.
-   The board column in desktop.css is a budget — min(42.4vw, 814px) — and the cell
-   size is that budget divided by the number of columns (section 0). So the scale
-   is applied to the budget, not to the result: a larger board also widens the
-   column that holds it, and the two clue lanes give up the space instead of the
-   board's last column being clipped by its frame. The 52vw ceiling keeps the
-   board inside the shell at every scale.
+   The stage column is the board's width less the overlap on each side
+   (section 0), so a larger board widens its column and the lanes give up the
+   space, while the board's outer edge always runs the same short way under
+   them. A mini puzzle's stage keeps room for the instruments, and the small
+   board simply floats in the middle of it.
    ========================================================================== */
 #app.react-desktop-app #notmenu {
-  grid-template-columns: minmax(0, 1fr) var(--board-budget) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) max(var(--stage), 600px) minmax(0, 1fr);
 }
 
 /* The view panel scrolls rather than running past a short window. */
@@ -1950,18 +1972,19 @@ html[data-luma='veil'] {
 }
 
 /* ==========================================================================
-   10. The console takes on the territory.
+   10. The board takes on the territory.
    The two rainbows give every screen four corners of colour — the top and
    bottom of the Across lane on the left, of the Down lane on the right — and
    the reader learns where they are by them ("I'm in the yellow and the
-   purple"). The board's panel wears the same four: each of its corners takes
-   the hue of the clue showing in that corner of the screen, on the panel's
-   edge and as a faint wash inside it, and drifts as the lanes scroll, so the
-   middle of the screen carries the territory too. CrosswordView publishes
-   the four ranks on the panel; they are registered numbers so the hues glide
-   rather than jump, and they do not inherit, so a drifting corner restyles
-   the panel alone and never the board inside it. Number colours Off keeps
-   the plain edge.
+   purple"). The board answers with the same four, as light from behind it:
+   each corner of the grid is backlit in the hue of the clue showing in that
+   corner of the screen, and the bezel's hairline edge brightens toward each
+   corner in the same hue, so the ground the clues stand on carries the
+   territory too and drifts with it as the lanes scroll. CrosswordView
+   publishes the four ranks on the grid; they are registered numbers so the
+   hues glide rather than jump, and they do not inherit, so a drifting corner
+   repaints the grid's own edge and glow and never restyles a square. Number
+   colours Off keeps the plain edge.
    ========================================================================== */
 @property --territory-across-top {
   syntax: '<number>';
@@ -1983,118 +2006,100 @@ html[data-luma='veil'] {
   inherits: false;
   initial-value: 1;
 }
-@property --console-tl {
+@property --corner-tl {
   syntax: '<color>';
   inherits: false;
   initial-value: transparent;
 }
-@property --console-bl {
+@property --corner-bl {
   syntax: '<color>';
   inherits: false;
   initial-value: transparent;
 }
-@property --console-tr {
+@property --corner-tr {
   syntax: '<color>';
   inherits: false;
   initial-value: transparent;
 }
-@property --console-br {
+@property --corner-br {
   syntax: '<color>';
   inherits: false;
   initial-value: transparent;
 }
 
 #app.react-desktop-app {
-  --territory-wash: 10%;
-  --territory-edge: 78%;
+  --backlight: 34%;
+  --edge-light: 85%;
+  --board-drop: #000000;
 }
+/* On paper light from behind reads as a stain, not a glow: the backlight
+   stays faint and the board's shadow takes the paper's own green-grey. */
 :root[style*='color-scheme: light'] #app.react-desktop-app {
-  --territory-wash: 9%;
-  --territory-edge: 70%;
+  --backlight: 14%;
+  --edge-light: 75%;
+  --board-drop: #233b3038;
 }
 #app.react-desktop-app[data-luma='dim'] {
-  --territory-wash: 6%;
-  --territory-edge: 60%;
+  --backlight: 20%;
+  --edge-light: 62%;
 }
 #app.react-desktop-app[data-luma='veil'] {
-  --territory-wash: 4%;
-  --territory-edge: 48%;
+  --backlight: 12%;
+  --edge-light: 48%;
 }
 
-#app.react-desktop-app[data-ramp='on'] .center-column {
-  --console-tl: oklch(
+#app.react-desktop-app[data-ramp='on'] .grid {
+  --corner-tl: oklch(
     calc(var(--ramp-lightness) + var(--across-lift) + var(--across-l0) + var(--across-l1) * var(--territory-across-top) + var(--across-l2) * var(--territory-across-top) * var(--territory-across-top))
       var(--ramp-chroma)
       calc(var(--across-arc-start) + var(--territory-across-top) * (var(--across-arc-end) - var(--across-arc-start)))
   );
-  --console-bl: oklch(
+  --corner-bl: oklch(
     calc(var(--ramp-lightness) + var(--across-lift) + var(--across-l0) + var(--across-l1) * var(--territory-across-bottom) + var(--across-l2) * var(--territory-across-bottom) * var(--territory-across-bottom))
       var(--ramp-chroma)
       calc(var(--across-arc-start) + var(--territory-across-bottom) * (var(--across-arc-end) - var(--across-arc-start)))
   );
-  --console-tr: oklch(
+  --corner-tr: oklch(
     calc(var(--ramp-lightness) - var(--down-drop) + var(--down-l0) + var(--down-l1) * var(--territory-down-top) + var(--down-l2) * var(--territory-down-top) * var(--territory-down-top))
       var(--ramp-chroma)
       calc(var(--down-arc-start) + var(--territory-down-top) * (var(--down-arc-end) - var(--down-arc-start)))
   );
-  --console-br: oklch(
+  --corner-br: oklch(
     calc(var(--ramp-lightness) - var(--down-drop) + var(--down-l0) + var(--down-l1) * var(--territory-down-bottom) + var(--down-l2) * var(--territory-down-bottom) * var(--territory-down-bottom))
       var(--ramp-chroma)
       calc(var(--down-arc-start) + var(--territory-down-bottom) * (var(--down-arc-end) - var(--down-arc-start)))
   );
-  border-color: transparent;
-  background:
-    radial-gradient(
-        90% 50% at 0 0,
-        color-mix(in oklab, var(--console-tl) var(--territory-wash), transparent),
-        transparent 72%
-      )
-      padding-box,
-    radial-gradient(
-        90% 50% at 0 100%,
-        color-mix(in oklab, var(--console-bl) var(--territory-wash), transparent),
-        transparent 72%
-      )
-      padding-box,
-    radial-gradient(
-        90% 50% at 100% 0,
-        color-mix(in oklab, var(--console-tr) var(--territory-wash), transparent),
-        transparent 72%
-      )
-      padding-box,
-    radial-gradient(
-        90% 50% at 100% 100%,
-        color-mix(in oklab, var(--console-br) var(--territory-wash), transparent),
-        transparent 72%
-      )
-      padding-box,
-    linear-gradient(180deg, var(--panel-light), var(--react-panel) 70%)
-      padding-box,
-    radial-gradient(
-        75% 55% at 0 0,
-        color-mix(in oklab, var(--console-tl) var(--territory-edge), transparent),
-        transparent
-      )
-      border-box,
-    radial-gradient(
-        75% 55% at 0 100%,
-        color-mix(in oklab, var(--console-bl) var(--territory-edge), transparent),
-        transparent
-      )
-      border-box,
-    radial-gradient(
-        75% 55% at 100% 0,
-        color-mix(in oklab, var(--console-tr) var(--territory-edge), transparent),
-        transparent
-      )
-      border-box,
-    radial-gradient(
-        75% 55% at 100% 100%,
-        color-mix(in oklab, var(--console-br) var(--territory-edge), transparent),
-        transparent
-      )
-      border-box,
-    linear-gradient(var(--react-panel-edge), var(--react-panel-edge)) border-box;
+  /* The edge: a conic sweep around the board's centre, so each side blends
+     from one corner's hue through the plain edge to the next corner's. */
+  border-image: conic-gradient(
+      var(--board-edge) 0deg,
+      color-mix(in oklab, var(--corner-tr) var(--edge-light), var(--board-edge)) 45deg,
+      var(--board-edge) 90deg,
+      color-mix(in oklab, var(--corner-br) var(--edge-light), var(--board-edge)) 135deg,
+      var(--board-edge) 180deg,
+      color-mix(in oklab, var(--corner-bl) var(--edge-light), var(--board-edge)) 225deg,
+      var(--board-edge) 270deg,
+      color-mix(in oklab, var(--corner-tl) var(--edge-light), var(--board-edge)) 315deg,
+      var(--board-edge) 360deg
+    )
+    1;
+  /* The backlight: four soft lights offset toward the corners, each showing
+     only around its own corner and the two sides that meet there. */
+  box-shadow:
+    inset 0 2px 4px var(--panel-shadow),
+    calc(var(--cell-size) * -0.9) calc(var(--cell-size) * -0.9)
+      calc(var(--cell-size) * 3.2) calc(var(--cell-size) * -0.35)
+      color-mix(in oklab, var(--corner-tl) calc(var(--backlight) * max(var(--libido, 1), 0.3)), transparent),
+    calc(var(--cell-size) * 0.9) calc(var(--cell-size) * -0.9)
+      calc(var(--cell-size) * 3.2) calc(var(--cell-size) * -0.35)
+      color-mix(in oklab, var(--corner-tr) calc(var(--backlight) * max(var(--libido, 1), 0.3)), transparent),
+    calc(var(--cell-size) * -0.9) calc(var(--cell-size) * 0.9)
+      calc(var(--cell-size) * 3.2) calc(var(--cell-size) * -0.35)
+      color-mix(in oklab, var(--corner-bl) calc(var(--backlight) * max(var(--libido, 1), 0.3)), transparent),
+    calc(var(--cell-size) * 0.9) calc(var(--cell-size) * 0.9)
+      calc(var(--cell-size) * 3.2) calc(var(--cell-size) * -0.35)
+      color-mix(in oklab, var(--corner-br) calc(var(--backlight) * max(var(--libido, 1), 0.3)), transparent),
+    0 40px 110px -30px var(--board-drop);
   transition:
     --territory-across-top 900ms var(--ease-out, ease),
     --territory-across-bottom 900ms var(--ease-out, ease),
