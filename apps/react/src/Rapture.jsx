@@ -47,13 +47,18 @@ export function RaptureLayer({ active }) {
   );
 }
 
-function Confetti({ count, seed }) {
+/** Confetti falls from the top edge, or, given an origin, flares out of that
+ *  point first and then falls: each piece leaves at its own angle and reach. */
+function Confetti({ count, seed, origin = null }) {
   return (
-    <div className="confetti" aria-hidden="true">
+    <div className="confetti" aria-hidden="true" data-origin={origin ? 'notch' : undefined}
+      style={origin ? cssVars({ '--ox': `${Math.round(origin.x)}px`, '--oy': `${Math.round(origin.y)}px` }) : undefined}>
       {confettiSpecs(count, seed).map((piece, index) => (
         <i
           key={index}
           style={cssVars({
+            '--bx': `${Math.round(Math.cos((piece.left / 100) * 2 * Math.PI) * (70 + ((piece.duration - 1900) / 1500) * 130))}px`,
+            '--by': `${Math.round(Math.sin((piece.left / 100) * 2 * Math.PI) * (56 + ((piece.duration - 1900) / 1500) * 100) - 40)}px`,
             '--left': `${piece.left}%`,
             '--clue-ramp': piece.ramp,
             '--delay': `${piece.delay}ms`,
@@ -69,15 +74,17 @@ function Confetti({ count, seed }) {
   );
 }
 
-/** The finish. It answers to how the puzzle was solved, not just that it was. */
-export function Finale({ app }) {
+/** The finish. It answers to how the puzzle was solved, not just that it was,
+ *  and when the board knows where its last notch was, the fireworks start
+ *  there. */
+export function Finale({ app, origin = null }) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   const message = finaleMessage({ score: app.score, checks: app.checksUsed, reveals: app.revealsUsed });
   return (
     <div className="finale" data-grade={message.grade}>
       <div className="rapture-wash" />
-      <Confetti count={72} seed={app.checksUsed + app.score} />
+      <Confetti count={72} seed={app.checksUsed + app.score} origin={origin} />
       <div className="finale-card" role="status" onClick={() => setDismissed(true)}>
         <svg className="finale-mark" viewBox="0 0 52 52" aria-hidden="true">
           <circle cx="26" cy="26" r="23" />

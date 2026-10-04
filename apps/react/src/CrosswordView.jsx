@@ -524,6 +524,28 @@ export default function CrosswordView({
     useEffect(() => {
         scheduleTerritory.current();
     });
+    // The last notch becomes the fireworks: the board remembers which words
+    // were still open, and when the puzzle completes the finale bursts from the
+    // opening of the last of them (the black square's edge or the board's rim
+    // in front of its first square). Without a board to measure, the finale
+    // falls from the top as before.
+    const lastOpen = useRef(/** @type {any[]} */ ([]));
+    const [finaleOrigin, setFinaleOrigin] = useState(/** @type {{ x: number, y: number } | null | undefined} */ (undefined));
+    useEffect(() => {
+        if (!app.showFireworks) {
+            const open = entries.filter(entry => !completedWords.has(entry.clue_text));
+            if (open.length) lastOpen.current = open;
+            if (finaleOrigin !== undefined) setFinaleOrigin(undefined);
+            return;
+        }
+        if (finaleOrigin !== undefined) return;
+        const last = lastOpen.current[0];
+        const cell = last ? boardRef.current?.children[last.start_y]?.children[last.start_x] : null;
+        const box = cell?.getBoundingClientRect();
+        setFinaleOrigin(box
+            ? (last.direction === 'across' ? { x: box.left, y: box.top + box.height / 2 } : { x: box.left + box.width / 2, y: box.top })
+            : null);
+    });
     const selfClick = handler => event => {
         if (event.target === event.currentTarget) handler(event);
     };
@@ -1078,7 +1100,7 @@ export default function CrosswordView({
 
             {/* The finish and the check celebrations are plain DOM, not a canvas. */}
             <RaptureLayer active={rapture.active} />
-            {app.showFireworks && <Finale app={app} />}
+            {app.showFireworks && finaleOrigin !== undefined && <Finale app={app} origin={finaleOrigin} />}
         </div>
     );
 }

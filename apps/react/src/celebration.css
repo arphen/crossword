@@ -312,6 +312,40 @@
   }
 }
 
+/* From the last notch: the final word's opening flares out, then the pieces
+   fall the way the plain confetti does. */
+.confetti[data-origin] i {
+  top: var(--oy);
+  left: var(--ox);
+  animation-name: confetti-burst;
+}
+
+@keyframes confetti-burst {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.3) rotate(0deg);
+  }
+  6% {
+    opacity: var(--confetti-alpha, 1);
+  }
+  22% {
+    transform: translate3d(var(--bx), var(--by), 0) scale(1)
+      rotate(calc(var(--spin) * 0.3));
+  }
+  80% {
+    opacity: var(--confetti-alpha, 1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(
+        calc(var(--bx) + var(--drift)),
+        calc(100vh - var(--oy) + 4vh),
+        0
+      )
+      rotate(var(--spin));
+  }
+}
+
 /* --- The finish ------------------------------------------------------------ */
 .finale {
   position: fixed;
