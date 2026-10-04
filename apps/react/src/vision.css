@@ -2048,17 +2048,19 @@ html[data-luma='veil'] {
 }
 
 #app.react-desktop-app {
-  --backlight: 34%;
+  --backlight: 36%;
   --edge-light: 85%;
-  --board-drop: #000000;
-  --territory-spread: 2.4;
+  /* 1 keeps each corner exactly the hue of the clue showing there. */
+  --territory-spread: 1;
+  /* The light spends a little more chroma than the numerals do, so hues a
+     screen apart still read apart once blurred. */
+  --glow-chroma: 1.3;
 }
 /* On paper light from behind reads as a stain, not a glow: the backlight
-   stays faint and the board's shadow takes the paper's own green-grey. */
+   stays faint. */
 :root[style*='color-scheme: light'] #app.react-desktop-app {
   --backlight: 14%;
   --edge-light: 75%;
-  --board-drop: #233b3038;
 }
 #app.react-desktop-app[data-luma='dim'] {
   --backlight: 20%;
@@ -2070,11 +2072,10 @@ html[data-luma='veil'] {
 }
 
 /* Each element that wears the territory computes it from the ranks published
-   on itself. One screen shows only a third or so of a lane, so the clues at
-   its top and bottom sit close on the wheel; the light widens that gap around
-   the lane's middle (--territory-spread) so the four corners read as four
-   colours once blurred into a glow. The numerals and squares keep their own
-   exact hues; only the light exaggerates. */
+   on itself: the corners are exactly the hues of the clues showing in the
+   matching corners of the screen, so the light always agrees with the lanes.
+   (--territory-spread can widen the gap around each lane's middle; at 1 it
+   does not.) */
 #app.react-desktop-app[data-ramp='on'] :is(.board-glow, .grid) {
   --lit-across-top: clamp(
     0,
@@ -2110,22 +2111,22 @@ html[data-luma='veil'] {
   );
   --corner-tl: oklch(
     calc(var(--ramp-lightness) + var(--across-lift) + var(--across-l0) + var(--across-l1) * var(--lit-across-top) + var(--across-l2) * var(--lit-across-top) * var(--lit-across-top))
-      var(--ramp-chroma)
+      calc(var(--ramp-chroma) * var(--glow-chroma))
       calc(var(--across-arc-start) + var(--lit-across-top) * (var(--across-arc-end) - var(--across-arc-start)))
   );
   --corner-bl: oklch(
     calc(var(--ramp-lightness) + var(--across-lift) + var(--across-l0) + var(--across-l1) * var(--lit-across-bottom) + var(--across-l2) * var(--lit-across-bottom) * var(--lit-across-bottom))
-      var(--ramp-chroma)
+      calc(var(--ramp-chroma) * var(--glow-chroma))
       calc(var(--across-arc-start) + var(--lit-across-bottom) * (var(--across-arc-end) - var(--across-arc-start)))
   );
   --corner-tr: oklch(
     calc(var(--ramp-lightness) - var(--down-drop) + var(--down-l0) + var(--down-l1) * var(--lit-down-top) + var(--down-l2) * var(--lit-down-top) * var(--lit-down-top))
-      var(--ramp-chroma)
+      calc(var(--ramp-chroma) * var(--glow-chroma))
       calc(var(--down-arc-start) + var(--lit-down-top) * (var(--down-arc-end) - var(--down-arc-start)))
   );
   --corner-br: oklch(
     calc(var(--ramp-lightness) - var(--down-drop) + var(--down-l0) + var(--down-l1) * var(--lit-down-bottom) + var(--down-l2) * var(--lit-down-bottom) * var(--lit-down-bottom))
-      var(--ramp-chroma)
+      calc(var(--ramp-chroma) * var(--glow-chroma))
       calc(var(--down-arc-start) + var(--lit-down-bottom) * (var(--down-arc-end) - var(--down-arc-start)))
   );
   transition:

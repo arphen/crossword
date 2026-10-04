@@ -786,7 +786,9 @@
     border: 1px solid var(--board-edge);
     border-radius: 0;
     background: var(--board-bezel);
-    box-shadow: inset 0 2px 4px var(--panel-shadow), 0 40px 110px -30px var(--board-drop, #000);
+    /* The board is the ground: it is recessed, and casts nothing onto the
+       lanes and instruments that lie over it. */
+    box-shadow: inset 0 2px 4px var(--panel-shadow);
     overflow: hidden;
 }
 
