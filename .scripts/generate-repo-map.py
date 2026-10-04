@@ -40,11 +40,54 @@ def allowed(path):
         and "lock" not in name.lower()
         and not any(part in name for part in (".min.", ".bundle.", ".generated.", ".snap"))
         and path != OUTPUT
-        and (name in ROOT_FILES or path.suffix in EXTENSIONS)
+        and (name in ROOT_FILES or path.suffix in EXTENSIONS or ".githooks" in rel.parts)
     )
 
 
-def candidates():
+def _tracked_files():
+    """Repository-tracked paths, so untracked scratch never enters the map.
+
+    A scratch file left anywhere in a source tree used to appear in the next
+    regeneration and block every push until it was moved aside. Keying off
+    tracked content removes the trap: stage a new source file and the map
+    picks it up; leave scratch lying around and pushes stay green.
+    """
+    import subprocess
+
+    try:
+        completed = subprocess.run(
+            ["git", "ls-files", "-z"],
+            cwd=ROOT,
+            capture_output=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if completed.returncode != 0:
+        return None
+    return {
+        ROOT / entry
+        for entry in completed.stdout.decode("utf-8", errors="replace").split("\0")
+        if entry
+    }
+
+
+def _sort_key(path):
+    rel = path.relative_to(ROOT)
+    return ("" if len(rel.parts) == 1 else rel.parts[0], rel.as_posix())
+
+
+def candidates(tracked_only=True):
+    if tracked_only:
+        tracked = _tracked_files()
+        if tracked is not None:
+            return sorted(
+                (path for path in tracked if path.is_file() and allowed(path)),
+                key=_sort_key,
+            )
+        # Outside a git checkout (or without git): fall back to the walk so
+        # the map still renders. The scratch trap only exists under git hooks.
     paths = {path for path in ROOT.iterdir() if path.is_file() and allowed(path)}
     for tree in TREES:
         base = ROOT / tree
@@ -56,10 +99,7 @@ def candidates():
                              and not (parent / d).is_symlink()
                              and (parent / d).relative_to(ROOT).as_posix() not in EXCLUDED_PATHS)
             paths.update(parent / name for name in files if allowed(parent / name))
-    def sort_key(path):
-        rel = path.relative_to(ROOT)
-        return ("" if len(rel.parts) == 1 else rel.parts[0], rel.as_posix())
-    return sorted(paths, key=sort_key)
+    return sorted(paths, key=_sort_key)
 
 
 def symbols(path, text):
@@ -95,6 +135,7 @@ def render():
         "- `packages/domain/`, `packages/application/`, `packages/persistence/`: typed core and storage.",
         "- `tests/`: Python, legacy JavaScript, and browser tests; fixtures are omitted.",
         "- `scripts/`, `.scripts/`, `tools/`: build/quality/index helpers and offline tooling.",
+        "- `.githooks/`: map-maintenance and freshness hooks.",
         "- `docs/plans/README.md`: architecture/product roadmap; `docs/adr/`: decisions.", "",
         "## Index contract", "",
         "Offline lightweight symbol dump: Python AST (top-level definitions and class methods);",
@@ -102,7 +143,9 @@ def render():
         "Other files and tests are path-only. At most 16 symbols/file; `+N more` means search that file.",
         "Paths sorted deterministically; no timestamps or source bodies. Read source to confirm line hints.",
         "Only owned trees are scanned; dependency/VCS/private/cache/report/build directories and symlinks",
-        "are pruned before descent. Lockfiles, minified/bundled/generated code, fixtures/snapshots and binary",
+        "are pruned before descent. Only git-tracked files are indexed, so untracked scratch never",
+        "appears in the map or blocks a push; stage a new source file and the next regeneration picks",
+        "it up. Lockfiles, minified/bundled/generated code, fixtures/snapshots and binary",
         "assets are excluded. Files over 256 KB or with lines over 1,000 characters are path-only.",
         "Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing.", "",
     ]

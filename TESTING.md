@@ -58,7 +58,7 @@ For just mutation locally, use `npm run test:mutation`.
 - `npm run lint` — ESLint 9 flat config with `--max-warnings 0`.
 - `npm run format:check` — Prettier over an explicit allowlist
   (`.prettierignore` documents what is excluded and why).
-- `uv run --no-sync ruff check .` — backend correctness lint (legacy style
+- `uv run --no-sync ruff check .` — backend correctness lint (style
   cleanup is intentionally out of scope).
 - `uv run --no-sync python -m compileall -q src scripts tests` — catches syntax
   errors in files pytest never imports.
@@ -109,7 +109,7 @@ Prereqs: Node 24 (`.node-version`), npm 11.19 (`packageManager`), uv with
 Python 3.13 (`.python-version`).
 
 ```bash
-make setup                 # uv sync + npm ci + legacy assets
+make setup                 # uv sync + npm ci + React build
 npx playwright install chromium   # once, for E2E
 
 # Full pipeline, same commands as CI:
@@ -125,7 +125,7 @@ CROSSWORD_E2E_BACKEND_PORT=15002 npx playwright test    # E2E (see port note)
 npm run test:mutation                       # mutation (minutes)
 
 uv run --no-sync ruff check .               # backend lint
-uv run --no-sync python -m pytest tests/test_api_isolated.py -v  # isolated API
+uv run --no-sync python -m pytest tests/test_api_isolated.py  # isolated API (add -q for concise output)
 ```
 
 Note: existing Jest suites (`npm test`), workspace Vitest suites
@@ -149,12 +149,12 @@ Retention: 14 days (30 for mutation reports).
 ## Known debt (documented, not hidden)
 
 - The React pass typechecks production JS/JSX with `strict` but without
-  `noImplicitAny`/`strictNullChecks`; the dynamic legacy controller and the
-  mechanically snapshotted `behavior/*.js` are consumed through explicit
+  `noImplicitAny`/`strictNullChecks`; the dynamic controller and the
+  frozen `behavior/*.js` ports are consumed through explicit
   `.d.ts` boundaries instead of full typechecking.
-- `format:check` covers the new configs only; legacy sources are excluded in
+- `format:check` covers the new configs only; shelved-legacy sources are excluded in
   `.prettierignore` until a formatting pass is scheduled.
-- The legacy `scripts/*browser*.mjs` harnesses and vendored tarball packages
+- The remaining `scripts/*browser*.mjs` harnesses and vendored tarball packages
   are lint-exempt for the same reason; correctness rules still apply to all
   other sources.
 - Socket.IO's dev proxy can log EPIPE noise during browser teardown in E2E;

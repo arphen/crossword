@@ -1,0 +1,203 @@
+{
+  "evaluationVersion": "private-fill-quality-study-v1",
+  "kind": "private-fill-quality-study",
+  "scope": "fixed-seed-native-fill-study",
+  "studyId": "local-private-fill-study",
+  "recipeId": "private-wednesday-v1",
+  "status": "observed",
+  "uncertainty": {
+    "fillQuality": "xfill-heuristic-not-human-quality",
+    "humanSolveProbability": "unmeasured",
+    "clueFairness": "unmeasured",
+    "playerEnjoyment": "unmeasured"
+  },
+  "inputs": {
+    "requestedSeeds": [
+      37
+    ],
+    "observedSeeds": [
+      37
+    ],
+    "missingSeeds": [],
+    "caseCount": 1,
+    "maxSeeds": 32
+  },
+  "summary": {
+    "caseCount": 1,
+    "selectedCaseCount": 1,
+    "measuredAttemptCount": 3,
+    "unavailableAttemptCount": 1,
+    "usableAttemptCount": 3,
+    "failedOrRejectedAttemptCount": 1,
+    "retryCount": {
+      "observed": 1,
+      "missing": 0,
+      "sum": 4.0,
+      "mean": 4.0,
+      "median": 4.0,
+      "minimum": 4.0,
+      "maximum": 4.0
+    },
+    "meanScore": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 225.87,
+      "mean": 75.29,
+      "median": 77.17,
+      "minimum": 70.6,
+      "maximum": 78.1
+    },
+    "minimumScore": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 150.0,
+      "mean": 50.0,
+      "median": 50.0,
+      "minimum": 45.0,
+      "maximum": 55.0
+    },
+    "entryCount": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 228.0,
+      "mean": 76.0,
+      "median": 76.0,
+      "minimum": 74.0,
+      "maximum": 78.0
+    },
+    "iffyCount": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 9.0,
+      "mean": 3.0,
+      "median": 0.0,
+      "minimum": 0.0,
+      "maximum": 9.0
+    },
+    "weakCount": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 73.0,
+      "mean": 24.333,
+      "median": 21.0,
+      "minimum": 19.0,
+      "maximum": 33.0
+    },
+    "themeCount": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 8.0,
+      "mean": 2.667,
+      "median": 4.0,
+      "minimum": 0.0,
+      "maximum": 4.0
+    },
+    "selectedMeanScore": {
+      "observed": 1,
+      "missing": 0,
+      "sum": 78.1,
+      "mean": 78.1,
+      "median": 78.1,
+      "minimum": 78.1,
+      "maximum": 78.1
+    },
+    "selectedIffyCount": {
+      "observed": 1,
+      "missing": 0,
+      "sum": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "minimum": 0.0,
+      "maximum": 0.0
+    },
+    "selectedWeakCount": {
+      "observed": 1,
+      "missing": 0,
+      "sum": 19.0,
+      "mean": 19.0,
+      "median": 19.0,
+      "minimum": 19.0,
+      "maximum": 19.0
+    }
+  },
+  "acceptance": {
+    "status": "observed",
+    "policy": "fewest-iffy-then-theme-floor-then-weak-then-mean-then-min",
+    "humanQualityGate": "not-applied",
+    "reason": "native scores compare fixed-seed retries; they do not gate private play"
+  },
+  "cases": [
+    {
+      "seed": 37,
+      "recipe": "wednesday-private-v1",
+      "selectedAttempt": 4,
+      "attempts": [
+        {
+          "label": "theme-locked-primary",
+          "seed": 37,
+          "status": "candidate",
+          "quality": {
+            "status": "measured",
+            "uncertainty": "xfill-heuristic-not-human-quality",
+            "entryCount": 76,
+            "iffyCount": 0,
+            "weakCount": 21,
+            "themeCount": 4,
+            "meanScore": 77.17,
+            "minimumScore": 50.0
+          },
+          "boardDigest": "f365543287387b25fa70c92ac1299eaeda4aee79dd8cead0a8bd49b00b8cd78d",
+          "sourceDigest": "sha256:0d003853979c22a4b6a363b231a135c0b23dab5bc99272ebfe841612924a71eb"
+        },
+        {
+          "label": "reduced-theme-fallback",
+          "seed": 37,
+          "status": "failed",
+          "reason": "/Users/arphen/projectc/crossword-generator/vendor/xfill/target/release/theme exited 1: theme placements (canonical; per-candidate variants are sampled):\n  RESONANCE -> r7c1 A len9   RESONANCE\nblocklist: excluding 5 word(s)\nsupplemental: 39 "
+        },
+        {
+          "label": "theme-locked-reseed",
+          "seed": 104766,
+          "status": "candidate",
+          "quality": {
+            "status": "measured",
+            "uncertainty": "xfill-heuristic-not-human-quality",
+            "entryCount": 74,
+            "iffyCount": 9,
+            "weakCount": 33,
+            "themeCount": 4,
+            "meanScore": 70.6,
+            "minimumScore": 45.0
+          },
+          "boardDigest": "eb0e00ba15f83e128c74491903fe1a3cb1b9a57bf4984696cbcd0ce7e54736fe",
+          "sourceDigest": "sha256:0d003853979c22a4b6a363b231a135c0b23dab5bc99272ebfe841612924a71eb"
+        },
+        {
+          "label": "open-grid-reseed",
+          "seed": 209495,
+          "status": "candidate",
+          "quality": {
+            "status": "measured",
+            "uncertainty": "xfill-heuristic-not-human-quality",
+            "entryCount": 78,
+            "iffyCount": 0,
+            "weakCount": 19,
+            "themeCount": 0,
+            "meanScore": 78.1,
+            "minimumScore": 55.0
+          },
+          "boardDigest": "5857cebc753c05138bf5ced2de8adfdf2fe3db681f43528288ad69993bdeeb9c",
+          "sourceDigest": "sha256:0d003853979c22a4b6a363b231a135c0b23dab5bc99272ebfe841612924a71eb"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "transport": "loopback-http",
+    "baseUrl": "http://127.0.0.1:5001",
+    "weekday": "wednesday",
+    "model": "gemma4:26b",
+    "seedCount": 1
+  },
+  "studyDigest": "sha256:99c65858dd5193a97bffc02dfae49bf2d16b525511f989a39175d4086262b1a6"
+}

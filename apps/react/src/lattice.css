@@ -1,0 +1,316 @@
+/* ==========================================================================
+   Lattice pass — deepening the quiet-glass language, not replacing it.
+   Scope: React desktop view only (.react-desktop-app). Loaded after
+   desktop.css so these declarations are the final word on shared selectors.
+   Kept intact: the two-column zigzag clue ladder, the ACROSS/DOWN
+   watermarks, blue Down / orange Across, the dark base, and the boxed
+   number + letter anchors. Everything added here is depth and material.
+   Motion: transform / opacity / filter only, no infinite animation.
+   ========================================================================== */
+
+/* --- Ambient light: two quiet directional washes behind everything ----- */
+.react-desktop-app {
+    position: relative;
+}
+
+.react-desktop-app::before {
+    content: "";
+    position: fixed;
+    z-index: 0;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(58% 44% at 12% -8%, rgba(255, 173, 50, 0.075), transparent 70%),
+        radial-gradient(58% 44% at 88% -8%, rgba(141, 199, 255, 0.085), transparent 70%),
+        radial-gradient(125% 80% at 50% 120%, rgba(0, 0, 0, 0.55), transparent 62%);
+}
+
+.react-desktop-app #notmenu {
+    position: relative;
+    z-index: 1;
+}
+
+/* --- The spine: a lit rule instead of a hairline ----------------------- */
+.react-desktop-app .clue-column::after {
+    width: 2px;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 173, 50, 0) 0%,
+        rgba(255, 173, 50, 0.36) 9%,
+        rgba(255, 173, 50, 0.2) 50%,
+        rgba(255, 173, 50, 0.36) 91%,
+        rgba(255, 173, 50, 0) 100%
+    );
+}
+
+.react-desktop-app .clue-column[data-label="DOWN"]::after {
+    background: linear-gradient(
+        180deg,
+        rgba(141, 199, 255, 0) 0%,
+        rgba(141, 199, 255, 0.44) 9%,
+        rgba(141, 199, 255, 0.24) 50%,
+        rgba(141, 199, 255, 0.44) 91%,
+        rgba(141, 199, 255, 0) 100%
+    );
+}
+
+/* --- Watermark: pinned color/opacity untouched, edges now dissolve ----- */
+.react-desktop-app .clue-column::before {
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 26%, #000 74%, transparent);
+    mask-image: linear-gradient(180deg, transparent, #000 26%, #000 74%, transparent);
+}
+
+/* ==========================================================================
+   1. The zigzag, drawn.
+   Measured ladder geometry (1440x1000, reports/design-lattice/before.json):
+   clue rows are 100px tall, number centers sit at x+31 / x+93 alternating
+   -25px / +25px, so consecutive anchors are 62px across and 50px down
+   (38.9deg, 79.7px). Each number box therefore draws two 33x25 half-strokes
+   that meet the neighbour's half-stroke at the midpoint: a continuous chain
+   through every anchor. Anchored to the boxes themselves, so it survives
+   clue wrapping, unlike a spine-only trajectory.
+   Pseudo-elements only: no DOM change, so DOM parity with Vue still holds.
+   Strokes are painted as a masked background so the direction rail stays a
+   custom property (themable, no duplicate per-colour rules).
+   ========================================================================== */
+.react-desktop-app .clue-number {
+    position: relative;
+    border-radius: 10px;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 6px 14px -10px rgba(0, 0, 0, 0.9);
+}
+
+.react-desktop-app .clue-number::before,
+.react-desktop-app .clue-number::after {
+    content: "";
+    position: absolute;
+    /* The translateY that creates the zigzag already makes .clue-number a
+       stacking context, so a negative z-index would paint *above* its own
+       background. Instead draw only the visible outer stub of each half of
+       the segment: from the box edge out to the midpoint, where the two
+       stubs from neighbouring boxes meet. Box is 42x32, so the true segment
+       (dy/dx = 25/31) leaves the box 16.9px below centre at the right edge
+       and reaches the midpoint 10px further out: an 11x9 stub. */
+    width: 11px;
+    height: 9px;
+    opacity: 0.5;
+    background-color: var(--rail);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    transition: opacity 220ms ease, filter 220ms ease;
+}
+
+/* Main diagonal: down-right out of a left-column box, up-left out of a
+   right-column box. Each half is an S whose tangent is level at both ends, so
+   consecutive halves meet at the midpoint without a kink and the chain
+   undulates along the diagonal: a spring that still points at the two boxes it
+   joins, with a crest and a trough per anchor. */
+.react-desktop-app #across li:nth-child(odd) .clue-number::before,
+.react-desktop-app #down li:nth-child(odd) .clue-number::before,
+.react-desktop-app #across li:nth-child(even) .clue-number::after,
+.react-desktop-app #down li:nth-child(even) .clue-number::after {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 9'%3E%3Cpath d='M0,0C5,0 6,9 11,9' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 9'%3E%3Cpath d='M0,0C5,0 6,9 11,9' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* Anti-diagonal: up-right out of a left-column box, down-left out of a
+   right-column box. Same spring, mirrored. */
+.react-desktop-app #across li:nth-child(odd) .clue-number::after,
+.react-desktop-app #down li:nth-child(odd) .clue-number::after,
+.react-desktop-app #across li:nth-child(even) .clue-number::before,
+.react-desktop-app #down li:nth-child(even) .clue-number::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 9'%3E%3Cpath d='M0,9C5,9 6,0 11,0' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 9'%3E%3Cpath d='M0,9C5,9 6,0 11,0' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* Half-strokes leave the anchor box and stop at the midpoint. */
+.react-desktop-app #across li:nth-child(odd) .clue-number::before,
+.react-desktop-app #down li:nth-child(odd) .clue-number::before,
+.react-desktop-app #across li:nth-child(odd) .clue-number::after,
+.react-desktop-app #down li:nth-child(odd) .clue-number::after {
+    left: 100%;
+}
+
+.react-desktop-app #across li:nth-child(even) .clue-number::before,
+.react-desktop-app #down li:nth-child(even) .clue-number::before,
+.react-desktop-app #across li:nth-child(even) .clue-number::after,
+.react-desktop-app #down li:nth-child(even) .clue-number::after {
+    right: 100%;
+}
+
+.react-desktop-app .clue-number::before {
+    top: calc(50% + 16px);
+}
+
+.react-desktop-app .clue-number::after {
+    bottom: calc(50% + 16px);
+}
+
+/* ==========================================================================
+   2. Rail colour, and the chain reacting to selection.
+   --rail is the direction token (orange Across / blue Down) reused from the
+   existing palette, so chevrons, spine and focus rails stay in lockstep.
+   ========================================================================== */
+.react-desktop-app {
+    --rail: var(--react-orange);
+}
+
+.react-desktop-app .clue-column[data-label="DOWN"] {
+    --rail: var(--react-blue);
+}
+
+/* Light the two segments that touch the active anchor: the anchor draws one
+   half of each, its diagonal neighbours draw the other half. */
+.react-desktop-app li.highlighted-clue .clue-number::before,
+.react-desktop-app li.highlighted-clue .clue-number::after,
+.react-desktop-app li.highlighted-clue + li .clue-number::before,
+.react-desktop-app li.highlighted-clue + li .clue-number::after,
+.react-desktop-app li:has(+ li.highlighted-clue) .clue-number::before,
+.react-desktop-app li:has(+ li.highlighted-clue) .clue-number::after {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px var(--rail));
+}
+
+/* Cross-word clues get a softer read than the active one. */
+.react-desktop-app li.affected-clue .clue-number::before,
+.react-desktop-app li.affected-clue .clue-number::after,
+.react-desktop-app li.affected-clue + li .clue-number::before,
+.react-desktop-app li.affected-clue + li .clue-number::after,
+.react-desktop-app li:has(+ li.affected-clue) .clue-number::before,
+.react-desktop-app li:has(+ li.affected-clue) .clue-number::after {
+    opacity: 0.78;
+}
+
+.react-desktop-app li:hover .clue-number::before,
+.react-desktop-app li:hover .clue-number::after {
+    opacity: 0.95;
+}
+
+/* ==========================================================================
+   3. Answer boxes: one quiet glass slot, luminous ink.
+   No CSS selector can separate an answered box from an empty one: React keeps
+   an empty text node inside every letter box, so :empty never matches (and
+   :not(:empty) therefore matches everything). Rather than change the DOM,
+   which DOM parity with Vue forbids, the box stays a single quiet material and
+   the *ink* carries the state: an empty box has no glyph to light up.
+   Red / green / intersection / cursor fills are untouched because they carry
+   meaning and the browser checks assert them, and the highlighted word keeps
+   its orange / blue wash (those rules carry an id and outrank this one).
+   ========================================================================== */
+.react-desktop-app .state-container {
+    gap: 4px;
+    min-height: 27px;
+}
+
+.react-desktop-app .state-group-end {
+    margin-inline-end: 7px;
+}
+
+.react-desktop-app .state {
+    flex: 0 0 23px;
+    width: 23px;
+    height: 27px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    background-color: #1d2128;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.07),
+        inset 0 2px 4px -1px rgba(0, 0, 0, 0.5),
+        0 1px 0 rgba(0, 0, 0, 0.35);
+    text-shadow: 0 0 12px rgba(180, 205, 235, 0.3);
+}
+
+/* A letter on the active word's wash needs a dark halo, not a cool glow. */
+.react-desktop-app li.highlighted-clue .state {
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.55);
+}
+
+.react-desktop-app .state.red {
+    text-shadow: 0 0 12px rgba(255, 156, 156, 0.45);
+}
+
+.react-desktop-app .state.green {
+    text-shadow: 0 0 12px rgba(143, 228, 177, 0.45);
+}
+
+/* Grid letters share the ladder's ink light so board and ladder agree. */
+.react-desktop-app .grid-cell input {
+    text-shadow: 0 0 14px rgba(180, 205, 235, 0.22);
+}
+
+/* ==========================================================================
+   4. Board depth. The grid keeps its existing glass edge; it is only better
+   grounded, so the ladder and the board share one light source.
+   ========================================================================== */
+.react-desktop-app .grid {
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        inset 0 -22px 36px -30px rgba(0, 0, 0, 0.9),
+        0 2px 0 rgba(0, 0, 0, 0.4),
+        0 26px 48px -22px rgba(0, 0, 0, 0.75);
+}
+
+/* ==========================================================================
+   5. Light theme. Same structure, inverted material: the washes get paler,
+   the spine gets a deeper pigment so it survives the light background.
+   ========================================================================== */
+:root[style*="color-scheme: light"] .react-desktop-app::before {
+    background:
+        radial-gradient(58% 44% at 12% -8%, rgba(255, 173, 50, 0.13), transparent 70%),
+        radial-gradient(58% 44% at 88% -8%, rgba(141, 199, 255, 0.16), transparent 70%),
+        radial-gradient(125% 80% at 50% 120%, rgba(48, 68, 82, 0.1), transparent 62%);
+}
+
+:root[style*="color-scheme: light"] .react-desktop-app .clue-column::after {
+    background: linear-gradient(
+        180deg,
+        rgba(198, 116, 0, 0) 0%,
+        rgba(198, 116, 0, 0.5) 9%,
+        rgba(198, 116, 0, 0.3) 50%,
+        rgba(198, 116, 0, 0.5) 91%,
+        rgba(198, 116, 0, 0) 100%
+    );
+}
+
+:root[style*="color-scheme: light"] .react-desktop-app .clue-column[data-label="DOWN"]::after {
+    background: linear-gradient(
+        180deg,
+        rgba(23, 105, 179, 0) 0%,
+        rgba(23, 105, 179, 0.5) 9%,
+        rgba(23, 105, 179, 0.3) 50%,
+        rgba(23, 105, 179, 0.5) 91%,
+        rgba(23, 105, 179, 0) 100%
+    );
+}
+
+:root[style*="color-scheme: light"] .react-desktop-app .clue-number {
+    background-image: linear-gradient(180deg, #fff, rgba(255, 255, 255, 0));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 5px 12px -8px rgba(48, 68, 82, 0.45);
+}
+
+:root[style*="color-scheme: light"] .react-desktop-app .state {
+    border-color: rgba(28, 37, 45, 0.16);
+    background-color: #fff;
+    background-image: linear-gradient(180deg, rgba(28, 37, 45, 0.05), rgba(28, 37, 45, 0));
+    box-shadow:
+        inset 0 1px 2px rgba(48, 68, 82, 0.18),
+        0 1px 0 rgba(255, 255, 255, 0.8);
+    text-shadow: none;
+}
+
+:root[style*="color-scheme: light"] .react-desktop-app .grid {
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.8),
+        0 2px 0 rgba(48, 68, 82, 0.12),
+        0 22px 40px -22px rgba(48, 68, 82, 0.4);
+}
+

@@ -7,7 +7,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --reporter=basic --silent",
     "build": "tsc --noEmit"
   },
   "dependencies": {

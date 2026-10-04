@@ -1,0 +1,45 @@
+{
+  "version": "private-current-source-live-smoke-v3",
+  "generatedAt": "2026-09-28",
+  "transport": "loopback-http",
+  "route": "/api/future/private-puzzle-jobs",
+  "model": "gemma4:26b",
+  "weekday": "wednesday",
+  "seed": 20260928,
+  "runtime": {
+    "ollama": "ready",
+    "worker": "ready",
+    "nativeXfill": "ready",
+    "servedFutureHttpStatus": 200,
+    "approximateElapsedSeconds": 147,
+    "stages": [
+      "theme-proposal",
+      "native-xfill",
+      "clue-generation",
+      "ready"
+    ]
+  },
+  "result": {
+    "readyState": true,
+    "puzzleManifestPresent": true,
+    "gridWidth": 15,
+    "gridHeight": 15,
+    "entryCount": 74,
+    "source": "local-ollama-xfill",
+    "clueIssueCount": 0,
+    "clueFallbackCount": 0,
+    "clueSemanticStatus": "not-established"
+  },
+  "profileLifecycle": {
+    "temporaryProfileCreated": true,
+    "temporaryProfileDeleted": true,
+    "sharedPuzzleManifests": "retained"
+  },
+  "uncertainty": [
+    "local-model-output",
+    "xfill-heuristic-not-human-quality",
+    "clue-semantics-unreviewed",
+    "player-support-unmeasured"
+  ],
+  "answerDisclosure": "No puzzle answers or clue text are included in this receipt."
+}

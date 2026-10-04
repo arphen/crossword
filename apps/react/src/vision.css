@@ -1,0 +1,2384 @@
+/* ==========================================================================
+   Vision pass — reader-adjustable legibility for the React desktop board.
+   Loaded after desktop.css, so these declarations are the final word on shared
+   selectors. Every rule keys off the data-* attributes the view publishes from
+   its saved settings (viewSettings.js); nothing here changes puzzle behaviour.
+   Kept intact: the two-column zigzag with its +/-25px ladder, the ACROSS / DOWN
+   watermarks, orange Across / blue Down, and matte surfaces that carry colour
+   as static paint — the clue ember/flame glow is box-shadow only, and a fresh
+   selection ignites once and settles: nothing on the board moves while the
+   reader is just reading. The ignition stops under prefers-reduced-motion and
+   quiets on the low-bloom tiers.
+   Sections: 0 tokens, 1 number colour, 1b ember and flame, 2 springs, 3 letter
+   track, 4 board notches, 5 low-bloom tiers, 6 view cluster, 8 board size.
+   ========================================================================== */
+
+/* Registered so the selection's glow can ease as it ignites instead of
+   blinking; every rule that animates it references this as a plain number. */
+@property --glow-pulse {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+/* --- 0. Tokens for this pass --------------------------------------------- */
+#app.react-desktop-app {
+  /* The number ramp is the board's rainbow, and each lane gets half the wheel:
+       Across the warm half, Down the cool half, so the two gradients never
+       overlap and each direction keeps full intensity in its own flavour. Each
+       half is centred on its lane's signature hue — rail orange at the middle
+       of the Across progression, rail blue at the middle of the Down one — so
+       in a 1-to-80 puzzle number 40 reads exactly orange across and blue down,
+       and the hues progress around that anchor in both directions. A number
+       shared by both lanes wears each lane's hue in turn (the board follows
+       the mode being solved); a number that lives in one lane keeps one fixed
+       colour. The full 46→332 sweep survives underneath for celebrations; the
+       clue mapping below reads the per-lane arc instead. Board squares follow
+       the Across half, so one number still means one learned hue on the board
+       at rest. */
+  --ramp-start-hue: 46;
+  --ramp-end-hue: 332;
+  --across-arc-start: 2;
+  --across-arc-end: 142;
+  --down-arc-start: 183;
+  --down-arc-end: 323;
+  --arc-start-hue: var(--across-arc-start);
+  --arc-end-hue: var(--across-arc-end);
+  --arc-down: 0;
+  --ramp-chroma: 0.14;
+  --ramp-lightness: 0.82;
+  /* The screen's colour solid is lopsided: at the lightness a numeral needs on
+       this dark ground, yellow and green hold a vivid chroma while pink, orange
+       and violet run out of colour well before it. One lightness for a whole
+       arc therefore clips the tight hues — paler, and shifted off their rank —
+       while the easy ones stay vivid, and the rainbow steps unevenly. So each
+       arc follows the solid's contour instead: a small lightness offset per
+       rank (l0 + l1·r + l2·r²) that lowers the tight hues just enough for the
+       ramp chroma to fit in sRGB, and lifts the generous ones back up. Across
+       rises from warm pink toward green; Down dips through blue and violet
+       and climbs again toward magenta. The lane's own plane — Across above
+       Down — stays the average the contour moves around. */
+  --across-l0: -0.115;
+  --across-l1: 0;
+  --across-l2: 0.105;
+  --down-l0: 0.035;
+  --down-l1: -0.24;
+  --down-l2: 0.24;
+  /* Direction reads as value, never as a second hue: the lane a clue sits in
+       lifts or quiets its colour without changing which colour it is — Across
+       clearly brighter, Down clearly quieter, so the direction reads first
+       and the hue still names the clue. */
+  --across-lift: 0.07;
+  --down-drop: 0.07;
+  --clue-lightness: var(--ramp-lightness);
+  /* The selection pushes the same split further: an Across highlight clearly
+       brighter, a Down highlight clearly dimmer, so the direction reads first
+       even on the lit word while the hue still names the clue. */
+  --highlight-lift: 0.11;
+  --highlight-drop: 0.1;
+  /* Interaction reads as saturation. The ember is the clue at rest, the flame
+       is the clue (or its squares) being worked; the alphas decide how much
+       light each state is allowed to make on this display. The halo is the
+       outer half of the selection's light and always names the direction —
+       warm rail orange for Across, rail blue for Down — while the flame
+       inside it names the clue. */
+  --ember-chroma: 0.7;
+  --flame-chroma: 1.75;
+  --ember-alpha: 14%;
+  --cross-alpha: 22%;
+  --flame-alpha: 34%;
+  --cursor-alpha: 46%;
+  --halo-alpha: 18%;
+  /* Each answer's own fading light, strongest on its first square and weaker
+     along the word. Quiet by design: dozens of answers carry it at once. */
+  --spot-alpha: 16%;
+  /* Fallback for engines without @property; the initial value lives above. */
+  --glow-pulse: 1;
+  --clue-letter-scale: 1;
+  --clue-text-scale: 1;
+  /* One face for letters and numerals: a rounded-geometric sans reads faster in
+       capitals than a monospace, and its tabular figures still keep columns. */
+  --react-face: 'Avenir Next', 'SF Pro Rounded', 'Segoe UI Variable Text',
+    'Segoe UI', system-ui, sans-serif;
+  --slot-line: color-mix(in oklab, var(--react-ink) 34%, transparent);
+  --slot-wash: color-mix(in oklab, var(--react-ink) 6%, transparent);
+  --tick-across: color-mix(in oklab, var(--react-orange) 82%, transparent);
+  --tick-down: color-mix(in oklab, var(--react-blue) 82%, transparent);
+  --ruler-minor: color-mix(in oklab, var(--react-ink) 18%, transparent);
+  --ruler-major: color-mix(in oklab, var(--react-ink) 38%, transparent);
+  --letter-glow: 0 0 14px rgba(180, 205, 235, 0.22);
+  /* Board size. The board is the ground (desktop.css): the cell fits the
+       window's height between the floating instruments, or its width once
+       the lanes have their minimum, whichever is tighter. The reader's choice
+       is a factor on that fit; height never grows with it, so a larger board
+       never slides under the instruments. The board is wider than its stage
+       column by the overlap — about the notches — on each side. */
+  --board-scale: 1;
+  --cell-size: min(
+    calc(5rem * var(--board-scale)),
+    calc(
+      (100dvh - var(--top-band) - var(--bottom-band) - 2 * var(--bezel)) /
+        var(--grid-rows) * min(var(--board-scale), 1)
+    ),
+    calc(
+      (100vw - 2 * var(--lane-min) - 2 * var(--bezel)) /
+        (var(--grid-columns) - 2 * var(--overlap)) * var(--board-scale)
+    )
+  );
+  --board-width: calc(
+    var(--cell-size) * var(--grid-columns) + 2 * var(--bezel)
+  );
+  --overlap-px: calc(var(--cell-size) * var(--overlap) + var(--bezel));
+  --stage: calc(var(--board-width) - 2 * var(--overlap-px));
+}
+
+#app.react-desktop-app[data-scale='compact'] {
+  --board-scale: 0.82;
+}
+#app.react-desktop-app[data-scale='full'] {
+  --board-scale: 1.06;
+}
+
+/* Colour intensity: the reader's own saturation dial, next to Number colours
+   in the View cluster. Vivid is the tokens above; Soft steps the whole
+   rainbow down for tired eyes, Bold spends more of it everywhere. The
+   low-bloom tiers still cap the light afterwards (section 5). */
+#app.react-desktop-app[data-vibrance='soft'] {
+  --ramp-chroma: 0.095;
+  --ember-chroma: 0.55;
+  --flame-chroma: 1.4;
+  --ember-alpha: 10%;
+  --cross-alpha: 16%;
+  --flame-alpha: 26%;
+  --cursor-alpha: 36%;
+  --halo-alpha: 14%;
+  --spot-alpha: 10%;
+}
+#app.react-desktop-app[data-vibrance='bold'] {
+  --ramp-chroma: 0.18;
+  --ember-chroma: 0.8;
+  --flame-chroma: 1.9;
+  --ember-alpha: 17%;
+  --cross-alpha: 26%;
+  --flame-alpha: 39%;
+  --cursor-alpha: 50%;
+  --halo-alpha: 24%;
+  --spot-alpha: 22%;
+}
+
+/* Paper takes colour as ink: on a light ground the whole arc sits deeper so a
+   tinted numeral, index or flame keeps its contrast on a pale square. The
+   direction steps travel with it, so the lanes stay the same distance apart. */
+:root[style*='color-scheme: light']
+  #app.react-desktop-app[data-ramp='on'] {
+  --ramp-lightness: 0.42;
+  /* On paper the solid's narrow places move: yellows and cyans hold colour
+     only when lifted, so Across bulges through its yellow middle and Down
+     starts high in cyan and settles toward violet. */
+  --ramp-chroma: 0.12;
+  --across-l0: -0.02;
+  --across-l1: 0.44;
+  --across-l2: -0.44;
+  --down-l0: 0.23;
+  --down-l1: -0.36;
+  --down-l2: 0.18;
+}
+:root[style*='color-scheme: light']
+  #app.react-desktop-app[data-ramp='on'][data-vibrance='soft'] {
+  --ramp-chroma: 0.085;
+}
+:root[style*='color-scheme: light']
+  #app.react-desktop-app[data-ramp='on'][data-vibrance='bold'] {
+  --ramp-chroma: 0.15;
+}
+
+/* ==========================================================================
+   1. Number-to-colour association.
+   The rank travels as --clue-ramp and is declared on every element that shows
+   it — the ladder's number box, the clue row it sits in, the answer boxes
+   under it, the numbered square on the board — never only on the container:
+   custom properties are substituted where they are declared, so each place
+   computes its own hue where that hue is shown. The rank maps onto the lane's
+   own half of the wheel (section 0): neighbouring Across answers step along
+   the warm half, neighbouring Down answers along the cool half, so each lane
+   is a gradient that never touches the other's. Learn the colour on a chip,
+   find the same colour on the square. Three channels: the hue is the clue
+   within its lane, the lightness below is the direction, and the
+   ember/flame pair (section 1b) spends the chroma on interaction.
+   ========================================================================== */
+#app.react-desktop-app
+  :is(.clue-number, .state, .grid-cell, .spring-stop, #across li, #down li) {
+  --clue-hue: calc(
+    var(--arc-start-hue) +
+      (var(--clue-ramp, 0) * (var(--arc-end-hue) - var(--arc-start-hue)))
+  );
+  --clue-contour: calc(
+      (1 - var(--arc-down)) *
+        (
+          var(--across-l0) + var(--across-l1) * var(--clue-ramp, 0) + var(--across-l2) * var(--clue-ramp, 0) *
+            var(--clue-ramp, 0)
+        ) +
+        var(--arc-down) *
+        (var(--down-l0) + var(--down-l1) * var(--clue-ramp, 0) + var(--down-l2) * var(--clue-ramp, 0) * var(--clue-ramp, 0))
+    );
+  --clue-l: calc(var(--clue-lightness) + var(--clue-contour));
+  --clue-tint: oklch(var(--clue-l) var(--ramp-chroma) var(--clue-hue));
+  /* The same rank on the Down half of the wheel, for marks that name a Down
+     word from a square that is not in the Down lane (edge ticks). */
+  --clue-down-tint: oklch(
+    calc(
+        var(--ramp-lightness) - var(--down-drop) + var(--down-l0) +
+          var(--down-l1) * var(--clue-ramp, 0) + var(--down-l2) *
+          var(--clue-ramp, 0) * var(--clue-ramp, 0)
+      )
+      var(--ramp-chroma)
+      calc(
+        var(--down-arc-start) +
+          (
+            var(--clue-ramp, 0) *
+              (var(--down-arc-end) - var(--down-arc-start))
+          )
+      )
+  );
+  /* Ember: the resting light — the same hue, spent quietly. */
+  --clue-ember: oklch(
+    var(--clue-l) calc(var(--ramp-chroma) * var(--ember-chroma))
+      var(--clue-hue)
+  );
+  /* Flame: the same hue energised, so selection speaks in saturation. */
+  --clue-flame: oklch(
+    var(--clue-l) calc(var(--ramp-chroma) * var(--flame-chroma))
+      var(--clue-hue)
+  );
+}
+
+/* Off keeps the structure and drops the pigment, so the option is usable by
+   readers who only want the rails. */
+#app.react-desktop-app[data-ramp='off'] {
+  --ramp-chroma: 0;
+  --ramp-lightness: 0.72;
+}
+
+/* The ladder chip. The numeral carries the rank colour, because the number is
+   what the reader hunts for; the frame carries the direction (orange Across,
+   blue Down) at a strength that sits under any rank hue. The fill is opaque on
+   purpose: the springs run behind the chips and must end at their edge. The
+   crossing and selected chips keep that structure but spend the clue's own
+   saturated colour instead of the lane's (section 1b). */
+#app.react-desktop-app #across,
+#app.react-desktop-app #down {
+  --rail: var(--react-orange);
+  /* Across sits a step brighter on its warm half of the wheel. */
+  --arc-start-hue: var(--across-arc-start);
+  --arc-down: 0;
+  --arc-end-hue: var(--across-arc-end);
+  --clue-lightness: calc(var(--ramp-lightness) + var(--across-lift));
+}
+#app.react-desktop-app #down {
+  --rail: var(--react-blue);
+  /* Down sits a step quieter on its cool half: the lanes read apart at a
+     glance in hue as well as value, while every clue keeps the colour that
+     is its own within its lane. */
+  --arc-start-hue: var(--down-arc-start);
+  --arc-down: 1;
+  --arc-end-hue: var(--down-arc-end);
+  --clue-lightness: calc(var(--ramp-lightness) - var(--down-drop));
+}
+
+/* Direction-unique starts keep their own half of the wheel whatever is being
+   solved; a square that opens both words follows the direction being solved,
+   so its corner number changes with the mode. (Without Square notches there
+   is no data-start and every square rests on the Across half.) */
+#app.react-desktop-app .grid-cell[data-start='across'] {
+  --arc-start-hue: var(--across-arc-start);
+  --arc-down: 0;
+  --arc-end-hue: var(--across-arc-end);
+}
+#app.react-desktop-app .grid-cell[data-start='down'] {
+  --arc-start-hue: var(--down-arc-start);
+  --arc-down: 1;
+  --arc-end-hue: var(--down-arc-end);
+}
+#app.react-desktop-app[data-direction='across']
+  .grid-cell[data-start~='across'][data-start~='down'] {
+  --arc-start-hue: var(--across-arc-start);
+  --arc-down: 0;
+  --arc-end-hue: var(--across-arc-end);
+}
+#app.react-desktop-app[data-direction='down']
+  .grid-cell[data-start~='across'][data-start~='down'] {
+  --arc-start-hue: var(--down-arc-start);
+  --arc-down: 1;
+  --arc-end-hue: var(--down-arc-end);
+}
+
+/* A lit square answers to the active word even when it stands in the other
+   lane's track, so every lit element — board squares and answer boxes in any
+   row — takes the active direction's highlight value and the active half of
+   the wheel rather than the lane's, and it carries the direction's halo
+   colour: warm rail orange for Across, rail blue for Down. One selection, one
+   hue, on both surfaces. */
+#app.react-desktop-app[data-direction='across'] [data-entry-index] {
+  --clue-lightness: calc(var(--ramp-lightness) + var(--highlight-lift));
+  --arc-start-hue: var(--across-arc-start);
+  --arc-down: 0;
+  --arc-end-hue: var(--across-arc-end);
+  --highlight-halo: var(--react-orange);
+}
+#app.react-desktop-app[data-direction='down'] [data-entry-index] {
+  --clue-lightness: calc(var(--ramp-lightness) - var(--highlight-drop));
+  --arc-start-hue: var(--down-arc-start);
+  --arc-down: 1;
+  --arc-end-hue: var(--down-arc-end);
+  --highlight-halo: var(--react-blue);
+}
+
+/* The highlighted word's hue, published on the root as --active-clue-ramp for
+   the background layers — lane watermarks and the grid wash — that have no
+   rank of their own to read. Deliberately no fallback: without an active rank
+   the hue is invalid and every dependent below falls back to exactly what
+   desktop.css already paints. */
+#app.react-desktop-app[data-direction='across'] {
+  --active-clue-hue: calc(
+    var(--across-arc-start) +
+      (
+        var(--active-clue-ramp) *
+          (var(--across-arc-end) - var(--across-arc-start))
+      )
+  );
+  --active-clue-lightness: calc(
+    var(--ramp-lightness) + var(--highlight-lift) + var(--across-l0) + var(--across-l1) * var(--active-clue-ramp) + var(--across-l2) * var(--active-clue-ramp) * var(--active-clue-ramp)
+  );
+}
+#app.react-desktop-app[data-direction='down'] {
+  --active-clue-hue: calc(
+    var(--down-arc-start) +
+      (
+        var(--active-clue-ramp) *
+          (var(--down-arc-end) - var(--down-arc-start))
+      )
+  );
+  --active-clue-lightness: calc(
+    var(--ramp-lightness) - var(--highlight-drop) + var(--down-l0) + var(--down-l1) * var(--active-clue-ramp) + var(--down-l2) * var(--active-clue-ramp) * var(--active-clue-ramp)
+  );
+}
+#app.react-desktop-app {
+  --active-clue-tint: oklch(
+    var(--active-clue-lightness) var(--ramp-chroma) var(--active-clue-hue)
+  );
+  /* The vivid twin: every lit edge and glow spends the active hue at full
+     flame chroma, so board squares, track boxes and chips in either lane all
+     read the same colour — one selection, one hue, everywhere. */
+  --active-clue-flame: oklch(
+    var(--active-clue-lightness) calc(var(--ramp-chroma) * var(--flame-chroma))
+      var(--active-clue-hue)
+  );
+}
+
+#app.react-desktop-app :is(#across, #down) .clue-number {
+  color: var(--clue-tint);
+  border-color: color-mix(in oklab, var(--rail) 50%, var(--react-bg));
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--rail) 10%, var(--react-bg)),
+    var(--react-bg)
+  );
+  box-shadow:
+    inset 0 1px 0 var(--surface-glint),
+    0 3px 8px -4px #000c;
+  font-family: var(--react-face);
+  font-size: 1.12rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: 0.01em;
+}
+
+#app.react-desktop-app[data-ramp='off'] :is(#across, #down) .clue-number {
+  color: var(--rail);
+}
+
+/* A square's small index is the reader's cross-check, so it carries its own
+   clue's tone directly — the same colour the number has in the ladder — and
+   with Number colours off it falls back to plain muted ink. Squares inside the
+   active entry keep their plain ink: the wash behind them is already doing the
+   emphasis. */
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell:not([data-entry-index])
+  .clue-index {
+  color: var(--clue-tint);
+}
+#app.react-desktop-app[data-ramp='off']
+  .grid-cell:not([data-entry-index])
+  .clue-index {
+  color: var(--react-muted);
+}
+
+/* ==========================================================================
+   1b. Ember and flame — the rainbow at the borders.
+   Two lights, one hue. The ember is a clue at rest: a faint breath of its own
+   colour just inside and outside the borders of its number box, each box of
+   its answer track, and the numbered square it starts from. The flame is the
+   same colour saturated and widened while the clue — or its squares — are the
+   ones being worked, and a new selection flares once and settles to its
+   resting light, so it lands with a little warmth and then holds still — a
+   board that kept pulsing would never let the eye rest, and would repaint
+   its blurred shadows every frame. The resting light lives
+   mostly inside the border — tracks sit 3px apart with text 10px above, and
+   positioned boxes paint over static text, so an outer bloom at rest would
+   smear both. Around the selection sits a
+   third light, the halo, which always names the direction instead of the
+   clue — warm rail orange for Across, rail blue for Down — while the
+   highlight split sets Across clearly brighter than Down. Hue always stays
+   the clue's own, value carries the lane, and how much colour is spent
+   carries the interaction, so the rainbow never says anything the reader
+   must unlearn.
+   Number colours Off takes every light out; the low-bloom tiers keep only a
+   quiet flame (sections 0 and 5). Paint only — box-shadow, no layout
+   consequence — and the ignition stops under prefers-reduced-motion, which
+   desktop.css switches off for this whole tree (restated at the file's end).
+   ========================================================================== */
+
+/* The chip at rest: an ember around a border that already carries the numeral. */
+#app.react-desktop-app[data-ramp='on']
+  :is(#across, #down)
+  .clue-number {
+  box-shadow:
+    inset 0 1px 0 var(--surface-glint),
+    0 3px 8px -4px #000c,
+    inset 0 0 6px
+      color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent),
+    0 0 9px
+      color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent);
+}
+
+/* The answer track at rest is a strip of the board itself (section 3), so
+   it rests the way the board's squares do — matte, with only the glint along
+   its top edge. Its colour arrives the way a square's does: from the notch
+   at its open end and the short spill of light from it. */
+#app.react-desktop-app[data-ramp='on'] .state {
+  box-shadow: inset 0 1px 0 var(--cell-glint);
+}
+
+/* A numbered square glows in the tone of the number it carries. Token squares
+   keep their own marker ring instead. */
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell:has(.clue-index):not([data-entry-index]):not(.future-token-cell) {
+  box-shadow:
+    inset 0 1px 0 var(--cell-glint),
+    inset 0 0 5px
+      color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent),
+    0 0 8px
+      color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent);
+}
+
+/* A row the pointer rests on warms a step — more light, same hue, no lift in
+   chroma beyond the crossing tier: hover is attention, not selection. */
+#app.react-desktop-app[data-ramp='on']
+  :is(#across, #down)
+  li:hover
+  .clue-number {
+  box-shadow:
+    inset 0 1px 0 var(--surface-glint),
+    0 3px 8px -4px #000c,
+    inset 0 0 6px
+      color-mix(in oklab, var(--clue-ember) var(--cross-alpha), transparent),
+    0 0 10px
+      color-mix(in oklab, var(--clue-ember) var(--cross-alpha), transparent);
+}
+
+#app.react-desktop-app[data-ramp='on'] li:hover .state {
+  box-shadow:
+    inset 0 1px 0 var(--surface-glint),
+    inset 0 0 5px
+      color-mix(in oklab, var(--clue-ember) var(--cross-alpha), transparent),
+    0 0 5px
+      color-mix(in oklab, var(--clue-ember) var(--cross-alpha), transparent);
+}
+
+/* The crossing clue is being worked through: its chip fills with its own
+   saturated colour and its track lights at half strength — the hue never
+   changes, only how much of it is spent. */
+#app.react-desktop-app[data-ramp='on']
+  :is(#across, #down)
+  li.affected-clue
+  .clue-number {
+  background: color-mix(in oklab, var(--clue-flame) 26%, var(--react-bg));
+  border-color: var(--clue-flame);
+  color: var(--clue-flame) !important;
+  box-shadow:
+    inset 0 1px 0 var(--surface-glint),
+    0 3px 8px -4px #000c,
+    inset 0 0 7px
+      color-mix(in oklab, var(--clue-flame) var(--cross-alpha), transparent),
+    0 0 11px
+      color-mix(in oklab, var(--clue-flame) var(--cross-alpha), transparent);
+}
+
+#app.react-desktop-app[data-ramp='on'] li.affected-clue .state {
+  box-shadow:
+    inset 0 1px 0 var(--surface-glint),
+    inset 0 0 5px
+      color-mix(in oklab, var(--clue-flame) var(--cross-alpha), transparent),
+    0 0 5px
+      color-mix(in oklab, var(--clue-flame) var(--cross-alpha), transparent);
+}
+
+/* The selection: every box of the word — in its own lane and where it crosses
+   another — burns in the active clue's hue inside, read off the root so both
+   lanes agree, and wears the direction's halo outside: the flame names the
+   clue, the halo names the lane. Board and ladder agree square for square,
+   and the inner light steps down along the word like the wash does. */
+#app.react-desktop-app[data-ramp='on'] li .state[data-entry-index] {
+  box-shadow:
+    inset 0 1px 0 var(--surface-glint),
+    inset 0 0 5px
+      color-mix(
+        in oklab,
+        var(--active-clue-flame)
+          calc(
+            var(--flame-alpha) * (1 - var(--entry-position, 0%) / 100% * 0.7)
+          ),
+        transparent
+      ),
+    0 0 9px
+      color-mix(
+        in oklab,
+        var(--highlight-halo, transparent) var(--halo-alpha),
+        transparent
+      );
+}
+
+/* The cursor box keeps its shadow, the flame inside and the direction's halo
+   outside — with the ring and fill above speaking the clue — so position and
+   interaction stay told apart at a glance. */
+#app.react-desktop-app[data-ramp='on'] li .state.cursor-cell {
+  box-shadow:
+    0 0 0 1px var(--active-clue-flame, var(--cursor-edge)),
+    0 2px 8px var(--selection-shadow),
+    inset 0 0 6px
+      color-mix(
+        in oklab,
+        var(--active-clue-flame) var(--cursor-alpha),
+        transparent
+      ),
+    0 0 10px
+      color-mix(
+        in oklab,
+        var(--highlight-halo, transparent) var(--halo-alpha),
+        transparent
+      );
+}
+
+/* The word on the board: lit squares carry the flame in the active clue's hue
+   inside and the direction's halo outside, over softened direction edge ticks
+   — full-strength bars would plaster over the wash gradient on a small square —
+   igniting once as the word lights. Inside names the clue, outside names the
+   lane, and the
+   highlight split sets Across clearly brighter than Down. */
+#app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index] {
+  box-shadow:
+    inset var(--entry-left, 0px) 0 0
+      color-mix(
+        in oklab,
+        var(--entry-tone, transparent)
+          calc(55% - var(--entry-position, 0%) * 0.35),
+        transparent
+      ),
+    inset calc(-1 * var(--entry-right, 0px)) 0 0
+      color-mix(
+        in oklab,
+        var(--entry-tone, transparent)
+          calc(55% - var(--entry-position, 0%) * 0.35),
+        transparent
+      ),
+    inset 0 var(--entry-top, 0px) 0
+      color-mix(
+        in oklab,
+        var(--entry-tone, transparent)
+          calc(55% - var(--entry-position, 0%) * 0.35),
+        transparent
+      ),
+    inset 0 calc(-1 * var(--entry-bottom, 0px)) 0
+      color-mix(
+        in oklab,
+        var(--entry-tone, transparent)
+          calc(55% - var(--entry-position, 0%) * 0.35),
+        transparent
+      ),
+    inset 0 0 6px
+      color-mix(
+        in oklab,
+        var(--active-clue-flame)
+          calc(
+            var(--flame-alpha) * (1 - var(--entry-position, 0%) / 100% * 0.7) *
+              var(--glow-pulse, 1)
+          ),
+        transparent
+      ),
+    0 0 11px
+      color-mix(
+        in oklab,
+        var(--highlight-halo, transparent) var(--halo-alpha),
+        transparent
+      );
+  animation: clue-ignite 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* ==========================================================================
+   1c. Ink on the lit word.
+   Whether a letter can be read is a question of lightness alone — hue never
+   helps or hurts — so the lit word holds one lightness from its first square
+   to its last and spends the position fade in chroma instead: the opening
+   square wears the clue's colour at full strength, the far end the same hue
+   nearly greyed out. Board and track fade square for square, so a box still
+   points at its square by how much colour it carries, and one ink — the
+   word's own hue, taken deep — reads at every position. Across lights on a
+   higher plane than Down, so the direction still reads as value.
+   The cursor is the one deep square: the same hue saturated and dark under
+   pale lettering, ringed in the word's light, so where you type is the
+   strongest contrast on the board without leaving the word's colour.
+   Check verdicts keep their own red and green ink and fills (desktop.css).
+   Number colours Off keeps desktop.css's direction fills untouched.
+   ========================================================================== */
+#app.react-desktop-app {
+  --lit-l-across: 0.84;
+  --lit-l-down: 0.75;
+  --lit-chroma: 0.105;
+  /* How much of the chroma survives at the word's far end. */
+  --lit-floor: 0.18;
+  --lit-ink-l: 0.25;
+  --lit-ink-c: 0.055;
+  --cursor-l-across: 0.57;
+  --cursor-l-down: 0.5;
+  --cursor-chroma: 0.15;
+}
+
+/* Low-bloom tiers lower the lit plane rather than brighten it; the ink stays. */
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil']) {
+  --lit-l-across: 0.77;
+  --lit-l-down: 0.69;
+  --lit-chroma: 0.08;
+  --cursor-l-across: 0.52;
+  --cursor-l-down: 0.47;
+  --cursor-chroma: 0.12;
+}
+
+#app.react-desktop-app[data-direction='across'] [data-entry-index] {
+  --lit-l: var(--lit-l-across);
+  --cursor-l: var(--cursor-l-across);
+}
+#app.react-desktop-app[data-direction='down'] [data-entry-index] {
+  --lit-l: var(--lit-l-down);
+  --cursor-l: var(--cursor-l-down);
+}
+
+/* Every lit element computes its own wash from its own position, in the hue
+   the direction rules above hand it (the active word's rank on the active
+   half of the wheel). Interpolating in oklch between two colours that share
+   lightness and hue moves chroma alone. */
+#app.react-desktop-app[data-ramp='on'] [data-entry-index] {
+  --lit-wash: color-mix(
+    in oklch,
+    oklch(var(--lit-l) var(--lit-chroma) var(--clue-hue))
+      calc(100% - var(--entry-position, 0%) * (1 - var(--lit-floor))),
+    oklch(
+      var(--lit-l) calc(var(--lit-chroma) * var(--lit-floor))
+        var(--clue-hue)
+    )
+  );
+  --lit-edge: oklch(
+    calc(var(--lit-l) - 0.17) calc(var(--lit-chroma) * 0.85) var(--clue-hue)
+  );
+  --lit-ink: oklch(var(--lit-ink-l) var(--lit-ink-c) var(--clue-hue));
+  --cursor-wash: oklch(var(--cursor-l) var(--cursor-chroma) var(--clue-hue));
+  --cursor-ring: oklch(
+    calc(var(--lit-l) + 0.06) calc(var(--lit-chroma) * 1.1) var(--clue-hue)
+  );
+}
+
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:not(:focus-within),
+#app.react-desktop-app[data-ramp='on']
+  li
+  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green) {
+  background: var(--lit-wash) !important;
+  border-color: var(--lit-edge) !important;
+  color: var(--lit-ink) !important;
+}
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:not(:focus-within)
+  input:not(.red):not(.green) {
+  color: var(--lit-ink) !important;
+}
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:not(:focus-within):not(
+    :has(input:is(.red, .green))
+  )
+  .clue-index {
+  color: var(--lit-ink) !important;
+  opacity: 0.78;
+}
+
+/* The cursor: deep fill, pale lettering, the word's light as its ring. With no
+   word lit yet (focus without a selection) it falls back to desktop.css. */
+#app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index]:focus-within,
+#app.react-desktop-app[data-ramp='on'] li .state[data-entry-index].cursor-cell {
+  outline-color: var(--cursor-ring);
+  border-color: var(--cursor-ring) !important;
+  background: var(--cursor-wash) !important;
+  color: oklch(0.98 0.012 var(--clue-hue)) !important;
+}
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:focus-within
+  :is(input:not(.red):not(.green), .clue-index) {
+  color: oklch(0.98 0.012 var(--clue-hue));
+}
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:focus-within::before {
+  border-color: color-mix(in oklab, var(--cursor-ring) 70%, transparent);
+}
+#app.react-desktop-app[data-ramp='on'] .grid-cell:focus-within {
+  box-shadow:
+    inset var(--entry-left, 0px) 0 0
+      color-mix(in oklab, var(--entry-tone, transparent) 55%, transparent),
+    inset calc(-1 * var(--entry-right, 0px)) 0 0
+      color-mix(in oklab, var(--entry-tone, transparent) 55%, transparent),
+    inset 0 var(--entry-top, 0px) 0
+      color-mix(in oklab, var(--entry-tone, transparent) 55%, transparent),
+    inset 0 calc(-1 * var(--entry-bottom, 0px)) 0
+      color-mix(in oklab, var(--entry-tone, transparent) 55%, transparent),
+    inset 0 0 8px
+      color-mix(
+        in oklab,
+        var(--active-clue-flame) calc(var(--cursor-alpha) * var(--glow-pulse, 1)),
+        transparent
+      ),
+    0 0 13px
+      color-mix(
+        in oklab,
+        var(--highlight-halo, transparent) var(--halo-alpha),
+        transparent
+      );
+  animation: clue-ignite 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* The active lane's watermark breathes the highlighted word's hue the same
+   gentle way: the direction's own wash, barely adjusted toward the selection.
+   Both the mix and the opacity stay low — at 190px a saturated tint would
+   shout over the chips and boxes, and distant hues mix muddy. The :has guard
+   means the tint only applies while a word is actually lit — with no
+   selection the invalid tint would otherwise inherit ink instead of falling
+   back to desktop.css's direction wash. */
+#app.react-desktop-app[data-ramp='on']:has(.grid-cell[data-entry-index])
+  .clue-column[data-label='ACROSS'].active::before {
+  opacity: 0.22;
+  color: color-mix(
+    in oklab,
+    var(--active-clue-tint) 20%,
+    rgba(255, 152, 0, 0.75)
+  );
+}
+#app.react-desktop-app[data-ramp='on']:has(.grid-cell[data-entry-index])
+  .clue-column[data-label='DOWN'].active::before {
+  opacity: 0.22;
+  color: color-mix(
+    in oklab,
+    var(--active-clue-tint) 20%,
+    rgba(33, 150, 243, 0.75)
+  );
+}
+
+/* The lane's direction bar steps aside while Number colours are on: the halo,
+   rails and ticks already say the direction, and a solid orange bar would
+   fight the clue's own colour. Off, desktop.css's bar stays. */
+#app.react-desktop-app[data-ramp='on']
+  :is(#across, #down)
+  li.highlighted-clue::before {
+  content: none;
+}
+
+/* The selected chip spends the highlight split, not the lane's: Across brighter,
+   Down dimmer, so the direction reads first on the selection too. */
+#app.react-desktop-app[data-ramp='on'] #across li.highlighted-clue {
+  --clue-lightness: calc(var(--ramp-lightness) + var(--highlight-lift));
+}
+#app.react-desktop-app[data-ramp='on'] #down li.highlighted-clue {
+  --clue-lightness: calc(var(--ramp-lightness) - var(--highlight-drop));
+}
+
+/* The selected chip: the clue's hue, saturated and solid, on the dark ground —
+   easy to spot without washing the colour out, wrapped in its lane's halo so
+   the direction reads around the clue. (Number colours off keeps
+   desktop.css's solid direction fill.) The ignition lives in its own rule,
+   excluded while a solved row is dissolving so celebration.css keeps the
+   last word on that one moment. */
+#app.react-desktop-app[data-ramp='on']
+  :is(#across, #down)
+  li.highlighted-clue
+  .clue-number {
+  background: var(--clue-flame);
+  border-color: var(--clue-flame);
+  box-shadow:
+    inset 0 1px 0 var(--surface-glint),
+    inset 0 0 7px
+      color-mix(
+        in oklab,
+        var(--clue-flame) calc(var(--flame-alpha) * var(--glow-pulse, 1)),
+        transparent
+      ),
+    0 0 13px color-mix(in oklab, var(--rail) var(--halo-alpha), transparent),
+    0 4px 12px -4px #000c;
+}
+
+#app.react-desktop-app[data-ramp='on']
+  :is(#across, #down)
+  li.highlighted-clue:not([data-rapture])
+  .clue-number {
+  animation: clue-ignite 640ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* A checked letter keeps the verdict to itself: right or wrong, the box drops
+   its glow while the check is on the board, exactly as desktop.css intends. */
+#app.react-desktop-app[data-ramp='on']
+  :is(#across, #down)
+  li
+  :is(.state.red, .state.green) {
+  box-shadow: none;
+}
+#app.react-desktop-app[data-ramp='on']
+  :is(#across, #down)
+  li
+  .state:is(.red, .green)[data-entry-index] {
+  box-shadow: none;
+}
+
+/* The ignition: the light flares once as a word lights and settles to rest.
+   Nothing translates, so reading and clicking stay perfectly still; only the
+   glow's alpha moves, and only once. The cursor shares the name with the lit
+   squares on purpose — moving it along the word re-lights nothing, so typing
+   stays calm (the letters carry their own arrival, desktop.css). */
+@keyframes clue-ignite {
+  from {
+    --glow-pulse: 2;
+  }
+  to {
+    --glow-pulse: 1;
+  }
+}
+
+/* Best-effort glow: while a fresh selection lands (data-glow off, set by the
+   view for a frame or two after the active word changes), the selection's
+   blurred shadows and ignition animations stay out so the cursor, letters
+   and washes paint on the cheap first frame. The cursor cell keeps its full
+   chrome throughout — it is one element and must never blink. One blanket
+   kill-switch rather than per-rule gates, so the light always returns whole;
+   washes, chips, rails and verdicts are flat paint and never dimmed here. */
+#app.react-desktop-app[data-glow='off']
+  :is(
+    .grid-cell[data-entry-index]:not(:focus-within),
+    li .state[data-entry-index]:not(.cursor-cell),
+    li.highlighted-clue .clue-number
+  ) {
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+/* ==========================================================================
+   2. The springs.
+   One coil between every pair of neighbouring chips, drawn by ClueSpring from
+   the measured chip positions and painted behind the chips so each end tucks
+   under its anchor. The stroke is a gradient from the first chip's rank colour
+   to the second's. Adjacent numbers make a relaxed, tightly wound spring; when
+   solved clues leave the ladder the neighbours are further apart on the ramp,
+   the same length carries more colour change, and the coil opens out and flattens
+   — the slack is taken up. The geometry is in springGeometry.js; this is only ink.
+   ========================================================================== */
+#app.react-desktop-app .clue-spring {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#app.react-desktop-app .spring-stop {
+  stop-color: var(--clue-tint);
+}
+
+#app.react-desktop-app .spring-coil {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.7;
+  animation: spring-settle 240ms ease-out both;
+}
+
+#app.react-desktop-app .spring-coil[data-state='affected'] {
+  opacity: 0.88;
+}
+
+#app.react-desktop-app .spring-coil[data-state='active'] {
+  opacity: 1;
+  stroke-width: 2.1;
+}
+
+/* A new spring, made when a solved clue closes a gap, takes up the slack by
+   fading in rather than appearing. Opacity only. */
+@keyframes spring-settle {
+  from {
+    opacity: 0;
+  }
+}
+
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  .spring-coil {
+  opacity: 0.6;
+}
+
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  .spring-coil[data-state] {
+  opacity: 0.9;
+}
+
+/* ==========================================================================
+   3. The letter track: a strip torn from the board.
+   The answer's boxes are the board's own squares, carried out to the clue:
+   square, in the board's material and seams, touching edge to edge with no
+   rounding, so an empty track frames its gap the way the grid does and a
+   finished one could be laid straight back into it. Their colour arrives the
+   way a square's does — a notch filament on the strip's open end and the
+   short spill of light from it (section 4 on the board) — and the strip
+   sits a hair above the lane, lifted out.
+   Letters are grouped by word first and balanced into runs of at most five
+   second (boardCues.js). Inside a word a new run joins on a heavier seam —
+   the bezel ruler's major tick, so counting reads the same on both — and the
+   strip only tears open where the answer itself has a gap between words.
+   Each run is an unbreakable flex item while it fits: a clue that has to
+   wrap breaks between runs, never through one. A run wider than its column
+   — a Solid track, a narrow lane, Board size L — wraps internally instead of
+   spilling over the neighbouring clue.
+   ========================================================================== */
+#app.react-desktop-app {
+  --strip-cell: calc(25px * var(--clue-letter-scale));
+  --strip-tear: calc(9px * var(--clue-letter-scale));
+  --strip-major: color-mix(
+    in oklab,
+    var(--board-black) 72%,
+    var(--react-cell-edge)
+  );
+  --strip-shadow: #000000b0;
+}
+:root[style*='color-scheme: light'] #app.react-desktop-app {
+  --strip-major: color-mix(
+    in oklab,
+    var(--board-black) 28%,
+    var(--react-cell-edge)
+  );
+  --strip-shadow: #233b3038;
+}
+
+#app.react-desktop-app .state-container {
+  /* A definite width, so a wrapping track never depends on shrink-to-fit sizing
+     to decide how tall its row is. Alignment is justify-content's job. */
+  align-self: stretch;
+  box-sizing: border-box;
+  gap: calc(6px * var(--clue-letter-scale)) 0;
+  min-height: var(--strip-cell);
+}
+
+#app.react-desktop-app .state-run {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  max-width: 100%;
+  min-width: 0;
+  box-shadow: 0 3px 8px -4px var(--strip-shadow);
+}
+
+#app.react-desktop-app #across li:nth-child(odd) .state-run,
+#app.react-desktop-app #down li:nth-child(odd) .state-run {
+  justify-content: flex-end;
+}
+
+/* The tear: only where the answer has a real gap between words. */
+#app.react-desktop-app .state-run.word-end {
+  margin-inline-end: var(--strip-tear);
+}
+
+#app.react-desktop-app .state-container .state {
+  flex: 0 0 var(--strip-cell);
+  width: var(--strip-cell);
+  height: var(--strip-cell);
+  margin: 0 0 0 -1px;
+  padding: calc(var(--strip-cell) * 0.07) 0 0;
+  border: 1px solid var(--react-cell-edge);
+  border-radius: 0;
+  background-color: var(--react-cell);
+  font-family: var(--react-face);
+  font-size: calc(var(--strip-cell) * 0.54);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+#app.react-desktop-app .state-container .state-run > .state:first-child {
+  margin-inline-start: 0;
+}
+/* Inside a word, the next run joins on a heavier seam. */
+#app.react-desktop-app
+  .state-run:not(.word-end)
+  + .state-run
+  > .state:first-child {
+  margin-inline-start: -1px;
+  border-left: 2px solid var(--strip-major);
+}
+/* Shared seams paint in document order, so a lit, checked or cursor square
+   lifts its own edges above its neighbours'. */
+#app.react-desktop-app
+  .state-container
+  .state:is([data-entry-index], .red, .green) {
+  z-index: 1;
+}
+#app.react-desktop-app .state-container .state.cursor-cell {
+  z-index: 2;
+}
+/* A lit square keeps the board's hairline, not desktop.css's 2px frame: on the
+   board the word is outlined at its ends, not boxed letter by letter. */
+#app.react-desktop-app .state-container .state[data-entry-index] {
+  border-width: 1px !important;
+}
+
+/* The notch at the strip's open end: the same filament the board draws on
+   the black square in front of the word, in the word's own hue. */
+#app.react-desktop-app[data-cues='on']
+  .state-container
+  .state-run:first-child
+  > .state:first-child::after {
+  content: '';
+  position: absolute;
+  top: 31%;
+  left: -3px;
+  width: 2px;
+  height: 38%;
+  border-radius: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in oklab, var(--rail) 72%, transparent) 30%,
+    color-mix(in oklab, white var(--tick-core), var(--rail)) 50%,
+    color-mix(in oklab, var(--rail) 72%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--rail) var(--tick-glow-alpha), transparent);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .state-container
+  .state-run:first-child
+  > .state:first-child::after {
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in oklab, var(--clue-tint) 72%, transparent) 30%,
+    color-mix(in oklab, white var(--tick-core), var(--clue-tint)) 50%,
+    color-mix(in oklab, var(--clue-tint) 72%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--clue-tint) var(--tick-glow-alpha), transparent);
+}
+
+/* The notch's spill: the first squares of the strip carry the same short
+   fall of light the word's first squares carry on the board (section 4),
+   level for level, in the clue's own hue. */
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .state-container
+  .state-run:first-child
+  > .state:nth-child(-n + 3) {
+  --spill-from: var(--spill-alpha);
+  --spill-to: calc(var(--spill-alpha) * 0.58);
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--clue-tint) var(--spill-from), transparent),
+    color-mix(in oklab, var(--clue-tint) var(--spill-to), transparent)
+  );
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .state-container
+  .state-run:first-child
+  > .state:nth-child(2) {
+  --spill-from: calc(var(--spill-alpha) * 0.58);
+  --spill-to: calc(var(--spill-alpha) * 0.16);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .state-container
+  .state-run:first-child
+  > .state:nth-child(3) {
+  --spill-from: calc(var(--spill-alpha) * 0.16);
+  --spill-to: 0%;
+}
+
+/* The board speaks the same face as the ladder. The letter sits a little
+   below the square's centre and a touch smaller than the square allows, the
+   way a printed grid sets it, so the corner number has its own air instead of
+   touching the capital. */
+#app.react-desktop-app .grid-cell input {
+  box-sizing: border-box;
+  padding: calc(var(--cell-size) * 0.14) 0 0;
+  font-family: var(--react-face);
+  font-size: calc(var(--cell-size) * 0.5);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+#app.react-desktop-app .grid-cell.rebus input {
+  font-size: calc(var(--cell-size) * 0.28);
+}
+
+#app.react-desktop-app .clue-index {
+  font-family: var(--react-face);
+  font-weight: 650;
+}
+
+#app.react-desktop-app .clue-content .clue-text {
+  font-family: var(--react-face);
+}
+
+#app.react-desktop-app[data-scale='compact'] {
+  --clue-letter-scale: 0.9;
+}
+
+#app.react-desktop-app[data-scale='full'] {
+  --clue-letter-scale: 1.16;
+  --clue-text-scale: 1.06;
+}
+
+#app.react-desktop-app .clue-content .clue-text {
+  font-size: calc(clamp(15px, 1.04vw, 20px) * var(--clue-text-scale));
+}
+
+/* Firm letters trade the thin mono stroke for weight and a touch of tracking,
+   which is what survives a bright screen behind smudged lenses. */
+#app.react-desktop-app[data-glyph='firm']
+  :is(.state, .grid-cell input, .clue-index) {
+  font-weight: 700;
+}
+
+#app.react-desktop-app[data-glyph='firm'] .state,
+#app.react-desktop-app[data-glyph='firm'] .grid-cell input {
+  letter-spacing: 0.02em;
+}
+
+/* ==========================================================================
+   4. Board notches.
+   Four quiet layers, each answering a different question while moving across
+   the board, and all of them off together with the Square notches choice.
+   - Gate ticks: a black square that opens a slot carries a short filament on
+     the edge facing it, bright-cored and softly bleeding, in the hue of the
+     word it opens — the east tick the Across word starting to the east, the
+     south tick the Down word starting below — each in its lane's value, so
+     the tick names both the word and its direction. Words that open on the
+     grid's edge wear the same filament on the start square's boundary edge.
+     A stub that opens no word publishes no rank and keeps the quiet direction
+     colour, and the ticks of the direction being solved sit a little brighter
+     than the other's.
+   - Spotlights: every answer projects its notch's light along itself, fading
+     with distance from its start square in its own hue, so each cell carries
+     the colours of the words crossing on it. The ladder answers in the same
+     hues, lane for lane, so a colour learned either place points at the
+     other.
+   - Numbers: the small index in a word's first square is the same rank colour
+     as its chip in the ladder (section 1).
+   - Ruler: the bezel carries a tick at every column and row, longer every
+     fifth, so "three squares past the block" can be counted without losing
+     the cursor.
+   Marks come from the neighbouring squares alone (boardCues.js names which
+   edges are open; --open-e and --open-s are 0 or 1; the opener's rank arrives
+   as --gate-across/--gate-down on the black square itself, and each white
+   square's distances and word ranks as --spot-adist/--spot-arank and
+   --spot-ddist/--spot-drank).
+   ========================================================================== */
+#app.react-desktop-app .black-cell {
+  position: relative;
+  /* A black square is a shallow well, not flat paint: just enough hollow to
+     seat the gate ticks, kept quiet so the wells themselves stay dark. */
+  background: radial-gradient(
+    circle at 50% 38%,
+    color-mix(in oklab, var(--board-black), white 3%),
+    var(--board-black) 80%
+  );
+  box-shadow:
+    inset 0 1px 3px #00000044,
+    inset 0 -1px 2px #00000055;
+  /* Each tick wears its opener's hue on its opener's half of the wheel: east
+     the Across word's warm hue, south the Down word's cool one. */
+  --gate-across-hue: calc(
+    var(--across-arc-start) +
+      (
+        var(--gate-across, 0) *
+          (var(--across-arc-end) - var(--across-arc-start))
+      )
+  );
+  --gate-down-hue: calc(
+    var(--down-arc-start) +
+      (var(--gate-down, 0) * (var(--down-arc-end) - var(--down-arc-start)))
+  );
+  --gate-across-tint: oklch(
+    calc(
+        var(--ramp-lightness) + var(--across-lift) +
+          var(--across-l0) + var(--across-l1) * var(--gate-across, 0) + var(--across-l2) * var(--gate-across, 0) * var(--gate-across, 0)
+      )
+      var(--ramp-chroma) var(--gate-across-hue)
+  );
+  --gate-down-tint: oklch(
+    calc(
+        var(--ramp-lightness) - var(--down-drop) +
+          var(--down-l0) + var(--down-l1) * var(--gate-down, 0) + var(--down-l2) * var(--gate-down, 0) * var(--gate-down, 0)
+      )
+      var(--ramp-chroma) var(--gate-down-hue)
+  );
+}
+
+#app.react-desktop-app[data-cues='on'] .black-cell::before,
+#app.react-desktop-app[data-cues='on'] .black-cell::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: 1px;
+}
+
+/* East edge: an Across word begins in the square to the right. The tick is a
+   little filament, bright-cored along its length with its light bleeding
+   around it, rather than a flat bar — and it sits centred on the boundary
+   line, in the margin between the squares, so no cell carries anything
+   inside it. */
+#app.react-desktop-app[data-cues='on'] .black-cell::before {
+  top: 50%;
+  right: -1px;
+  width: 2px;
+  height: 38%;
+  transform: translateY(-50%);
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in oklab, var(--tick-across) 72%, transparent) 30%,
+    color-mix(in oklab, white var(--tick-core), var(--tick-across)) 50%,
+    color-mix(in oklab, var(--tick-across) 72%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--tick-across) var(--tick-glow-alpha), transparent);
+  opacity: calc(var(--open-e, 0) * min(1, 0.5 * var(--charge)));
+}
+
+/* South edge: a Down word begins in the square below, tick centred on the
+   boundary the same way. */
+#app.react-desktop-app[data-cues='on'] .black-cell::after {
+  bottom: -1px;
+  left: 50%;
+  width: 38%;
+  height: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--tick-down) 72%, transparent) 30%,
+    color-mix(in oklab, white var(--tick-core), var(--tick-down)) 50%,
+    color-mix(in oklab, var(--tick-down) 72%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--tick-down) var(--tick-glow-alpha), transparent);
+  opacity: calc(var(--open-s, 0) * min(1, 0.5 * var(--charge)));
+}
+
+#app.react-desktop-app[data-cues='on'][data-direction='across'] .black-cell::before {
+  opacity: calc(var(--open-e, 0) * min(1, var(--charge)));
+}
+
+#app.react-desktop-app[data-cues='on'][data-direction='down'] .black-cell::after {
+  opacity: calc(var(--open-s, 0) * min(1, var(--charge)));
+}
+
+/* With Number colours on, each tick spends its opener's hue in its lane's
+   value — brighter for the Across tick, quieter for the Down one — with the
+   same bright-cored filament. Off, and both ticks fall back to the quiet
+   direction colours above. */
+#app.react-desktop-app[data-cues='on'][data-ramp='on'] .black-cell::before {
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in oklab, var(--gate-across-tint) 72%, transparent) 30%,
+    color-mix(in oklab, white var(--tick-core), var(--gate-across-tint)) 50%,
+    color-mix(in oklab, var(--gate-across-tint) 72%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 var(--tick-glow)
+    color-mix(in oklab, var(--gate-across-tint) var(--tick-glow-alpha), transparent);
+}
+
+#app.react-desktop-app[data-cues='on'][data-ramp='on'] .black-cell::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--gate-down-tint) 72%, transparent) 30%,
+    color-mix(in oklab, white var(--tick-core), var(--gate-down-tint)) 50%,
+    color-mix(in oklab, var(--gate-down-tint) 72%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 var(--tick-glow)
+    color-mix(in oklab, var(--gate-down-tint) var(--tick-glow-alpha), transparent);
+}
+
+/* Words that open on the grid's edge have no black square to carry their tick,
+   so the start square itself wears it on its boundary edge: west for an Across
+   opener in the first column, north for a Down opener in the first row, both
+   at the corner. The cursor's ring replaces any tick while a square is
+   focused, and circled squares keep their ring on ::after untouched. */
+#app.react-desktop-app[data-cues='on']
+  .grid
+  > .grid-row:first-child
+  > .grid-cell[data-start]:not(:focus-within),
+#app.react-desktop-app[data-cues='on']
+  .grid
+  > .grid-row
+  > .grid-cell[data-start]:first-child:not(:focus-within) {
+  position: relative;
+}
+#app.react-desktop-app[data-cues='on']
+  .grid
+  > .grid-row
+  > .grid-cell[data-start~='across']:first-child:not(:focus-within)::before,
+#app.react-desktop-app[data-cues='on']
+  .grid
+  > .grid-row:first-child
+  > .grid-cell[data-start~='down']:not(:focus-within)::before,
+#app.react-desktop-app[data-cues='on']
+  .grid
+  > .grid-row:first-child
+  > .grid-cell[data-start~='across'][data-start~='down']:first-child:not(:focus-within)::before {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: 1px;
+}
+#app.react-desktop-app[data-cues='on']
+  .grid
+  > .grid-row
+  > .grid-cell[data-start~='across']:first-child:not(:focus-within)::before {
+  left: -3px;
+  top: 31%;
+  width: 2px;
+  height: 38%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in oklab, var(--tick-across) 72%, transparent) 30%,
+    color-mix(in oklab, white var(--tick-core), var(--tick-across)) 50%,
+    color-mix(in oklab, var(--tick-across) 72%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--tick-across) var(--tick-glow-alpha), transparent);
+  opacity: min(1, 0.5 * var(--charge));
+}
+#app.react-desktop-app[data-cues='on']
+  .grid
+  > .grid-row:first-child
+  > .grid-cell[data-start~='down']:not(:focus-within)::before {
+  top: -3px;
+  left: 31%;
+  height: 2px;
+  width: 38%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--tick-down) 72%, transparent) 30%,
+    color-mix(in oklab, white var(--tick-core), var(--tick-down)) 50%,
+    color-mix(in oklab, var(--tick-down) 72%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--tick-down) var(--tick-glow-alpha), transparent);
+  opacity: min(1, 0.5 * var(--charge));
+}
+#app.react-desktop-app[data-cues='on']
+  .grid
+  > .grid-row:first-child
+  > .grid-cell[data-start~='across'][data-start~='down']:first-child:not(:focus-within)::before {
+  left: -3px;
+  top: -3px;
+  right: 1px;
+  bottom: 1px;
+  width: auto;
+  height: auto;
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in oklab, var(--tick-across) 72%, transparent) 30%,
+      color-mix(in oklab, white var(--tick-core), var(--tick-across)) 50%,
+      color-mix(in oklab, var(--tick-across) 72%, transparent) 70%,
+      transparent
+    ) left center / 2px 38% no-repeat,
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--tick-down) 72%, transparent) 30%,
+      color-mix(in oklab, white var(--tick-core), var(--tick-down)) 50%,
+      color-mix(in oklab, var(--tick-down) 72%, transparent) 70%,
+      transparent
+    ) center top / 38% 2px no-repeat;
+  box-shadow: none;
+  opacity: min(1, 0.75 * var(--charge));
+}
+#app.react-desktop-app[data-cues='on'][data-direction='across']
+  .grid
+  > .grid-row
+  > .grid-cell[data-start~='across']:first-child:not(:focus-within)::before {
+  opacity: min(1, var(--charge));
+}
+#app.react-desktop-app[data-cues='on'][data-direction='down']
+  .grid
+  > .grid-row:first-child
+  > .grid-cell[data-start~='down']:not(:focus-within)::before {
+  opacity: min(1, var(--charge));
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .grid
+  > .grid-row
+  > .grid-cell[data-start~='across']:first-child:not(:focus-within)::before {
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in oklab, var(--clue-tint) 72%, transparent) 30%,
+    color-mix(in oklab, white var(--tick-core), var(--clue-tint)) 50%,
+    color-mix(in oklab, var(--clue-tint) 72%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--clue-tint) var(--tick-glow-alpha), transparent);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .grid
+  > .grid-row:first-child
+  > .grid-cell[data-start~='down']:not(:focus-within)::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--clue-tint) 72%, transparent) 30%,
+    color-mix(in oklab, white var(--tick-core), var(--clue-tint)) 50%,
+    color-mix(in oklab, var(--clue-tint) 72%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--clue-tint) var(--tick-glow-alpha), transparent);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .grid
+  > .grid-row:first-child
+  > .grid-cell[data-start~='across'][data-start~='down']:first-child:not(:focus-within)::before {
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in oklab, var(--clue-tint) 72%, transparent) 30%,
+      color-mix(in oklab, white var(--tick-core), var(--clue-tint)) 50%,
+      color-mix(in oklab, var(--clue-tint) 72%, transparent) 70%,
+      transparent
+    ) left center / 2px 38% no-repeat,
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--clue-down-tint) 72%, transparent) 30%,
+      color-mix(in oklab, white var(--tick-core), var(--clue-down-tint)) 50%,
+      color-mix(in oklab, var(--clue-down-tint) 72%, transparent) 70%,
+      transparent
+    ) center top / 38% 2px no-repeat;
+  box-shadow: none;
+}
+
+/* Each answer carries its own fading light: a wash that enters from the word's
+   start edge and dies out within its first two or three squares, in that
+   word's hue on its lane's half of the wheel — eastward for Across answers,
+   southward for Down ones. A long tail across the whole word would lay two
+   hues over every square and mix the board to mud; a short spill keeps the
+   notch's light where the notch is.
+   Each square holds its own level flat across its width so neighbours step
+   down visibly instead of averaging out, which a fade-to-transparent inside
+   every square would do. Distance arrives per square from boardCues.js; a
+   square in no word publishes nothing and the far fallback below renders it
+   invisible. Quiet by design, since a whole board wears it at once; the
+   selection's flame speaks over it where they meet. */
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .grid-cell:not(.black-cell) {
+  --spot-ahue: calc(
+    var(--across-arc-start) +
+      (
+        var(--spot-arank, 0) *
+          (var(--across-arc-end) - var(--across-arc-start))
+      )
+  );
+  --spot-dhue: calc(
+    var(--down-arc-start) +
+      (var(--spot-drank, 0) * (var(--down-arc-end) - var(--down-arc-start)))
+  );
+  --spot-acolor: oklch(
+    calc(
+        var(--ramp-lightness) + var(--across-lift) +
+          var(--across-l0) + var(--across-l1) * var(--spot-arank, 0) + var(--across-l2) * var(--spot-arank, 0) * var(--spot-arank, 0)
+      )
+      var(--ramp-chroma) var(--spot-ahue)
+  );
+  --spot-dcolor: oklch(
+    calc(
+        var(--ramp-lightness) - var(--down-drop) +
+          var(--down-l0) + var(--down-l1) * var(--spot-drank, 0) + var(--down-l2) * var(--spot-drank, 0) * var(--spot-drank, 0)
+      )
+      var(--ramp-chroma) var(--spot-dhue)
+  );
+  background-image:
+    linear-gradient(
+      90deg,
+      color-mix(
+          in oklab,
+          var(--spot-acolor)
+            clamp(0%, var(--spot-a-alpha) * (1 - var(--spot-adist, 999) * 0.42), 100%),
+          transparent
+        )
+        0,
+      color-mix(
+          in oklab,
+          var(--spot-acolor)
+            clamp(
+              0%,
+              var(--spot-a-alpha) * (1 - (var(--spot-adist, 999) + 1) * 0.42),
+              100%
+            ),
+          transparent
+        )
+        100%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(
+          in oklab,
+          var(--spot-dcolor)
+            clamp(0%, var(--spot-d-alpha) * (1 - var(--spot-ddist, 999) * 0.42), 100%),
+          transparent
+        )
+        0,
+      color-mix(
+          in oklab,
+          var(--spot-dcolor)
+            clamp(
+              0%,
+              var(--spot-d-alpha) * (1 - (var(--spot-ddist, 999) + 1) * 0.42),
+              100%
+            ),
+          transparent
+        )
+        100%
+    );
+}
+
+/* The bezel ruler: four tick layers painted into the 5px frame around the board.
+   Every layer is a static gradient on the one board element, so it costs nothing
+   per cell. Minor ticks sit on each cell's closing edge; major ones on every
+   fifth. */
+#app.react-desktop-app[data-cues='on'] .grid {
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(var(--cell-size) * 5 - 1px),
+      var(--ruler-major) calc(var(--cell-size) * 5 - 1px)
+        calc(var(--cell-size) * 5)
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(var(--cell-size) - 1px),
+      var(--ruler-minor) calc(var(--cell-size) - 1px) var(--cell-size)
+    ),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 calc(var(--cell-size) * 5 - 1px),
+      var(--ruler-major) calc(var(--cell-size) * 5 - 1px)
+        calc(var(--cell-size) * 5)
+    ),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 calc(var(--cell-size) - 1px),
+      var(--ruler-minor) calc(var(--cell-size) - 1px) var(--cell-size)
+    );
+  background-repeat: no-repeat;
+  /* Top band: 4px tall major ticks over 3px minor ones; left band likewise. */
+  background-size:
+    calc(100% - 10px) 4px,
+    calc(100% - 10px) 3px,
+    4px calc(100% - 10px),
+    3px calc(100% - 10px);
+  background-position:
+    5px 0,
+    5px 0,
+    0 5px,
+    0 5px;
+}
+
+/* ==========================================================================
+   5. Low-bloom tiers.
+   A screen turned down at night, or bright and seen through smudged lenses,
+   blooms at the highlights, not the midtones: the pure-white cursor letter, the
+   cool glow under every glyph, the watermark and the ambient wash. Both tiers
+   take those away and put the emphasis where it survives — a slightly raised
+   ground, crisper edges, and a letter that is darker rather than brighter.
+   Dim keeps the palette, Veil raises the black level for a dim panel.
+   ========================================================================== */
+#app.react-desktop-app[data-luma='dim'] {
+  --react-ink: #e3e8ee;
+  --react-muted: #9ba5b1;
+  --react-cell: #262b33;
+  --react-cell-edge: #4f5863;
+  --slot-fill: #1f232a;
+  --slot-edge: #5c646f;
+  --surface-glint: #ffffff0d;
+  --cell-glint: #ffffff04;
+  --entry-first: #f0bd76;
+  --entry-last: #d89a46;
+  --entry-fill-first: #4a3925;
+  --entry-fill-last: #372b1e;
+  --cursor-fill: #6d4d20;
+  --cursor-edge: #e8bd76;
+  --cue-ink: rgba(214, 223, 235, 0.4);
+  --cue-gate: rgba(214, 223, 235, 0.58);
+}
+
+#app.react-desktop-app[data-luma='veil'] {
+  --react-bg: #10151b;
+  --react-panel: #191f26;
+  --panel-light: #2b323a;
+  --react-ink: #d7dde5;
+  --react-muted: #98a2ae;
+  --react-cell: #2f353d;
+  --react-cell-edge: #5b646f;
+  --board-bezel: #171d24;
+  --board-edge: #59626d;
+  --slot-fill: #23272e;
+  --slot-edge: #666f7a;
+  --surface-glint: #ffffff0a;
+  --cell-glint: transparent;
+  --entry-first: #e6b985;
+  --entry-last: #cd9b62;
+  --entry-fill-first: #463725;
+  --entry-fill-last: #342a1e;
+  --cursor-fill: #66481e;
+  --cursor-edge: #dcb57c;
+  --cue-ink: rgba(206, 215, 227, 0.44);
+  --cue-gate: rgba(206, 215, 227, 0.62);
+}
+
+/* Nothing glows on either tier: a halo is exactly the bloom being avoided.
+   The rainbow keeps its hue but gives up its light the same way — the ember
+   goes out entirely and only a quiet flame marks the selection, so the
+   interaction is still legible on a screen that asked to be dimmer. */
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  :is(.state, .grid-cell input, .clue-number) {
+  text-shadow: none;
+}
+
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  li.highlighted-clue
+  .state {
+  text-shadow: none;
+}
+
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil']) {
+  --ember-alpha: 0%;
+  --cross-alpha: 0%;
+  --flame-alpha: 11%;
+  --cursor-alpha: 15%;
+  --halo-alpha: 6%;
+  --spot-alpha: 0%;
+}
+
+/* The ambient wash, the lane watermark and the lit spine are the three largest
+   bright areas on screen. They stay, quieter: structure without a lamp behind it. */
+#app.react-desktop-app[data-luma='dim']::before {
+  opacity: 0.6;
+}
+#app.react-desktop-app[data-luma='veil']::before {
+  opacity: 0.3;
+}
+#app.react-desktop-app[data-luma='dim'] .clue-column::before {
+  opacity: 0.12 !important;
+}
+#app.react-desktop-app[data-luma='veil'] .clue-column::before {
+  opacity: 0.05 !important;
+}
+#app.react-desktop-app[data-luma='dim'] .clue-column::after {
+  opacity: 0.75;
+}
+#app.react-desktop-app[data-luma='veil'] .clue-column::after {
+  opacity: 0.55;
+}
+
+/* The cursor is the one place the palette reaches for white. It reaches for
+   ink instead, and keeps the ring, which reads as position rather than flare. */
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  .grid-cell:focus-within
+  :is(input, .clue-index) {
+  color: #eef2f7;
+}
+
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  .state.cursor-cell {
+  color: #eef2f7 !important;
+}
+
+/* The page behind the app, so an overscroll or a short panel does not flash the
+   unlit browser canvas. */
+html[data-luma='dim'] {
+  background: #0c1015;
+}
+html[data-luma='veil'] {
+  background: #10151b;
+}
+
+/* A display that asks for more contrast gets harder edges, not brighter ink. */
+@media (prefers-contrast: more) {
+  #app.react-desktop-app {
+    --react-cell-edge: #6b7480;
+    --slot-edge: #7a828d;
+    --board-edge: #78818c;
+  }
+}
+
+/* ==========================================================================
+   6. The view cluster: three tiers of adjustment, matte, in the console's
+   tray. Its button is a quiet tray glyph like its neighbours, and its panel
+   opens upward because the board owns the space above the tray.
+   ========================================================================== */
+#app.react-desktop-app .view-cluster {
+  position: relative;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+}
+
+#app.react-desktop-app .view-cluster-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* The tray's glyph height, so the tray stays level. */
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--inner-radius, 8px);
+  background: transparent;
+  box-shadow: none;
+  color: var(--react-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  list-style: none;
+  cursor: pointer;
+  transition:
+    color var(--dur-quick, 140ms) var(--ease-out, ease),
+    background-color var(--dur-quick, 140ms) var(--ease-out, ease),
+    transform var(--dur-quick, 140ms) var(--ease-out, ease);
+}
+
+#app.react-desktop-app .view-cluster-summary::-webkit-details-marker {
+  display: none;
+}
+/* In the dock the cluster is a glyph like its neighbours; its title names it. */
+#app.react-desktop-app #menu-bottom .view-cluster-summary {
+  width: 38px;
+  padding: 0;
+  justify-content: center;
+}
+#app.react-desktop-app #menu-bottom .view-cluster-summary span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+#app.react-desktop-app .view-cluster-summary:hover {
+  background: color-mix(in oklab, var(--react-ink) 8%, transparent);
+  color: var(--react-ink);
+}
+#app.react-desktop-app .view-cluster-summary:active {
+  transform: scale(0.96);
+}
+#app.react-desktop-app .view-cluster[open] .view-cluster-summary {
+  background: color-mix(in oklab, var(--react-ink) 10%, transparent);
+  color: var(--react-ink);
+}
+
+#app.react-desktop-app .view-cluster-panel {
+  position: absolute;
+  z-index: 30;
+  right: 0;
+  bottom: calc(100% + 8px);
+  display: grid;
+  gap: 9px;
+  width: 272px;
+  padding: 12px;
+  border: 1px solid var(--react-panel-edge);
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--panel-light), var(--react-panel));
+  box-shadow: 0 14px 34px -12px rgba(0, 0, 0, 0.8);
+}
+
+#app.react-desktop-app .view-tier {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+}
+
+#app.react-desktop-app .view-tier legend {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 4px;
+  color: var(--react-muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+#app.react-desktop-app .view-tier-hint {
+  letter-spacing: 0.04em;
+  text-transform: none;
+  opacity: 0.75;
+}
+#app.react-desktop-app .view-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#app.react-desktop-app .view-row-label {
+  color: var(--react-ink);
+  font-size: 0.76rem;
+}
+#app.react-desktop-app .view-choices {
+  display: inline-flex;
+  gap: 4px;
+}
+
+#app.react-desktop-app .view-choice {
+  min-height: 28px;
+  padding: 2px 9px;
+  border: 1px solid var(--control-edge);
+  border-radius: 8px;
+  background: var(--control-fill);
+  color: var(--react-muted);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#app.react-desktop-app .view-choice:hover {
+  border-color: var(--react-muted);
+  color: var(--react-ink);
+}
+
+#app.react-desktop-app .view-choice[aria-pressed='true'] {
+  border-color: currentColor;
+  background: linear-gradient(var(--control-top), var(--control-fill));
+  box-shadow: inset 0 1px 0 var(--surface-glint);
+  color: var(--react-ink);
+}
+
+/* The three tiers keep the interface's own accents, so a row is recognisable by
+   colour alone: comfort green, reading amber, board blue. */
+#app.react-desktop-app
+  .view-tier[data-tier='mini']
+  .view-choice[aria-pressed='true'] {
+  color: var(--react-green);
+}
+#app.react-desktop-app
+  .view-tier[data-tier='micro']
+  .view-choice[aria-pressed='true'] {
+  color: var(--react-orange);
+}
+#app.react-desktop-app
+  .view-tier[data-tier='nano']
+  .view-choice[aria-pressed='true'] {
+  color: var(--react-blue);
+}
+
+#app.react-desktop-app .view-reset {
+  justify-self: start;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--react-muted);
+  font-family: inherit;
+  font-size: 0.7rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+#app.react-desktop-app .view-reset:hover {
+  color: var(--react-ink);
+}
+
+/* ==========================================================================
+   7. Plain ladder.
+   With the rail switched off the chips drop their +/-25px zigzag and stand in a
+   straight column; the springs are not drawn at all (ClueSpring is not mounted).
+   ========================================================================== */
+#app.react-desktop-app[data-rail='on'] #across li,
+#app.react-desktop-app[data-rail='on'] #down li {
+  min-height: 100px;
+}
+
+/* Plain tier: the column stops moving. Some readers want a straight list, and
+   alignment is the calmer choice. */
+#app.react-desktop-app[data-rail='off'] #across .clue-number,
+#app.react-desktop-app[data-rail='off'] #down .clue-number {
+  transform: none;
+}
+
+/* ==========================================================================
+   8. Board size.
+   The stage column is the board's width less the overlap on each side
+   (section 0), so a larger board widens its column and the lanes give up the
+   space, while the board's outer edge always runs the same short way under
+   them. A mini puzzle's stage keeps room for the instruments, and the small
+   board simply floats in the middle of it.
+   ========================================================================== */
+#app.react-desktop-app #notmenu {
+  grid-template-columns: minmax(0, 1fr) max(var(--stage), 600px) minmax(0, 1fr);
+}
+
+/* The view panel scrolls rather than running past a short window. */
+#app.react-desktop-app .view-cluster-panel {
+  max-height: min(72dvh, 620px);
+  overflow: auto;
+}
+
+/* On paper the crossing chip's tinted ground is light, so its flame-coloured
+   numeral would fade into it; the ink numeral keeps the same hierarchy. */
+:root[style*='color-scheme: light']
+  #app.react-desktop-app[data-ramp='on']
+  :is(#across, #down)
+  li.affected-clue
+  .clue-number {
+  color: var(--react-ink) !important;
+}
+
+/* ==========================================================================
+   10. The board takes on the territory.
+   The two rainbows give every screen four corners of colour — the top and
+   bottom of the Across lane on the left, of the Down lane on the right — and
+   the reader learns where they are by them ("I'm in the yellow and the
+   purple"). The board answers with the same four, as light from behind it:
+   each corner of the grid is backlit in the hue of the clue showing in that
+   corner of the screen, and the bezel's hairline edge brightens toward each
+   corner in the same hue, so the ground the clues stand on carries the
+   territory too and drifts with it as the lanes scroll. CrosswordView
+   publishes the four ranks on the grid; they are registered numbers so the
+   hues glide rather than jump, and they do not inherit, so a drifting corner
+   repaints the grid's own edge and glow and never restyles a square. Number
+   colours Off keeps the plain edge.
+   ========================================================================== */
+@property --territory-across-top {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --territory-across-bottom {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --territory-down-top {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --territory-down-bottom {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --lit-across-top {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --lit-across-bottom {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --lit-down-top {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --lit-down-bottom {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --corner-tl {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+@property --corner-bl {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+@property --corner-tr {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+@property --corner-br {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+
+#app.react-desktop-app {
+  --backlight: 36%;
+  --edge-light: 85%;
+  /* 1 keeps each corner exactly the hue of the clue showing there. */
+  --territory-spread: 1;
+  /* The light spends a little more chroma than the numerals do, so hues a
+     screen apart still read apart once blurred. */
+  --glow-chroma: 1.3;
+}
+/* On paper light from behind reads as a stain, not a glow: the backlight
+   stays faint. */
+:root[style*='color-scheme: light'] #app.react-desktop-app {
+  --backlight: 14%;
+  --edge-light: 75%;
+}
+#app.react-desktop-app[data-luma='dim'] {
+  --backlight: 20%;
+  --edge-light: 62%;
+}
+#app.react-desktop-app[data-luma='veil'] {
+  --backlight: 12%;
+  --edge-light: 48%;
+}
+
+/* Each element that wears the territory computes it from the ranks published
+   on itself: the corners are exactly the hues of the clues showing in the
+   matching corners of the screen, so the light always agrees with the lanes.
+   (--territory-spread can widen the gap around each lane's middle; at 1 it
+   does not.) */
+#app.react-desktop-app[data-ramp='on'] :is(.board-glow, .grid) {
+  --lit-across-top: clamp(
+    0,
+    calc(
+      (var(--territory-across-top) + var(--territory-across-bottom)) / 2 +
+        (var(--territory-across-top) - (var(--territory-across-top) + var(--territory-across-bottom)) / 2) * var(--territory-spread)
+    ),
+    1
+  );
+  --lit-across-bottom: clamp(
+    0,
+    calc(
+      (var(--territory-across-top) + var(--territory-across-bottom)) / 2 +
+        (var(--territory-across-bottom) - (var(--territory-across-top) + var(--territory-across-bottom)) / 2) * var(--territory-spread)
+    ),
+    1
+  );
+  --lit-down-top: clamp(
+    0,
+    calc(
+      (var(--territory-down-top) + var(--territory-down-bottom)) / 2 +
+        (var(--territory-down-top) - (var(--territory-down-top) + var(--territory-down-bottom)) / 2) * var(--territory-spread)
+    ),
+    1
+  );
+  --lit-down-bottom: clamp(
+    0,
+    calc(
+      (var(--territory-down-top) + var(--territory-down-bottom)) / 2 +
+        (var(--territory-down-bottom) - (var(--territory-down-top) + var(--territory-down-bottom)) / 2) * var(--territory-spread)
+    ),
+    1
+  );
+  --corner-tl: oklch(
+    calc(var(--ramp-lightness) + var(--across-lift) + var(--across-l0) + var(--across-l1) * var(--lit-across-top) + var(--across-l2) * var(--lit-across-top) * var(--lit-across-top))
+      calc(var(--ramp-chroma) * var(--glow-chroma))
+      calc(var(--across-arc-start) + var(--lit-across-top) * (var(--across-arc-end) - var(--across-arc-start)))
+  );
+  --corner-bl: oklch(
+    calc(var(--ramp-lightness) + var(--across-lift) + var(--across-l0) + var(--across-l1) * var(--lit-across-bottom) + var(--across-l2) * var(--lit-across-bottom) * var(--lit-across-bottom))
+      calc(var(--ramp-chroma) * var(--glow-chroma))
+      calc(var(--across-arc-start) + var(--lit-across-bottom) * (var(--across-arc-end) - var(--across-arc-start)))
+  );
+  --corner-tr: oklch(
+    calc(var(--ramp-lightness) - var(--down-drop) + var(--down-l0) + var(--down-l1) * var(--lit-down-top) + var(--down-l2) * var(--lit-down-top) * var(--lit-down-top))
+      calc(var(--ramp-chroma) * var(--glow-chroma))
+      calc(var(--down-arc-start) + var(--lit-down-top) * (var(--down-arc-end) - var(--down-arc-start)))
+  );
+  --corner-br: oklch(
+    calc(var(--ramp-lightness) - var(--down-drop) + var(--down-l0) + var(--down-l1) * var(--lit-down-bottom) + var(--down-l2) * var(--lit-down-bottom) * var(--lit-down-bottom))
+      calc(var(--ramp-chroma) * var(--glow-chroma))
+      calc(var(--down-arc-start) + var(--lit-down-bottom) * (var(--down-arc-end) - var(--down-arc-start)))
+  );
+  transition:
+    --territory-across-top 900ms var(--ease-out, ease),
+    --territory-across-bottom 900ms var(--ease-out, ease),
+    --territory-down-top 900ms var(--ease-out, ease),
+    --territory-down-bottom 900ms var(--ease-out, ease);
+}
+
+/* The edge: a conic sweep around the board's centre, so each side blends from
+   one corner's hue through the plain edge to the next corner's. */
+#app.react-desktop-app[data-ramp='on'] .grid {
+  border-image: conic-gradient(
+      var(--board-edge) 0deg,
+      color-mix(in oklab, var(--corner-tr) var(--edge-light), var(--board-edge)) 45deg,
+      var(--board-edge) 90deg,
+      color-mix(in oklab, var(--corner-br) var(--edge-light), var(--board-edge)) 135deg,
+      var(--board-edge) 180deg,
+      color-mix(in oklab, var(--corner-bl) var(--edge-light), var(--board-edge)) 225deg,
+      var(--board-edge) 270deg,
+      color-mix(in oklab, var(--corner-tl) var(--edge-light), var(--board-edge)) 315deg,
+      var(--board-edge) 360deg
+    )
+    1;
+}
+
+/* The backlight: four lights on their own layer behind the board, each
+   centred on one of the board's corners and fading along the two sides that
+   meet there before the next corner's light begins. The layer reaches out
+   past the board by the glow's own room and fades to nothing at its rim, so
+   no light is ever cut off by a box edge. */
+#app.react-desktop-app #crossword-container {
+  position: relative;
+  isolation: isolate;
+}
+#app.react-desktop-app .board-glow {
+  display: none;
+}
+#app.react-desktop-app[data-ramp='on'] .board-glow {
+  --glow-room: calc(var(--cell-size) * 2.4);
+  position: absolute;
+  z-index: -1;
+  inset: calc(-1 * var(--glow-room))
+    calc(-1 * (var(--glow-room) + var(--overlap-px, 0px)));
+  display: block;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      50% 46% at var(--glow-room) var(--glow-room),
+      color-mix(
+          in oklab,
+          var(--corner-tl) calc(var(--backlight) * max(var(--libido, 1), 0.3)),
+          transparent
+        )
+        0,
+      transparent 100%
+    ),
+    radial-gradient(
+      50% 46% at calc(100% - var(--glow-room)) var(--glow-room),
+      color-mix(
+          in oklab,
+          var(--corner-tr) calc(var(--backlight) * max(var(--libido, 1), 0.3)),
+          transparent
+        )
+        0,
+      transparent 100%
+    ),
+    radial-gradient(
+      50% 46% at var(--glow-room) calc(100% - var(--glow-room)),
+      color-mix(
+          in oklab,
+          var(--corner-bl) calc(var(--backlight) * max(var(--libido, 1), 0.3)),
+          transparent
+        )
+        0,
+      transparent 100%
+    ),
+    radial-gradient(
+      50% 46% at calc(100% - var(--glow-room)) calc(100% - var(--glow-room)),
+      color-mix(
+          in oklab,
+          var(--corner-br) calc(var(--backlight) * max(var(--libido, 1), 0.3)),
+          transparent
+        )
+        0,
+      transparent 100%
+    );
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent, #000 var(--glow-room), #000 calc(100% - var(--glow-room)), transparent),
+    linear-gradient(180deg, transparent, #000 var(--glow-room), #000 calc(100% - var(--glow-room)), transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent, #000 var(--glow-room), #000 calc(100% - var(--glow-room)), transparent),
+    linear-gradient(180deg, transparent, #000 var(--glow-room), #000 calc(100% - var(--glow-room)), transparent);
+  mask-composite: intersect;
+}
+
+
+/* ==========================================================================
+   11. Libido, and what remains.
+   The notches are where the board wants: each one the open address of a
+   word not yet said. The board holds one charge of that light and shares it
+   among the words still open. CrosswordView publishes how much of the
+   puzzle remains (--remaining, 1 down to 0) and how much libido the solve
+   has kept (--libido, from the score: every check and reveal drains it).
+   - At the start the charge is spread thin over every notch, and the short
+     spills of light overlap into a soft, smudged board.
+   - Each solved word goes out: its spill leaves the board, its squares flare
+     once as the word settles into the grid and then rest as clean paper with
+     only a trace of its hue in the letters, and its notch contracts to a
+     single point — the remainder the closing could not absorb. A finished
+     board is a dark, whole lattice dotted with these leftovers.
+   - The charge a word gave up flows into the notches still open (the inverse
+     square root of what remains), so the board clears from smudge into a few
+     intense lights, and the last notch carries nearly all of it.
+   - A low score dims every light at once, backlight included: the board
+     loses its desire along with the points.
+   Transitions carry the flow, so the light drains and gathers rather than
+   jumping; reduced motion keeps the states and drops the drift.
+   ========================================================================== */
+@property --settle {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+#app.react-desktop-app {
+  --remaining: 1;
+  --libido: 1;
+  --charge: clamp(
+    0.18,
+    calc(var(--libido) * pow(max(var(--remaining), 0.05), -0.5)),
+    2.6
+  );
+  --tick-glow: calc(6px * var(--charge));
+  --tick-glow-alpha: min(96%, calc(62% * var(--charge)));
+  --tick-core: min(78%, calc(44% * var(--charge)));
+  --spill-alpha: min(30%, calc(var(--spot-alpha) * var(--charge)));
+}
+
+/* The open words' spills draw on the charge; a solved word's spill is gone. */
+#app.react-desktop-app .grid-cell:not(.black-cell) {
+  --spot-a-alpha: var(--spill-alpha);
+  --spot-d-alpha: var(--spill-alpha);
+}
+#app.react-desktop-app .grid-cell[data-solved~='across'] {
+  --spot-a-alpha: 0%;
+}
+#app.react-desktop-app .grid-cell[data-solved~='down'] {
+  --spot-d-alpha: 0%;
+}
+
+/* Settling in: one flare inside the solved word's squares, in its own hue,
+   fading to clean paper; the letters keep a trace of the hue. */
+#app.react-desktop-app .grid-cell[data-solved] {
+  --solved-tint: var(--react-green);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .grid-cell[data-solved='across'] {
+  --solved-tint: var(--spot-acolor);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .grid-cell[data-solved='down'] {
+  --solved-tint: var(--spot-dcolor);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .grid-cell[data-solved='across down'] {
+  --solved-tint: color-mix(in oklab, var(--spot-acolor), var(--spot-dcolor));
+}
+#app.react-desktop-app[data-ramp]
+  .grid-cell[data-solved]:not([data-entry-index]):not(:focus-within) {
+  box-shadow:
+    inset 0 1px 0 var(--cell-glint),
+    inset 0 0 calc(var(--cell-size) * 0.55)
+      color-mix(
+        in oklab,
+        var(--solved-tint) calc(58% * var(--settle)),
+        transparent
+      );
+  animation: solved-settle 1800ms var(--ease-out, ease-out) both;
+}
+#app.react-desktop-app[data-ramp]
+  .grid-cell[data-solved]:not([data-entry-index]):not(:focus-within)
+  input:not(.red):not(.green) {
+  color: color-mix(in oklab, var(--react-ink) 80%, var(--solved-tint));
+}
+@keyframes solved-settle {
+  from {
+    --settle: 1;
+  }
+  to {
+    --settle: 0;
+  }
+}
+
+/* The flow: notches drain and gather rather than jump. */
+#app.react-desktop-app[data-cues='on'] .black-cell::before,
+#app.react-desktop-app[data-cues='on'] .black-cell::after,
+#app.react-desktop-app[data-cues='on'] .grid-cell[data-start]::before {
+  transition:
+    transform 1100ms var(--ease-out, ease),
+    opacity 900ms var(--ease-out, ease),
+    box-shadow 900ms var(--ease-out, ease);
+}
+
+/* What remains: a solved word's notch contracts to one point of light. */
+#app.react-desktop-app[data-cues='on']
+  .black-cell[data-gate-solved~='e']::before {
+  opacity: 0.85;
+  transform: translateY(-50%) scaleY(0.09);
+  box-shadow: 0 0 3px color-mix(in oklab, var(--tick-across) 50%, transparent);
+}
+#app.react-desktop-app[data-cues='on']
+  .black-cell[data-gate-solved~='s']::after {
+  opacity: 0.85;
+  transform: translateX(-50%) scaleX(0.09);
+  box-shadow: 0 0 3px color-mix(in oklab, var(--tick-down) 50%, transparent);
+}
+#app.react-desktop-app[data-cues='on']
+  .grid
+  > .grid-row
+  > .grid-cell[data-start~='across'][data-solved~='across']:first-child:not(
+    :focus-within
+  )::before {
+  opacity: 0.85;
+  transform: scaleY(0.09);
+}
+#app.react-desktop-app[data-cues='on']
+  .grid
+  > .grid-row:first-child
+  > .grid-cell[data-start~='down'][data-solved~='down']:not(
+    :focus-within
+  )::before {
+  opacity: 0.85;
+  transform: scaleX(0.09);
+}
+
+/* ==========================================================================
+   9. Still light.
+   The selection's ignition is decoration: under prefers-reduced-motion it
+   stops and only the light remains. desktop.css already switches off every
+   animation in this tree with !important; this mirrors the three igniting selectors
+   exactly (later, same specificity) so the rainbow's motion contract lives
+   with the rainbow even if that blanket switch ever moves.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  #app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index],
+  #app.react-desktop-app[data-ramp='on'] .grid-cell:focus-within,
+  #app.react-desktop-app[data-ramp='on']
+    :is(#across, #down)
+    li.highlighted-clue:not([data-rapture])
+    .clue-number {
+    animation: none;
+  }
+}

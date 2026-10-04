@@ -1,0 +1,200 @@
+{
+  "evaluationVersion": "private-fill-quality-study-v1",
+  "kind": "private-fill-quality-study",
+  "scope": "fixed-seed-native-fill-study",
+  "studyId": "synthetic-fixed-seed-fixture",
+  "recipeId": "private-wednesday-v1",
+  "status": "observed",
+  "uncertainty": {
+    "fillQuality": "xfill-heuristic-not-human-quality",
+    "humanSolveProbability": "unmeasured",
+    "clueFairness": "unmeasured",
+    "playerEnjoyment": "unmeasured"
+  },
+  "inputs": {
+    "requestedSeeds": [
+      7,
+      9,
+      11
+    ],
+    "observedSeeds": [
+      7,
+      9
+    ],
+    "missingSeeds": [
+      11
+    ],
+    "caseCount": 2,
+    "maxSeeds": 32
+  },
+  "summary": {
+    "caseCount": 2,
+    "selectedCaseCount": 2,
+    "measuredAttemptCount": 3,
+    "unavailableAttemptCount": 1,
+    "usableAttemptCount": 3,
+    "failedOrRejectedAttemptCount": 1,
+    "retryCount": {
+      "observed": 2,
+      "missing": 0,
+      "sum": 4.0,
+      "mean": 2.0,
+      "median": 2.0,
+      "minimum": 2.0,
+      "maximum": 2.0
+    },
+    "meanScore": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 238.3,
+      "mean": 79.433,
+      "median": 80.0,
+      "minimum": 77.1,
+      "maximum": 81.2
+    },
+    "minimumScore": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 160.0,
+      "mean": 53.333,
+      "median": 55.0,
+      "minimum": 48.0,
+      "maximum": 57.0
+    },
+    "entryCount": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 210.0,
+      "mean": 70.0,
+      "median": 70.0,
+      "minimum": 70.0,
+      "maximum": 70.0
+    },
+    "iffyCount": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 4.0,
+      "mean": 1.333,
+      "median": 1.0,
+      "minimum": 0.0,
+      "maximum": 3.0
+    },
+    "weakCount": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 14.0,
+      "mean": 4.667,
+      "median": 4.0,
+      "minimum": 2.0,
+      "maximum": 8.0
+    },
+    "themeCount": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 11.0,
+      "mean": 3.667,
+      "median": 4.0,
+      "minimum": 3.0,
+      "maximum": 4.0
+    },
+    "selectedMeanScore": {
+      "observed": 2,
+      "missing": 0,
+      "sum": 161.2,
+      "mean": 80.6,
+      "median": 80.6,
+      "minimum": 80.0,
+      "maximum": 81.2
+    },
+    "selectedIffyCount": {
+      "observed": 2,
+      "missing": 0,
+      "sum": 1.0,
+      "mean": 0.5,
+      "median": 0.5,
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "selectedWeakCount": {
+      "observed": 2,
+      "missing": 0,
+      "sum": 6.0,
+      "mean": 3.0,
+      "median": 3.0,
+      "minimum": 2.0,
+      "maximum": 4.0
+    }
+  },
+  "acceptance": {
+    "status": "observed",
+    "policy": "fewest-iffy-then-theme-floor-then-weak-then-mean-then-min",
+    "humanQualityGate": "not-applied",
+    "reason": "native scores compare fixed-seed retries; they do not gate private play"
+  },
+  "cases": [
+    {
+      "seed": 7,
+      "selectedAttempt": 2,
+      "attempts": [
+        {
+          "label": "theme-locked-primary",
+          "seed": 7,
+          "status": "candidate",
+          "quality": {
+            "status": "measured",
+            "uncertainty": "xfill-heuristic-not-human-quality",
+            "entryCount": 70,
+            "iffyCount": 3,
+            "weakCount": 8,
+            "themeCount": 4,
+            "meanScore": 77.1,
+            "minimumScore": 48.0
+          }
+        },
+        {
+          "label": "theme-locked-reseed",
+          "seed": 1007,
+          "status": "candidate",
+          "quality": {
+            "status": "measured",
+            "uncertainty": "xfill-heuristic-not-human-quality",
+            "entryCount": 70,
+            "iffyCount": 1,
+            "weakCount": 4,
+            "themeCount": 4,
+            "meanScore": 80.0,
+            "minimumScore": 55.0
+          }
+        }
+      ]
+    },
+    {
+      "seed": 9,
+      "selectedAttempt": 1,
+      "attempts": [
+        {
+          "label": "theme-locked-primary",
+          "seed": 9,
+          "status": "candidate",
+          "quality": {
+            "status": "measured",
+            "uncertainty": "xfill-heuristic-not-human-quality",
+            "entryCount": 70,
+            "iffyCount": 0,
+            "weakCount": 2,
+            "themeCount": 3,
+            "meanScore": 81.2,
+            "minimumScore": 57.0
+          }
+        },
+        {
+          "label": "open-grid-reseed",
+          "seed": 2009,
+          "status": "failed",
+          "reason": "bounded-native-timeout"
+        }
+      ]
+    }
+  ],
+  "studyDigest": "sha256:8d0674b44c58a1564bd57302a67f953c51ab3a7e84c4d65db9ad1c0c6d347fce"
+}

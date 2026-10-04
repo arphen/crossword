@@ -1,0 +1,203 @@
+{
+  "evaluationVersion": "private-fill-quality-study-v1",
+  "kind": "private-fill-quality-study",
+  "scope": "fixed-seed-native-fill-study",
+  "studyId": "real-gemma4-26b-wednesday-recovery-20260928",
+  "recipeId": "private-wednesday-v1",
+  "status": "observed",
+  "uncertainty": {
+    "fillQuality": "xfill-heuristic-not-human-quality",
+    "humanSolveProbability": "unmeasured",
+    "clueFairness": "unmeasured",
+    "playerEnjoyment": "unmeasured"
+  },
+  "inputs": {
+    "requestedSeeds": [
+      137
+    ],
+    "observedSeeds": [
+      137
+    ],
+    "missingSeeds": [],
+    "caseCount": 1,
+    "maxSeeds": 32
+  },
+  "summary": {
+    "caseCount": 1,
+    "selectedCaseCount": 1,
+    "measuredAttemptCount": 3,
+    "unavailableAttemptCount": 1,
+    "usableAttemptCount": 3,
+    "failedOrRejectedAttemptCount": 1,
+    "retryCount": {
+      "observed": 1,
+      "missing": 0,
+      "sum": 4.0,
+      "mean": 4.0,
+      "median": 4.0,
+      "minimum": 4.0,
+      "maximum": 4.0
+    },
+    "meanScore": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 233.22,
+      "mean": 77.74,
+      "median": 78.63,
+      "minimum": 75.14,
+      "maximum": 79.45
+    },
+    "minimumScore": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 155.0,
+      "mean": 51.667,
+      "median": 55.0,
+      "minimum": 45.0,
+      "maximum": 55.0
+    },
+    "entryCount": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 228.0,
+      "mean": 76.0,
+      "median": 76.0,
+      "minimum": 74.0,
+      "maximum": 78.0
+    },
+    "iffyCount": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 4.0,
+      "mean": 1.333,
+      "median": 0.0,
+      "minimum": 0.0,
+      "maximum": 4.0
+    },
+    "weakCount": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 61.0,
+      "mean": 20.333,
+      "median": 20.0,
+      "minimum": 17.0,
+      "maximum": 24.0
+    },
+    "themeCount": {
+      "observed": 3,
+      "missing": 0,
+      "sum": 8.0,
+      "mean": 2.667,
+      "median": 4.0,
+      "minimum": 0.0,
+      "maximum": 4.0
+    },
+    "selectedMeanScore": {
+      "observed": 1,
+      "missing": 0,
+      "sum": 79.45,
+      "mean": 79.45,
+      "median": 79.45,
+      "minimum": 79.45,
+      "maximum": 79.45
+    },
+    "selectedIffyCount": {
+      "observed": 1,
+      "missing": 0,
+      "sum": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "minimum": 0.0,
+      "maximum": 0.0
+    },
+    "selectedWeakCount": {
+      "observed": 1,
+      "missing": 0,
+      "sum": 17.0,
+      "mean": 17.0,
+      "median": 17.0,
+      "minimum": 17.0,
+      "maximum": 17.0
+    }
+  },
+  "acceptance": {
+    "status": "observed",
+    "policy": "fewest-iffy-then-theme-floor-then-weak-then-mean-then-min",
+    "humanQualityGate": "not-applied",
+    "reason": "native scores compare fixed-seed retries; they do not gate private play"
+  },
+  "cases": [
+    {
+      "seed": 137,
+      "recipe": "wednesday-private-v1",
+      "selectedAttempt": 1,
+      "attempts": [
+        {
+          "label": "theme-locked-primary",
+          "seed": 137,
+          "status": "candidate",
+          "quality": {
+            "status": "measured",
+            "uncertainty": "xfill-heuristic-not-human-quality",
+            "entryCount": 78,
+            "iffyCount": 0,
+            "weakCount": 17,
+            "themeCount": 4,
+            "meanScore": 79.45,
+            "minimumScore": 55.0
+          },
+          "boardDigest": "f6d30b777495e00d6ebce1b51f0fb25cefb19cdaab203f37e00287d19f588603",
+          "sourceDigest": "sha256:0d003853979c22a4b6a363b231a135c0b23dab5bc99272ebfe841612924a71eb"
+        },
+        {
+          "label": "reduced-theme-fallback",
+          "seed": 137,
+          "status": "failed",
+          "reason": "/Users/arphen/projectc/crossword-generator/vendor/xfill/target/release/theme exited 1: theme placements (canonical; per-candidate variants are sampled):\n  RESONANCE -> r7c1 A len9   RESONANCE\nblocklist: excluding 5 word(s)\nsupplemental: 39 "
+        },
+        {
+          "label": "theme-locked-reseed",
+          "seed": 104866,
+          "status": "candidate",
+          "quality": {
+            "status": "measured",
+            "uncertainty": "xfill-heuristic-not-human-quality",
+            "entryCount": 74,
+            "iffyCount": 4,
+            "weakCount": 24,
+            "themeCount": 4,
+            "meanScore": 75.14,
+            "minimumScore": 45.0
+          },
+          "boardDigest": "28c07091fae153290eb368fdddacc0a72a759c26152c2050863413eaf64b1290",
+          "sourceDigest": "sha256:0d003853979c22a4b6a363b231a135c0b23dab5bc99272ebfe841612924a71eb"
+        },
+        {
+          "label": "open-grid-reseed",
+          "seed": 209595,
+          "status": "candidate",
+          "quality": {
+            "status": "measured",
+            "uncertainty": "xfill-heuristic-not-human-quality",
+            "entryCount": 76,
+            "iffyCount": 0,
+            "weakCount": 20,
+            "themeCount": 0,
+            "meanScore": 78.63,
+            "minimumScore": 55.0
+          },
+          "boardDigest": "110755e133d344e0cc53a2efb369010634b2599d23b8dbad2675350d051b54a4",
+          "sourceDigest": "sha256:0d003853979c22a4b6a363b231a135c0b23dab5bc99272ebfe841612924a71eb"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "transport": "loopback-http",
+    "baseUrl": "http://127.0.0.1:5001",
+    "weekday": "wednesday",
+    "model": "gemma4:26b",
+    "seedCount": 1
+  },
+  "studyDigest": "sha256:be8e77c0fd6e6ab9b40f3a9f97093f56df6f7e83193611a96df05eb188877168"
+}

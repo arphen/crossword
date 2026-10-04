@@ -1,0 +1,134 @@
+{
+  "version": "private-host-model-tiers-v1",
+  "generatedAt": "2026-10-01T16:56:17+00:00",
+  "claim": "measured decode tok/s and resident bytes per installed tag; never a quality claim",
+  "host": {
+    "platform": "macOS-15.7.9-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "totalRamBytes": 17179869184,
+    "freeDiskBytes": 14837571584
+  },
+  "registry": {
+    "tiers": {
+      "large": [
+        "gemma4:26b",
+        "qwen3.8:27b",
+        "gemma4:31b",
+        "gemma3:27b"
+      ],
+      "local-small": [
+        "llama3.2:3b",
+        "gemma3:4b"
+      ],
+      "fixture": []
+    },
+    "memoryCeilingsBytes": {
+      "gemma4:26b": 18000000000,
+      "qwen3.8:27b": 18000000000,
+      "gemma4:31b": 20000000000,
+      "gemma3:27b": 18000000000,
+      "llama3.2:3b": 3000000000,
+      "gemma3:4b": 4500000000
+    },
+    "sampling": {
+      "large": {
+        "topP": null,
+        "numCtx": null,
+        "seed": null
+      },
+      "local-small": {
+        "topP": null,
+        "numCtx": 8192,
+        "seed": null
+      },
+      "fixture": {
+        "topP": null,
+        "numCtx": null,
+        "seed": null
+      }
+    }
+  },
+  "lanes": [
+    {
+      "tag": "gemma4:26b",
+      "installed": false
+    },
+    {
+      "tag": "qwen3.8:27b",
+      "installed": false
+    },
+    {
+      "tag": "gemma4:31b",
+      "installed": false
+    },
+    {
+      "tag": "gemma3:27b",
+      "installed": false
+    },
+    {
+      "tag": "llama3.2:3b",
+      "tier": "local-small",
+      "installed": true,
+      "installedBytes": 2019393189,
+      "digest": "a80c4f17acd55265fee",
+      "residentBytes": 2500000000,
+      "memoryCeilingBytes": 3000000000,
+      "admissibleOnThisHost": true,
+      "sampling": {
+        "topP": null,
+        "numCtx": 8192,
+        "seed": null
+      },
+      "probe": {
+        "measured": true,
+        "wallSeconds": 0.066,
+        "evalCount": 2,
+        "tokPerSec": 72.14,
+        "response": "READY"
+      }
+    },
+    {
+      "tag": "gemma3:4b",
+      "tier": "local-small",
+      "installed": true,
+      "installedBytes": 3338801804,
+      "digest": "a2af6cc3eb7fa8be850",
+      "residentBytes": 3700000000,
+      "memoryCeilingBytes": 4500000000,
+      "admissibleOnThisHost": true,
+      "sampling": {
+        "topP": null,
+        "numCtx": 8192,
+        "seed": null
+      },
+      "probe": {
+        "measured": true,
+        "wallSeconds": 0.218,
+        "evalCount": 3,
+        "tokPerSec": 37.79,
+        "response": "READY\n"
+      }
+    }
+  ],
+  "playableBoard": {
+    "model": "llama3.2:3b",
+    "seed": 6103,
+    "weekday": "monday",
+    "entries": 74,
+    "issueCount": 0,
+    "fallbackCount": 74,
+    "timingsSeconds": {
+      "clueGeneration": 161.175,
+      "nativeXfill": 30.735,
+      "themeProposal": 7.631,
+      "total": 199.809
+    },
+    "source": "/tmp/q06-board.json"
+  },
+  "knownLimits": [
+    "tok/s is one warmed 16-token probe, not a generation benchmark",
+    "resident size is best-effort ollama ps parsing at measure time",
+    "admissibility compares the ceiling to total RAM, not live pressure"
+  ],
+  "receiptDigest": "sha256:13c1607befe0bfcbf33c588e2fc3ecd0c9eb48a1024f695669870b8784b7f345"
+}

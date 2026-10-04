@@ -1,0 +1,64 @@
+{
+  "version": "private-clue-family-chisquare-v1",
+  "generatedAt": "2026-10-03T06:39:28+00:00",
+  "kind": "counts-only",
+  "claim": "family-mix divergence against the measured published mix, same weekday",
+  "knownLimits": [
+    "benchmark n is ~14, so the asymptotic chi-square p-value is invalid; the Monte Carlo p-value is the one to read",
+    "expected cells under 5 are listed and make the statistic fragile",
+    "a 15-entry benchmark cannot resolve a family mix to editorial precision; treat a non-significant result as inconclusive"
+  ],
+  "summary": {
+    "label": "probe-champ-strict4-seed-6200",
+    "weekday": "monday",
+    "n": 14,
+    "chiSquare": 1.2235,
+    "degreesOfFreedom": 6,
+    "monteCarloPValue": 0.6969,
+    "divergesAt95": false,
+    "observed": {
+      "definition": 14,
+      "factual-relation": 0,
+      "fill-blank": 0,
+      "metalinguistic": 0,
+      "nonverbal-expression": 0,
+      "pseudo-pun": 0,
+      "pun": 0
+    },
+    "expectedShare": {
+      "definition": 0.91963,
+      "factual-relation": 0.00866,
+      "fill-blank": 0.06432,
+      "metalinguistic": 0.0009,
+      "nonverbal-expression": 0.00014,
+      "pseudo-pun": 0.00613,
+      "pun": 0.00023
+    },
+    "thinExpectedCells": [
+      [
+        "factual-relation",
+        0.12
+      ],
+      [
+        "fill-blank",
+        0.9
+      ],
+      [
+        "metalinguistic",
+        0.01
+      ],
+      [
+        "nonverbal-expression",
+        0.0
+      ],
+      [
+        "pseudo-pun",
+        0.09
+      ],
+      [
+        "pun",
+        0.0
+      ]
+    ]
+  }
+}

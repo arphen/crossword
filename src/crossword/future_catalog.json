@@ -1,0 +1,2568 @@
+{
+  "version": 1,
+  "objects": [
+    {
+      "id": "thread",
+      "label": "A red thread",
+      "words": ["tension", "weaving", "connection", "labyrinth"],
+      "companions": ["fork", "map", "dots", "seed"]
+    },
+    {
+      "id": "stone",
+      "label": "A river stone",
+      "words": ["river", "time", "erosion", "stillness"],
+      "companions": ["shell", "orbit", "map", "fork"]
+    },
+    {
+      "id": "cube",
+      "label": "A blue glass cube",
+      "words": ["light", "geometry", "reflection", "architecture"],
+      "companions": ["orbit", "seed", "dots", "shell"]
+    },
+    {
+      "id": "key",
+      "label": "A brass key",
+      "words": ["threshold", "chamber", "discovery", "lock"],
+      "companions": ["map", "shell", "fork", "orbit"]
+    },
+    {
+      "id": "circle",
+      "label": "An unfinished circle",
+      "words": ["orbit", "opening", "cycle", "continuation"],
+      "companions": ["seed", "dots", "fork", "map"]
+    },
+    {
+      "id": "zero",
+      "label": "The number zero",
+      "words": ["origin", "infinity", "nothing", "possibility"],
+      "companions": ["dots", "orbit", "shell", "seed"]
+    }
+  ],
+  "companions": [
+    {
+      "id": "fork",
+      "label": "A tuning fork",
+      "words": ["resonance", "music", "frequency"]
+    },
+    {
+      "id": "map",
+      "label": "A folded map",
+      "words": ["wandering", "landscape", "cartography"]
+    },
+    {
+      "id": "dots",
+      "label": "Two offset dots",
+      "words": ["interval", "dialogue", "counterpoint"]
+    },
+    {
+      "id": "seed",
+      "label": "A pale seed",
+      "words": ["germination", "botany", "becoming"]
+    },
+    {
+      "id": "shell",
+      "label": "A spiral shell",
+      "words": ["sea", "spiral", "echo"]
+    },
+    {
+      "id": "orbit",
+      "label": "An orbit",
+      "words": ["astronomy", "motion", "return"]
+    }
+  ],
+  "traces": [
+    "echo",
+    "elsewhere",
+    "moss",
+    "03:17",
+    "almost",
+    "∴",
+    "afterglow",
+    "threshold",
+    "salt",
+    "between",
+    "again",
+    "?"
+  ],
+  "days": [
+    {
+      "id": "monday",
+      "short": "Mon",
+      "label": "Monday",
+      "title": "A soft landing.",
+      "description": "Clear clues, familiar words, and plenty of places to begin.",
+      "level": 1
+    },
+    {
+      "id": "tuesday",
+      "short": "Tue",
+      "label": "Tuesday",
+      "title": "A little room to wander.",
+      "description": "An inviting theme, with a few more turns along the way.",
+      "level": 2
+    },
+    {
+      "id": "wednesday",
+      "short": "Wed",
+      "label": "Wednesday",
+      "title": "Just enough to get lost.",
+      "description": "Playful clues, satisfying connections, and a little resistance.",
+      "level": 3
+    },
+    {
+      "id": "thursday",
+      "short": "Thu",
+      "label": "Thursday",
+      "title": "Expect a change of rules.",
+      "description": "An inventive theme. Perhaps a rebus, a twist, or a different way to read the grid.",
+      "level": 4
+    },
+    {
+      "id": "friday",
+      "short": "Fri",
+      "label": "Friday",
+      "title": "Follow the long way round.",
+      "description": "A themeless puzzle, expressive long answers, and more oblique clues.",
+      "level": 5
+    },
+    {
+      "id": "saturday",
+      "short": "Sat",
+      "label": "Saturday",
+      "title": "Something to sit with.",
+      "description": "The most demanding clues. Give the connections time to arrive.",
+      "level": 6
+    },
+    {
+      "id": "sunday",
+      "short": "Sun",
+      "label": "Sunday",
+      "title": "Make an afternoon of it.",
+      "description": "A larger themed grid with a midweek feel. More room, rather than the hardest clues.",
+      "level": 3
+    }
+  ],
+  "languages": [
+    "None for now",
+    "French",
+    "German",
+    "Spanish",
+    "Italian",
+    "Portuguese",
+    "Japanese",
+    "Dutch"
+  ],
+  "stimuli": {
+    "version": 1,
+    "schema": "StimulusV1",
+    "kinds": [
+      "object",
+      "abstract_form",
+      "texture_material",
+      "color",
+      "numeral",
+      "word",
+      "typographic_mark"
+    ],
+    "items": [
+      {
+        "id": "thread-knot",
+        "version": 1,
+        "kind": "object",
+        "asset_ref": "catalog://future/stimuli/v1/thread-knot",
+        "description": "A short red thread crosses itself twice and rests in a loose curve.",
+        "accessible_label": "A red thread crossing itself in a loose curve.",
+        "language": null,
+        "facets": [
+          "thread",
+          "red",
+          "curved",
+          "crossing"
+        ],
+        "association_seeds": [
+          "weave",
+          "tension",
+          "route",
+          "stitch",
+          "continuity"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/thread-knot",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "crossed-line",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "thread"
+        ]
+      },
+      {
+        "id": "river-stone",
+        "version": 1,
+        "kind": "object",
+        "asset_ref": "catalog://future/stimuli/v1/river-stone",
+        "description": "A low oval stone has a smooth grey surface and one pale band.",
+        "accessible_label": "A smooth grey oval stone with a pale band.",
+        "language": null,
+        "facets": [
+          "stone",
+          "oval",
+          "grey",
+          "smooth"
+        ],
+        "association_seeds": [
+          "river",
+          "weight",
+          "shore",
+          "weathering",
+          "pocket"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/river-stone",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "rounded-solid",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "stone"
+        ]
+      },
+      {
+        "id": "glass-cube",
+        "version": 1,
+        "kind": "object",
+        "asset_ref": "catalog://future/stimuli/v1/glass-cube",
+        "description": "A transparent blue cube shows its front, top, and right faces.",
+        "accessible_label": "A transparent blue cube showing three faces.",
+        "language": null,
+        "facets": [
+          "glass",
+          "blue",
+          "cube",
+          "transparent"
+        ],
+        "association_seeds": [
+          "refraction",
+          "volume",
+          "window",
+          "angle",
+          "container"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/glass-cube",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "faceted-solid",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "cube"
+        ]
+      },
+      {
+        "id": "brass-key",
+        "version": 1,
+        "kind": "object",
+        "asset_ref": "catalog://future/stimuli/v1/brass-key",
+        "description": "A small brass key has a round bow and two teeth along its shaft.",
+        "accessible_label": "A small brass key with a round bow.",
+        "language": null,
+        "facets": [
+          "brass",
+          "metal",
+          "key",
+          "round"
+        ],
+        "association_seeds": [
+          "lock",
+          "teeth",
+          "turn",
+          "tool",
+          "threshold"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/brass-key",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "keyed-form",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "key"
+        ]
+      },
+      {
+        "id": "open-ring",
+        "version": 1,
+        "kind": "object",
+        "asset_ref": "catalog://future/stimuli/v1/open-ring",
+        "description": "A thin pale ring is open at the upper right with two blunt ends.",
+        "accessible_label": "A thin ring with a small gap at the upper right.",
+        "language": null,
+        "facets": [
+          "ring",
+          "open",
+          "thin",
+          "circular"
+        ],
+        "association_seeds": [
+          "arc",
+          "gap",
+          "loop",
+          "return",
+          "boundary"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/open-ring",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "open-loop",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "circle"
+        ]
+      },
+      {
+        "id": "folded-map",
+        "version": 1,
+        "kind": "object",
+        "asset_ref": "catalog://future/stimuli/v1/folded-map",
+        "description": "A folded paper map shows three panels and a fine route line.",
+        "accessible_label": "A folded map with a fine route line.",
+        "language": null,
+        "facets": [
+          "paper",
+          "folded",
+          "mapped",
+          "panelled"
+        ],
+        "association_seeds": [
+          "route",
+          "legend",
+          "fold",
+          "distance",
+          "landmark"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/folded-map",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "folded-plane",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "map"
+        ]
+      },
+      {
+        "id": "tuning-fork",
+        "version": 1,
+        "kind": "object",
+        "asset_ref": "catalog://future/stimuli/v1/tuning-fork",
+        "description": "A steel tuning fork has two parallel prongs and a narrow handle.",
+        "accessible_label": "A steel tuning fork with two parallel prongs.",
+        "language": null,
+        "facets": [
+          "steel",
+          "forked",
+          "parallel",
+          "upright"
+        ],
+        "association_seeds": [
+          "resonance",
+          "pitch",
+          "vibration",
+          "tone",
+          "frequency"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/tuning-fork",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "forked-form",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "fork"
+        ]
+      },
+      {
+        "id": "shell-whorl",
+        "version": 1,
+        "kind": "object",
+        "asset_ref": "catalog://future/stimuli/v1/shell-whorl",
+        "description": "A small shell has a visible spiral ridge and a rounded outer edge.",
+        "accessible_label": "A small shell with a spiral ridge.",
+        "language": null,
+        "facets": [
+          "shell",
+          "spiral",
+          "ridged",
+          "rounded"
+        ],
+        "association_seeds": [
+          "whorl",
+          "coast",
+          "growth",
+          "curve",
+          "shelter"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/shell-whorl",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "spiral-solid",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "shell"
+        ]
+      },
+      {
+        "id": "form-offset-arcs",
+        "version": 1,
+        "kind": "abstract_form",
+        "asset_ref": "catalog://future/stimuli/v1/form-offset-arcs",
+        "description": "Two incomplete arcs face each other with a narrow gap between their ends.",
+        "accessible_label": "Two facing arcs with a gap between them.",
+        "language": null,
+        "facets": [
+          "arc",
+          "paired",
+          "open",
+          "curved"
+        ],
+        "association_seeds": [
+          "orbit",
+          "interval",
+          "meeting",
+          "radius",
+          "return"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/form-offset-arcs",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "paired-curve",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "flip_horizontal",
+          "scale_uniform",
+          "translate"
+        ]
+      },
+      {
+        "id": "form-triangle-wire",
+        "version": 1,
+        "kind": "abstract_form",
+        "asset_ref": "catalog://future/stimuli/v1/form-triangle-wire",
+        "description": "Three fine straight strokes meet to outline an unfilled triangle.",
+        "accessible_label": "An outlined triangle made from three fine strokes.",
+        "language": null,
+        "facets": [
+          "triangle",
+          "line",
+          "angular",
+          "unfilled"
+        ],
+        "association_seeds": [
+          "vertex",
+          "frame",
+          "slope",
+          "three",
+          "edge"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/form-triangle-wire",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "polygon-outline",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "flip_horizontal",
+          "scale_uniform",
+          "translate"
+        ]
+      },
+      {
+        "id": "form-square-grid",
+        "version": 1,
+        "kind": "abstract_form",
+        "asset_ref": "catalog://future/stimuli/v1/form-square-grid",
+        "description": "A square field is divided by two horizontal and two vertical lines.",
+        "accessible_label": "A square divided into a regular grid.",
+        "language": null,
+        "facets": [
+          "square",
+          "grid",
+          "regular",
+          "divided"
+        ],
+        "association_seeds": [
+          "cell",
+          "coordinate",
+          "window",
+          "measure",
+          "matrix"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/form-square-grid",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "regular-grid",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "flip_horizontal",
+          "scale_uniform",
+          "translate"
+        ]
+      },
+      {
+        "id": "form-single-helix",
+        "version": 1,
+        "kind": "abstract_form",
+        "asset_ref": "catalog://future/stimuli/v1/form-single-helix",
+        "description": "A single continuous curve coils around an implied vertical axis.",
+        "accessible_label": "A single curve coiling around an upright axis.",
+        "language": null,
+        "facets": [
+          "curve",
+          "coil",
+          "vertical",
+          "continuous"
+        ],
+        "association_seeds": [
+          "spring",
+          "turn",
+          "spiral",
+          "axis",
+          "sequence"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/form-single-helix",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "coiling-line",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "flip_horizontal",
+          "scale_uniform",
+          "translate"
+        ]
+      },
+      {
+        "id": "form-wave-line",
+        "version": 1,
+        "kind": "abstract_form",
+        "asset_ref": "catalog://future/stimuli/v1/form-wave-line",
+        "description": "One horizontal line rises and falls in three even waves.",
+        "accessible_label": "A horizontal line with three even waves.",
+        "language": null,
+        "facets": [
+          "line",
+          "wave",
+          "horizontal",
+          "repeating"
+        ],
+        "association_seeds": [
+          "signal",
+          "rhythm",
+          "water",
+          "frequency",
+          "oscillation"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/form-wave-line",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "periodic-line",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "flip_horizontal",
+          "scale_uniform",
+          "translate"
+        ]
+      },
+      {
+        "id": "form-parallel-set",
+        "version": 1,
+        "kind": "abstract_form",
+        "asset_ref": "catalog://future/stimuli/v1/form-parallel-set",
+        "description": "Four equal straight lines run diagonally without touching.",
+        "accessible_label": "Four separate parallel diagonal lines.",
+        "language": null,
+        "facets": [
+          "line",
+          "parallel",
+          "diagonal",
+          "separate"
+        ],
+        "association_seeds": [
+          "direction",
+          "interval",
+          "track",
+          "alignment",
+          "slope"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/form-parallel-set",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "parallel-lines",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "flip_horizontal",
+          "scale_uniform",
+          "translate"
+        ]
+      },
+      {
+        "id": "form-point-cluster",
+        "version": 1,
+        "kind": "abstract_form",
+        "asset_ref": "catalog://future/stimuli/v1/form-point-cluster",
+        "description": "Two solid circles sit diagonally apart with a fine dotted line between them.",
+        "accessible_label": "Two offset dots joined by a fine dotted line.",
+        "language": null,
+        "facets": [
+          "dots",
+          "paired",
+          "offset",
+          "connected"
+        ],
+        "association_seeds": [
+          "interval",
+          "dialogue",
+          "counterpoint",
+          "pair",
+          "distance"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/form-point-cluster",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "offset-pair",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate"
+        ],
+        "legacy_ids": [
+          "dots"
+        ]
+      },
+      {
+        "id": "form-stepped-path",
+        "version": 1,
+        "kind": "abstract_form",
+        "asset_ref": "catalog://future/stimuli/v1/form-stepped-path",
+        "description": "An elliptical path surrounds a central circle, with a small marker on its outer edge.",
+        "accessible_label": "An elliptical orbit around a central circle.",
+        "language": null,
+        "facets": [
+          "ellipse",
+          "orbit",
+          "central",
+          "curved"
+        ],
+        "association_seeds": [
+          "path",
+          "revolution",
+          "astronomy",
+          "motion",
+          "return"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/form-stepped-path",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "orbital-diagram",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate"
+        ],
+        "legacy_ids": [
+          "orbit"
+        ]
+      },
+      {
+        "id": "surface-cotton-weave",
+        "version": 1,
+        "kind": "texture_material",
+        "asset_ref": "catalog://future/stimuli/v1/surface-cotton-weave",
+        "description": "A close view of pale cotton threads crossing in a regular over-under pattern.",
+        "accessible_label": "Pale cotton threads in a regular woven pattern.",
+        "language": null,
+        "facets": [
+          "cotton",
+          "woven",
+          "pale",
+          "repeating"
+        ],
+        "association_seeds": [
+          "fabric",
+          "warp",
+          "weft",
+          "cloth",
+          "grid"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/surface-cotton-weave",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "woven-swatch",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "surface-brushed-metal",
+        "version": 1,
+        "kind": "texture_material",
+        "asset_ref": "catalog://future/stimuli/v1/surface-brushed-metal",
+        "description": "A cool metal surface carries fine parallel brush marks.",
+        "accessible_label": "A cool metal surface with fine parallel marks.",
+        "language": null,
+        "facets": [
+          "metal",
+          "brushed",
+          "parallel",
+          "cool"
+        ],
+        "association_seeds": [
+          "grain",
+          "polish",
+          "tool",
+          "direction",
+          "reflection"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/surface-brushed-metal",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "linear-swatch",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "surface-corrugated-paper",
+        "version": 1,
+        "kind": "texture_material",
+        "asset_ref": "catalog://future/stimuli/v1/surface-corrugated-paper",
+        "description": "Thin ridges run across a matte paper surface at even intervals.",
+        "accessible_label": "Matte paper with evenly spaced ridges.",
+        "language": null,
+        "facets": [
+          "paper",
+          "ridged",
+          "matte",
+          "regular"
+        ],
+        "association_seeds": [
+          "fold",
+          "flute",
+          "package",
+          "interval",
+          "layer"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/surface-corrugated-paper",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "ribbed-swatch",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "surface-ceramic-glaze",
+        "version": 1,
+        "kind": "texture_material",
+        "asset_ref": "catalog://future/stimuli/v1/surface-ceramic-glaze",
+        "description": "A glazed ceramic tile has a smooth surface with a small pale highlight.",
+        "accessible_label": "A smooth glazed ceramic tile.",
+        "language": null,
+        "facets": [
+          "ceramic",
+          "glazed",
+          "smooth",
+          "tile"
+        ],
+        "association_seeds": [
+          "kiln",
+          "clay",
+          "coating",
+          "surface",
+          "firing"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/surface-ceramic-glaze",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "smooth-swatch",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "surface-cork-grain",
+        "version": 1,
+        "kind": "texture_material",
+        "asset_ref": "catalog://future/stimuli/v1/surface-cork-grain",
+        "description": "A tan cork surface shows scattered darker flecks of different sizes.",
+        "accessible_label": "A tan cork surface with scattered dark flecks.",
+        "language": null,
+        "facets": [
+          "cork",
+          "tan",
+          "speckled",
+          "porous"
+        ],
+        "association_seeds": [
+          "bark",
+          "cell",
+          "float",
+          "granule",
+          "texture"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/surface-cork-grain",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "speckled-swatch",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "surface-ribbed-rubber",
+        "version": 1,
+        "kind": "texture_material",
+        "asset_ref": "catalog://future/stimuli/v1/surface-ribbed-rubber",
+        "description": "A dark rubber strip has close parallel ridges running its length.",
+        "accessible_label": "A dark rubber strip with parallel ridges.",
+        "language": null,
+        "facets": [
+          "rubber",
+          "dark",
+          "ridged",
+          "parallel"
+        ],
+        "association_seeds": [
+          "grip",
+          "elastic",
+          "sole",
+          "traction",
+          "groove"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/surface-ribbed-rubber",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "ribbed-swatch",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "surface-wood-grain",
+        "version": 1,
+        "kind": "texture_material",
+        "asset_ref": "catalog://future/stimuli/v1/surface-wood-grain",
+        "description": "A light wood surface has narrow, gently curved grain lines.",
+        "accessible_label": "Light wood with narrow curved grain lines.",
+        "language": null,
+        "facets": [
+          "wood",
+          "light",
+          "grain",
+          "curved"
+        ],
+        "association_seeds": [
+          "ring",
+          "growth",
+          "board",
+          "grain",
+          "cut"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/surface-wood-grain",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "linear-swatch",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "surface-felt-fiber",
+        "version": 1,
+        "kind": "texture_material",
+        "asset_ref": "catalog://future/stimuli/v1/surface-felt-fiber",
+        "description": "A muted blue felt surface appears dense, soft, and evenly fibrous.",
+        "accessible_label": "Muted blue felt with a dense fibrous surface.",
+        "language": null,
+        "facets": [
+          "felt",
+          "blue",
+          "dense",
+          "fibrous"
+        ],
+        "association_seeds": [
+          "wool",
+          "fiber",
+          "mat",
+          "fabric",
+          "softness"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/surface-felt-fiber",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "soft-swatch",
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "color-cobalt",
+        "version": 1,
+        "kind": "color",
+        "asset_ref": "catalog://future/stimuli/v1/color-cobalt",
+        "description": "A flat, opaque square swatch of saturated cobalt blue.",
+        "accessible_label": "A flat cobalt blue square.",
+        "language": null,
+        "facets": [
+          "blue",
+          "cool",
+          "opaque",
+          "saturated"
+        ],
+        "association_seeds": [
+          "ultramarine",
+          "sky",
+          "pigment",
+          "ink",
+          "lapis"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/color-cobalt",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "opaque-color-swatch",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate"
+        ],
+        "swatch_hex": "#3157A4"
+      },
+      {
+        "id": "color-coral",
+        "version": 1,
+        "kind": "color",
+        "asset_ref": "catalog://future/stimuli/v1/color-coral",
+        "description": "A flat, opaque square swatch of coral red-orange.",
+        "accessible_label": "A flat coral red-orange square.",
+        "language": null,
+        "facets": [
+          "coral",
+          "warm",
+          "opaque",
+          "red-orange"
+        ],
+        "association_seeds": [
+          "salmon",
+          "reef",
+          "pigment",
+          "orange",
+          "vermilion"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/color-coral",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "opaque-color-swatch",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate"
+        ],
+        "swatch_hex": "#DF725E"
+      },
+      {
+        "id": "color-ochre",
+        "version": 1,
+        "kind": "color",
+        "asset_ref": "catalog://future/stimuli/v1/color-ochre",
+        "description": "A flat, opaque square swatch of muted ochre yellow.",
+        "accessible_label": "A flat muted ochre yellow square.",
+        "language": null,
+        "facets": [
+          "ochre",
+          "warm",
+          "opaque",
+          "yellow"
+        ],
+        "association_seeds": [
+          "earth",
+          "saffron",
+          "pigment",
+          "clay",
+          "gold"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/color-ochre",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "opaque-color-swatch",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate"
+        ],
+        "swatch_hex": "#D1A72D"
+      },
+      {
+        "id": "color-viridian",
+        "version": 1,
+        "kind": "color",
+        "asset_ref": "catalog://future/stimuli/v1/color-viridian",
+        "description": "A flat, opaque square swatch of deep green with a slight blue cast.",
+        "accessible_label": "A flat deep blue-green square.",
+        "language": null,
+        "facets": [
+          "green",
+          "cool",
+          "opaque",
+          "deep"
+        ],
+        "association_seeds": [
+          "teal",
+          "leaf",
+          "pigment",
+          "jade",
+          "cyan"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/color-viridian",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "opaque-color-swatch",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate"
+        ],
+        "swatch_hex": "#34816C"
+      },
+      {
+        "id": "color-violet",
+        "version": 1,
+        "kind": "color",
+        "asset_ref": "catalog://future/stimuli/v1/color-violet",
+        "description": "A flat, opaque square swatch of medium violet.",
+        "accessible_label": "A flat medium violet square.",
+        "language": null,
+        "facets": [
+          "violet",
+          "cool",
+          "opaque",
+          "medium"
+        ],
+        "association_seeds": [
+          "purple",
+          "iris",
+          "pigment",
+          "plum",
+          "mauve"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/color-violet",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "opaque-color-swatch",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate"
+        ],
+        "swatch_hex": "#78539A"
+      },
+      {
+        "id": "color-umber",
+        "version": 1,
+        "kind": "color",
+        "asset_ref": "catalog://future/stimuli/v1/color-umber",
+        "description": "A flat, opaque square swatch of dark umber brown.",
+        "accessible_label": "A flat dark umber brown square.",
+        "language": null,
+        "facets": [
+          "umber",
+          "warm",
+          "opaque",
+          "dark"
+        ],
+        "association_seeds": [
+          "brown",
+          "soil",
+          "pigment",
+          "coffee",
+          "bark"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/color-umber",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "opaque-color-swatch",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate"
+        ],
+        "swatch_hex": "#76513B"
+      },
+      {
+        "id": "color-ivory",
+        "version": 1,
+        "kind": "color",
+        "asset_ref": "catalog://future/stimuli/v1/color-ivory",
+        "description": "A flat, opaque square swatch of warm ivory white.",
+        "accessible_label": "A flat warm ivory white square.",
+        "language": null,
+        "facets": [
+          "ivory",
+          "warm",
+          "opaque",
+          "light"
+        ],
+        "association_seeds": [
+          "cream",
+          "paper",
+          "chalk",
+          "linen",
+          "bone"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/color-ivory",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "opaque-color-swatch",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate"
+        ],
+        "swatch_hex": "#F1E8D5"
+      },
+      {
+        "id": "color-charcoal",
+        "version": 1,
+        "kind": "color",
+        "asset_ref": "catalog://future/stimuli/v1/color-charcoal",
+        "description": "A flat, opaque square swatch of neutral charcoal grey.",
+        "accessible_label": "A flat neutral charcoal grey square.",
+        "language": null,
+        "facets": [
+          "charcoal",
+          "neutral",
+          "opaque",
+          "dark"
+        ],
+        "association_seeds": [
+          "graphite",
+          "slate",
+          "ash",
+          "pencil",
+          "stone"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/color-charcoal",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "opaque-color-swatch",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate"
+        ],
+        "swatch_hex": "#383B3D"
+      },
+      {
+        "id": "numeral-zero",
+        "version": 1,
+        "kind": "numeral",
+        "asset_ref": "catalog://future/stimuli/v1/numeral-zero",
+        "description": "The Arabic numeral 0 appears alone in a large, plain typeface.",
+        "accessible_label": "The numeral zero.",
+        "language": null,
+        "facets": [
+          "numeral",
+          "rounded",
+          "single",
+          "plain"
+        ],
+        "association_seeds": [
+          "circle",
+          "null",
+          "place",
+          "count",
+          "origin"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/numeral-zero",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "arabic-numeral",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "zero"
+        ]
+      },
+      {
+        "id": "numeral-one",
+        "version": 1,
+        "kind": "numeral",
+        "asset_ref": "catalog://future/stimuli/v1/numeral-one",
+        "description": "The Arabic numeral 1 appears alone in a large, plain typeface.",
+        "accessible_label": "The numeral one.",
+        "language": null,
+        "facets": [
+          "numeral",
+          "vertical",
+          "single",
+          "plain"
+        ],
+        "association_seeds": [
+          "unit",
+          "line",
+          "count",
+          "first",
+          "mark"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/numeral-one",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "arabic-numeral",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "numeral-two",
+        "version": 1,
+        "kind": "numeral",
+        "asset_ref": "catalog://future/stimuli/v1/numeral-two",
+        "description": "The Arabic numeral 2 appears alone in a large, plain typeface.",
+        "accessible_label": "The numeral two.",
+        "language": null,
+        "facets": [
+          "numeral",
+          "curved",
+          "single",
+          "plain"
+        ],
+        "association_seeds": [
+          "pair",
+          "count",
+          "shape",
+          "second",
+          "sum"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/numeral-two",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "arabic-numeral",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "numeral-three",
+        "version": 1,
+        "kind": "numeral",
+        "asset_ref": "catalog://future/stimuli/v1/numeral-three",
+        "description": "The Arabic numeral 3 appears alone in a large, plain typeface.",
+        "accessible_label": "The numeral three.",
+        "language": null,
+        "facets": [
+          "numeral",
+          "curved",
+          "single",
+          "plain"
+        ],
+        "association_seeds": [
+          "trio",
+          "count",
+          "shape",
+          "third",
+          "sequence"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/numeral-three",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "arabic-numeral",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "numeral-four",
+        "version": 1,
+        "kind": "numeral",
+        "asset_ref": "catalog://future/stimuli/v1/numeral-four",
+        "description": "The Arabic numeral 4 appears alone in a large, plain typeface.",
+        "accessible_label": "The numeral four.",
+        "language": null,
+        "facets": [
+          "numeral",
+          "angular",
+          "single",
+          "plain"
+        ],
+        "association_seeds": [
+          "corner",
+          "count",
+          "shape",
+          "fourth",
+          "measure"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/numeral-four",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "arabic-numeral",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "numeral-seven",
+        "version": 1,
+        "kind": "numeral",
+        "asset_ref": "catalog://future/stimuli/v1/numeral-seven",
+        "description": "The Arabic numeral 7 appears alone in a large, plain typeface.",
+        "accessible_label": "The numeral seven.",
+        "language": null,
+        "facets": [
+          "numeral",
+          "angular",
+          "single",
+          "plain"
+        ],
+        "association_seeds": [
+          "week",
+          "count",
+          "shape",
+          "seventh",
+          "sequence"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/numeral-seven",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "arabic-numeral",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "numeral-eight",
+        "version": 1,
+        "kind": "numeral",
+        "asset_ref": "catalog://future/stimuli/v1/numeral-eight",
+        "description": "The Arabic numeral 8 appears alone in a large, plain typeface.",
+        "accessible_label": "The numeral eight.",
+        "language": null,
+        "facets": [
+          "numeral",
+          "looped",
+          "single",
+          "plain"
+        ],
+        "association_seeds": [
+          "octave",
+          "count",
+          "shape",
+          "eighth",
+          "pair"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/numeral-eight",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "arabic-numeral",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "numeral-nine",
+        "version": 1,
+        "kind": "numeral",
+        "asset_ref": "catalog://future/stimuli/v1/numeral-nine",
+        "description": "The Arabic numeral 9 appears alone in a large, plain typeface.",
+        "accessible_label": "The numeral nine.",
+        "language": null,
+        "facets": [
+          "numeral",
+          "looped",
+          "single",
+          "plain"
+        ],
+        "association_seeds": [
+          "digit",
+          "count",
+          "shape",
+          "ninth",
+          "sequence"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/numeral-nine",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "arabic-numeral",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "word-hush",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-hush",
+        "description": "The lower-case English word “hush” appears by itself.",
+        "accessible_label": "The English word hush.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "four-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "quiet",
+          "whisper",
+          "pause",
+          "sound",
+          "silence"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-hush",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "word-drift",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-drift",
+        "description": "The lower-case English word “drift” appears by itself.",
+        "accessible_label": "The English word drift.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "five-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "current",
+          "float",
+          "course",
+          "motion",
+          "snow"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-drift",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "word-near",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-near",
+        "description": "The lower-case English word “near” appears by itself.",
+        "accessible_label": "The English word near.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "four-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "close",
+          "almost",
+          "beside",
+          "distance",
+          "within"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-near",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "word-moss",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-moss",
+        "description": "The lower-case English word “moss” appears by itself.",
+        "accessible_label": "The English word moss.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "four-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "lichen",
+          "green",
+          "stone",
+          "ground",
+          "growth"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-moss",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "moss"
+        ]
+      },
+      {
+        "id": "word-hinge",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-hinge",
+        "description": "The lower-case English word “hinge” appears by itself.",
+        "accessible_label": "The English word hinge.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "five-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "pivot",
+          "joint",
+          "door",
+          "turn",
+          "axis"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-hinge",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "word-after",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-after",
+        "description": "The lower-case English word “after” appears by itself.",
+        "accessible_label": "The English word after.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "five-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "later",
+          "following",
+          "behind",
+          "sequence",
+          "remainder"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-after",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "word-salt",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-salt",
+        "description": "The lower-case English word “salt” appears by itself.",
+        "accessible_label": "The English word salt.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "four-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "brine",
+          "seasoning",
+          "mineral",
+          "sea",
+          "grain"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-salt",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "salt"
+        ]
+      },
+      {
+        "id": "word-again",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-again",
+        "description": "The lower-case English word “again” appears by itself.",
+        "accessible_label": "The English word again.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "five-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "repeat",
+          "return",
+          "revisit",
+          "second",
+          "cycle"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-again",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "again"
+        ]
+      },
+      {
+        "id": "mark-question",
+        "version": 1,
+        "kind": "typographic_mark",
+        "asset_ref": "catalog://future/stimuli/v1/mark-question",
+        "description": "A question mark is set alone in a plain, upright typeface.",
+        "accessible_label": "A question mark.",
+        "language": null,
+        "facets": [
+          "punctuation",
+          "curved",
+          "single",
+          "upright"
+        ],
+        "association_seeds": [
+          "query",
+          "uncertainty",
+          "hook",
+          "interrogative",
+          "end"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/mark-question",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "punctuation-mark",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "?"
+        ]
+      },
+      {
+        "id": "mark-ampersand",
+        "version": 1,
+        "kind": "typographic_mark",
+        "asset_ref": "catalog://future/stimuli/v1/mark-ampersand",
+        "description": "An ampersand is set alone in a plain, upright typeface.",
+        "accessible_label": "An ampersand.",
+        "language": null,
+        "facets": [
+          "typographic",
+          "curved",
+          "single",
+          "upright"
+        ],
+        "association_seeds": [
+          "and",
+          "joining",
+          "ligature",
+          "link",
+          "conjunction"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/mark-ampersand",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "typographic-mark",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "mark-ellipsis",
+        "version": 1,
+        "kind": "typographic_mark",
+        "asset_ref": "catalog://future/stimuli/v1/mark-ellipsis",
+        "description": "Three evenly spaced dots form a horizontal ellipsis.",
+        "accessible_label": "Three dots forming a horizontal ellipsis.",
+        "language": null,
+        "facets": [
+          "punctuation",
+          "dots",
+          "horizontal",
+          "repeating"
+        ],
+        "association_seeds": [
+          "omission",
+          "pause",
+          "continuation",
+          "interval",
+          "trail"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/mark-ellipsis",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "dot-mark",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "mark-colon",
+        "version": 1,
+        "kind": "typographic_mark",
+        "asset_ref": "catalog://future/stimuli/v1/mark-colon",
+        "description": "A colon appears as two vertically aligned dots.",
+        "accessible_label": "A colon made from two vertical dots.",
+        "language": null,
+        "facets": [
+          "punctuation",
+          "dots",
+          "vertical",
+          "paired"
+        ],
+        "association_seeds": [
+          "list",
+          "ratio",
+          "time",
+          "lead-in",
+          "pair"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/mark-colon",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "dot-mark",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "mark-slash",
+        "version": 1,
+        "kind": "typographic_mark",
+        "asset_ref": "catalog://future/stimuli/v1/mark-slash",
+        "description": "A single forward slash is set at its usual diagonal angle.",
+        "accessible_label": "A forward slash.",
+        "language": null,
+        "facets": [
+          "punctuation",
+          "line",
+          "diagonal",
+          "single"
+        ],
+        "association_seeds": [
+          "division",
+          "choice",
+          "path",
+          "separator",
+          "stroke"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/mark-slash",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "stroke-mark",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "mark-pilcrow",
+        "version": 1,
+        "kind": "typographic_mark",
+        "asset_ref": "catalog://future/stimuli/v1/mark-pilcrow",
+        "description": "A pilcrow is set alone in a plain, upright typeface.",
+        "accessible_label": "A pilcrow paragraph mark.",
+        "language": null,
+        "facets": [
+          "typographic",
+          "curved",
+          "single",
+          "upright"
+        ],
+        "association_seeds": [
+          "paragraph",
+          "editing",
+          "section",
+          "copy",
+          "layout"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/mark-pilcrow",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "typographic-mark",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "mark-therefore",
+        "version": 1,
+        "kind": "typographic_mark",
+        "asset_ref": "catalog://future/stimuli/v1/mark-therefore",
+        "description": "The therefore sign is set alone as three dots in a triangular arrangement.",
+        "accessible_label": "The therefore sign, three dots in a triangle.",
+        "language": null,
+        "facets": [
+          "symbol",
+          "dots",
+          "triangular",
+          "three-part"
+        ],
+        "association_seeds": [
+          "inference",
+          "conclusion",
+          "proof",
+          "therefore",
+          "logic"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/mark-therefore",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "dot-mark",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "∴"
+        ]
+      },
+      {
+        "id": "mark-tilde",
+        "version": 1,
+        "kind": "typographic_mark",
+        "asset_ref": "catalog://future/stimuli/v1/mark-tilde",
+        "description": "A short tilde is set alone as a shallow horizontal wave.",
+        "accessible_label": "A tilde, a shallow horizontal wave.",
+        "language": null,
+        "facets": [
+          "typographic",
+          "wave",
+          "horizontal",
+          "single"
+        ],
+        "association_seeds": [
+          "approximation",
+          "accent",
+          "wave",
+          "range",
+          "mark"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/mark-tilde",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "stroke-mark",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ]
+      },
+      {
+        "id": "seed-oval",
+        "version": 1,
+        "kind": "object",
+        "asset_ref": "catalog://future/stimuli/v1/seed-oval",
+        "description": "A pale seed has a narrow oval outline and one visible central seam.",
+        "accessible_label": "A pale oval seed with a central seam.",
+        "language": null,
+        "facets": [
+          "seed",
+          "oval",
+          "pale",
+          "seamed"
+        ],
+        "association_seeds": [
+          "germination",
+          "botany",
+          "kernel",
+          "planting",
+          "growth"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/seed-oval",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "contrast_family": "seed-form",
+        "legacy_ids": [
+          "seed"
+        ],
+        "allowed_transformations": [
+          "rotate_quarter_turn",
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "salience_group": "high"
+      },
+      {
+        "id": "word-echo",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-echo",
+        "description": "The lower-case English word “echo” appears by itself.",
+        "accessible_label": "The English word echo.",
+        "language": "en",
+        "facets": [
+          "echo",
+          "lowercase",
+          "four-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "reflection",
+          "sound",
+          "repeat",
+          "cavern",
+          "call"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-echo",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "echo"
+        ]
+      },
+      {
+        "id": "word-elsewhere",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-elsewhere",
+        "description": "The lower-case English word “elsewhere” appears by itself.",
+        "accessible_label": "The English word elsewhere.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "nine-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "another-place",
+          "away",
+          "distance",
+          "location",
+          "beyond"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-elsewhere",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "low",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "elsewhere"
+        ]
+      },
+      {
+        "id": "word-almost",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-almost",
+        "description": "The lower-case English word “almost” appears by itself.",
+        "accessible_label": "The English word almost.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "six-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "nearly",
+          "close",
+          "approach",
+          "incomplete",
+          "approximation"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-almost",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "almost"
+        ]
+      },
+      {
+        "id": "word-afterglow",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-afterglow",
+        "description": "The lower-case English word “afterglow” appears by itself.",
+        "accessible_label": "The English word afterglow.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "nine-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "light",
+          "sunset",
+          "residue",
+          "evening",
+          "radiance"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-afterglow",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "afterglow"
+        ]
+      },
+      {
+        "id": "word-threshold",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-threshold",
+        "description": "The lower-case English word “threshold” appears by itself.",
+        "accessible_label": "The English word threshold.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "ten-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "doorway",
+          "sill",
+          "boundary",
+          "level",
+          "entry"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-threshold",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "threshold"
+        ]
+      },
+      {
+        "id": "word-between",
+        "version": 1,
+        "kind": "word",
+        "asset_ref": "catalog://future/stimuli/v1/word-between",
+        "description": "The lower-case English word “between” appears by itself.",
+        "accessible_label": "The English word between.",
+        "language": "en",
+        "facets": [
+          "word",
+          "lowercase",
+          "seven-letter",
+          "English"
+        ],
+        "association_seeds": [
+          "interval",
+          "among",
+          "middle",
+          "relation",
+          "separation"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/word-between",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "high",
+        "contrast_family": "single-word",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "between"
+        ]
+      },
+      {
+        "id": "numeral-clock-time",
+        "version": 1,
+        "kind": "numeral",
+        "asset_ref": "catalog://future/stimuli/v1/numeral-clock-time",
+        "description": "The digits 03 and 17 are separated by a colon in a plain typeface.",
+        "accessible_label": "The digits zero three, colon, one seven.",
+        "language": null,
+        "facets": [
+          "numeral",
+          "colon",
+          "digits",
+          "time"
+        ],
+        "association_seeds": [
+          "time",
+          "interval",
+          "clock",
+          "notation",
+          "sequence"
+        ],
+        "provenance": {
+          "source": "Original wording and stimulus specification authored for the Crossword project calibration catalog.",
+          "creator": "Crossword project",
+          "asset_ref": "catalog://future/stimuli/v1/numeral-clock-time",
+          "asset_status": "Stable catalog token; a first-party renderer mapping is required.",
+          "third_party_material": false
+        },
+        "salience_group": "medium",
+        "contrast_family": "clock-notation",
+        "allowed_transformations": [
+          "scale_uniform",
+          "translate",
+          "monochrome"
+        ],
+        "legacy_ids": [
+          "03:17"
+        ]
+      }
+    ]
+  }
+}

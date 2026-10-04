@@ -31,7 +31,43 @@
     "status": "owner-review-required",
     "reviewedAt": "2026-08-30",
     "requiredBefore": "public distribution of local-crossword-001 or any derived lexicon artifact",
-    "reason": "The preferred source repository does not state a license or attribution terms.",
-    "candidateFamilies": ["WordNet", "Wikidata", "Wiktionary", "SCOWL"]
-  }
+    "reason": "The legacy local-crossword-001 source repository states no license. OEWN 2025 is a separately pinned source with CC-BY-4.0 stated on the official downloads page, but its staged data is unreviewed and has not been admitted into a production pack.",
+    "candidateFamilies": [
+      "Open English Wordnet",
+      "Wikidata",
+      "Wiktionary",
+      "SCOWL"
+    ]
+  },
+  "stagedImports": [
+    {
+      "id": "open-english-wordnet-2025-json",
+      "family": "lexical-database",
+      "version": "2025-12-31",
+      "retrievedAt": "2026-09-26",
+      "sourceUrl": "https://en-word.net/downloads/english-wordnet-2025-json.zip",
+      "artifactFilename": "english-wordnet-2025-json.zip",
+      "artifactSha256": "7d749f6e2c39e6970e4997839dcf6e42fd281f3c2fae0171d2192bae8cfa4b51",
+      "artifactSizeBytes": 9986555,
+      "spdx": "CC-BY-4.0",
+      "licenseEvidence": "The official OEWN downloads page identifies the 2025 edition (2025-12-31) and states the resource is released under CC-BY-4.0. The exact downloaded ZIP has no ZIP comment, standalone license/notice file, or metadata/manifest member; its archive-native metadata does not itself state the license.",
+      "licenseEvidenceUrl": "https://en-word.net/downloads/",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "attribution": "Open English Wordnet 2025 by the Open English Wordnet Community, derived from Princeton WordNet; licensed under CC BY 4.0. Attribute the source, link the license, indicate normalization/import changes, and do not imply endorsement.",
+      "status": "staged-source-imported-not-admitted",
+      "reviewStatus": "semantic-unreviewed",
+      "transformation": "Deterministically imported JSON lexical entries and synsets. Preserved source surfaces/gloss arrays and sense keys; emitted NFC/casefold keys; linked lexical forms and senses to synset IDs/POS. Grid-shape projection accepts 2-21 ASCII letters only; unsafe, non-grid, too-short, and too-long forms are quarantined with stable reasons. No clue generation, fact review, editorial approval, or pack admission.",
+      "emittedRecords": {
+        "lexemes": 135969,
+        "forms": 140442,
+        "shapeCandidateForms": 81395,
+        "quarantinedForms": 59047,
+        "senses": 185129,
+        "quarantineRecords": 59047,
+        "synsets": 107519
+      },
+      "emittedDigest": "f373c50955733dc2088ec147f3a14dbca9cfd9931df53e69939e7e7da1dfaf8b",
+      "distribution": "Local staging artifact only; not an approved content pack. Reproduce with the pinned importer and keep generated corpus output out of source control."
+    }
+  ]
 }

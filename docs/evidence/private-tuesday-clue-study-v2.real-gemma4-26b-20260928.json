@@ -1,0 +1,72 @@
+{
+  "version": "private-tuesday-clue-study-v2",
+  "generatedAt": "2026-09-28",
+  "transport": "loopback-http",
+  "model": "gemma4:26b",
+  "weekday": "tuesday",
+  "seed": 20260930,
+  "recipe": {
+    "id": "tuesday-private-v1",
+    "intent": "Familiar material with a visible layer of fair second readings makes Tuesday a clear step beyond Monday while preserving dependable footholds.",
+    "gridMechanic": "ordinary-letter-grid",
+    "themeAnswerTarget": 5,
+    "themeEntriesUsed": 1,
+    "themeLocksUsed": 1,
+    "themeMode": "approachable-cluster-with-a-turn",
+    "minimumNonDefinitionFamilies": 4,
+    "minimumNonDefinitionCount": 14
+  },
+  "fillQuality": {
+    "entryCount": 78,
+    "footholdCount": 0,
+    "iffyCount": 0,
+    "meanScore": 84.75,
+    "minimumScore": 70,
+    "weakCount": 0
+  },
+  "clueQuality": {
+    "checkedCount": 78,
+    "issueCount": 0,
+    "fallbackCount": 6,
+    "semanticStatus": "not-established"
+  },
+  "clueDiversity": {
+    "entryCount": 78,
+    "familyCounts": {
+      "definition": 63,
+      "fill-blank": 10,
+      "metalinguistic": 1,
+      "pun": 3,
+      "spoken-equivalent": 1
+    },
+    "nonDefinitionFamilies": [
+      "fill-blank",
+      "metalinguistic",
+      "pun",
+      "spoken-equivalent"
+    ],
+    "nonDefinitionCount": 15,
+    "floorMet": true,
+    "requiredNonDefinitionFamilies": 4,
+    "requiredNonDefinitionClues": 14,
+    "status": "varied",
+    "policy": "visible-convention-diversity-only",
+    "playPolicy": "never-gates-private-play"
+  },
+  "repair": {
+    "attemptCount": 4,
+    "selectedCount": 10,
+    "rewrittenCount": 2,
+    "postSafetyRepair": true,
+    "status": "repaired",
+    "reason": "weekday-surface-floor",
+    "minimumFamilies": 4,
+    "minimumClueCount": 14
+  },
+  "uncertainty": [
+    "local-model-output",
+    "xfill-heuristic-not-human-quality",
+    "clue-semantics-unreviewed",
+    "player-support-unmeasured"
+  ]
+}

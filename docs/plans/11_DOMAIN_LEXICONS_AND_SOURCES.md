@@ -1,0 +1,93 @@
+# Domain lexicons: acquiring material with ways into it
+
+Concept note and source orientation, 27 September 2026. Part of the [conceptual correspondence](README.md#conceptual-correspondence). Sources below were checked for this note; no datasets were downloaded or integrated.
+
+You do need more wordlists. But the valuable acquisition is not simply more admissible strings. It is a set of names, concepts, expressions, and reliable relations from which the constructor can offer different kinds of access.
+
+The private route now has a deliberately smaller bridge for local play:
+`CROSSWORD_PRIVATE_DOMAIN_HINTS` may point to a bounded
+`private-domain-hints-v1` JSON file containing a hand-curated domain label and
+ASCII candidate forms. The generator intersects those forms with the exact
+local xfill vocabulary, invites at most two placeable terms into theme
+selection, and records the hint-file digest in an answer-free receipt. The
+receipt is explicitly `private-unadmitted` and `semanticStatus=not-established`;
+the file is a player-owned invitation, not a source ledger, fact collection,
+license decision, or publication pack. Missing, malformed, or unplaceable
+configuration remains an honest no-op.
+
+`make runtime-doctor` now discovers this bridge before launch. An absent path
+is reported as optional `not-configured`; a configured file is parsed with the
+same bounded validator and the doctor reports only its label/counts and the
+number of terms found in the configured xfill vocabulary. Terms are never
+printed. A malformed configured file is an explicit `unavailable` readiness
+failure, so a private run cannot appear healthy while silently ignoring a
+player's subject invitation.
+
+The minimal file shape is:
+
+```json
+{
+  "version": "private-domain-hints-v1",
+  "domainId": "physics",
+  "label": "Physics",
+  "terms": ["BOHR", "ENTROPY", "QUARK"]
+}
+```
+
+An optional `source` object may carry an operator's `{id, version,
+artifactSha256}` metadata, but that metadata is retained as provenance only;
+the private bridge does not verify or upgrade it into admission.
+
+A domain list answers “what could appear?” A fact collection answers “what can truthfully be said about it?” An association resource answers “what might this bring to mind?” A frequency resource approximates how often a form appears in particular language data. None substitutes for the others. In particular, association is not sufficient justification for a clue answer.
+
+## What a physics pack should contain
+
+A useful pack would mix recognizable people; substantive concepts; instruments and practices; established multiword expressions; and ordinary words with technical lives. BOHR, ENTROPY, INTERFEROMETER, and FIELD contribute different pleasures. A set of surnames alone would personalize the roll call while leaving much of the discipline's imagination unused.
+
+There is also a useful distinction between a complete directory and a playable selection. A directory aims to include everyone who qualifies. A crossword selection asks which entries reward recognition, admit interesting clues, or become meaningful discoveries. Fame, curriculum presence, everyday overlap, and the user's own expertise are different reasons to include an entry.
+
+For every candidate, the conceptual questions are simple: which entity or sense is intended; which written forms are legitimate; who might recognize it; and what worthwhile clue routes exist? The solver may ultimately need a scored string, but that string should be a projection of richer material.
+
+## Concrete sources worth knowing
+
+| Resource | What it contributes | How to obtain or consult it | Main limitation for this project |
+| --- | --- | --- | --- |
+| [Wikidata](https://www.wikidata.org/wiki/Wikidata:Data_access) | Structured entities and relations from which to build subject selections | Narrow queries through its query service, entity JSON for selected records, dumps for bulk work | Membership and completeness need inspection; a large result set is not an editorial selection |
+| [Open English Wordnet, including 2025+](https://en-word.net/downloads/) | Lexical senses and relations; the plus edition adds curated proper names | Official downloadable JSON, XML, and other formats | Neither edition is a complete disciplinary canon or a ready-made crossword list |
+| [CERN physics material](https://home.cern/science/physics/) and [MacTutor](https://mathshistory.st-andrews.ac.uk/) | Specialist reference material for physics and mathematical biographies | Consult the relevant articles and indexes when establishing a domain's useful concepts and people | Reference access does not establish a license to redistribute a bulk derivative corpus |
+| [wordfreq](https://github.com/rspeer/wordfreq) | Estimates of word frequency across languages | Its documented library interface | Frequency is not personal familiarity, phrase quality, or factual grounding |
+| [Small World of Words](https://smallworldofwords.org/en/project/research) | Human word-association data, unusually relevant to the signifying-chain idea | Official research releases; exploratory views are separate snapshots | Population associations are not individual associations; the research page lists restrictive reuse terms |
+
+Wikidata's structured data are available under CC0. It is the strongest starting candidate here for assembling cross-domain entity selections, with identity and relationships retained. That recommendation is editorial judgment, not a claim that its coverage is unbiased or that every statement is verified. Its documentation distinguishes bounded queries from bulk access and provides concrete access methods. [Data access](https://www.wikidata.org/wiki/Wikidata:Data_access), [copyright scope](https://www.wikidata.org/wiki/Wikidata:Copyright).
+
+There is a particularly relevant detail in the existing project: [the lexicon notes](../../tools/lexicon/README.md) describe staging the base OEWN 2025 edition. The official download page says that edition moved proper nouns into Open English Namenet, while 2025+ includes a curated selection of them. The plus JSON archive is therefore a concrete additional candidate, not something the existing importer has already supplied. OEWN is released under CC BY 4.0. [Official editions and downloads](https://en-word.net/downloads/).
+
+For wordfreq, keep the distinction between software and data terms: its README documents MIT-licensed code, CC BY-SA data, additional attribution, and its intended library use. Treat it as a scoring aid rather than assuming its contents can be exported into an unattributed flat list. [Project documentation](https://github.com/rspeer/wordfreq).
+
+Small World of Words is almost exactly the empirical counterpart to one strand of your idea: it collects what people associate with cues. But the checked research page lists CC BY-NC-ND 3.0. It belongs on the research shortlist; those terms do not justify assuming commercial adaptation is permitted. Even with suitable permission, its associations would suggest candidate paths, not certify meanings or describe an individual. [Research releases and terms](https://smallworldofwords.org/en/project/research).
+
+## Preserve multiple identities behind one spelling
+
+Names require more care than uppercasing. A surname is not an entity identifier; a full name, short name, transliteration, and ordinary word can lead to different interpretations. A solver may collapse them into the same grid string while the clue writer must keep them distinct. First names should not be extracted mechanically from every international naming convention.
+
+The same applies to spaces and diacritics. Their removal can be appropriate for a declared grid convention, but the original form should survive so that the clue and any explanation can use it correctly. Established phrases deserve explicit preservation: throwing away every multiword item would discard much of the long-answer experience you want.
+
+## Abundance can make the fill worse
+
+A larger dictionary gives a constraint solver more escapes. Some escapes are excellent; others are awkward abbreviations, obscure names, or strings that technically exist but offer little pleasure. Expanded domain coverage therefore changes the editorial selection problem as much as the construction problem.
+
+I would judge a new pack by the new experiences it enables: a real foothold for a knowledgeable player, an unfamiliar entry that becomes learnable, an ordinary word acquiring another life, a satisfying long expression. Raw entry count measures none of those reliably.
+
+The strategic asset is the curated relation between an answer, its possible clues, and the audiences for whom those clues work. Public sources supply much of the material. Your editorial decisions make it a crossword vocabulary.
+
+## Dialectical postscript
+
+Added after the critical reading in [note 13](15_THE_SELF_CRITIQUE_OF_THE_CONCEPT.md#11-a-procurement-plan-with-no-market). This section changes the note.
+
+The note is a procurement document that argues against being one, and the repair is an inversion rather than an addition. Start from demand and inventory it honestly, because the decisive evidence — which route failed, which sense a solver actually heard, which crossing carried them, which entry they would pay to meet again — is produced by solving and exists nowhere for purchase. It is the only asset a competitor cannot license, and on the note's own account of what matters it is the only asset worth building first. So the order of work flips: inventory the demand exhaustively before enlarging the supply, and let each acquisition be justified by a named gap in that inventory.
+
+The unit that makes the inversion operable is not the pack but the **route collection**: answer, the sense it exploited, the route a solver took to it, the audience for whom that route worked, and the verdict. This is the note's own triad, and it is precisely what no source sells. The procurement question then gets a determinate form that a corpus manifest cannot answer — what does a pack contribute? — and its answer is **bridge value**: how many crossings a pack makes possible between the collections the product already holds. A physics pack is worth little as a vertical and a great deal as the thing that lets a music clue be paid for with an everyday sense of a technical term, because value here lives in the edges between packs, not inside them. The same measure settles which of the note's nine domains to build first, which no ranking by size or licensing ease can decide.
+
+Two corrections to the economics. First, a corpus has a metabolism, and the note's assumption that bigger pools are better is wrong at one end of the length distribution: short answers recur so heavily that they exhaust quickly under a no-repeat discipline, while long answers are near-inexhaustible and mostly unexploited. That asymmetry is a procurement instruction — spend the scarcity budget where scarcity is real. Second, the note's caution about the Oxford English of Working Life names a real risk and understates the check: whether the staged edition actually carries the proper nouns and multi-word entries the plan needs is a question about the file on disk, and an answer of six letters cannot be assembled from licensed fragments. Verify before building the crossbeam, because a lattice depends on entries that no domain table will supply.
+
+Finally, the note's closing claim about editorial decisions making a vocabulary is right and, on its own terms, unverifiable: a vocabulary is a corpus that is *used*, and whether these collections constitute one is a fact about solvers' routes rather than about manifests. That is the falsifiable form of the note's ambition, and it can only be measured after the first grid — which is the reason the note cannot be finished from the catalogue side.

@@ -1,6 +1,6 @@
 # ADR 0001: Static React Solver Boundary
 
-Status: accepted
+Status: partially superseded, 25 September 2026, by [ADR 0003](0003-local-ollama-native-runtime.md). The static-only deployment and `apps/web` requirements no longer apply. The pure domain, immutable puzzle, and UI separation principles remain applicable. The original decision is retained below as history.
 
 ## Context
 

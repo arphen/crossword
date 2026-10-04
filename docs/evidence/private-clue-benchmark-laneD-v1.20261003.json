@@ -1,0 +1,86 @@
+{
+  "version": "private-clue-benchmark-v1",
+  "generatedAt": "2026-10-03T14:16:18+00:00",
+  "kind": "counts-only",
+  "claim": "one AutoResearch iteration: fixed 15-answer benchmark, deterministic scoring only",
+  "iterations": [
+    {
+      "label": "laneD-seed-6201",
+      "entries": 15,
+      "strictAdmission": false,
+      "admitted": 15,
+      "scaffold": 0,
+      "admissionRate": 1.0,
+      "guardHits": 0,
+      "families": {
+        "definition": 3,
+        "factual-relation": 1,
+        "fill-blank": 2,
+        "genre:fill-blank": 2,
+        "genre:plain-definition": 12,
+        "genre:sound-or-action-cue": 1,
+        "pseudo-pun": 8,
+        "pun": 1
+      },
+      "draftCalls": 5,
+      "compareCalls": 13,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 108.043,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6201
+    },
+    {
+      "label": "laneD-seed-6202",
+      "entries": 15,
+      "strictAdmission": false,
+      "admitted": 15,
+      "scaffold": 0,
+      "admissionRate": 1.0,
+      "guardHits": 0,
+      "families": {
+        "definition": 11,
+        "factual-relation": 1,
+        "fill-blank": 1,
+        "genre:fill-blank": 1,
+        "genre:plain-definition": 13,
+        "genre:sound-or-action-cue": 1,
+        "pseudo-pun": 2
+      },
+      "draftCalls": 4,
+      "compareCalls": 14,
+      "redraftSteeringRounds": 0,
+      "wallSeconds": 109.042,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6202
+    },
+    {
+      "label": "laneD-seed-6203",
+      "entries": 15,
+      "strictAdmission": false,
+      "admitted": 15,
+      "scaffold": 0,
+      "admissionRate": 1.0,
+      "guardHits": 0,
+      "families": {
+        "definition": 14,
+        "genre:plain-definition": 12,
+        "genre:quotational": 1,
+        "genre:sound-or-action-cue": 2,
+        "pseudo-pun": 1
+      },
+      "draftCalls": 5,
+      "compareCalls": 13,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 104.472,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6203
+    }
+  ],
+  "knownLimits": [
+    "counts only; clue text stays local and is never committed",
+    "quality (wit) is not scored here; blind human verdicts score it"
+  ]
+}

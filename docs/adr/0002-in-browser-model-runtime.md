@@ -1,6 +1,6 @@
 # ADR 0002: In-browser model runtime only (no Ollama adapter)
 
-Status: accepted, 2026-09-02 (owner decision, Arphen).
+Status: superseded, 25 September 2026, by [ADR 0003](0003-local-ollama-native-runtime.md), following the owner's explicit instruction to use Ollama and the current native implementation. The former decision below is historical and must not block the new runtime work.
 
 ## Context
 

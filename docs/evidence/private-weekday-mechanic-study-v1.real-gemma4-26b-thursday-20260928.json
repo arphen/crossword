@@ -1,0 +1,134 @@
+{
+  "version": "private-weekday-mechanic-study-v1",
+  "scope": "loopback-private-thursday-boards",
+  "status": "observed",
+  "studyId": "local-thursday-mechanic-study",
+  "profileId": "2e504b24-bafe-48ea-b199-b542d30763aa",
+  "requestedSeeds": [
+    137,
+    271
+  ],
+  "summary": {
+    "pass": 1,
+    "fallbackSafe": 1,
+    "fail": 0,
+    "requestFailed": 0,
+    "boardCount": 2
+  },
+  "cases": [
+    {
+      "seed": 137,
+      "status": "pass",
+      "mechanicStatus": "validated",
+      "report": {
+        "version": "private-weekday-mechanic-evaluation-v1",
+        "scope": "private-local-evaluation",
+        "boardId": "thursday-137",
+        "boardDigest": "sha256:bf5e1a2d9731f1f8660386c7fdb4f6f1c557cef3889c40b61b815a384bcae0d0",
+        "status": "pass",
+        "mechanic": {
+          "status": "validated",
+          "type": "shared-affix",
+          "affix": "NG",
+          "position": "suffix",
+          "themeAnswers": [
+            "WHALESONG",
+            "ACTING",
+            "BELONG",
+            "BORING"
+          ]
+        },
+        "instanceCount": 4,
+        "instances": [
+          {
+            "answer": "WHALESONG",
+            "entryIds": [
+              "12A"
+            ],
+            "ordinaryLetterAnswer": true,
+            "affixMatches": true
+          },
+          {
+            "answer": "ACTING",
+            "entryIds": [
+              "20A"
+            ],
+            "ordinaryLetterAnswer": true,
+            "affixMatches": true
+          },
+          {
+            "answer": "BELONG",
+            "entryIds": [
+              "27A"
+            ],
+            "ordinaryLetterAnswer": true,
+            "affixMatches": true
+          },
+          {
+            "answer": "BORING",
+            "entryIds": [
+              "39A"
+            ],
+            "ordinaryLetterAnswer": true,
+            "affixMatches": true
+          }
+        ],
+        "recipe": {
+          "id": "thursday-private-v1",
+          "themeMode": "shared-affix",
+          "gridMechanic": "ordinary-letter-grid"
+        },
+        "reasonCodes": [],
+        "uncertainty": {
+          "semanticFairness": "unverified",
+          "modelQuality": "not-measured",
+          "playerSolveProbability": "unmeasured",
+          "humanPlaytest": "not-run"
+        }
+      }
+    },
+    {
+      "seed": 271,
+      "status": "fallback-safe",
+      "mechanicStatus": "unavailable",
+      "report": {
+        "version": "private-weekday-mechanic-evaluation-v1",
+        "scope": "private-local-evaluation",
+        "boardId": "thursday-271",
+        "boardDigest": "sha256:a857de7ad5f60f9770edf3869487178dda39c93b73b4dd4182988310e11cc5a7",
+        "status": "fallback-safe",
+        "mechanic": {
+          "status": "unavailable",
+          "type": "shared-affix",
+          "reason": "insufficient-themed-entries"
+        },
+        "instanceCount": 0,
+        "instances": [],
+        "recipe": {
+          "id": "thursday-private-v1",
+          "themeMode": "standard-theme",
+          "gridMechanic": "ordinary-letter-grid"
+        },
+        "reasonCodes": [],
+        "uncertainty": {
+          "semanticFairness": "unverified",
+          "modelQuality": "not-measured",
+          "playerSolveProbability": "unmeasured",
+          "humanPlaytest": "not-run"
+        }
+      }
+    }
+  ],
+  "uncertainty": {
+    "semanticFairness": "unverified",
+    "modelQuality": "not-measured",
+    "playerSolveProbability": "unmeasured",
+    "humanPlaytest": "not-run"
+  },
+  "metadata": {
+    "transport": "loopback-http",
+    "baseUrl": "http://127.0.0.1:5001",
+    "weekday": "thursday"
+  },
+  "studyDigest": "sha256:2b27767b77395553c739087557c09d3ec1436103bdd9d23b9b5f7909a1da6be7"
+}

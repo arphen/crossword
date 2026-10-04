@@ -15,6 +15,12 @@
       "until": "standalone public release"
     },
     {
+      "path": "apps/react/src/future",
+      "patterns": ["local-inference-server"],
+      "reason": "Private local puzzle generation: the Future solver names its local Ollama source and badge. Same private, non-deployed frontend as the apps/react/src exemption; the public release artifact carries no local-inference code and is scanned without this exemption.",
+      "until": "standalone public release"
+    },
+    {
       "path": "apps/react/vite.config.js",
       "patterns": ["legacy-provider-route"],
       "reason": "Dev/preview proxy to the local Flask bridge only; the proxy never ships in any build artifact.",

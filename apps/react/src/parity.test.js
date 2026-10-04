@@ -82,26 +82,24 @@ describe('desktop reference contracts (controller method tests)', () => {
     expect(app.find_solution(2, 0)).toBe('D');
   });
 
-  it('focuses on the next render tick and preserves stale clue highlighting on mini-cell click', () => {
-    const { app, controller } = fresh();
+  it('focuses synchronously and preserves stale clue highlighting on mini-cell click', () => {
+    const { app } = fresh();
     const refsDescriptor = Object.getOwnPropertyDescriptor(app, '$refs');
     expect(refsDescriptor).toMatchObject({ configurable: false, writable: false });
     expect(app.$refs).toBe(refsDescriptor.value); // Proxy must return exact fixed property value
     app.handle_clue_click({}, app.crossword[1]);
-    expect(document.activeElement).not.toBe(input(app, 0, 0));
-    controller.flush();
+    // The live grid node takes focus in the handler, not on a later tick.
     expect(document.activeElement).toBe(input(app, 0, 0));
     expect([app.direction, app.activeClueNumber, app.activeDirection]).toEqual(['down', 1, 'down']);
     const event = key('');
     app.handle_cell_click(event, app.crossword[0], 2);
     expect(event.stopPropagation).toHaveBeenCalledOnce();
-    controller.flush();
     expect(document.activeElement).toBe(input(app, 0, 2));
     expect([app.direction, app.activeClueNumber, app.activeDirection]).toEqual(['across', 1, 'down']);
     expect(document.body.dataset.activeDirection).toBe('down');
   });
 
-  it('moves within words, jumps only from a filled word, skips black squares, and changes arrow direction', () => {
+  it('moves within words, stays on a completed word, skips black squares, and changes arrow direction', () => {
     const { app, controller } = fresh();
     input(app, 0, 0).focus();
     app.move(0, 0, 'forward');
@@ -114,7 +112,10 @@ describe('desktop reference contracts (controller method tests)', () => {
     [...'CAT'].forEach((letter, c) => fill(app, 0, c, letter));
     app.move(0, 2, 'forward');
     controller.flush();
-    expect(document.activeElement).toBe(input(app, 2, 0));
+    // A finished word used to teleport the reader to the next clue of the same
+    // direction, halfway across the grid. The last letter now leaves the cursor on
+    // the word you just wrote; moving on is Tab's and the clue list's job.
+    expect(document.activeElement).toBe(input(app, 0, 2));
     input(app, 0, 1).focus();
     const arrow = key('ArrowDown');
     app.handle_crossword_cell_keydown(arrow, 0, 1);
@@ -162,6 +163,20 @@ describe('desktop reference contracts (controller method tests)', () => {
     app.check_all();
     expect([app.checksUsed, app.score]).toEqual([2, 80]);
     expect([...app.completedWords]).toEqual(['Feline']);
+  });
+
+  it('checks the canonical fill behind a displayed multi-character token', () => {
+    const { app } = fresh();
+    app.crossword[0].characters[0] = { letters: 'SS' };
+    app.crossword[1].characters[0] = { letters: 'SS' };
+    app.init();
+    app.grid[0][0] = 'SS';
+    input(app, 0, 0).value = 'ß';
+
+    app.check_all();
+
+    expect(input(app, 0, 0).classList.contains('green')).toBe(true);
+    expect(input(app, 0, 0).classList.contains('red')).toBe(false);
   });
 
   it('reveals only empty nonblack cells; rebus input opens, focuses, normalizes and saves', () => {

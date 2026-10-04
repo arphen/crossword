@@ -26,7 +26,13 @@ export const test = base.extend<{ offlineHarness: void }>({
     });
     page.on('console', message => logs.push(`[${message.type()}] ${message.text()}`));
     page.on('pageerror', error => { pageErrors.push(error.message); logs.push(`[pageerror] ${error.stack}`); });
-    page.on('requestfailed', req => logs.push(`[requestfailed] ${req.url()} ${req.failure()?.errorText}`));
+    page.on('request', req => {
+      if (req.url().includes('/api/future/')) logs.push(`[request] ${req.method()} ${req.url()}`);
+    });
+    page.on('response', res => {
+      if (res.url().includes('/api/future/')) logs.push(`[response] ${res.request().method()} ${res.status()} ${res.url()}`);
+    });
+    page.on('requestfailed', req => logs.push(`[requestfailed] ${req.method()} ${req.url()} ${req.failure()?.errorText}`));
     // Avoid the optional bulk prefetch job; keep normal initial puzzle/API reads.
     await context.addInitScript(() => localStorage.setItem('lastCachingTime', String(Date.now())));
 

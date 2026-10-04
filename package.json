@@ -15,14 +15,13 @@
     "npm": "11.x"
   },
   "scripts": {
-    "test": "jest",
-    "build": "node scripts/build-legacy-assets.mjs",
-    "legacy:assets": "node scripts/build-legacy-assets.mjs",
+    "test": "jest --passWithNoTests --silent",
+    "build": "npm run build --workspace @crossword/react-port",
     "web:dev": "make run",
     "web:build": "npm run build",
     "web:test": "npm test -- --runInBand",
     "scan:content": "node scripts/scan-forbidden-content.mjs",
-    "test:coverage": "vitest run --config vitest.ci.config.mjs --coverage",
+    "test:coverage": "vitest run --config vitest.ci.config.mjs --coverage --reporter=basic --silent",
     "test:e2e": "playwright test",
     "test:mutation": "stryker run",
     "test:generator": "npm --prefix ../crossword-generator test",
@@ -50,24 +49,25 @@
     "socket.io-client": "4.8.3",
     "typescript": "5.9.2",
     "typescript-eslint": "8.44.1",
-    "vitest": "3.2.4",
-    "vue": "2.7.16"
+    "vitest": "3.2.4"
   },
   "jest": {
     "testEnvironment": "jsdom",
-    "verbose": true,
+    "verbose": false,
     "moduleDirectories": [
       "node_modules",
       "src/crossword/static"
     ],
     "testPathIgnorePatterns": [
       "/apps/",
-      "/packages/"
+      "/packages/",
+      "/tests/e2e/"
     ]
   },
   "dependencies": {
     "@crossword/construction": "file:vendor/generator/crossword-construction-0.1.0.tgz",
     "@crossword/generator": "file:vendor/generator/crossword-generator-0.1.0.tgz",
+    "@crossword/local-runtime": "file:vendor/generator/crossword-local-runtime-0.1.2.tgz",
     "@crossword/model-runtime": "file:vendor/generator/crossword-model-runtime-0.1.0.tgz"
   }
 }

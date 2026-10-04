@@ -14,6 +14,29 @@ import qrcode
 from .data_reader import DataReader
 from .parser import NYTFormatParser
 from .database import db, init_db, CompletedPuzzle
+from .future import future_api
+from .session_journal import session_journal_api
+from .v2_session_journal import v2_session_journal_api
+from .episteme_api import episteme_api
+from .reflection_api import reflection_api
+from .calibration_api import calibration_api
+from .calibration_hypothesis_api import calibration_hypothesis_api
+from .postgame_associations_api import postgame_associations_api
+from .profile_narrative_api import profile_narrative_api
+from .specimen_api import specimen_api
+from .future_puzzles import future_puzzle_candidates_api, register_legacy_puzzle
+from .future_grid_jobs import future_grid_jobs_api
+from .private_puzzle_generation import private_puzzle_api
+from .reviewed_samples import reviewed_samples_api
+from .profile_export import profile_export_api
+from .profile_import import profile_import_api
+from .profile_lifecycle import profile_lifecycle_api
+from .profile_retention import profile_retention_api
+from .learning_review import learning_review_api
+from .runtime_readiness import runtime_readiness_api
+from .admitted_retrieval_api import admitted_retrieval_api
+from .publication_evidence import publication_evidence_api
+from .publication_attestation import publication_attestation_api
 
 # Get the directory containing this file
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,6 +48,42 @@ app = Flask(__name__,
 # Configure SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('CROSSWORD_DATABASE_URI', 'sqlite:///crossword.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Local reviewer credentials are host configuration for authenticated publish
+# operations. Keep them in Flask's server-side config; never serialize or log.
+app.config['CROSSWORD_REVIEWER_TOKEN'] = os.environ.get('CROSSWORD_REVIEWER_TOKEN')
+app.config['CROSSWORD_REVIEWER_ID'] = os.environ.get('CROSSWORD_REVIEWER_ID')
+app.config['CROSSWORD_ADDITIONAL_REVIEWERS_JSON'] = os.environ.get(
+    'CROSSWORD_ADDITIONAL_REVIEWERS_JSON'
+)
+# Retrieval stays unavailable unless every exact local content pin is supplied
+# out of band. The API never infers trust from fields inside a pack artifact.
+app.config['FUTURE_ADMITTED_PACK_PATH'] = os.environ.get('CROSSWORD_ADMITTED_PACK_PATH')
+app.config['FUTURE_ADMITTED_PACK_ID'] = os.environ.get('CROSSWORD_ADMITTED_PACK_ID')
+app.config['FUTURE_ADMITTED_PACK_SHA256'] = os.environ.get('CROSSWORD_ADMITTED_PACK_SHA256')
+app.config['FUTURE_ADMITTED_SOURCE_PINS_JSON'] = os.environ.get('CROSSWORD_ADMITTED_SOURCE_PINS_JSON')
+app.register_blueprint(future_api)
+app.register_blueprint(session_journal_api)
+app.register_blueprint(v2_session_journal_api)
+app.register_blueprint(episteme_api)
+app.register_blueprint(reflection_api)
+app.register_blueprint(calibration_api)
+app.register_blueprint(calibration_hypothesis_api)
+app.register_blueprint(postgame_associations_api)
+app.register_blueprint(profile_narrative_api)
+app.register_blueprint(specimen_api)
+app.register_blueprint(future_grid_jobs_api)
+app.register_blueprint(private_puzzle_api)
+app.register_blueprint(reviewed_samples_api)
+app.register_blueprint(future_puzzle_candidates_api)
+app.register_blueprint(admitted_retrieval_api)
+app.register_blueprint(publication_evidence_api)
+app.register_blueprint(publication_attestation_api)
+app.register_blueprint(profile_export_api)
+app.register_blueprint(profile_import_api)
+app.register_blueprint(profile_lifecycle_api)
+app.register_blueprint(profile_retention_api)
+app.register_blueprint(learning_review_api)
+app.register_blueprint(runtime_readiness_api)
 
 # Initialize database
 db.init_app(app)
@@ -61,7 +120,7 @@ class GameSession:
 REACT_DIST = os.path.join(current_dir, 'static', 'react')
 
 def _react_index():
-    """Serve React explicitly; a missing build must not silently select Vue."""
+    """Serve React explicitly; a missing build fails loudly instead of serving stale content."""
     if not os.path.exists(os.path.join(REACT_DIST, 'index.html')):
         return 'React build missing. Run make react-assets, then reload.', 503
     response = send_from_directory(REACT_DIST, 'index.html')
@@ -73,15 +132,11 @@ def index():
     """Daily crossword interface: the React port served by Flask."""
     return _react_index()
 
-@app.route('/legacy')
-@app.route('/legacy/')
-def legacy_index():
-    """Legacy Vue frontend: parity reference and fallback, not the default."""
-    return render_template('newapp.html')
-
-@app.route('/legacy/mobile/<room_id>/<role>')
-def legacy_mobile_client(room_id, role):
-    return render_template('mobile.html', room_id=room_id, role=role)
+@app.route('/future')
+@app.route('/future/')
+def future_index():
+    """Personal onboarding, followed by the existing React solver."""
+    return _react_index()
 
 @app.route('/assets/<path:filename>')
 def react_assets(filename):
@@ -115,6 +170,12 @@ def get_crossword_by_date(date):
             "metadata": crossword.metadata.model_dump(),
             "entries": [entry.model_dump() for entry in crossword.entries]
         }
+        try:
+            response_data["puzzleManifest"] = register_legacy_puzzle(crossword)
+        except ValueError as error:
+            # Unsupported imports (for example rebus cells) remain playable;
+            # they are deliberately unavailable for trusted profile replay.
+            print(f"Puzzle manifest unavailable for {date}: {error}")
         
         return jsonify(response_data)
     except Exception as e:
@@ -169,6 +230,12 @@ def get_random_crossword(weekday):
         "metadata": crossword.metadata.model_dump(),
         "entries": [entry.model_dump() for entry in crossword.entries]
     }
+    try:
+        response_data["puzzleManifest"] = register_legacy_puzzle(crossword)
+    except ValueError as error:
+        # A solver can still play a legacy import whose tokens cannot yet be
+        # represented by the replay domain, but it contributes no evidence.
+        print(f"Puzzle manifest unavailable for {formatted_date}: {error}")
     
     return jsonify(response_data)
 

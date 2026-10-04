@@ -1,6 +1,71 @@
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import './desktop.css';
+import './vision.css';
+import './celebration.css';
+import ViewControls from './ViewControls';
+import ClueSpring from './ClueSpring';
+import { Finale, RaptureLayer, RaptureSparks } from './Rapture';
+import { useRapture } from './useRapture';
+import { cssVars } from './cssVars';
+import { createSelectionPresentation } from './selectionPresentation';
+import { cellCues, clueRampStyle, createClueRamp, entryStartingAt, groupRuns, spotlightCues } from './boardCues';
+import { normalizeViewSettings, readViewSettings, VIEW_DEFAULTS, viewAttributes, writeViewSettings } from './viewSettings';
+import { normalizeFutureKey } from './future/languageInput';
 
-// Vue-style class bindings, without a Vue runtime or additional DOM wrappers.
+export function displayedPuzzleWeekday(app, displayWeekday) {
+    return displayWeekday || app.getCurrentDayName();
+}
+
+const CLUE_SIGNAL_PATTERN = /("[^"\n]+"|“[^”\n]+”|'[^'\n]+'|‘[^’\n]+’|(?:\[|\()\s*pl\.?\s*(?:\]|\))|(?:\[|\()\s*(?:past|present|future)(?:\s+tense)?\s*(?:\]|\))|\b(?:past|present|future)\s+tense\b|\[[^\n]+\]|\?+|_{3,}|\.{3,}|…+|\b(?:abbr\.?|briefly|initially)\b)/gi;
+
+const CLUE_SIGNAL_COPY = {
+    quote: 'Quotation marks signal something that can be said aloud.',
+    bracket: 'Brackets describe a sound, gesture, or editorial aside.',
+  question: 'A question mark allows a playful or indirect reading.',
+  blank: 'A blank marks a missing part of a phrase.',
+  plural: 'A plural marker says the answer should be plural.',
+  tense: 'A tense marker says the answer should match that verb tense.',
+  abbreviation: 'This marker signals a shortened answer.',
+};
+
+function clueSignalKind(value) {
+  if (/^["“'‘]/.test(value)) return 'quote';
+  if (/^(?:\[|\()\s*pl\.?\s*(?:\]|\))$/i.test(value)) return 'plural';
+  if (/^(?:(?:\[|\()\s*)?(?:past|present|future)(?:\s+tense)?\s*(?:(?:\]|\))?)$|\btense\b/i.test(value)) return 'tense';
+    if (value.startsWith('[')) return 'bracket';
+    if (/^\?+$/.test(value)) return 'question';
+    if (/^(?:_+|\.{3,}|…+)$/.test(value)) return 'blank';
+    return 'abbreviation';
+}
+
+export function renderClueSurface(text, annotate = false) {
+    if (!annotate || typeof text !== 'string') return text;
+    const parts = [];
+    let cursor = 0;
+    for (const match of text.matchAll(CLUE_SIGNAL_PATTERN)) {
+        const value = match[0];
+        const index = match.index ?? cursor;
+        if (index > cursor) parts.push(text.slice(cursor, index));
+        const kind = clueSignalKind(value);
+        parts.push(
+            <span
+                key={`${kind}-${index}`}
+                className={`clue-signal clue-signal-${kind}`}
+                data-clue-signal={kind}
+                tabIndex={0}
+                aria-label={`${value}: ${CLUE_SIGNAL_COPY[kind]}`}
+                title={CLUE_SIGNAL_COPY[kind]}
+            >
+                {value}
+            </span>,
+        );
+        cursor = index + value.length;
+    }
+    if (cursor < text.length) parts.push(text.slice(cursor));
+    return parts.length ? parts : text;
+}
+
+// Conditional class bindings, without additional DOM wrappers.
 function classes(...values) {
     return values.map(value => {
         if (Array.isArray(value)) return classes(...value);
@@ -11,138 +76,710 @@ function classes(...values) {
     }).filter(Boolean).join(' ');
 }
 
-export default function CrosswordView({ app }) {
+export default function CrosswordView({
+    app,
+    languageInput = null,
+    onEntryFocused = undefined,
+    onCellChanged = undefined,
+    onCheckAll = undefined,
+    onRevealAll = undefined,
+    onCellRevealed = undefined,
+    onComplete = undefined,
+    displayWeekday = undefined,
+    annotateClueGrammar = false,
+}) {
+    const [cursorCell, setCursorCell] = useState(null);
+    const [rebusDisplayValue, setRebusDisplayValue] = useState('');
+    const inputSources = useRef(new Map());
+    const boardRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+    const glowRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+    const acrossRef = useRef(/** @type {HTMLUListElement | null} */ (null));
+    const downRef = useRef(/** @type {HTMLUListElement | null} */ (null));
+    const scheduleTerritory = useRef(() => {});
+    // Reader-adjustable view settings: presentation only, kept in local storage,
+    // and published to the board root as data-* attributes so that vision.css can
+    // own every visual consequence (see viewSettings.js). A first visit on a
+    // display that reports low contrast or reduced transparency starts on the dim
+    // tier rather than at full bloom; the reader can move it from there.
+    const browserStorage = typeof window === 'undefined' ? null : window.localStorage;
+    const [settings, setSettings] = useState(() => readViewSettings({
+        storage: browserStorage,
+        media: typeof window === 'undefined' ? null : window.matchMedia?.bind(window)
+    }));
+    const changeSettings = next => {
+        const normalized = normalizeViewSettings(next);
+        setSettings(normalized);
+        writeViewSettings(normalized, { storage: browserStorage });
+    };
+    const describeRebusInput = value => {
+        const normalized = languageInput?.normalizeRebus
+            ? languageInput.normalizeRebus(value)
+            : languageInput?.normalizeForCell(value, { isRebus: true });
+        return normalized?.accepted
+            ? normalized
+            : { accepted: false, display: value, fill: value };
+    };
+    // Read-once locals for the render below: every app.* access crosses the
+    // controller's observable proxy, so the hot loops work from these instead of
+    // paying the trap per square and per letter. Event handlers keep reading
+    // live controller state; these are only the render's snapshot.
+    const grid = app.grid;
+    const entries = app.crossword || [];
+    const isChecking = app.isChecking;
+    const completedWords = app.completedWords;
+    const tokenCells = app.currentPuzzleTokenManifest?.cells ?? null;
+    const entryContainsCell = (entry, rowIndex, cellIndex) => entry?.characters.some((_, index) => (
+        entry.direction === 'across'
+            ? entry.start_y === rowIndex && entry.start_x + index === cellIndex
+            : entry.start_x === cellIndex && entry.start_y + index === rowIndex
+    ));
+    const entryAtCell = (rowIndex, cellIndex, direction = app.direction) => {
+        const directional = (app.crossword || []).find(entry => {
+        if (entry.direction !== direction) return false;
+        return entryContainsCell(entry, rowIndex, cellIndex);
+        });
+        if (directional) return directional;
+        const active = app.activeClueNumber && app.activeDirection
+            ? app.getEntryByClueNumber(app.activeClueNumber, app.activeDirection)
+            : null;
+        return entryContainsCell(active, rowIndex, cellIndex) ? active : null;
+    };
+    // Future token manifests keep canonical fill values in the controller,
+    // while this view can show the declared display grapheme. The lookup is
+    // inert for the daily route, which has no token manifest.
+    const tokenAt = (rowIndex, cellIndex) => tokenCells?.find(cell => (
+        cell.row === rowIndex && cell.column === cellIndex
+    )) || null;
+    const displayGridValue = (value, rowIndex, cellIndex) => {
+        if (value === null || value === undefined || value === '') return value;
+        const token = tokenAt(rowIndex, cellIndex);
+        if (token && token.fillToken !== String(value)) return value;
+        return token?.displayToken || value;
+    };
+    const rebusRow = app.rebusMenuCell?.row ?? -1;
+    const rebusColumn = app.rebusMenuCell?.col ?? -1;
+    useEffect(() => {
+        if (!app.showRebusMenu || rebusRow < 0 || rebusColumn < 0) {
+            setRebusDisplayValue('');
+            return;
+        }
+        const canonical =
+            app.rebusInputValue || app.grid?.[rebusRow]?.[rebusColumn] || '';
+        setRebusDisplayValue(
+            displayGridValue(canonical, rebusRow, rebusColumn) || canonical,
+        );
+    }, [
+        app.showRebusMenu,
+        app.rebusInputValue,
+        rebusRow,
+        rebusColumn,
+        app.currentPuzzleTokenManifest,
+    ]);
+    const gridValues = () => new Map(grid.flatMap((row, rowIndex) => row.flatMap((value, cellIndex) => (
+        value === null ? [] : [[`r${rowIndex}c${cellIndex}`, value ? String(value) : null]]
+    ))));
     const clueClasses = entry => classes({
         'highlighted-clue': app.isActiveClue(entry),
-        'affected-clue': app.isClueAffected(entry)
+        'affected-clue': isClueAffected(entry)
     });
-    const answer = entry => Array.from(app.getCurrentAnswer(entry)).map((char, index) => (
-        <span key={index} className={classes('state', {
-            red: app.isChecking && char.toLowerCase() !== entry.characters[index].letters.toLowerCase() && char !== ' ',
-            green: app.isChecking && char.toLowerCase() === entry.characters[index].letters.toLowerCase() && char !== ' ',
-            'intersection-cell-across': app.activeDirection === 'across' && app.isCellInAffectedClue(entry, index),
-            'intersection-cell-down': app.activeDirection === 'down' && app.isCellInAffectedClue(entry, index)
-        })} onClick={event => app.handle_cell_click(event, entry, index)}>{char}</span>
-    ));
+    const activeEntry = app.activeClueNumber && app.activeDirection
+        ? app.getEntryByClueNumber(app.activeClueNumber, app.activeDirection)
+        : null;
+    // Best-effort glow: the selection's light (blurred shadows, its ignition
+    // animations) is the most expensive paint on the board, so a fresh
+    // selection first lands without it — cursor, letters and washes stay
+    // live on the cheap first frame — and the glow catches up a couple of
+    // frames later. Fast repeated navigation cancels the catch-up and
+    // re-arms it, so the glow never blocks the cursor; it settles in when
+    // the reader pauses. Keystrokes inside a word never change the key, so
+    // typing never dims the light.
+    const selectionKey = `${app.activeClueNumber}|${app.activeDirection}`;
+    const [litKey, setLitKey] = useState(selectionKey);
+    useEffect(() => {
+        if (litKey === selectionKey) return undefined;
+        if (typeof requestAnimationFrame === 'undefined') {
+            setLitKey(selectionKey);
+            return undefined;
+        }
+        let first = 0;
+        let second = 0;
+        first = requestAnimationFrame(() => {
+            second = requestAnimationFrame(() => setLitKey(selectionKey));
+        });
+        return () => {
+            cancelAnimationFrame(first);
+            cancelAnimationFrame(second);
+        };
+    }, [litKey, selectionKey]);
+    const glowOn = litKey === selectionKey;
+    const selection = createSelectionPresentation(activeEntry);
+    // A lit square carries the active entry's rank alongside its coordinate, so
+    // every representation of the selection — board squares and answer boxes —
+    // glows in the hue of the clue being solved.
+    const cellPresentation = (rowIndex, cellIndex) => {
+        const cell = selection.get(`${rowIndex},${cellIndex}`);
+        if (!cell || !activeEntry) return {};
+        const active = settings.ramp ? clueRampStyle(clueRamp, activeEntry.clue_number) : {};
+        return { style: { ...cell.style, ...active }, 'data-entry-index': cell.index, title: cell.title };
+    };
+    const activeEntryCellClasses = (rowIndex, cellIndex) => {
+        const cell = selection.get(`${rowIndex},${cellIndex}`);
+        if (!cell) return {};
+        const entryIndex = cell.index;
+        return {
+            'active-entry-across': activeEntry.direction === 'across',
+            'active-entry-down': activeEntry.direction === 'down',
+            'active-entry-start': entryIndex === 0,
+            'active-entry-end': entryIndex === activeEntry.characters.length - 1
+        };
+    };
+    // One hue per distinct clue number, spread across the arc by rank rather than
+    // by value: the ladder anchor and the square index at that number read as the
+    // same colour, so a hue is learned once and points at the board either way.
+    const clueRamp = useMemo(() => createClueRamp(app.crossword), [app.crossword]);
+    // Where each numbered square starts, first entry wins — the same answer
+    // app.find_index gives, without scanning the entries per square per render.
+    const startNumbers = useMemo(() => {
+        const starts = new Map();
+        for (const entry of entries) {
+            const key = `${entry.start_y},${entry.start_x}`;
+            if (!starts.has(key)) starts.set(key, entry.clue_number);
+        }
+        return starts;
+    }, [entries]);
+    // The opposite-lane clues the active word crosses, as a set of
+    // `direction:clue_number` keys. app.isClueAffected rebuilds this from nested
+    // scans on every call — once per row, several times per render — so it is
+    // built once per selection here and probed as a set below. Same membership,
+    // same null guards, no repeated work.
+    const affectedKeys = useMemo(() => {
+        const keys = new Set();
+        if (!activeEntry) return keys;
+        const opposite = activeEntry.direction === 'across' ? 'down' : 'across';
+        const byCell = new Map();
+        for (const entry of entries) {
+            if (entry.direction !== opposite) continue;
+            const length = entry.characters.length;
+            for (let index = 0; index < length; index++) {
+                const x = opposite === 'across' ? entry.start_x + index : entry.start_x;
+                const y = opposite === 'across' ? entry.start_y : entry.start_y + index;
+                const key = `${x},${y}`;
+                let list = byCell.get(key);
+                if (!list) { list = []; byCell.set(key, list); }
+                list.push(entry);
+            }
+        }
+        const length = activeEntry.characters.length;
+        for (let index = 0; index < length; index++) {
+            const x = activeEntry.direction === 'across' ? activeEntry.start_x + index : activeEntry.start_x;
+            const y = activeEntry.direction === 'across' ? activeEntry.start_y : activeEntry.start_y + index;
+            for (const entry of byCell.get(`${x},${y}`) || []) {
+                keys.add(`${entry.direction}:${entry.clue_number}`);
+            }
+        }
+        return keys;
+    }, [entries, activeEntry]);
+    const isClueAffected = entry => affectedKeys.has(`${entry.direction}:${entry.clue_number}`);
+    // The neighbour-derived cues for every square — edge slots, gate ticks,
+    // spotlight distances — depend only on the puzzle definition, never on the
+    // selection or the typed letters, so they are walked once per load and read
+    // back per square instead of re-walked on every render.
+    const staticCues = useMemo(() => {
+        const cues = new Map();
+        const rows = grid.length;
+        const columns = grid[0]?.length || 0;
+        for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+            for (let cellIndex = 0; cellIndex < columns; cellIndex++) {
+                const cuesForCell = cellCues(grid, rowIndex, cellIndex);
+                const gates = {};
+                if (cuesForCell.style && ('--open-e' in cuesForCell.style || '--open-s' in cuesForCell.style)) {
+                    // A gate tick names the word it opens: the east tick the Across
+                    // word starting to the east, the south tick the Down word starting
+                    // below. Stubs that open no word publish nothing and keep the
+                    // quiet direction colour (section 4 of vision.css).
+                    const east = entryStartingAt(entries, rowIndex, cellIndex + 1, 'across');
+                    const south = entryStartingAt(entries, rowIndex + 1, cellIndex, 'down');
+                    const eastRank = east ? clueRamp.get(east.clue_number) : undefined;
+                    const southRank = south ? clueRamp.get(south.clue_number) : undefined;
+                    if (eastRank !== undefined) gates['--gate-across'] = String(eastRank);
+                    if (southRank !== undefined) gates['--gate-down'] = String(southRank);
+                }
+                const spot = spotlightCues(grid, entries, clueRamp, rowIndex, cellIndex);
+                // The pieces stay separate so the render can withhold the
+                // rank-derived ones (gates, spotlight) while Number colours are
+                // off, exactly as the per-square guards used to.
+                cues.set(`${rowIndex},${cellIndex}`, {
+                    style: cuesForCell.style,
+                    gates,
+                    spot: spot.style,
+                    dataStart: cuesForCell.dataStart
+                });
+            }
+        }
+        return cues;
+    }, [entries, clueRamp, grid.length, grid[0]?.length]);
+    // The clues still on the ladder: a solved clue leaves it, and the springs
+    // follow the same list so the chips either side of the gap are joined directly.
+    // Clues a check has just solved are held a moment so they can celebrate.
+    const rapture = useRapture(app);
+    const held = rapture.active?.holding ? rapture.active.order : undefined;
+    const laneEntries = direction => entries.filter(entry => entry.direction === direction && (!completedWords.has(entry.clue_text) || held?.has(entry.clue_text)));
+    const raptureRow = entry => {
+        const index = held?.get(entry.clue_text);
+        if (index === undefined) return {};
+        return {
+            'data-rapture': rapture.active.tier,
+            style: cssVars({ '--rapture-delay': `${Math.min(index, rapture.active.maxStep) * rapture.active.step}ms` })
+        };
+    };
+    // The row carries its own rank next to the chip it already sits beside, so
+    // the answer track and every glow on the row read the same hue as the
+    // number. The pigment only travels while the reader has Number colours on.
+    const rowProps = entry => {
+        const rowRapture = raptureRow(entry);
+        const ramp = settings.ramp ? clueRampStyle(clueRamp, entry.clue_number) : {};
+        const style = { ...rowRapture.style, ...ramp };
+        return Object.keys(style).length > 0 ? { ...rowRapture, style } : rowRapture;
+    };
+    const raptureSparks = entry => {
+        const index = held?.get(entry.clue_text);
+        return index === undefined ? null : <RaptureSparks specs={rapture.active.sparks} index={index} />;
+    };
+    const springState = entry => (held?.has(entry.clue_text) ? 'rapture' : app.isActiveClue(entry) ? 'active' : isClueAffected(entry) ? 'affected' : '');
+    const laneSprings = (direction, entries) => settings.rail && (
+        <ClueSpring
+            lane={direction}
+            ramp={clueRamp}
+            numbers={entries.map(entry => entry.clue_number)}
+            states={entries.map(springState)}
+        />
+    );
+    // Everything a square needs to be drawn: the selection styling the controller
+    // already knows about, plus the neighbour-derived cues. JS only names what a
+    // square is (where a word starts, which black squares open a slot); the
+    // appearance belongs to vision.css. The static cues are precomputed per
+    // puzzle above; the per-square work here is map lookups, not walks.
+    // The board's libido: one charge of light shared by the notches still
+    // open. As words are solved their notches go out and the charge flows into
+    // the ones that remain, which burn brighter (vision.css section 11); every
+    // check and reveal drains the whole charge with the score.
+    let solvedCount = 0;
+    // What the solve has closed, per square: the directions of the solved words
+    // a square belongs to, and on a black square which of the words it opens
+    // are solved. vision.css lets a solved word settle into the board and its
+    // notch close down to a single remaining point (section 11). Derived from
+    // the controller's completed words on every render; nothing is stored.
+    const solvedSquares = new Map();
+    const solvedOpenings = new Set();
+    for (const entry of entries) {
+        if (!completedWords.has(entry.clue_text)) continue;
+        solvedOpenings.add(`${entry.start_y},${entry.start_x},${entry.direction}`);
+        solvedCount += 1;
+        entry.characters.forEach((_, index) => {
+            const key = entry.direction === 'across'
+                ? `${entry.start_y},${entry.start_x + index}`
+                : `${entry.start_y + index},${entry.start_x}`;
+            solvedSquares.set(key, [...(solvedSquares.get(key) || []), entry.direction]);
+        });
+    }
+    const solvedProps = (rowIndex, cellIndex) => {
+        const directions = solvedSquares.get(`${rowIndex},${cellIndex}`);
+        if (directions) {
+            return { 'data-solved': ['across', 'down'].filter(direction => directions.includes(direction)).join(' ') };
+        }
+        const closed = [
+            solvedOpenings.has(`${rowIndex},${cellIndex + 1},across`) && 'e',
+            solvedOpenings.has(`${rowIndex + 1},${cellIndex},down`) && 's',
+        ].filter(Boolean);
+        return closed.length && grid[rowIndex]?.[cellIndex] === null ? { 'data-gate-solved': closed.join(' ') } : {};
+    };
+    const gridCellProps = (rowIndex, cellIndex) => {
+        const presentation = { ...cellPresentation(rowIndex, cellIndex), ...solvedProps(rowIndex, cellIndex) };
+        // A numbered square wears its own clue's rank; the selection style is
+        // spread over it afterwards, so a lit square shows the active clue's
+        // hue instead — interaction over identity, on the same property.
+        const clueNumber = settings.ramp ? startNumbers.get(`${rowIndex},${cellIndex}`) ?? null : null;
+        const style = { ...(clueNumber ? clueRampStyle(clueRamp, clueNumber) : {}), ...presentation.style };
+        const withStyle = Object.keys(style).length > 0 ? { style } : {};
+        if (!settings.cues) return { ...presentation, ...withStyle };
+        const cached = staticCues.get(`${rowIndex},${cellIndex}`);
+        return {
+            ...presentation,
+            ...withStyle,
+            style: {
+                ...style,
+                ...cached?.style,
+                ...(settings.ramp ? cached?.gates : null),
+                ...(settings.ramp ? cached?.spot : null)
+            },
+            'data-start': cached?.dataStart
+        };
+    };
+    const isCursorCell = (entry, index) => {
+        if (!cursorCell) return false;
+        const rowIndex = entry.direction === 'across' ? entry.start_y : entry.start_y + index;
+        const cellIndex = entry.direction === 'across' ? entry.start_x + index : entry.start_x;
+        return cursorCell.rowIndex === rowIndex && cursorCell.cellIndex === cellIndex;
+    };
+    // Whether one box of an opposite-lane row sits on the active word: the
+    // selection map already answers it, so this is a coordinate lookup instead
+    // of the controller's per-letter scan. Same guards (no active word, or the
+    // row's own lane, is never a crossing).
+    const isCellInActiveSelection = (entry, index) => {
+        if (!activeEntry || entry.direction === activeEntry.direction) return false;
+        const x = entry.direction === 'across' ? entry.start_x + index : entry.start_x;
+        const y = entry.direction === 'across' ? entry.start_y : entry.start_y + index;
+        return selection.has(`${y},${x}`);
+    };
+    const answer = entry => {
+        const letters = entry.characters.map((character, index) => {
+            const row = entry.start_y + (entry.direction === 'down' ? index : 0);
+            const col = entry.start_x + (entry.direction === 'across' ? index : 0);
+            const rawChar = grid[row]?.[col] || ' ';
+            const char = displayGridValue(rawChar, row, col) || ' ';
+            return <span key={index} {...cellPresentation(row, col)} className={classes('state', {
+                red: isChecking && rawChar.toLowerCase() !== character.letters.toLowerCase() && rawChar !== ' ',
+                green: isChecking && rawChar.toLowerCase() === character.letters.toLowerCase() && rawChar !== ' ',
+                'intersection-cell-across': app.activeDirection === 'across' && isCellInActiveSelection(entry, index),
+                'intersection-cell-down': app.activeDirection === 'down' && isCellInActiveSelection(entry, index),
+                'cursor-cell': isCursorCell(entry, index),
+                'rebus-state': rawChar.length > 1
+            })} onClick={event => {
+                app.handle_cell_click(event, entry, index);
+                onEntryFocused?.(entry, 'pointer');
+            }}>{char}</span>;
+        });
+        // Grouping follows the answer, not a counter: runs break where the answer
+        // has a real word gap and balance to at most five letters elsewhere, and a
+        // track that has to wrap breaks between runs instead of through one. A run
+        // set that disagrees with the cells about the length - a rebus carrying a
+        // word gap inside a single box, say - stays one run rather than inventing
+        // boundaries the answer does not have.
+        const runs = groupRuns(entry, settings.grouping);
+        const sized = runs.reduce((total, run) => total + run.size, 0);
+        const grouped = sized === letters.length ? runs : [{ size: letters.length, wordEnd: false }];
+        if (!letters.length) return letters;
+        let taken = 0;
+        return grouped.map((run, runIndex) => {
+            const slice = letters.slice(taken, taken + run.size);
+            taken += run.size;
+            return <span key={runIndex} className={classes('state-run', { 'word-end': run.wordEnd })}>{slice}</span>;
+        });
+    };
+    // The board takes on the territory: each corner of the grid is lit from
+    // behind in the hue of the clue showing in that corner of the screen, so
+    // the middle says where the reader is in each lane - the yellow and purple
+    // corners, or the blue and green ones. Written straight onto the grid's
+    // style on scroll (one frame at most per burst), never through a React
+    // render; vision.css owns how much light that becomes. Without number
+    // colours the rows carry no rank and the board keeps its plain edge.
+    useEffect(() => {
+        const panel = boardRef.current;
+        const across = acrossRef.current;
+        const down = downRef.current;
+        if (!panel || !across || !down || typeof requestAnimationFrame === 'undefined') return undefined;
+        /** @type {Array<[string, HTMLUListElement]>} */
+        const lanes = [['across', across], ['down', down]];
+        let frame = 0;
+        const rankOf = row => {
+            const value = Number.parseFloat(row?.style.getPropertyValue('--clue-ramp') ?? '');
+            return Number.isFinite(value) ? value : null;
+        };
+        // The grid wears the territory on its edge, the glow layer as the light
+        // behind it; each reads the ranks from its own style.
+        const wearers = [panel, glowRef.current].filter(element => element instanceof HTMLElement);
+        const publish = (name, value) => {
+            for (const wearer of wearers) {
+                if (value === null) wearer.style.removeProperty(name);
+                else wearer.style.setProperty(name, String(value));
+            }
+        };
+        const measure = () => {
+            frame = 0;
+            for (const [lane, list] of lanes) {
+                const box = list.getBoundingClientRect();
+                let first = null;
+                let last = null;
+                for (const row of list.children) {
+                    if (row.tagName !== 'LI') continue;
+                    const rect = row.getBoundingClientRect();
+                    if (rect.bottom <= box.top || rect.top >= box.bottom) continue;
+                    first ??= row;
+                    last = row;
+                }
+                publish(`--territory-${lane}-top`, rankOf(first));
+                publish(`--territory-${lane}-bottom`, rankOf(last));
+            }
+        };
+        const schedule = () => {
+            if (!frame) frame = requestAnimationFrame(measure);
+        };
+        schedule();
+        scheduleTerritory.current = schedule;
+        for (const [, list] of lanes) list.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('resize', schedule);
+        return () => {
+            scheduleTerritory.current = () => {};
+            cancelAnimationFrame(frame);
+            for (const [, list] of lanes) list.removeEventListener('scroll', schedule);
+            window.removeEventListener('resize', schedule);
+        };
+    }, [entries, settings.ramp]);
+    // Rows also leave a lane without any scroll (a check solves them), so the
+    // corners are re-read after every render too - still one frame per burst.
+    useEffect(() => {
+        scheduleTerritory.current();
+    });
+    // The last notch becomes the fireworks: the board remembers which words
+    // were still open, and when the puzzle completes the finale bursts from the
+    // opening of the last of them (the black square's edge or the board's rim
+    // in front of its first square). Without a board to measure, the finale
+    // falls from the top as before.
+    const lastOpen = useRef(/** @type {any[]} */ ([]));
+    const [finaleOrigin, setFinaleOrigin] = useState(/** @type {{ x: number, y: number } | null | undefined} */ (undefined));
+    useEffect(() => {
+        if (!app.showFireworks) {
+            const open = entries.filter(entry => !completedWords.has(entry.clue_text));
+            if (open.length) lastOpen.current = open;
+            if (finaleOrigin !== undefined) setFinaleOrigin(undefined);
+            return;
+        }
+        if (finaleOrigin !== undefined) return;
+        const last = lastOpen.current[0];
+        const cell = last ? boardRef.current?.children[last.start_y]?.children[last.start_x] : null;
+        const box = cell?.getBoundingClientRect();
+        setFinaleOrigin(box
+            ? (last.direction === 'across' ? { x: box.left, y: box.top + box.height / 2 } : { x: box.left + box.width / 2, y: box.top })
+            : null);
+    });
     const selfClick = handler => event => {
         if (event.target === event.currentTarget) handler(event);
     };
 
     return (
-        <div id="app" className={classes({ 'half-completed': app.isHalfCompleted })}>
+        <div id="app" className={classes({ 'half-completed': app.isHalfCompleted, 'react-desktop-app': true })}
+            data-direction={app.activeDirection || 'across'}
+            data-glow={glowOn ? 'on' : 'off'}
+            {...viewAttributes(settings)}
+            style={/** @type {React.CSSProperties} */ ({
+                '--grid-columns': grid[0]?.length || 15,
+                '--grid-rows': grid.length || 15,
+                // The highlighted word's rank for the background layers — lane
+                // watermarks and grid wash — that have no rank of their own.
+                // A distinct property, never --clue-ramp itself, so nothing
+                // else inherits a rank it was not given.
+                ...(settings.ramp && activeEntry && clueRamp.has(activeEntry.clue_number)
+                    ? { '--active-clue-ramp': String(clueRamp.get(activeEntry.clue_number)) }
+                    : {}),
+                '--remaining': String(entries.length ? (entries.length - solvedCount) / entries.length : 1),
+                '--libido': String(Math.round(Math.pow(Math.min(1, Math.max(0, app.score / 100)), 1.25) * 1000) / 1000),
+            })}>
             <div id="notmenu">
                 <div className={classes('clue-column', { active: app.direction === 'across', inactive: app.direction !== 'across' })} data-label="ACROSS">
-                    <ul id="across">
-                        {app.crossword.filter(entry => entry.direction === 'across' && !app.completedWords.has(entry.clue_text)).map(entry => (
-                            <li key={'across-' + entry.clue_number} onClick={event => app.handle_clue_click(event, entry)} className={clueClasses(entry)}>
+                    <ul id="across" ref={acrossRef}>
+                        {laneEntries('across').map(entry => (
+                            <li key={'across-' + entry.clue_number} onClick={event => {
+                                app.handle_clue_click(event, entry);
+                                onEntryFocused?.(entry, 'pointer');
+                            }} className={clueClasses(entry)} {...rowProps(entry)}>
                                 <div className="clue-content">
-                                    <span className="clue-text">{entry.clue_text}</span>
+                                    <span className="clue-text">{renderClueSurface(entry.clue_text, annotateClueGrammar)}</span>
                                     <div className="state-container">{answer(entry)}</div>
                                 </div>
-                                <strong className="clue-number">{entry.clue_number}.</strong>
+                                <strong className="clue-number" style={settings.ramp ? clueRampStyle(clueRamp, entry.clue_number) : undefined}>{entry.clue_number}</strong>
+                                {raptureSparks(entry)}
                             </li>
                         ))}
+                        {laneSprings('across', laneEntries('across'))}
                     </ul>
                 </div>
 
                 <div className="center-column">
-                    {/* Top Control Panel - Three Bars */}
+                    {/* Masthead: which puzzle this is, and the numbers a solver
+                        actually glances at. Checks and reveals are what the score
+                        is made of, so they sit behind it (hover or focus). */}
                     <div id="menu-top" className="menu-section">
-                        {/* Bar 1: Date and Authors */}
                         <div className="menu-row info-bar">
-                            {app.currentPuzzleMetadata && <span className="puzzle-date">{app.formatDate(app.currentPuzzleMetadata.date)}</span>}
-                            {app.currentPuzzleMetadata && <span className="puzzle-separator">•</span>}
-                            {app.currentPuzzleMetadata && <span className="puzzle-weekday">{app.getCurrentDayName()}</span>}
-                            {app.currentPuzzleMetadata && <span className="puzzle-separator">•</span>}
-                            {app.currentPuzzleMetadata && <span className="puzzle-authors" data-full-text={app.currentPuzzleMetadata.authors.join(', ')}>{app.currentPuzzleMetadata.authors.join(', ')}</span>}
+                            {app.currentPuzzleMetadata && <span className="puzzle-weekday">{displayedPuzzleWeekday(app, displayWeekday)}</span>}
+                            {app.currentPuzzleMetadata && (
+                                <span className="puzzle-meta">
+                                    <span className="puzzle-date">{app.formatDate(app.currentPuzzleMetadata.date)}</span>
+                                    <span className="puzzle-separator" aria-hidden="true">·</span>
+                                    <span className="puzzle-authors" data-full-text={app.currentPuzzleMetadata.authors.join(', ')} title={app.currentPuzzleMetadata.authors.join(', ')}>{app.currentPuzzleMetadata.authors.join(', ')}</span>
+                                </span>
+                            )}
                             {Boolean(app.currentPuzzleMetadata && app.currentPuzzleMetadata.notepad) && (
                                 <div className="puzzle-notepad">{app.currentPuzzleMetadata.notepad}</div>
                             )}
                         </div>
 
-                        {/* Bar 2: Indicator Bar (Statistics) */}
                         <div className="menu-row indicator-bar">
-                            <div className="stat-item blue-stat">
+                            <div className="stat-item stat-progress" style={/** @type {React.CSSProperties} */ ({ '--progress': entries.length ? completedWords.size / entries.length : 0 })}>
                                 <span className="stat-label">Completed</span>
-                                <span className="stat-value">{app.completedWords.size} / {app.crossword.length}</span>
+                                <span className="stat-value">{completedWords.size} / {entries.length}</span>
+                                <span className="progress-track" aria-hidden="true"></span>
                             </div>
-                            <div className="stat-item blue-stat">
-                                <span className="stat-label">Checks</span>
-                                <span className="stat-value">{app.checksUsed}</span>
-                            </div>
-                            <div className="stat-item blue-stat">
-                                <span className="stat-label">Reveals</span>
-                                <span className="stat-value">{app.revealsUsed}</span>
-                            </div>
-                            <div className="stat-item orange-stat">
-                                <span className="stat-label">Score</span>
-                                <span className="stat-value">{app.score}</span>
-                            </div>
-                            <div className="stat-item orange-stat">
+                            <div className="stat-item stat-time">
                                 <span className="stat-label">Time</span>
                                 <span className="stat-value">{app.formatTime(app.timer)}</span>
                             </div>
+                            <div className="score-cluster" tabIndex={0} aria-label={`Score ${app.score}: ${app.checksUsed} checks, ${app.revealsUsed} reveals`}>
+                                <div className="stat-item stat-score">
+                                    <span className="stat-label">Score</span>
+                                    <span className="stat-value">{app.score}</span>
+                                </div>
+                                <div className="stat-detail">
+                                    <div className="stat-item">
+                                        <span className="stat-label">Checks</span>
+                                        <span className="stat-value">{app.checksUsed}</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Reveals</span>
+                                        <span className="stat-value">{app.revealsUsed}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Bar 3: Action Buttons */}
-                        <div className="menu-row action-bar">
-                            <button onClick={() => app.check_all()} id="check-all" className="action-button blue-action" title="Check all">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                                </svg>
-                                <span>Check</span>
-                            </button>
-                            <button onClick={() => app.revealAll()} id="reveal-all" className="action-button blue-action" title="Reveal all">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                </svg>
-                                <span>Reveal</span>
-                            </button>
-                            {app.currentPuzzleMetadata && (
-                                <a href={app.getXWordInfoLink()} target="_blank" rel="noopener noreferrer" className="action-button center-action" title="View on XWord Info">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <div className="puzzle-loader-header">
+                                <label className="field-label" htmlFor="header-weekday-select">Weekday</label>
+                                <select id="header-weekday-select" value={app.selectedWeekday} onChange={event => { app.selectedWeekday = event.target.value; }}>
+                                    {app.weekdayOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                </select>
+                                <button onClick={() => app.loadSelectedWeekday()} id="header-get-puzzle-button" aria-label="Get new puzzle">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                        <polyline points="12 16 16 12 12 8"></polyline>
+                                        <line x1="8" y1="12" x2="16" y2="12"></line>
                                     </svg>
-                                    <span>Solution</span>
-                                </a>
-                            )}
-                            <button onClick={() => app.markCurrentPuzzleAsComplete()} id="complete-button" className="action-button orange-action" title="Mark as Complete">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                                <span>Complete</span>
-                            </button>
-                        </div>
+                                </button>
+                            </div>
+
                     </div>
 
                     {/* Crossword Grid */}
                     <div id="crossword-container">
-                        <div className="grid" style={{ gridTemplateRows: `repeat(${app.grid.length}, var(--cell-size))` }}>
-                            {app.grid.map((row, rowIndex) => (
+                        <div className="board-glow" ref={glowRef} aria-hidden="true"></div>
+                        <div className="grid" ref={boardRef} style={{ gridTemplateRows: `repeat(${grid.length}, var(--cell-size))` }}>
+                            {grid.map((row, rowIndex) => (
                                 <div className="grid-row" key={rowIndex} style={{ gridTemplateColumns: `repeat(${row.length}, var(--cell-size))` }}>
                                     {row.map((cell, cellIndex) => (
-                                        <div key={cellIndex} className={classes('grid-cell', app.getCellClasses(rowIndex, cellIndex), {
+                                        <div key={cellIndex} {...gridCellProps(rowIndex, cellIndex)} className={classes('grid-cell', app.getCellClasses(rowIndex, cellIndex), {
                                             'black-cell': cell === null,
-                                            'highlighted-cell': app.isCellInActiveEntry(rowIndex, cellIndex)
-                                        })}>
-                                            {Boolean(app.find_index(rowIndex, cellIndex)) && <span className="clue-index">{app.find_index(rowIndex, cellIndex)}</span>}
+                                            'has-letter': Boolean(cell),
+                                            'highlighted-cell': selection.has(`${rowIndex},${cellIndex}`),
+                                            'future-token-cell': Boolean(tokenAt(rowIndex, cellIndex)),
+                                            ...activeEntryCellClasses(rowIndex, cellIndex)
+                                        })} data-token-display={tokenAt(rowIndex, cellIndex)?.displayToken || undefined}>
+                                            {/* The square carries the rank (see gridCellProps); the index just inherits its tone. */}
+                                            {Boolean(startNumbers.get(`${rowIndex},${cellIndex}`)) && <span className="clue-index">{startNumbers.get(`${rowIndex},${cellIndex}`)}</span>}
                                             {cell !== null && (
                                                 <>
-                                                    <input ref={element => { app.setRef('input-' + rowIndex + '-' + cellIndex, element); }} type="text"
+                                                <input ref={element => { app.setRef('input-' + rowIndex + '-' + cellIndex, element); }} type="text"
                                                         maxLength={app.isRebus(cellIndex, rowIndex) ? 10 : 1}
-                                                        value={app.grid[rowIndex][cellIndex]}
-                                                        onChange={event => { app.grid[rowIndex][cellIndex] = event.target.value; }}
-                                                        onClick={() => app.handle_grid_cell_click(rowIndex, cellIndex)}
-                                                        onKeyDown={event => app.handle_crossword_cell_keydown(event, rowIndex, cellIndex)}
-                                                        onContextMenu={event => app.handle_crossword_cell_contextmenu(event, rowIndex, cellIndex)}
+                                                        value={displayGridValue(grid[rowIndex][cellIndex], rowIndex, cellIndex)}
+                                                        aria-label={tokenAt(rowIndex, cellIndex)
+                                                            ? `grid cell ${rowIndex}-${cellIndex}, declared token ${tokenAt(rowIndex, cellIndex).displayToken}`
+                                                            : 'grid cell ' + rowIndex + '-' + cellIndex}
+                                                        title={tokenAt(rowIndex, cellIndex)
+                                                            ? `Declared token: ${tokenAt(rowIndex, cellIndex).displayToken}`
+                                                            : undefined}
+                                                        onChange={event => {
+                                                            const cellId = `r${rowIndex}c${cellIndex}`;
+                                                            const marker = inputSources.current.get(cellId);
+                                                            const nativeEvent = /** @type {InputEvent} */ (event.nativeEvent);
+                                                            const inputType = nativeEvent.inputType || '';
+                                                            const source = nativeEvent.isComposing || inputType.includes('Composition')
+                                                                ? 'composition'
+                                                                : inputType === 'insertFromPaste'
+                                                                    ? 'paste'
+                                                                    : marker?.source === 'touch' && Date.now() - marker.at < 1500
+                                                                        ? 'touch'
+                                                                        : marker?.source === 'keyboard' ? 'keyboard' : 'unknown';
+                                                            const beforeToken = app.grid[rowIndex][cellIndex] || null;
+                                                            const isRebusCell = Boolean(app.isRebus(cellIndex, rowIndex));
+                                                            const normalized = languageInput?.normalizeForCell(event.target.value, { isRebus: isRebusCell });
+                                                            const afterToken = normalized?.accepted ? normalized.fill : event.target.value;
+                                                            const sourceEntry = entryAtCell(rowIndex, cellIndex);
+                                                            const sourceEntryId = sourceEntry ? `${sourceEntry.direction}-${sourceEntry.clue_number}` : null;
+                                                            app.grid[rowIndex][cellIndex] = afterToken;
+                                                            inputSources.current.delete(cellId);
+                                                            if (beforeToken !== afterToken) {
+                                                                onCellChanged?.({ row: rowIndex, column: cellIndex, beforeToken, afterToken, source, activeEntryId: sourceEntryId });
+                                                            }
+                                                        }}
+                                                        onFocus={() => {
+                                                            setCursorCell({ rowIndex, cellIndex });
+                                                            requestAnimationFrame(() => {
+                                                                const entry = entryAtCell(rowIndex, cellIndex);
+                                                                if (entry) onEntryFocused?.(entry, 'programmatic');
+                                                            });
+                                                        }}
+                                                        onBlur={() => setCursorCell(null)}
+                                                        onPointerDown={event => {
+                                                            if (event.pointerType === 'touch') inputSources.current.set(`r${rowIndex}c${cellIndex}`, { source: 'touch', at: Date.now() });
+                                                        }}
+                                                        onClick={() => {
+                                                            app.handle_grid_cell_click(rowIndex, cellIndex);
+                                                            const entry = entryAtCell(rowIndex, cellIndex);
+                                                            if (entry) onEntryFocused?.(entry, 'pointer');
+                                                        }}
+                                                        onKeyDown={event => {
+                                                            const cellId = `r${rowIndex}c${cellIndex}`;
+                                                            const marker = inputSources.current.get(cellId);
+                                                            if (!event.key.startsWith('Arrow') && !(marker?.source === 'touch' && Date.now() - marker.at < 1500)) {
+                                                                inputSources.current.set(cellId, { source: 'keyboard', at: Date.now() });
+                                                            }
+                                                            const beforeToken = app.grid[rowIndex][cellIndex] || null;
+                                                            const sourceEntry = entryAtCell(rowIndex, cellIndex);
+                                                            const sourceEntryId = sourceEntry ? `${sourceEntry.direction}-${sourceEntry.clue_number}` : null;
+                                                            const isRebusCell = Boolean(app.isRebus(cellIndex, rowIndex));
+                                                            const normalized = normalizeFutureKey(languageInput, event.key, {
+                                                                isRebus: isRebusCell,
+                                                                ctrlKey: event.ctrlKey,
+                                                                metaKey: event.metaKey,
+                                                                altKey: event.altKey
+                                                            });
+                                                            // The existing controller owns all ordinary ASCII navigation. A future
+                                                            // language pack only intercepts a supported, single-cell token whose
+                                                            // canonical fill differs from that ASCII path (for example é → E).
+                                                            // Rebus/multi-token input remains in the existing context-menu path.
+                                                            if (!isRebusCell && normalized?.accepted && normalized.fill.length === 1 && normalized.fill !== event.key.toUpperCase()) {
+                                                                event.preventDefault();
+                                                                app.grid[rowIndex][cellIndex] = normalized.fill;
+                                                                app.$forceUpdate();
+                                                                app.move(rowIndex, cellIndex, 'forward');
+                                                                if (app.isChecking) app.clearChecks();
+                                                                inputSources.current.delete(cellId);
+                                                                onCellChanged?.({ row: rowIndex, column: cellIndex, beforeToken, afterToken: normalized.fill, source: 'keyboard', activeEntryId: sourceEntryId });
+                                                                return;
+                                                            }
+                                                            app.handle_crossword_cell_keydown(event, rowIndex, cellIndex);
+                                                            const afterToken = app.grid[rowIndex][cellIndex] || null;
+                                                            if (beforeToken !== afterToken) {
+                                                                const source = marker?.source === 'touch' && Date.now() - marker.at < 1500 ? 'touch' : 'keyboard';
+                                                                inputSources.current.delete(cellId);
+                                                                onCellChanged?.({ row: rowIndex, column: cellIndex, beforeToken, afterToken, source, activeEntryId: sourceEntryId });
+                                                            }
+                                                            if (event.key.startsWith('Arrow') || event.key === 'Tab') {
+                                                                const entry = entryAtCell(rowIndex, cellIndex);
+                                                                if (entry) onEntryFocused?.(entry, 'keyboard');
+                                                            }
+                                                        }}
+                                                        onContextMenu={event => {
+                                                            const beforeToken = app.grid[rowIndex][cellIndex] || null;
+                                                            app.handle_crossword_cell_contextmenu(event, rowIndex, cellIndex);
+                                                            const token = app.grid[rowIndex][cellIndex] || null;
+                                                            if (beforeToken !== token && token) {
+                                                                onCellRevealed?.({ row: rowIndex, column: cellIndex, beforeToken, token }, app);
+                                                            }
+                                                        }}
                                                         data-row={rowIndex} data-cell={cellIndex}
                                                         data-solution={app.find_solution(rowIndex, cellIndex)}
-                                                        aria-label={'grid cell ' + rowIndex + '-' + cellIndex} />
+                                                        />
+                                                    {tokenAt(rowIndex, cellIndex) && (
+                                                        <span className="future-token-marker" aria-hidden="true">◇</span>
+                                                    )}
                                                     {Boolean(app.isRebus(cellIndex, rowIndex)) && <span className="rebus-indicator">{app.getRebusCount(cellIndex, rowIndex)}</span>}
                                                 </>
                                             )}
@@ -153,7 +790,44 @@ export default function CrosswordView({ app }) {
                         </div>
                     </div>
 
-                    {/* Bottom Control Panel */}
+                    {/* The commands a solver reaches for mid-solve. */}
+                    <div className="menu-row action-bar">
+                        <button onClick={() => {
+                            const wasChecking = app.isChecking;
+                            const solvedBefore = new Set(app.completedWords);
+                            app.check_all();
+                            if (!wasChecking && app.isChecking) {
+                                rapture.celebrate(solvedBefore);
+                                onCheckAll?.(app);
+                            }
+                        }} id="check-all" className="action-button blue-action" title="Check all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                            <span>Check</span>
+                        </button>
+                        <button onClick={() => {
+                            const before = onRevealAll ? gridValues() : null;
+                            app.revealAll();
+                            if (before) onRevealAll(before, app);
+                        }} id="reveal-all" className="action-button blue-action" title="Reveal all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <span>Reveal</span>
+                        </button>
+                        <button onClick={() => app.markCurrentPuzzleAsComplete(() => onComplete?.())} id="complete-button" className="action-button orange-action" title="Mark as Complete">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            <span>Complete</span>
+                        </button>
+                    </div>
+
+                    {/* The tray: per-session things, quiet until wanted. */}
                     <div id="menu-bottom" className="menu-section">
                         <div className="menu-row selection-row">
                             <div className="field-group weekday-group">
@@ -194,6 +868,15 @@ export default function CrosswordView({ app }) {
                                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                                 </svg>
                             </button>
+                            {app.currentPuzzleMetadata && (
+                                <a href={app.getXWordInfoLink()} target="_blank" rel="noopener noreferrer" className="icon-button solution-link" title="View the solution on XWord Info" aria-label="View the solution on XWord Info">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                    </svg>
+                                </a>
+                            )}
                             <div className="theme-switch">
                                 <label className="switch">
                                     <input type="checkbox" checked={app.isDarkMode} onChange={event => {
@@ -219,21 +902,28 @@ export default function CrosswordView({ app }) {
                                     </svg>
                                 </label>
                             </div>
+
+                            <ViewControls settings={settings} onChange={changeSettings} onReset={() => changeSettings(VIEW_DEFAULTS)} />
                         </div>
                     </div>
                 </div>
 
                 <div className={classes('clue-column', { active: app.direction === 'down', inactive: app.direction !== 'down' })} data-label="DOWN">
-                    <ul id="down">
-                        {app.crossword.filter(entry => entry.direction === 'down' && !app.completedWords.has(entry.clue_text)).map(entry => (
-                            <li key={'down-' + entry.clue_number} onClick={event => app.handle_clue_click(event, entry)} className={clueClasses(entry)}>
-                                <strong className="clue-number">{entry.clue_number}.</strong>
+                    <ul id="down" ref={downRef}>
+                        {laneEntries('down').map(entry => (
+                            <li key={'down-' + entry.clue_number} onClick={event => {
+                                app.handle_clue_click(event, entry);
+                                onEntryFocused?.(entry, 'pointer');
+                            }} className={clueClasses(entry)} {...rowProps(entry)}>
+                                <strong className="clue-number" style={settings.ramp ? clueRampStyle(clueRamp, entry.clue_number) : undefined}>{entry.clue_number}</strong>
                                 <div className="clue-content">
-                                    <span className="clue-text">{entry.clue_text}</span>
+                                    <span className="clue-text">{renderClueSurface(entry.clue_text, annotateClueGrammar)}</span>
                                     <div className="state-container">{answer(entry)}</div>
                                 </div>
+                                {raptureSparks(entry)}
                             </li>
                         ))}
+                        {laneSprings('down', laneEntries('down'))}
                     </ul>
                 </div>
             </div>
@@ -373,19 +1063,51 @@ export default function CrosswordView({ app }) {
             {app.showRebusMenu && (
                 <div className="rebus-context-menu" style={{ left: app.rebusMenuPosition.x + 'px', top: app.rebusMenuPosition.y + 'px', transform: 'translateX(-50%)' }} onClick={event => event.stopPropagation()}>
                     <div className="rebus-context-menu-header">Enter Rebus Answer</div>
-                    <input type="text" className="rebus-context-menu-input" value={app.rebusInputValue}
-                        onChange={event => { app.rebusInputValue = event.target.value; }}
-                        onKeyDown={event => app.handleRebusMenuKeydown(event)} placeholder="Type letters..." maxLength={10} />
+                    {/* Future packs may map one displayed character to several
+                        canonical fill units (for example ß → SS). Keep that
+                        conversion inside the future-only rebus path; the
+                        shared daily solver still receives its original input. */}
+                    <input type="text" className="rebus-context-menu-input" value={rebusDisplayValue}
+                        onChange={event => {
+                            const normalized = describeRebusInput(event.target.value);
+                            app.rebusInputValue = normalized.fill;
+                            setRebusDisplayValue(normalized.display);
+                            app.$forceUpdate?.();
+                        }}
+                        onKeyDown={event => {
+                            const row = app.rebusMenuCell.row;
+                            const column = app.rebusMenuCell.col;
+                            const beforeToken = app.grid[row]?.[column] || null;
+                            const sourceEntry = entryAtCell(row, column);
+                            const sourceEntryId = sourceEntry ? `${sourceEntry.direction}-${sourceEntry.clue_number}` : null;
+                            app.handleRebusMenuKeydown(event);
+                            const token = row >= 0 ? (app.grid[row]?.[column] || null) : null;
+                            if (beforeToken !== token) {
+                                onCellChanged?.({ row, column, beforeToken, afterToken: token, source: 'keyboard', activeEntryId: sourceEntryId });
+                            }
+                        }} placeholder="Type letters..." maxLength={10} />
                     <div className="rebus-context-menu-hint">Press Enter to save, Esc to cancel</div>
                     <div className="rebus-context-menu-buttons">
                         <button className="rebus-context-menu-button cancel" onClick={() => app.closeRebusMenu()}>Cancel</button>
-                        <button className="rebus-context-menu-button" onClick={() => app.saveRebusValue()}>Save</button>
+                        <button className="rebus-context-menu-button" onClick={() => {
+                            const row = app.rebusMenuCell.row;
+                            const column = app.rebusMenuCell.col;
+                            const beforeToken = app.grid[row]?.[column] || null;
+                            const sourceEntry = entryAtCell(row, column);
+                            const sourceEntryId = sourceEntry ? `${sourceEntry.direction}-${sourceEntry.clue_number}` : null;
+                            app.saveRebusValue();
+                            const token = row >= 0 ? (app.grid[row]?.[column] ?? null) : null;
+                            if (beforeToken !== token) {
+                                onCellChanged?.({ row, column, beforeToken, afterToken: token, source: 'unknown', activeEntryId: sourceEntryId });
+                            }
+                        }}>Save</button>
                     </div>
                 </div>
             )}
 
-            {/* Fireworks Canvas Overlay: v-show keeps the canvas mounted. */}
-            <canvas id="fireworks-canvas" style={{ display: app.showFireworks ? undefined : 'none' }}></canvas>
+            {/* The finish and the check celebrations are plain DOM, not a canvas. */}
+            <RaptureLayer active={rapture.active} />
+            {app.showFireworks && finaleOrigin !== undefined && <Finale app={app} origin={finaleOrigin} />}
         </div>
     );
 }

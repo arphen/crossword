@@ -6,7 +6,7 @@ STARTUP PROTOCOL: Do NOT perform recursive directory listings (`ls -R`, `find .`
 
 `AGENTS.md` is authoritative for stack versions, commands, and strict boundaries. Search only mapped source files or narrowly scoped modules; never scan dependencies, generated output, private state, or excluded directories. If the map is missing/stale, run `bash .scripts/generate-repo-map.sh`; do not replace it with a source dump. Refresh it after structural changes and use `--check` to verify freshness. Preserve unrelated working-tree changes.
 
-Prefer Makefile targets for tests and server operations; use the direct lint/typecheck/React commands in `AGENTS.md` where Make lacks an equivalent. The conventions below describe the legacy Flask/Vue code; the React port and TypeScript packages follow their local conventions.
+Prefer Makefile targets for tests and server operations; use the direct lint/typecheck/React commands in `AGENTS.md` where Make lacks an equivalent. The conventions below describe the Flask backend; the Vue frontend they reference is shelved in git history. The React port and TypeScript packages follow their local conventions.
 ## Project Overview
 This is a Flask-based web application for solving NYT-style crossword puzzles with offline support. The app fetches puzzles from the NYT syndication API, parses them into clean domain models using Pydantic, and provides an interactive Vue.js frontend.
 
@@ -42,11 +42,11 @@ This is a Flask-based web application for solving NYT-style crossword puzzles wi
 - Use `to_dict()` methods for serializing models to JSON
 - Store JSON data as TEXT columns and serialize/deserialize with `json.dumps()`/`json.loads()`
 
-### Frontend
-- Use Vue.js 2.7.16 options API (not composition API)
+### Frontend (shelved Vue; React at `apps/react` is the frontend)
+- The Vue 2.7.16 options-API frontend lived in `src/crossword/static/main.js` (shelved in git history)
 - Store all JavaScript in `src/crossword/static/main.js`
 - Use Axios for HTTP requests
-- Generate offline libraries with `make legacy-assets`; never search or hand-edit `src/crossword/static/lib/`.
+- Never hand-vendor browser libraries; never search or hand-edit generated output under `src/crossword/static/`.
 
 ## Domain Models
 
@@ -156,9 +156,8 @@ except Exception as e:
 ## Important Notes
 
 ### Offline Support
-- Build local JavaScript libraries from the npm lockfile using `make legacy-assets`; never hand-vendor them.
+- Never hand-vendor browser libraries.
 - No CDN links in production templates
-- See `docs/legacy-assets.md` for provenance.
 
 ### Date Handling
 - NYT API uses `YYMMDD` format
@@ -175,7 +174,7 @@ except Exception as e:
 1. **Add domain models first** if needed (in `models.py`)
 2. **Add database models** if persistence is needed (in `database.py`)
 3. **Add API routes** following RESTful conventions (in `app.py`)
-4. **Add frontend logic** in Vue component (in `static/main.js`)
+4. **Add frontend logic** in the React app (in `apps/react/src/`)
 5. **Add tests** for new functionality (in `tests/`)
 6. **Update this file** if you introduce new patterns or conventions
 

@@ -89,6 +89,13 @@ src/crossword/static/react/
 
 # Local dependency-audit output is intentionally kept out of source control.
 reports/npm-audit.json
+# Answer-bearing local specimen ledgers are never committed; only their
+# counts-plus-digest attestations enter docs/evidence/.
+docs/evidence/*.local.json
+/private-clue-specimens-v1.local.json
+/private-clue-specimens-v1.round*.local.json
+/private-clue-real-v1.local.json
+/private-clue-routes-v1.local.json
 reports/mutation/
 .npm-cache/
 .shots/
@@ -101,3 +108,11 @@ coverage/
 playwright-report/
 test-results/
 .stryker-tmp/
+target/
+.ruff_cache/
+.cache/
+*.tsbuildinfo
+# All generated reports stay out of source control (parity screenshots,
+# SBOM/audit JSON, mutation HTML/JSON); only docs/evidence attestations
+# are tracked.
+reports/

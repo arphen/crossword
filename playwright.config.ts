@@ -12,7 +12,7 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 10_000 },
   outputDir: 'test-results/e2e',
-  reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
+  reporter: [['dot'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: {
     baseURL: backendURL,
     trace: 'retain-on-failure',

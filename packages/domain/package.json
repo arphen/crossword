@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --reporter=basic --silent"
   },
   "devDependencies": {
     "vitest": "3.2.4"

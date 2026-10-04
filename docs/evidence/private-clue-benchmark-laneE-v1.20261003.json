@@ -1,0 +1,77 @@
+{
+  "version": "private-clue-benchmark-v1",
+  "generatedAt": "2026-10-03T14:16:17+00:00",
+  "kind": "counts-only",
+  "claim": "one AutoResearch iteration: fixed 15-answer benchmark, deterministic scoring only",
+  "iterations": [
+    {
+      "label": "laneE-seed-6218",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 14,
+        "genre:plain-definition": 13,
+        "genre:sound-or-action-cue": 1
+      },
+      "draftCalls": 6,
+      "compareCalls": 12,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 109.319,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6218
+    },
+    {
+      "label": "laneE-seed-6219",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 14,
+        "genre:plain-definition": 11,
+        "genre:quotational": 1,
+        "genre:sound-or-action-cue": 2
+      },
+      "draftCalls": 6,
+      "compareCalls": 10,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 98.526,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6219
+    },
+    {
+      "label": "laneE-seed-6220",
+      "entries": 15,
+      "strictAdmission": true,
+      "admitted": 14,
+      "scaffold": 1,
+      "admissionRate": 0.9333,
+      "guardHits": 0,
+      "families": {
+        "definition": 12,
+        "factual-relation": 2,
+        "genre:plain-definition": 13,
+        "genre:quotational": 1
+      },
+      "draftCalls": 5,
+      "compareCalls": 13,
+      "redraftSteeringRounds": 1,
+      "wallSeconds": 105.199,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6220
+    }
+  ],
+  "knownLimits": [
+    "counts only; clue text stays local and is never committed",
+    "quality (wit) is not scored here; blind human verdicts score it"
+  ]
+}

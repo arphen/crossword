@@ -1,0 +1,5623 @@
+"""The local experimental puzzle endpoint returns solver-ready puzzles."""
+
+import json
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
+from uuid import uuid4
+
+import pytest
+
+from tests.test_api_isolated import api, no_network  # noqa: F401
+from src.crossword.future_grid_jobs import (
+    FutureGridDraftJob,
+    FutureGridDraftPrivateSelection,
+    process_next_grid_draft,
+)
+from src.crossword.database import db
+from src.crossword.future import StartingProfile
+from src.crossword.future_puzzles import (
+    FuturePuzzleProvenanceRecord,
+    register_legacy_puzzle,
+)
+from src.crossword.learning_review import FutureLearningReviewRecord, _review_task_id
+from src.crossword.models import Crossword
+import src.crossword.learning_review as learning_review
+import src.crossword.private_puzzle_generation as private_generation
+import src.crossword.future_grid_jobs as grid_jobs_module
+
+
+@pytest.mark.parametrize(
+    ("clue", "family", "signal"),
+    [
+        ("“Not a chance!”", "spoken-equivalent", "quote"),
+        ("‘A sugary ___’ (Fill-in)", "fill-blank", "quote"),
+        ("‘___ the knot’ (Spoken equivalent)", "spoken-equivalent", "quote"),
+        ("[Sigh of relief]", "nonverbal-expression", "brackets"),
+        ("Safe and ___", "fill-blank", "fill-blank"),
+        ("Thank you, in German", "factual-relation", "language-indicator"),
+        ("Estimated arrival, briefly", "metalinguistic", "abbreviation-indicator"),
+        ("Branch specialist?", "pun", "question-mark"),
+        ("Felines (pl.)", "definition", "plural-marker"),
+        ("Past tense of run", "definition", "tense-marker"),
+        ("Purring pets", "definition", None),
+    ],
+)
+def test_clue_family_observation_records_visible_signals_without_claiming_semantics(
+    clue, family, signal
+):
+    observation = private_generation._clue_family_observation(clue)
+
+    assert observation["family"] == family
+    assert observation["confidence"] == "surface-signal-only"
+    assert observation["uncertainty"] == ["semantic-family-unverified"]
+    if signal is None:
+        assert observation["signals"] == []
+    else:
+        assert observation["signals"][0]["kind"] == signal
+
+
+def test_model_context_uses_soft_opening_associations_and_current_episteme():
+    starting = SimpleNamespace(
+        profile={
+            "associations": ["echo", "moss"],
+            "observations": ["A red thread", "A tuning fork"],
+            "learningLanguage": "German",
+        },
+        draft={"firstStimulus": "thread-knot", "excluded": ["tension"]},
+    )
+    episteme = {
+        "projection": {
+            "associations": [
+                {
+                    "phrase": "afterglow",
+                    "response": "kept",
+                    "origin": "calibration-proposal",
+                }
+            ],
+            "claims": [],
+            "knowledge": [],
+        }
+    }
+
+    context = private_generation._profile_context(starting, episteme)
+
+    assert context["opening_associations"] == ["echo", "moss"]
+    assert context["opening_observations"] == ["A red thread", "A tuning fork"]
+    assert context["language_interest"] == "German"
+    assert context["active_associations"][0]["phrase"] == "afterglow"
+
+
+def test_recent_clue_family_exposures_are_bounded_surface_only_rotation_hints():
+    evidence = [
+        {
+            "type": "session-analysis",
+            "taskLinks": [
+                {"tasks": [{"surfaceFamily": "pun"}, {"surfaceFamily": "pun"}]},
+                {"tasks": [{"surfaceFamily": "definition"}]},
+            ],
+        },
+        {
+            "type": "session-analysis",
+            "taskLinks": [
+                # Older evidence only has the historical lane. It remains
+                # readable without becoming a semantic claim.
+                {"tasks": [{"clueFamily": "language-recurrence"}]},
+            ],
+        },
+    ]
+
+    projection = private_generation._recent_clue_family_exposures(evidence)
+
+    assert projection == {
+        "version": "private-clue-family-fatigue-v1",
+        "source": "finished-session-analysis",
+        "sessions": 2,
+        "taskCount": 4,
+        "counts": {"definition": 1, "language-recurrence": 1, "pun": 2},
+        "policy": "rotation-hint-only",
+        "reversible": True,
+        "uncertainty": ["surface-family-only", "not-a-preference-claim"],
+    }
+
+
+def test_model_context_includes_recent_clue_family_rotation_hint_without_answers():
+    starting = SimpleNamespace(profile={"associations": []}, draft={})
+    context = private_generation._profile_context(
+        starting,
+        {
+            "projection": {"claims": [], "associations": [], "knowledge": []},
+            "evidence": [
+                {
+                    "type": "session-analysis",
+                    "taskLinks": [
+                        {"tasks": [{"surfaceFamily": "pun"}]},
+                    ],
+                }
+            ],
+        },
+    )
+
+    assert context["recent_clue_family_exposures"]["counts"] == {"pun": 1}
+    assert "answer" not in str(context["recent_clue_family_exposures"]).casefold()
+
+
+def test_association_steering_receipt_excludes_expired_or_rejected_paths():
+    starting = SimpleNamespace(profile={"associations": [], "observations": []}, draft={})
+    context = private_generation._profile_context(
+        starting,
+        {
+            "projection": {
+                "associations": [
+                    {
+                        "phrase": "kept thread",
+                        "response": "kept",
+                        "origin": "calibration-proposal",
+                        "relation": "sound",
+                        "calibrationProvenance": {"expired": False},
+                    },
+                    {
+                        "phrase": "old thread",
+                        "response": "kept",
+                        "origin": "model-proposal",
+                        "relation": "metaphor",
+                        "modelProvenance": {"expired": True},
+                    },
+                    {
+                        "phrase": "passed thread",
+                        "response": "passed",
+                        "origin": "model-proposal",
+                        "relation": "sound",
+                    },
+                ],
+                "claims": [],
+                "knowledge": [],
+            },
+            "evidence": [],
+        },
+    )
+
+    assert [item["phrase"] for item in context["active_associations"]] == ["kept thread"]
+    assert context["association_steering"] == {
+        "version": "private-association-steering-v1",
+        "projectionCount": 3,
+        "eligibleCount": 1,
+        "expiredCount": 1,
+        "excludedResponseCount": 1,
+        "responseCounts": {"kept": 2, "passed": 1},
+        "originCounts": {"calibration-proposal": 1, "model-proposal": 2},
+        "relationCounts": {"metaphor": 1, "sound": 2},
+        "diversity": {"uniqueRelations": 2, "status": "varied"},
+        "reversible": True,
+        "interpretation": "bounded-association-steering-not-a-personality-claim",
+    }
+
+
+def test_model_context_turns_explicit_clue_feedback_into_reversible_family_steering():
+    starting = SimpleNamespace(
+        profile={"associations": [], "observations": []},
+        draft={},
+    )
+    context = private_generation._profile_context(
+        starting,
+        {
+            "projection": {
+                "claims": [
+                    {
+                        "concept": {
+                            "conceptId": "association:en:clue%20surfaces%3A%20factual%20surface%20is%20unverified",
+                            "label": "clue surfaces: factual surface is unverified",
+                        },
+                        "stance": "avoid",
+                        "strength": 0.42,
+                        "evidenceIds": ["explicit-clue-feedback-1"],
+                    }
+                ],
+                "associations": [],
+                "knowledge": [],
+            },
+            "evidence": [],
+        },
+    )
+
+    assert context["clue_family_targets"] == [
+        {
+            "family": "factual-relation",
+            "direction": "avoid",
+            "strength": 0.42,
+            "evidenceCount": 1,
+            "source": "explicit-clue-feedback",
+            "reversible": True,
+        }
+    ]
+
+
+def test_model_context_maps_explicit_challenger_note_flags_to_closed_families():
+    starting = SimpleNamespace(
+        profile={"associations": [], "observations": []},
+        draft={},
+    )
+    context = private_generation._profile_context(
+        starting,
+        {
+            "projection": {
+                "claims": [
+                    {
+                        "concept": {
+                            "conceptId": "association:en:clue%20surfaces%3A%20local%20challenger%20recommends%20a%20safer%20foothold",
+                            "label": "clue surfaces: local challenger recommends a safer foothold",
+                        },
+                        "stance": "seek",
+                        "strength": 0.6,
+                        "evidenceIds": ["explicit-challenger-note-1"],
+                    }
+                ],
+                "associations": [],
+                "knowledge": [],
+            },
+            "evidence": [],
+        },
+    )
+
+    assert context["clue_family_targets"] == [
+        {
+            "family": "discovery",
+            "direction": "include",
+            "strength": 0.6,
+            "evidenceCount": 1,
+            "source": "explicit-clue-feedback",
+            "reversible": True,
+        }
+    ]
+
+
+def test_model_context_includes_recent_private_answer_exposure_without_claiming_mastery():
+    starting = SimpleNamespace(
+        profile={"associations": [], "observations": []},
+        draft={},
+    )
+    context = private_generation._profile_context(
+        starting,
+        {
+            "evidence": [
+                {
+                    "type": "session-analysis",
+                    "taskLinks": [
+                        {
+                            "entryId": "across-1",
+                            "tasks": [
+                                {
+                                    "taskId": "private-answer-form:RESONANCE",
+                                    "contentReview": "unreviewed",
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "projection": {"claims": [], "associations": [], "knowledge": []},
+        },
+    )
+
+    assert context["recent_private_answers"] == ["RESONANCE"]
+
+
+def test_model_context_turns_recent_solve_evidence_into_bounded_difficulty_calibration():
+    starting = SimpleNamespace(profile={"associations": []}, draft={})
+    context = private_generation._profile_context(
+        starting,
+        {
+            "evidence": [
+                {
+                    "type": "session-analysis",
+                    "analysis": {
+                        "observations": [
+                            {
+                                "finalState": "correct",
+                                "outcome": "independent-retrieval",
+                                "incorrectAttemptCount": 0,
+                            },
+                            {
+                                "finalState": "correct",
+                                "outcome": "supported-retrieval",
+                                "incorrectAttemptCount": 1,
+                            },
+                            {
+                                "finalState": "incorrect",
+                                "outcome": "incorrect-attempt",
+                                "incorrectAttemptCount": 2,
+                            },
+                        ]
+                    },
+                }
+            ],
+            "projection": {"claims": [], "associations": [], "knowledge": []},
+        },
+    )
+
+    assert context["play_calibration"] == {
+        "status": "calibrated",
+        "source": "solve-behavior",
+        "interpretation": "difficulty-only",
+        "reversible": True,
+        "sessions": 1,
+        "completionRate": 0.667,
+        "independentRate": 0.333,
+        "supportRate": 0.333,
+        "mistakeRate": 1.0,
+        "recommendation": "balanced",
+        "recent": [
+            {
+                "completionRate": 0.667,
+                "independentRate": 0.333,
+                "supportRate": 0.333,
+                "mistakeRate": 1.0,
+                "entryCount": 3,
+            }
+        ],
+    }
+
+
+def test_play_calibration_is_more_footholds_for_heavy_support_or_low_completion():
+    calibration = private_generation._play_calibration(
+        [
+            {
+                "type": "session-analysis",
+                "analysis": {
+                    "observations": [
+                        {
+                            "finalState": "correct",
+                            "outcome": "reveal-assisted-correction",
+                            "incorrectAttemptCount": 0,
+                        },
+                        {
+                            "finalState": "incomplete",
+                            "outcome": "untouched",
+                            "incorrectAttemptCount": 0,
+                        },
+                    ]
+                },
+            }
+        ]
+    )
+
+    assert calibration["recommendation"] == "more-footholds"
+    assert calibration["interpretation"] == "difficulty-only"
+
+
+def test_playtest_pulse_is_a_bounded_difficulty_signal_and_not_a_taste_claim():
+    calibration = private_generation._play_calibration(
+        [
+            {
+                "type": "session-analysis",
+                "analysis": {
+                    "observations": [
+                        {
+                            "finalState": "correct",
+                            "outcome": "independent-retrieval",
+                            "incorrectAttemptCount": 0,
+                        }
+                    ]
+                },
+            },
+            {
+                "type": "performance",
+                "evidenceId": "playtest-pulse:11111111-1111-4111-8111-111111111111:worth",
+                "sessionId": "session-1",
+                "measure": "playtest-worth",
+                "value": "yes",
+            },
+            {
+                "type": "performance",
+                "evidenceId": "playtest-pulse:11111111-1111-4111-8111-111111111111:return",
+                "sessionId": "session-1",
+                "measure": "playtest-return",
+                "value": "more-footholds",
+            },
+            {
+                "type": "performance",
+                "evidenceId": "playtest-pulse:11111111-1111-4111-8111-111111111111:rough-edge",
+                "sessionId": "session-1",
+                "measure": "playtest-rough-edge",
+                "value": "too-opaque",
+            },
+        ]
+    )
+
+    assert calibration["source"] == "solve-behavior+playtest-pulse"
+    assert calibration["recommendation"] == "more-footholds"
+    assert calibration["playtest"] == {
+        "sessionCount": 1,
+        "worthCounts": {"yes": 1},
+        "returnIntentCounts": {"more-footholds": 1},
+        "roughEdgeCounts": {"too-opaque": 1},
+        "interpretation": "game-specific-calibration-only",
+        "reversible": True,
+    }
+    assert "taste" not in str(calibration).casefold()
+
+
+def test_model_context_builds_a_small_reversible_language_review_lane():
+    starting = SimpleNamespace(
+        profile={"associations": [], "observations": [], "learningLanguage": "German"},
+        draft={},
+    )
+    context = private_generation._profile_context(
+        starting,
+        {
+            "evidence": [
+                {
+                    "type": "session-analysis",
+                    "taskLinks": [
+                        {
+                            "entryId": "across-1",
+                            "tasks": [
+                                {
+                                    "taskId": "private-answer-form:JA",
+                                    "language": "de",
+                                    "contentReview": "unreviewed",
+                                },
+                                {
+                                    "taskId": "private-answer-form:THREAD",
+                                    "language": "en",
+                                    "contentReview": "unreviewed",
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "projection": {"claims": [], "associations": [], "knowledge": []},
+        },
+    )
+
+    assert context["language_learning"] == {
+        "language": "German",
+        "code": "de",
+        "mode": "gentle-recurrence",
+        "reviewDue": True,
+        "reviewForms": ["JA"],
+        "exposureCount": 1,
+        "source": "explicit-setup",
+        "masteryClaim": "none",
+        "reversible": True,
+        "eligibleReviewForms": [],
+    }
+
+
+def test_model_context_offers_one_private_language_starter_when_fill_supports_it(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        private_generation, "_local_fill_word_set", lambda: frozenset({"NEIN"})
+    )
+    starting = SimpleNamespace(
+        profile={"associations": [], "observations": [], "learningLanguage": "German"},
+        draft={},
+    )
+
+    context = private_generation._profile_context(
+        starting,
+        {"evidence": [], "projection": {"claims": [], "associations": [], "knowledge": []}},
+    )
+
+    learning = context["language_learning"]
+    assert learning["reviewDue"] is False
+    assert learning["starterForms"] == ["NEIN"]
+    assert learning["candidateForms"] == ["NEIN"]
+    assert learning["eligibleReviewForms"] == ["NEIN"]
+    assert learning["starterPolicy"] == "private-language-starter-v1"
+    assert learning["starterStatus"] == "synthetic-unadmitted-not-established"
+    assert learning["exposureCount"] == 0
+
+
+def test_model_context_uses_delayed_recall_outcomes_for_the_next_brief(api):
+    profile_id = str(uuid4())
+    starting = SimpleNamespace(
+        id=profile_id,
+        profile={"associations": [], "observations": [], "learningLanguage": "German"},
+        draft={},
+    )
+    evidence_id = f"session-analysis:{uuid4()}:v1"
+    tasks = [
+        ("JA", "remembered", "independent"),
+        ("NEIN", "remembered", "assisted"),
+        ("OUI", "not-yet", "independent"),
+        ("HALLO", None, None),
+    ]
+    evidence = {
+        "evidenceId": evidence_id,
+        "type": "session-analysis",
+        "taskLinks": [
+            {
+                "entryId": "across-1",
+                "tasks": [
+                    {
+                        "taskId": f"private-answer-form:{answer}",
+                        "language": "de",
+                        "contentReview": "unreviewed",
+                    }
+                    for answer, _response, _mode in tasks
+                ],
+            }
+        ],
+    }
+    with api.app.app_context():
+        for answer, response, mode in tasks:
+            if response is None:
+                continue
+            source_task_id = f"private-answer-form:{answer}"
+            db_record = FutureLearningReviewRecord(
+                id=str(uuid4()),
+                profile_id=profile_id,
+                task_id=_review_task_id(profile_id, evidence_id, source_task_id),
+                language="de",
+                source_evidence_id=evidence_id,
+                response=response,
+                input_mode=mode,
+                recorded_at="2026-09-27T00:00:00Z",
+            )
+            api.db.session.add(db_record)
+        api.db.session.commit()
+
+        context = private_generation._profile_context(
+            starting,
+            {
+                "evidence": [evidence],
+                "projection": {"claims": [], "associations": [], "knowledge": []},
+            },
+        )
+
+    learning = context["language_learning"]
+    assert learning["rememberedForms"] == ["JA"]
+    assert learning["assistedForms"] == ["NEIN"]
+    assert learning["notYetForms"] == ["OUI"]
+    assert learning["pendingForms"] == ["HALLO"]
+    assert learning["reviewForms"] == ["OUI", "NEIN", "HALLO"]
+    assert learning["reviewDue"] is True
+
+
+def test_model_context_puts_scheduler_due_forms_first_without_making_them_locks(
+    api, monkeypatch
+):
+    profile_id = str(uuid4())
+    starting = SimpleNamespace(
+        id=profile_id,
+        profile={"associations": [], "observations": [], "learningLanguage": "German"},
+        draft={},
+    )
+    evidence_id = f"session-analysis:{uuid4()}:v1"
+    evidence = {
+        "evidenceId": evidence_id,
+        "type": "session-analysis",
+        "taskLinks": [
+            {
+                "entryId": "across-1",
+                "tasks": [
+                    {
+                        "taskId": "private-answer-form:HALLO",
+                        "language": "de",
+                        "contentReview": "unreviewed",
+                    },
+                    {
+                        "taskId": "private-answer-form:WASSER",
+                        "language": "de",
+                        "contentReview": "unreviewed",
+                    },
+                ],
+            }
+        ],
+    }
+    monkeypatch.setattr(
+        learning_review,
+        "_due",
+        lambda _profile_id: [
+            {
+                "taskId": "language-review:due-ja",
+                "sourceTaskId": "private-answer-form:HALLO",
+            }
+        ],
+    )
+
+    with api.app.app_context():
+        context = private_generation._profile_context(
+            starting,
+            {
+                "evidence": [evidence],
+                "projection": {
+                    "claims": [],
+                    "associations": [],
+                    "knowledge": [],
+                },
+            },
+        )
+
+    learning = context["language_learning"]
+    assert learning["dueForms"] == ["HALLO"]
+    assert learning["candidateForms"] == ["HALLO", "WASSER"]
+    assert learning["candidateWeights"] == [
+        {"form": "HALLO", "weight": 1.0, "reason": "due"},
+        {"form": "WASSER", "weight": 0.65, "reason": "pending"},
+    ]
+    assert learning["reviewForms"] == ["HALLO", "WASSER"]
+    assert learning["reviewDue"] is True
+
+
+def test_scheduler_history_prioritizes_due_forms_without_changing_category_weight():
+    weighted = private_generation._language_candidate_weights(
+        {
+            "candidateForms": ["HALLO", "WASSER", "NEIN"],
+            "dueForms": ["HALLO", "WASSER"],
+            "notYetForms": ["HALLO"],
+            "rememberedForms": ["WASSER"],
+            "pendingForms": ["NEIN"],
+            "dueDetails": [
+                {
+                    "form": "HALLO",
+                    "reviewStage": 2,
+                    "intervalHours": 168,
+                    "lastResponse": "not-yet",
+                    "lastMode": "independent",
+                },
+                {
+                    "form": "WASSER",
+                    "reviewStage": 1,
+                    "intervalHours": 24,
+                    "lastResponse": "remembered",
+                    "lastMode": "independent",
+                },
+            ],
+        }
+    )
+
+    assert [item["form"] for item in weighted] == ["HALLO", "WASSER", "NEIN"]
+    assert weighted[0]["weight"] == weighted[1]["weight"] == 1.0
+    assert weighted[0]["priority"] > weighted[1]["priority"]
+    assert weighted[0]["priorityReason"] == "scheduler-history"
+    assert "priority" not in weighted[2]
+
+
+def test_overdue_scheduler_history_adds_only_a_bounded_optional_bonus():
+    weighted = private_generation._language_candidate_weights(
+        {
+            "candidateForms": ["HALLO"],
+            "dueForms": ["HALLO"],
+            "notYetForms": ["HALLO"],
+            "dueDetails": [
+                {
+                    "form": "HALLO",
+                    "reviewStage": 1,
+                    "intervalHours": 24,
+                    "lastResponse": "not-yet",
+                    "lastMode": "independent",
+                    "overdueHours": 48,
+                    "schedulerPriority": 2.0,
+                }
+            ],
+        }
+    )
+
+    assert weighted[0]["weight"] == 1.0
+    assert weighted[0]["priorityReason"] == "scheduler-history-and-overdue"
+    assert weighted[0]["overdueBonus"] == 0.15
+    assert weighted[0]["priority"] <= 1.4
+
+
+def test_theme_planning_avoids_recent_exposure_when_fresh_choices_exist(monkeypatch):
+    monkeypatch.setattr(
+        private_generation,
+        "_chat",
+        lambda *_args, **_kwargs: {"themes": ["ECHO", "MOSS", "THREAD", "FORK"]},
+    )
+
+    themes = private_generation._make_themes(
+        "qwen3.8:27b",
+        {"recent_private_answers": ["ECHO", "MOSS"]},
+        "wednesday",
+    )
+
+    assert themes == ["THREAD", "FORK"]
+
+
+def test_theme_exposure_receipt_counts_only_theme_entries_and_hides_forms():
+    receipt = private_generation._theme_exposure_receipt(
+        {"recent_private_answers": ["ECHO", "MOSS"]},
+        [
+            {"answer": "ECHO", "theme": True},
+            {"answer": "THREAD", "theme": True},
+            {"answer": "MOSS", "theme": False},
+        ],
+    )
+
+    assert receipt["recentExposureCount"] == 2
+    assert receipt["themeAnswerCount"] == 2
+    assert receipt["freshThemeCount"] == 1
+    assert receipt["repeatedThemeCount"] == 1
+    assert "ECHO" not in receipt and "MOSS" not in receipt
+
+
+def test_model_context_exposes_avoid_topics_as_steering_without_personality_claims():
+    starting = SimpleNamespace(profile={"associations": []}, draft={})
+    context = private_generation._profile_context(
+        starting,
+        {
+            "projection": {
+                "claims": [
+                    {
+                        "concept": {"label": "US officeholders"},
+                        "kind": "topic",
+                        "stance": "avoid",
+                    },
+                    {
+                        "concept": {"label": "sound textures"},
+                        "kind": "topic",
+                        "stance": "seek",
+                    },
+                ],
+                "associations": [],
+                "knowledge": [],
+            }
+        },
+    )
+
+    assert context["avoid_topics"] == ["US officeholders"]
+    assert context["preference_tensions"][1]["stance"] == "seek"
+
+
+def test_model_context_derives_reversible_clue_family_targets_only_from_reflection_evidence():
+    starting = SimpleNamespace(profile={"associations": []}, draft={})
+    context = private_generation._profile_context(
+        starting,
+        {
+            "evidence": [
+                {
+                    "evidenceId": "reflection-response:wordplay",
+                    "type": "preference-signal",
+                    "source": "reflection-card",
+                },
+                {
+                    "evidenceId": "explicit:wordplay",
+                    "type": "explicit-preference",
+                },
+            ],
+            "projection": {
+                "claims": [
+                    {
+                        "concept": {
+                            "conceptId": "clue-wordplay",
+                            "label": "wordplay and misdirection",
+                        },
+                        "stance": "seek",
+                        "strength": 0.24,
+                        "evidenceIds": ["reflection-response:wordplay"],
+                    },
+                    {
+                        "concept": {
+                            "conceptId": "crossing-supported-discovery",
+                            "label": "crossing-supported discovery",
+                        },
+                        "stance": "seek",
+                        "strength": 1,
+                        "evidenceIds": ["explicit:discovery"],
+                    },
+                ],
+                "associations": [],
+                "knowledge": [],
+            },
+        },
+    )
+
+    assert context["clue_family_targets"] == [
+        {
+            "family": "wordplay",
+            "direction": "include",
+            "strength": 0.24,
+            "evidenceCount": 1,
+            "source": "reviewed-reflection",
+            "reversible": True,
+        }
+    ]
+
+
+def test_theme_prompt_carries_reviewed_clue_family_targets(monkeypatch):
+    captured = {}
+
+    def fake_chat(_model, messages, _schema, **_kwargs):
+        captured["messages"] = messages
+        return {"themes": ["ECHO", "MOSS"]}
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    private_generation._make_themes(
+        "qwen3.8:27b",
+        {
+            "recent_private_answers": [],
+            "clue_family_targets": [
+                {
+                    "family": "wordplay",
+                    "direction": "include",
+                    "strength": 0.24,
+                    "evidenceCount": 1,
+                    "source": "reviewed-reflection",
+                    "reversible": True,
+                }
+            ],
+        },
+        "wednesday",
+    )
+
+    assert "clue_family_targets" in captured["messages"][0]["content"]
+    assert "wordplay" in captured["messages"][1]["content"]
+
+
+def test_theme_prompt_allows_invited_proper_names_with_fair_support(monkeypatch):
+    captured = {}
+
+    def fake_chat(_model, messages, _schema, **_kwargs):
+        captured["system"] = messages[0]["content"]
+        return {"themes": ["ECHO", "MOSS"]}
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    private_generation._make_themes(
+        "gemma4:26b",
+        {
+            "recent_private_answers": [],
+            "opening_associations": ["KOFFI", "COFFEE"],
+        },
+        "wednesday",
+    )
+
+    assert "small minority of proper names" in captured["system"]
+    assert "fair crossing support" in captured["system"]
+
+
+def test_clue_token_budget_is_bounded_and_host_overridable(monkeypatch):
+    monkeypatch.delenv("CROSSWORD_PRIVATE_CLUE_TOKENS_PER_ENTRY", raising=False)
+    assert private_generation._clue_token_budget(74) == 4144
+    assert private_generation._clue_token_budget(74, per_entry=48) == 3552
+
+    monkeypatch.setenv("CROSSWORD_PRIVATE_CLUE_TOKENS_PER_ENTRY", "120")
+    assert private_generation._clue_token_budget(74) == 5200
+
+    monkeypatch.setenv("CROSSWORD_PRIVATE_CLUE_TOKENS_PER_ENTRY", "not-a-number")
+    assert private_generation._clue_token_budget(1) == 1800
+
+
+def test_model_runtime_policy_bounds_slow_qwen_advisory_passes():
+    gemma = private_generation._model_runtime_policy_receipt("gemma4:26b")
+    qwen = private_generation._model_runtime_policy_receipt("qwen3.8:27b")
+
+    assert gemma["interpretation"] == "execution-budget-only"
+    assert gemma["clueTokensPerEntry"] == 48
+    assert gemma["riskRepairMaxEntries"] == 12
+    assert gemma["tuesdayDiversityAttempts"] == 4
+    assert qwen["primaryClueTimeoutSeconds"] == 120
+    assert qwen["riskRepairMaxEntries"] == 20
+    assert qwen["diversityTimeoutSeconds"] == 60
+    assert qwen["tuesdayDiversityAttempts"] == 2
+    assert qwen["qwenClueBatchSize"] == 24
+    assert qwen["qwenClueBatchThreshold"] == 48
+    assert qwen["qwenClueBatchTokensPerEntry"] == 40
+    assert qwen["qwenClueBatchMaxTokens"] == 1400
+    assert qwen["qwenSkipOptionalRepairsAfterBatch"] is True
+    assert qwen["tuesdayDiversityRequiredAfterBatch"] is True
+    assert qwen["qualityClaim"] == "none"
+
+
+def test_qwen_large_clue_batches_combine_exact_entry_ids(monkeypatch):
+    entries = [
+        {"id": f"{index}A", "answer": "BARK", "length": 4}
+        for index in range(1, 61)
+    ]
+    messages = [
+        {"role": "system", "content": "clue writer"},
+        {
+            "role": "user",
+            "content": json.dumps(
+                {
+                    "difficulty": "Tuesday",
+                    "entries": entries,
+                    "groundingBundle": {},
+                    "reviewedClues": [],
+                    "reviewedContent": [],
+                }
+            ),
+        },
+    ]
+    batch_sizes = []
+
+    def fake_chat(_model, _messages, schema, **_kwargs):
+        payload = json.loads(_messages[1]["content"])
+        ids = [entry["id"] for entry in payload["entries"]]
+        batch_sizes.append(len(ids))
+        return {
+            "title": "A Tuesday board",
+            "clues": [{"id": clue_id, "text": "A thing"} for clue_id in ids],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    result = private_generation._qwen_batched_clue_value(
+        "qwen3.8:27b", messages, entries, {}, {}
+    )
+
+    assert batch_sizes == [24, 24, 12]
+    assert result["title"] == "A Tuesday board"
+    assert [item["id"] for item in result["clues"]] == [entry["id"] for entry in entries]
+
+
+def test_qwen_batch_receipt_skips_extra_model_repairs(monkeypatch):
+    entries = [
+        {"id": f"{index}A", "answer": "BARK", "length": 4}
+        for index in range(1, 31)
+    ]
+    clues = {entry["id"]: "A thing" for entry in entries}
+    context = {"_clue_generation_batches": {"version": "private-qwen-clue-batching-v1"}}
+
+    assert private_generation._repair_risky_clues(
+        "qwen3.8:27b", entries, clues, context, "tuesday"
+    ) is clues
+    _, diversity = private_generation._repair_clue_diversity(
+        "qwen3.8:27b", entries, clues, context, "wednesday", {}
+    )
+    assert diversity["status"] == "skipped-model-batch"
+
+    monkeypatch.setenv("CROSSWORD_PRIVATE_CLUE_CHALLENGE", "1")
+    challenge = private_generation._challenge_private_clues(
+        "qwen3.8:27b", entries, clues, context, "tuesday"
+    )
+    assert challenge["status"] == "skipped-model-batch"
+    assert challenge["enabled"] is False
+
+
+def test_private_fill_violations_only_reject_known_construction_artefacts():
+    assert private_generation._private_fill_violations(
+        {"entries": [{"answer": "FUCCBOIS"}, {"answer": "OREO"}]}
+    ) == ["FUCCBOIS"]
+    assert (
+        private_generation._private_fill_violations(
+            {"entries": [{"answer": "FUCKBOY"}, {"answer": "OREO"}]}
+        )
+        == []
+    )
+
+
+def test_fill_quality_report_keeps_native_scores_separate_from_human_quality():
+    report = private_generation._fill_quality_report(
+        {
+            "entries": [
+                {"answer": "CAT", "theme": True},
+                {"answer": "ARE", "theme": False},
+            ],
+            "mean_score": 75.4,
+            "min_score": 50,
+            "iffy": 13,
+            "weak": 38,
+        }
+    )
+
+    assert report == {
+        "version": "private-fill-quality-policy-v1",
+        "status": "measured",
+        "entryCount": 2,
+        "meanScore": 75.4,
+        "minimumScore": 50,
+            "iffyCount": 13,
+            "weakCount": 38,
+            "weakWithoutCrossing": [],
+            "weakWithoutCrossingCount": 0,
+            "themeCount": 1,
+        "source": "native-xfill-reported",
+        "uncertainty": "xfill-heuristic-not-human-quality",
+    }
+
+
+def test_fill_quality_policy_selects_a_better_retry_without_rejecting_weak_fallbacks():
+    attempts = [
+        {
+            "attempt": 1,
+            "status": "candidate",
+            "quality": private_generation._fill_quality_report(
+                {
+                    "entries": [{"theme": True}],
+                    "mean_score": 75.4,
+                    "min_score": 50,
+                    "iffy": 13,
+                    "weak": 38,
+                }
+            ),
+        },
+        {
+            "attempt": 2,
+            "status": "candidate",
+            "quality": private_generation._fill_quality_report(
+                {
+                    "entries": [{"theme": True}, {"theme": True}],
+                    "mean_score": 74.1,
+                    "min_score": 55,
+                    "iffy": 0,
+                    "weak": 23,
+                }
+            ),
+        },
+    ]
+    selected = min(
+        enumerate(attempts),
+        key=lambda item: private_generation._fill_quality_selection_key(
+            item[1]["quality"], item[0]
+        ),
+    )
+    policy = private_generation._fill_quality_policy(attempts, selected[0])
+
+    assert selected[0] == 1
+    assert policy["selectedAttempt"] == 2
+    assert policy["selectionBasis"].startswith("fewest-iffy")
+    assert policy["uncertainty"] == "xfill-heuristic-not-human-quality"
+
+
+def test_fill_quality_reports_weak_entries_without_crossing_cells():
+    report = private_generation._fill_quality_report(
+        {
+            "fill": ["A" * 7] * 7,
+            "entries": [
+                {"num": 1, "dir": "A", "row": 0, "col": 0, "len": 3, "score": 40},
+                {"num": 1, "dir": "D", "row": 0, "col": 1, "len": 3, "score": 75},
+                {"num": 2, "dir": "A", "row": 4, "col": 0, "len": 3, "score": 35},
+            ],
+            "mean_score": 60,
+            "min_score": 35,
+            "iffy": 1,
+            "weak": 2,
+        }
+    )
+
+    assert report["weakWithoutCrossing"] == ["2A"]
+    assert report["weakWithoutCrossingCount"] == 1
+
+
+def test_fill_quality_selection_prefers_crossed_weak_entries_after_existing_policy():
+    isolated = private_generation._fill_quality_report(
+        {
+            "entries": [
+                {"num": 1, "dir": "A", "row": 0, "col": 0, "len": 3, "score": 40},
+            ],
+            "mean_score": 75,
+            "min_score": 40,
+            "iffy": 1,
+            "weak": 1,
+        }
+    )
+    crossed = private_generation._fill_quality_report(
+        {
+            "entries": [
+                {"num": 1, "dir": "A", "row": 0, "col": 0, "len": 3, "score": 40},
+                {"num": 1, "dir": "D", "row": 0, "col": 1, "len": 3, "score": 75},
+            ],
+            "mean_score": 70,
+            "min_score": 40,
+            "iffy": 1,
+            "weak": 1,
+        }
+    )
+    selected = min(
+        enumerate([{"quality": isolated}, {"quality": crossed}]),
+        key=lambda item: private_generation._fill_quality_selection_key(
+            item[1]["quality"], item[0]
+        ),
+    )
+    assert selected[0] == 1
+
+    # Existing iffy priority still wins over the topology tie-break.
+    cleaner = {**isolated, "iffyCount": 0}
+    selected = min(
+        enumerate([{"quality": isolated}, {"quality": cleaner}]),
+        key=lambda item: private_generation._fill_quality_selection_key(
+            item[1]["quality"], item[0]
+        ),
+    )
+    assert selected[0] == 1
+
+
+def test_fill_quality_selection_preserves_two_themes_within_weak_band():
+    theme_candidate = private_generation._fill_quality_report(
+        {
+            "entries": [
+                {"theme": True},
+                {"theme": True},
+                {"theme": True},
+                {"theme": False},
+            ],
+            "mean_score": 73,
+            "min_score": 50,
+            "iffy": 0,
+            "weak": 1,
+        }
+    )
+    open_candidate = private_generation._fill_quality_report(
+        {
+            "entries": [{"theme": False}] * 4,
+            "mean_score": 88,
+            "min_score": 75,
+            "iffy": 0,
+            "weak": 0,
+        }
+    )
+
+    selected = min(
+        enumerate(
+            [
+                {"quality": theme_candidate},
+                {"quality": open_candidate},
+            ]
+        ),
+        key=lambda item: private_generation._fill_quality_selection_key(
+            item[1]["quality"], item[0], theme_floor=2
+        ),
+    )
+
+    assert selected[0] == 0
+
+
+def test_tuesday_theme_floor_preserves_one_theme_within_weak_band():
+    theme_candidate = private_generation._fill_quality_report(
+        {
+            "entries": [{"theme": True}, {"theme": False}] * 10,
+            "mean_score": 74,
+            "min_score": 50,
+            "iffy": 0,
+            "weak": 10,
+        }
+    )
+    open_candidate = private_generation._fill_quality_report(
+        {
+            "entries": [{"theme": False}] * 20,
+            "mean_score": 84,
+            "min_score": 65,
+            "iffy": 0,
+            "weak": 0,
+        }
+    )
+
+    selected = min(
+        enumerate(
+            [
+                {"quality": theme_candidate},
+                {"quality": open_candidate},
+            ]
+        ),
+        key=lambda item: private_generation._fill_quality_selection_key(
+            item[1]["quality"], item[0], theme_floor=1
+        ),
+    )
+
+    assert selected[0] == 0
+
+
+def test_thursday_theme_floor_preserves_three_instances_outside_ordinary_weak_band():
+    mechanic_candidate = private_generation._fill_quality_report(
+        {
+            "entries": [{"theme": True}] * 4 + [{"theme": False}] * 6,
+            "mean_score": 72,
+            "min_score": 45,
+            "iffy": 0,
+            "weak": 22,
+        }
+    )
+    open_candidate = private_generation._fill_quality_report(
+        {
+            "entries": [{"theme": False}] * 10,
+            "mean_score": 80,
+            "min_score": 55,
+            "iffy": 0,
+            "weak": 4,
+        }
+    )
+
+    selected = min(
+        enumerate(
+            [
+                {"quality": mechanic_candidate},
+                {"quality": open_candidate},
+            ]
+        ),
+        key=lambda item: private_generation._fill_quality_selection_key(
+            item[1]["quality"], item[0], theme_floor=3
+        ),
+    )
+
+    assert selected[0] == 0
+
+
+def test_thursday_mechanic_priority_stays_inside_the_iffy_budget():
+    themed = private_generation._fill_quality_report(
+        {
+            "entries": [{"theme": True}] * 4,
+            "mean_score": 70,
+            "min_score": 45,
+            "iffy": private_generation.THURSDAY_MECHANIC_MAX_IFFY,
+            "weak": 30,
+        }
+    )
+    open_grid = private_generation._fill_quality_report(
+        {
+            "entries": [{"theme": False}] * 4,
+            "mean_score": 82,
+            "min_score": 60,
+            "iffy": 0,
+            "weak": 2,
+        }
+    )
+    selected = min(
+        enumerate([{"quality": themed}, {"quality": open_grid}]),
+        key=lambda item: private_generation._fill_quality_selection_key(
+            item[1]["quality"], item[0], theme_floor=3
+        ),
+    )
+    assert selected[0] == 0
+
+    too_risky = {**themed, "iffyCount": private_generation.THURSDAY_MECHANIC_MAX_IFFY + 1}
+    selected = min(
+        enumerate([{"quality": too_risky}, {"quality": open_grid}]),
+        key=lambda item: private_generation._fill_quality_selection_key(
+            item[1]["quality"], item[0], theme_floor=3
+        ),
+    )
+    assert selected[0] == 1
+
+
+def test_fill_retry_options_are_bounded_and_reproducible():
+    options = {
+        "seed": 42,
+        "candidates": 75,
+        "time": 2,
+        "keepMean": 50,
+        "minScore": 40,
+        "maxIffy": 20,
+        "themes": ["ECHO", "MOSS"],
+    }
+
+    first = private_generation._fill_retry_options(42, options)
+    second = private_generation._fill_retry_options(42, options)
+
+    assert first == second
+    assert len(first) == 4
+    assert first[0]["label"] == "theme-locked-primary"
+    assert first[1]["label"] == "reduced-theme-fallback"
+    assert first[-1]["options"]["themes"] == []
+
+
+def test_fill_retry_options_try_a_local_model_theme_anchor(monkeypatch):
+    monkeypatch.setattr(
+        private_generation,
+        "_local_fill_word_set",
+        lambda: frozenset({"ECHO", "MOSS"}),
+    )
+    options = {
+        "seed": 42,
+        "candidates": 75,
+        "time": 2,
+        "keepMean": 50,
+        "minScore": 40,
+        "maxIffy": 20,
+        "themes": ["RESONANCE", "ECHO", "MOSS", "PITCH"],
+    }
+
+    attempts = private_generation._fill_retry_options(42, options)
+
+    assert [attempt["label"] for attempt in attempts] == [
+        "theme-locked-primary",
+        "local-theme-anchor",
+        "theme-locked-reseed",
+        "open-grid-reseed",
+    ]
+    assert attempts[1]["options"]["themes"] == ["ECHO", "MOSS"]
+
+
+def test_fill_retry_options_caps_native_theme_locks_without_dropping_anchor_candidates(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        private_generation,
+        "_local_fill_word_set",
+        lambda: frozenset({"ECHO", "MOSS", "TONE", "SOUND", "REVERB"}),
+    )
+    options = {
+        "seed": 42,
+        "candidates": 75,
+        "time": 2,
+        "keepMean": 50,
+        "minScore": 40,
+        "maxIffy": 20,
+        "themes": ["RESONANCE", "ECHO", "TONE", "REVERB", "SOUND"],
+    }
+
+    attempts = private_generation._fill_retry_options(42, options)
+
+    assert attempts[0]["options"]["themes"] == [
+        "RESONANCE",
+        "ECHO",
+        "TONE",
+        "REVERB",
+    ]
+    assert attempts[2]["options"]["themes"] == attempts[0]["options"]["themes"]
+    assert attempts[1]["options"]["themes"] == ["ECHO", "TONE"]
+
+
+def test_local_theme_anchor_keeps_at_most_two_shortest_placeable_invitations(monkeypatch):
+    monkeypatch.setattr(
+        private_generation,
+        "_local_fill_word_set",
+        lambda: frozenset({"RESONANCE", "ECHO", "MOSS", "TONE"}),
+    )
+    options = {
+        "seed": 42,
+        "candidates": 75,
+        "time": 2,
+        "keepMean": 50,
+        "minScore": 40,
+        "maxIffy": 20,
+        "themes": ["RESONANCE", "ECHO", "MOSS", "TONE"],
+    }
+
+    attempts = private_generation._fill_retry_options(42, options)
+
+    assert attempts[1]["label"] == "local-theme-anchor"
+    assert attempts[1]["options"]["themes"] == ["ECHO", "MOSS"]
+
+
+def test_crossing_support_summary_reports_structural_access_and_uncertainty():
+    summary = private_generation._crossing_support_summary(
+        {
+            "fill": ["A" * 15] * 15,
+            "entries": [
+                {"num": 1, "dir": "A", "row": 0, "col": 0, "len": 3},
+                {"num": 1, "dir": "D", "row": 0, "col": 1, "len": 3},
+                {"num": 2, "dir": "A", "row": 4, "col": 0, "len": 3},
+            ],
+        },
+        [
+            {"id": "1A", "needsFoothold": True},
+            {"id": "1D", "needsFoothold": False},
+            {"id": "2A", "needsFoothold": True},
+        ],
+    )
+
+    assert summary["status"] == "measured"
+    assert summary["weakWithoutCrossing"] == ["2A"]
+    assert summary["uncertainty"] == "player-support-unmeasured"
+    first = next(item for item in summary["edges"] if item["entryId"] == "1A")
+    assert first["crossingCellCount"] == 1
+    assert first["supportEntryIds"] == ["1D"]
+
+
+def test_fallback_support_receipt_is_answer_free_and_binds_structural_crossings():
+    crossing = {
+        "status": "measured",
+        "edges": [
+            {
+                "entryId": "1A",
+                "crossingCellCount": 2,
+                "supportEntryIds": ["1D", "2D"],
+            },
+            {"entryId": "2A", "crossingCellCount": 0, "supportEntryIds": []},
+        ],
+    }
+
+    receipt = private_generation._fallback_support_receipt(
+        {
+            "2A": ["generic-clue"],
+            "1A": ["unsupported-factual-surface", "generic-clue"],
+        },
+        crossing,
+    )
+
+    assert receipt["version"] == "private-clue-fallback-support-v1"
+    assert receipt["status"] == "measured"
+    assert receipt["entryCount"] == 2
+    assert receipt["withCrossingCount"] == 1
+    assert receipt["entries"] == [
+        {
+            "entryId": "1A",
+            "reasonCodes": ["generic-clue", "unsupported-factual-surface"],
+            "crossingCellCount": 2,
+            "supportEntryIds": ["1D", "2D"],
+        },
+        {
+            "entryId": "2A",
+            "reasonCodes": ["generic-clue"],
+            "crossingCellCount": 0,
+            "supportEntryIds": [],
+        },
+    ]
+    assert "answer" not in repr(receipt).lower()
+
+
+def test_clue_wordplay_guard_catches_false_reversals_anagrams_and_translations():
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "ETENIM"}, '"MIND" spelled backward'
+        )
+        == "reversal-mismatch"
+    )
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "OERME"}, "Anagram of ENORM")
+        == "anagram-mismatch"
+    )
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "ISSO"}, "Italian 'yes'")
+        == "language-answer-mismatch"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "ECHO"}, "Sound that bounces back"
+        )
+        is None
+    )
+
+
+def test_clue_guard_rejects_answer_roots_inflections_and_generic_templates():
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "REDS"}, "Shades of red"
+        )
+        == "answer-form-in-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "CAT"}, "Cats, informally"
+        )
+        == "answer-form-in-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "MICE"}, "Mouse, in a group"
+        )
+        == "answer-form-in-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "CHILDREN"}, "Child, in a group"
+        )
+        == "answer-form-in-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "XENON"}, "Common name"
+        )
+        == "generic-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "XENON"}, "Common male name"
+        )
+        == "generic-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "XENON"}, "Common names"
+        )
+        == "generic-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "XENON"}, "A usual term?"
+        )
+        == "generic-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "XENON"}, "A common name for a gas?"
+        )
+        == "generic-clue"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "XENON"}, "Usually a common term"
+        )
+        == "generic-clue"
+    )
+    # A language qualifier is a genuine route, not a content-free template:
+    # "Common Latin word" -> ERAT (census, NYT Monday).
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "ERAT"}, "Common Latin word")
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "ETRE"}, "Common French word")
+        is None
+    )
+    # Single-token answers that are really phrases leak across the space:
+    # browser board seed 521546848.
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "MAKESNICE"},
+            "Polite phrase, or 'makes nice' answer in etiquette",
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "ICANTGOON"},
+            "I don't go to, or 'i can't go on' answer in travel",
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "SEAMLESS"}, "Smooth, as a seam"
+        )
+        == "answer-form-in-clue"
+    )
+    # Short answers and incidental overlaps stay exempt.
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "ARE"}, "They ___ here")
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "CATER"}, "Provide food")
+        is None
+    )
+    # Stream matches must run token-boundary to token-boundary: "HAMLIN"
+    # spanning "AbraHAM"+"LINcoln" is two words apart, not a leak.
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "HAMLIN"},
+            "Hannibal ___, vice president under Abraham Lincoln",
+        )
+        is None
+    )
+    # Shared genus and double-duty words are fair routes, not leaks.
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "DEVIL"}, "Evil spirit")
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "PARTY"}, "Part of G.O.P.")
+        is None
+    )
+    # Abbreviation expansions that start with the answer hand it over;
+    # exact initialisms stay fair.
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NOTI"}, "Short for notification"
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "PDF"}, "Portable document format file extension"
+        )
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "MTN"}, "Mountain range abbreviation"
+        )
+        is None
+    )
+    # Word-split leaks: the answer distributed across clue words sharing
+    # its stems (chat judgements, operator session).
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "MAKESNICE"}, "Making a nice impression"
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "BRAIDS"}, "Style of braiding hair"
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NOTI"}, "Four-letter notification"
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "DEVIL"}, "Evil spirit"
+        )
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "LETLIVE"}, "Live and ___"
+        )
+        is None
+    )
+    # Glue-only coverage hands the solver nothing: TOTO from "to"+"to",
+    # ASWE from "as"+"we" stay fair, while a theme entry whose full wording
+    # sits in the clue still fires.
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "TOTO"}, "Dog that went to Oz")
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "THEREADLINES"}, "Read between the lines"
+        )
+        == "answer-giveaway"
+    )
+    # Dangling short-for frames repair to the bare definition.
+    assert (
+        private_generation._normalize_clue_surface("Stance or opinion, short for that")
+        == "Stance or opinion"
+    )
+    assert private_generation._hedged_definition("Academic achievement, in some circles")
+    assert private_generation._hedged_definition("Idiom, in certain circles")
+    assert not private_generation._hedged_definition("Academic achievement")
+    assert not private_generation._hedged_definition("Circle of friends")
+    # Census: legitimate categorizers and play-signals, never hedges.
+    assert not private_generation._hedged_definition("Kind of transit")
+    assert not private_generation._hedged_definition("Fiancées, in a way")
+    assert not private_generation._hedged_definition("Tom Seaver, so to speak")
+
+
+def test_vague_where_flags_might_find_locations():
+    assert private_generation._vague_where("Where you might find a swing")
+    assert private_generation._vague_where("Where one might find peace")
+    assert not private_generation._vague_where("Where the heart is")
+    assert not private_generation._vague_where("Swing site")
+
+
+def test_vague_for_some_spots_hedging_tails_not_enumeration():
+    assert private_generation._vague_for_some("Dawn's earliest hour, for some")
+    assert private_generation._vague_for_some("Shelters for some Cubs")
+    assert not private_generation._vague_for_some("India, for one")
+    assert not private_generation._vague_for_some("Circle of friends")
+
+
+def _gerund_words():
+    return {
+        "RUN", "RUNS", "SING", "SINGS", "WRITE", "WRITES", "GO", "GOES",
+        "DO", "MORN", "EVEN", "EVENS", "MAKE", "MAKES", "NICE", "FAST",
+        "VOCAL", "PERFORMANCE", "AUTHOR", "CRAFT",
+    }
+
+
+def test_gerund_answers_meet_verb_stems_in_the_wordlist():
+    gerund = private_generation._is_gerund_answer
+    words = _gerund_words()
+    assert gerund("RUNNING", words) is True
+    assert gerund("SINGING", words) is True
+    assert gerund("WRITING", words) is True
+    assert gerund("MORNING", words) is False
+    assert gerund("SPRING", words) is False
+    assert gerund("STRING", words) is False
+    # Genuinely ambiguous (to even is rare): resolves verb-side, priced
+    # by the census rather than special-cased here.
+    assert gerund("EVENING", words) is True
+    assert gerund("RUN", words) is False
+
+
+def test_clue_gerund_spotting_reads_true_gerunds_only():
+    spotted = private_generation._clue_has_gerund
+    words = _gerund_words()
+    assert spotted("Going fast", words) is True
+    assert spotted("Morning exercise", words) is False
+    assert spotted("Vocal performance", words) is False
+
+
+def test_gerund_agreement_flags_action_answers_without_actions():
+    issue = private_generation._gerund_agreement_issue
+    words = _gerund_words()
+    assert issue("SINGING", "Vocal performance", words) == "gerund-without-gerund"
+    assert issue("WRITING", "Author's craft", words) == "gerund-without-gerund"
+    assert issue("RUNNING", "Going fast, maybe", words) is None
+    assert issue("MORNING", "Dawn's earliest hour", words) is None
+
+
+def test_strict_admission_rejects_gerund_without_gerund(monkeypatch):
+    def fake_chat(_model, messages, schema, **_kwargs):
+        if "clues" not in (schema.get("properties", {}) if isinstance(schema, dict) else {}):
+            return {"pick": "r0-0", "difference": "clearer"}
+        return {
+            "title": "Monday Crossword",
+            "clues": [{"id": "1A", "text": "Vocal performance"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_local_fill_word_set",
+        lambda: frozenset({"SING", "SINGS", "VOCAL", "PERFORMANCE"}),
+    )
+    entries = [{"id": "1A", "answer": "SINGING", "length": 7}]
+
+    context = {"_candidate_base_seed": 6107}
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b", entries, context, "monday"
+    )
+    assert clues["1A"] == "Vocal performance"
+
+    monkeypatch.setenv("CROSSWORD_STRICT_ADMISSION", "1")
+    context = {"_candidate_base_seed": 6107}
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b", entries, context, "monday"
+    )
+    assert clues["1A"].startswith("Entry supported by its crossings")
+    # A possessed qualifier or a definite for/of referent names a route;
+    # an indefinite object points nowhere (census, NYT Monday).
+    assert (
+        private_generation._clue_wordplay_issue({"answer": "SPOT"}, "Common dog's name")
+        is None
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "LYE"}, "Common name for sodium hydroxide"
+        )
+        is None
+    )
+    # Q08 retired the three anchored name-shape blockers from the wordplay
+    # guard: unsourced name slots are refused downstream by the
+    # factual-surface guard and the genre cap (name-slot-without-source),
+    # which spare reviewed source-backed senses instead of scaffolding them.
+    # The legitimate crosswordese convention below passes the wordplay guard
+    # whole; safety still scaffolds it without a source-backed sense.
+    for clue, answer in (
+        ("Famous writer's name", "NASH"),
+        ("Italian singer's name, perhaps", "TONI"),
+        ("Artist's name", "TONI"),
+        ("Name of a classic novelist", "NASH"),
+        ("Name that might follow 'Pat ...'", "SAJAK"),
+    ):
+        assert (
+            private_generation._clue_wordplay_issue({"answer": answer}, clue)
+            is None
+        ), clue
+
+
+def test_clue_guard_rejects_other_noun_only_generic_templates_but_keeps_specific_routes():
+    for clue in (
+        "Common abbreviation",
+        "A common acronym",
+        "Usual synonym",
+        "The generic response",
+        "Standard answer",
+        "Some ordinary phrase?",
+        "Any common title",
+    ):
+        assert (
+            private_generation._clue_wordplay_issue(
+                {"answer": "XENON"}, clue
+            )
+            == "generic-clue"
+        ), clue
+
+    # A referent gives a solver an actual route; the noun-only guard is
+    # deliberately anchored so it does not erase useful authored surfaces.
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NY"}, "Common abbreviation for New York"
+        )
+        is None
+    )
+
+
+def test_generic_template_repair_records_the_reason_in_private_safety_receipt():
+    fallback_reasons = {}
+    safe = private_generation._enforce_private_clue_safety(
+        [{"id": "1A", "answer": "XENON", "length": 5, "needsFoothold": False}],
+        {"1A": "Common abbreviation"},
+        fallback_reasons=fallback_reasons,
+    )
+
+    assert safe["1A"] == "Entry supported by its crossings (5 letters)"
+    assert fallback_reasons == {"1A": ["generic-clue"]}
+
+
+def test_clue_morphology_guard_reads_plain_language_plural_and_tense_markers():
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "CAT"}, "Felines (plural)"
+        )
+        == "plural-marker-with-singular-shape"
+    )
+    assert private_generation._clue_morphology_issue(
+        {"answer": "CATS"}, "Felines, plural form"
+    ) is None
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "RAN"}, "Move (present tense)"
+        )
+        == "present-tense-marker-with-past-shape"
+    )
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "RAN"}, "Move (future tense)"
+        )
+        == "future-tense-marker-with-past-shape"
+    )
+    # Bare past/present/future are the definiendum, not a tense marker:
+    # "Past" -> AGO, "Past, to poets" -> AGONE (census, NYT Monday).
+    assert (
+        private_generation._clue_morphology_issue({"answer": "AGO"}, "Past")
+        is None
+    )
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "AGONE"}, "Past, to poets"
+        )
+        is None
+    )
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "RUN"}, "Move in the past tense"
+        )
+        == "past-tense-marker-with-nonpast-shape"
+    )
+
+
+def test_clue_morphology_guard_accepts_common_invariant_plural_answers():
+    for answer in ("SHEEP", "DEER", "FISH", "MOOSE", "SALMON"):
+        assert (
+            private_generation._clue_morphology_issue(
+                {"answer": answer}, "Animals (plural)"
+        )
+        is None
+    )
+
+
+def test_clue_morphology_guard_checks_comparative_and_superlative_markers():
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "BRIGHTER"}, "Comparative of bright"
+        )
+        is None
+    )
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "BEST"}, "Superlative of good"
+        )
+        is None
+    )
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "BRIGHT"}, "Comparative of bright"
+        )
+        == "comparative-marker-with-noncomparative-shape"
+    )
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "BRIGHTER"}, "Superlative of bright"
+        )
+        == "superlative-marker-with-nonsuperlative-shape"
+    )
+
+
+def test_clue_guard_rejects_exact_multiword_answer_surfaces():
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NO WAY"}, "No way!"
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NEW YORK"}, "New York, perhaps"
+        )
+        == "answer-giveaway"
+    )
+    assert (
+        private_generation._clue_wordplay_issue(
+            {"answer": "NO WAY"}, "A refusal"
+        )
+        is None
+    )
+
+
+def test_extract_json_candidate_handles_model_prose_wrapping():
+    assert private_generation._extract_json_candidate('{"a": 1}') == '{"a": 1}'
+    fenced = '```json\n{"title": "T", "clues": []}\n```'
+    assert private_generation._extract_json_candidate(fenced) == '{"title": "T", "clues": []}'
+    prose = 'Here you go:\n{"title": "T"} trailing words'
+    assert private_generation._extract_json_candidate(prose) == '{"title": "T"}'
+    assert private_generation._extract_json_candidate('{"a": 1') is None
+    assert private_generation._extract_json_candidate('no braces here') is None
+    assert private_generation._extract_json_candidate(None) is None
+    assert private_generation._extract_json_candidate('{"a": "brace } inside"}') == '{"a": "brace } inside"}'
+
+
+def test_lenient_json_loads_prefers_strict_parsing():
+    value, salvaged = private_generation._lenient_json_loads('{"a": 1}')
+    assert (value, salvaged) == ({"a": 1}, False)
+    value, salvaged = private_generation._lenient_json_loads('```json\n{"a": 1}\n```')
+    assert (value, salvaged) == ({"a": 1}, True)
+    with pytest.raises(ValueError):
+        private_generation._lenient_json_loads('just words')
+
+
+def test_salvage_clue_entries_validates_per_entry_not_per_board():
+    clues, report = private_generation._salvage_clue_entries(
+        [
+            {"id": "1A", "text": "Without light"},
+            {"id": "2D", "text": "x"},
+            {"id": "1A", "text": "Duplicate"},
+            {"id": "9Z", "text": "Bad shape"},
+            {"id": "3A", "text": "Line\nbreak", "extra": "tolerated"},
+            {"id": "4D", "text": "Draft with },{ debris"},
+            "garbage",
+            None,
+        ],
+        ["1A", "2D", "3A", "4D"],
+    )
+    assert clues == {"1A": "Without light", "3A": "Line break"}
+    assert report["reasons"] == {"2D": "invalid-clue-text", "4D": "syntax-debris"}
+    assert report["ignored"] == 4
+
+
+def test_make_clues_salvages_partial_boards_and_defaults_title(monkeypatch):
+    def partial_chat(*_args, **_kwargs):
+        return {
+            "title": "x",
+            "clues": [
+                {"id": "1A", "text": "Without light"},
+                {"id": "2D", "text": "x"},
+            ],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", partial_chat)
+    context = {}
+    title, clues = private_generation._make_clues(
+        "gemma4:26b",
+        [
+            {"id": "1A", "answer": "DARK", "length": 4},
+            {"id": "2D", "answer": "MOSS", "length": 4},
+            {"id": "3A", "answer": "ECHO", "length": 4},
+        ],
+        context,
+        "monday",
+    )
+    assert title == "Monday Clues"
+    assert clues["1A"] == "Without light"
+    assert clues["2D"] == "Entry supported by its crossings (4 letters)"
+    assert clues["3A"] == "Entry supported by its crossings (4 letters)"
+    salvage = context["_clue_generation_salvage"]
+    assert salvage["usable"] == 1
+    assert salvage["scaffolded"] == ["2D", "3A"]
+    assert salvage["reasons"] == {"2D": "invalid-clue-text", "3A": "missing-clue"}
+    assert salvage["titleDefaulted"] is True
+    assert context["_clue_safety_fallbacks"]["2D"] == ["salvage:invalid-clue-text"]
+
+
+def test_make_clues_without_usable_entries_keeps_whole_board_fallback(monkeypatch):
+    def empty_chat(*_args, **_kwargs):
+        return {"title": "T", "clues": [{"id": "1A", "text": "x"}]}
+
+    monkeypatch.setattr(private_generation, "_chat", empty_chat)
+    context = {}
+    title, clues = private_generation._make_clues(
+        "gemma4:26b",
+        [{"id": "1A", "answer": "ECHO", "length": 4}],
+        context,
+        "monday",
+    )
+    assert title == "Monday Clues"
+    assert clues == {"1A": "Entry supported by its crossings (4 letters)"}
+    assert "_clue_generation_salvage" not in context
+    assert context["_clue_generation_fallback"] == "Local model returned no usable clues"
+
+
+def test_redraft_steering_maps_rejection_families_to_constraints():
+    factual = [
+        {"text": "City of coffee", "admitted": False, "reasons": ["unsupported-factual-surface"]},
+    ]
+    steering = private_generation._redraft_steering(factual)
+    assert steering is not None
+    assert any("State no facts" in line for line in steering["avoid"])
+    assert steering["examples"][0]["text"] == "City of coffee"
+
+    giveaway = [
+        {"text": "SEATTLE city", "admitted": False, "reasons": ["answer-giveaway"]},
+        {"text": "Seattle town", "admitted": False, "reasons": ["answer-giveaway"]},
+    ]
+    steering = private_generation._redraft_steering(giveaway)
+    assert any("Do not repeat the answer" in line for line in steering["avoid"])
+    assert len(steering["examples"]) == 2
+
+    assert private_generation._redraft_steering([
+        {"text": None, "admitted": False, "reasons": ["draft-call-failed:ValueError"]},
+    ]) is None
+    assert private_generation._redraft_steering([
+        {"text": "Fine", "admitted": True, "reasons": []},
+    ]) is None
+    assert private_generation._redraft_steering([]) is None
+
+    unknown = [
+        {"text": "Odd surface", "admitted": False, "reasons": ["comparative-marker-with-noncomparative-shape"]},
+    ]
+    steering = private_generation._redraft_steering(unknown)
+    assert steering is not None
+    assert any("direct definition" in line for line in steering["avoid"])
+
+
+def test_candidate_strict_admission_rejects_pseudo_pun(monkeypatch):
+    def fake_chat(_model, messages, schema, **_kwargs):
+        if "clues" not in (schema.get("properties", {}) if isinstance(schema, dict) else {}):
+            return {"pick": "r0-0", "difference": "clearer"}
+        return {
+            "title": "Monday Crossword",
+            "clues": [{"id": "1A", "text": "Alpine town?"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    entries = [{"id": "1A", "answer": "ALTA", "length": 4}]
+
+    context = {"_candidate_base_seed": 6107}
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b", entries, context, "monday"
+    )
+    assert clues["1A"] == "Alpine town?"
+
+    monkeypatch.setenv("CROSSWORD_STRICT_ADMISSION", "1")
+    context = {"_candidate_base_seed": 6107}
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b", entries, context, "monday"
+    )
+    assert clues["1A"].startswith("Entry supported by its crossings")
+    candidates = context["_candidate_generation"]["entries"]["1A"]["candidates"]
+    assert any(
+        item.get("reasons") == ["pseudo-pun"] for item in candidates if isinstance(item, dict)
+    )
+
+
+def test_candidate_round_budgets_are_host_overridable(monkeypatch):
+    calls = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append(True)
+        return {"title": "Monday Crossword", "clues": [{"id": "1A", "text": "SEATTLE city"}]}
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    context = {"_candidate_base_seed": 6107}
+    monkeypatch.setenv("CROSSWORD_CANDIDATE_DRAFT_ROUNDS", "2")
+    monkeypatch.setenv("CROSSWORD_CANDIDATE_REDRAFT_ROUNDS", "0")
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b",
+        [{"id": "1A", "answer": "SEATTLE", "length": 7}],
+        context,
+        "monday",
+    )
+    assert clues["1A"].startswith("Entry supported by its crossings")
+    assert len(calls) == 2
+    assert context["_candidate_generation"]["rounds"] == 2
+    assert context["_candidate_generation"]["redraftRounds"] == 0
+
+    monkeypatch.setenv("CROSSWORD_CANDIDATE_REDRAFT_ROUNDS", "not-a-number")
+    context = {"_candidate_base_seed": 6107}
+    private_generation._make_candidate_clues(
+        "llama3.2:3b",
+        [{"id": "1A", "answer": "SEATTLE", "length": 7}],
+        context,
+        "monday",
+    )
+    assert context["_candidate_generation"]["redraftRounds"] == 1
+
+
+def test_route_signifiers_come_from_the_local_index_only(tmp_path, monkeypatch):
+    index = tmp_path / "routes.local.json"
+    index.write_text(
+        json.dumps(
+            {
+                "version": "private-clue-routes-v1",
+                "routes": {"SEATTLE": [{"clue": "Puget Sound port", "weekday": "wednesday"}]},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CROSSWORD_CLUE_ROUTE_INDEX_PATH", str(index))
+    private_generation._ROUTE_INDEX_CACHE.clear()
+    assert private_generation._route_signifiers("SEATTLE") == ["Puget Sound port"]
+    assert private_generation._route_signifiers("UNKNOWN") == []
+    private_generation._ROUTE_INDEX_CACHE.clear()
+
+
+def test_route_context_reaches_drafts_and_blocks_verbatim_copies(tmp_path, monkeypatch):
+    index = tmp_path / "routes.local.json"
+    index.write_text(
+        json.dumps(
+            {
+                "version": "private-clue-routes-v1",
+                "routes": {"SEATTLE": [{"clue": "Puget Sound port", "weekday": "wednesday"}]},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CROSSWORD_CLUE_ROUTE_INDEX_PATH", str(index))
+    monkeypatch.setenv("CROSSWORD_ROUTE_CONTEXT", "1")
+    monkeypatch.setenv("CROSSWORD_CANDIDATE_DRAFT_ROUNDS", "1")
+    monkeypatch.setenv("CROSSWORD_CANDIDATE_REDRAFT_ROUNDS", "0")
+    private_generation._ROUTE_INDEX_CACHE.clear()
+    calls = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append([message.get("content", "") for message in messages])
+        return {
+            "title": "Monday Crossword",
+            "clues": [{"id": "1A", "text": "Puget Sound port"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    context = {"_candidate_base_seed": 6107}
+    try:
+        _title, clues = private_generation._make_candidate_clues(
+            "llama3.2:3b",
+            [{"id": "1A", "answer": "SEATTLE", "length": 7}],
+            context,
+            "monday",
+        )
+    finally:
+        private_generation._ROUTE_INDEX_CACHE.clear()
+    assert any("signifiers" in part for contents in calls for part in contents)
+    assert any("never copy a signifier" in part for contents in calls for part in contents)
+    # The verbatim reproduction is rejected as a duplicate draft.
+    assert clues["1A"].startswith("Entry supported by its crossings")
+    assert context["_candidate_generation"]["routeContext"] == {
+        "enabled": True,
+        "divergent": False,
+        "entriesWithRoutes": 1,
+    }
+
+
+def test_candidate_abbrev_lane_prefers_for_short_frames(monkeypatch):
+    captured = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        captured.extend(
+            message.get("content", "")
+            for message in messages
+            if message.get("role") == "system"
+        )
+        if "clues" not in (schema.get("properties", {}) if isinstance(schema, dict) else {}):
+            return {"pick": "r0-0", "difference": "clearer"}
+        return {
+            "title": "T",
+            "clues": [{"id": "1A", "text": "Therapy program, for short"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setenv("CROSSWORD_ABBREV_LANE", "1")
+    context = {"_candidate_base_seed": 6107}
+    private_generation._make_candidate_clues(
+        "llama3.2:3b",
+        [{"id": "1A", "answer": "PTA", "length": 3}],
+        context,
+        "monday",
+    )
+
+    assert any("for short" in part for part in captured)
+    assert context["_candidate_generation"]["abbrevLane"] is True
+
+
+def test_candidate_abbrev_lane_off_by_default(monkeypatch):
+    captured = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        captured.extend(
+            message.get("content", "")
+            for message in messages
+            if message.get("role") == "system"
+        )
+        if "clues" not in (schema.get("properties", {}) if isinstance(schema, dict) else {}):
+            return {"pick": "r0-0", "difference": "clearer"}
+        return {
+            "title": "T",
+            "clues": [{"id": "1A", "text": "Therapy program, for short"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.delenv("CROSSWORD_ABBREV_LANE", raising=False)
+    context = {"_candidate_base_seed": 6107}
+    private_generation._make_candidate_clues(
+        "llama3.2:3b",
+        [{"id": "1A", "answer": "PTA", "length": 3}],
+        context,
+        "monday",
+    )
+
+    assert all("for short" not in part for part in captured)
+    assert context["_candidate_generation"]["abbrevLane"] is False
+
+
+def test_route_signifiers_divergent_picks_least_overlapping_pair(tmp_path, monkeypatch):
+    index = tmp_path / "routes.local.json"
+    index.write_text(
+        json.dumps(
+            {
+                "version": "private-clue-routes-v1",
+                "routes": {
+                    "PITCH": [
+                        {"clue": "Baseball throw", "weekday": "monday"},
+                        {"clue": "Baseball toss", "weekday": "tuesday"},
+                        {"clue": "Executive presentation", "weekday": "saturday"},
+                    ]
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CROSSWORD_CLUE_ROUTE_INDEX_PATH", str(index))
+    private_generation._ROUTE_INDEX_CACHE.clear()
+    try:
+        assert private_generation._route_signifiers("PITCH") == [
+            "Baseball throw",
+            "Baseball toss",
+        ]
+        divergent = private_generation._route_signifiers("PITCH", divergent=True)
+        assert "Executive presentation" in divergent
+        assert len(divergent) == 2
+    finally:
+        private_generation._ROUTE_INDEX_CACHE.clear()
+
+
+def test_candidate_redraft_steering_disables_via_env(monkeypatch):
+    calls = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append([message.get("content", "") for message in messages])
+        if "clues" not in (schema.get("properties", {}) if isinstance(schema, dict) else {}):
+            return {"pick": "r0-0", "difference": "clearer"}
+        if len(calls) <= 4:
+            return {
+                "title": "Monday Crossword",
+                "clues": [{"id": "1A", "text": "SEATTLE city"}],
+            }
+        return {
+            "title": "Monday Crossword",
+            "clues": [{"id": "1A", "text": "Pacific Northwest metropolis"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setenv("CROSSWORD_REDRAFT_STEERING", "0")
+    context = {"_candidate_base_seed": 6107}
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b",
+        [{"id": "1A", "answer": "SEATTLE", "length": 7}],
+        context,
+        "monday",
+    )
+    assert clues["1A"] == "Pacific Northwest metropolis"
+    assert not any(
+        "Avoid the rejected routes" in part for contents in calls for part in contents
+    )
+    assert context["_candidate_generation"]["redraftSteering"][0]["groups"][0]["avoid"] == []
+
+
+def test_candidate_redraft_carries_rejection_steering(monkeypatch):
+    calls = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append([message.get("content", "") for message in messages])
+        if "clues" not in (schema.get("properties", {}) if isinstance(schema, dict) else {}):
+            return {"pick": "r0-0", "difference": "clearer"}
+        if len(calls) <= 4:
+            return {
+                "title": "Monday Crossword",
+                "clues": [{"id": "1A", "text": "SEATTLE city"}],
+            }
+        return {
+            "title": "Monday Crossword",
+            "clues": [{"id": "1A", "text": "Pacific Northwest metropolis"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    context = {"_candidate_base_seed": 6107}
+    _title, clues = private_generation._make_candidate_clues(
+        "llama3.2:3b",
+        [{"id": "1A", "answer": "SEATTLE", "length": 7}],
+        context,
+        "monday",
+    )
+    assert clues["1A"] == "Pacific Northwest metropolis"
+    redraft_calls = [contents for contents in calls if any("Avoid the rejected routes" in part for part in contents)]
+    assert len(redraft_calls) == 1
+    assert any("Do not repeat the answer" in part for part in redraft_calls[0])
+    assert any("SEATTLE city" in part for part in redraft_calls[0])
+    receipt = context["_candidate_generation"]
+    assert receipt["redraftSteering"][0]["groups"][0]["ids"] == ["1A"]
+    assert context["_clue_safety_fallbacks"] == {}
+
+
+def test_malformed_clue_model_response_falls_back_to_answer_free_scaffolds(monkeypatch):
+    def malformed_chat(*_args, **_kwargs):
+        raise ValueError("invalid clue text")
+
+    monkeypatch.setattr(private_generation, "_chat", malformed_chat)
+    context = {}
+    title, clues = private_generation._make_clues(
+        "gemma4:26b",
+        [
+            {"id": "1A", "answer": "ECHO", "length": 4},
+            {"id": "2D", "answer": "MOSS", "length": 4},
+        ],
+        context,
+        "tuesday",
+    )
+
+    assert title == "Tuesday Clues"
+    assert clues == {
+        "1A": "Entry supported by its crossings (4 letters)",
+        "2D": "Entry supported by its crossings (4 letters)",
+    }
+    assert context["_clue_generation_fallback"] == "ValueError: invalid clue text"
+    assert context["_clue_safety_fallbacks"] == {
+        "1A": ["model-response-invalid"],
+        "2D": ["model-response-invalid"],
+    }
+
+
+def test_tuesday_recipe_has_a_real_step_up_from_monday():
+    monday = private_generation._weekday_recipe("monday")
+    tuesday = private_generation._weekday_recipe("tuesday")
+
+    assert tuesday["id"] == "tuesday-private-v1"
+    assert tuesday["themeAnswerCount"] > monday["themeAnswerCount"]
+    assert "second reading" in tuesday["clueDirection"]
+    assert tuesday["themeAnswerCount"] == 5
+    assert tuesday["minimumNonDefinitionFamilies"] == 5
+    assert tuesday["minimumNonDefinitionCount"] == 40
+    assert tuesday["requiredNonDefinitionFamilySet"] == (
+        "pun",
+        "fill-blank",
+        "nonverbal-expression",
+        "spoken-equivalent",
+        "metalinguistic",
+    )
+    assert tuesday["targetNonDefinitionRate"] == 0.72
+    assert private_generation._DIFFICULTY["tuesday"]["candidates"] == 75
+    assert private_generation._DIFFICULTY["tuesday"]["candidates"] > private_generation._DIFFICULTY["monday"]["candidates"]
+    assert private_generation._DIFFICULTY["tuesday"]["time"] > private_generation._DIFFICULTY["monday"]["time"]
+
+
+def test_tuesday_gentle_stretch_feedback_raises_only_clue_variety_target():
+    base = private_generation._effective_weekday_recipe("tuesday", {})
+    stretch = private_generation._effective_weekday_recipe(
+        "tuesday",
+        {"play_calibration": {"recommendation": "gentle-stretch"}},
+    )
+    other_day = private_generation._effective_weekday_recipe(
+        "wednesday",
+        {"play_calibration": {"recommendation": "gentle-stretch"}},
+    )
+
+    assert "difficultyVariant" not in base
+    assert stretch["difficultyVariant"] == "gentle-stretch"
+    assert stretch["minimumNonDefinitionCount"] == 44
+    assert stretch["targetNonDefinitionRate"] == 0.8
+    assert other_day == private_generation._weekday_recipe("wednesday")
+
+
+def test_friday_and_saturday_use_explicit_private_recipes_instead_of_generic_fallback():
+    friday = private_generation._weekday_recipe("friday")
+    saturday = private_generation._weekday_recipe("saturday")
+
+    assert friday["id"] == "friday-private-v1"
+    assert friday["themeMode"] == "long-form-cluster"
+    assert "indirect" in friday["clueDirection"]
+    assert saturday["id"] == "saturday-private-v1"
+    assert saturday["themeMode"] == "dense-cluster"
+    assert "oblique" in saturday["clueDirection"]
+    assert friday["id"] != saturday["id"]
+
+
+def test_clue_quality_summary_keeps_semantic_review_separate_from_mechanical_checks():
+    summary = private_generation._clue_quality_summary(
+        [
+            {"id": "1A", "answer": "ETENIM"},
+            {"id": "2D", "answer": "ECHO"},
+        ],
+        {"1A": '"MIND" spelled backward', "2D": "Sound that bounces back"},
+    )
+
+    assert summary["checkedCount"] == 2
+    assert summary["issueCount"] == 1
+    assert summary["issueCounts"] == {"reversal-mismatch": 1}
+    assert summary["grounding"]["statusCounts"] == {
+        "mechanical-relation-failed": 1,
+        "semantic-unverified": 1,
+    }
+    assert summary["grounding"]["relationCounts"] == {"reversal": 1}
+
+
+def test_optional_model_clue_challenge_is_disabled_by_default(monkeypatch):
+    def unexpected_chat(*args, **kwargs):
+        raise AssertionError("disabled advisory pass must not call Ollama")
+
+    monkeypatch.delenv(private_generation.PRIVATE_CLUE_CHALLENGE_ENV, raising=False)
+    monkeypatch.setattr(private_generation, "_chat", unexpected_chat)
+
+    result = private_generation._challenge_private_clues(
+        "gemma4:26b",
+        [{"id": "1A", "answer": "ECHO"}],
+        {"1A": "Sound that bounces back"},
+        {},
+        "wednesday",
+    )
+
+    assert result["status"] == "disabled"
+    assert result["checkedCount"] == 0
+    assert result["byId"] == {}
+
+
+def test_optional_model_clue_challenge_is_advisory_and_fail_open(monkeypatch):
+    monkeypatch.setenv(private_generation.PRIVATE_CLUE_CHALLENGE_ENV, "1")
+
+    def fake_chat(*args, **kwargs):
+        return {
+            "checks": [
+                {
+                    "id": "1A",
+                    "disposition": "review",
+                    "confidence": "medium",
+                    "reason": "Definition has no source ledger.",
+                }
+            ]
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    entries = [{"id": "1A", "answer": "ECHO"}]
+    result = private_generation._challenge_private_clues(
+        "gemma4:26b",
+        entries,
+        {"1A": "Sound that bounces back"},
+        {"opening_associations": ["sound"]},
+        "wednesday",
+    )
+
+    assert result["status"] == "completed"
+    assert result["checkedCount"] == 1
+    assert result["byId"]["1A"]["disposition"] == "review"
+    summary = private_generation._clue_quality_summary(
+        entries,
+        {"1A": "Sound that bounces back"},
+        model_challenges=result["byId"],
+    )
+    challenge = summary["grounding"]["entries"][0]["semanticChallenge"]
+    assert challenge["classification"] == "needs-review"
+    assert challenge["modelRecommendation"]["status"] == "accepted-advisory"
+    assert challenge["playPolicy"] == "never-gates-private-play"
+
+    def failing_chat(*args, **kwargs):
+        raise RuntimeError("Ollama unavailable")
+
+    monkeypatch.setattr(private_generation, "_chat", failing_chat)
+    failed = private_generation._challenge_private_clues(
+        "gemma4:26b", entries, {"1A": "Sound that bounces back"}, {}, "wednesday"
+    )
+    assert failed["status"] == "failed"
+    assert failed["enabled"] is True
+    assert failed["byId"] == {}
+
+
+def test_large_model_clue_challenge_scopes_to_deterministic_risk(monkeypatch):
+    monkeypatch.setenv(private_generation.PRIVATE_CLUE_CHALLENGE_ENV, "1")
+    seen = []
+
+    def fake_chat(_model, messages, _schema, **_kwargs):
+        payload = json.loads(messages[1]["content"])
+        seen.append([item["id"] for item in payload["entries"]])
+        return {
+            "checks": [
+                {
+                    "id": "1A",
+                    "disposition": "review",
+                    "confidence": "medium",
+                    "reason": "Relation needs a source check.",
+                }
+            ]
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    entries = [
+        {
+            "id": f"{index}A",
+            "answer": "ECHO",
+            "needsFoothold": index == 1,
+        }
+        for index in range(1, 21)
+    ]
+    result = private_generation._challenge_private_clues(
+        "gemma4:26b",
+        entries,
+        {entry["id"]: "Singer with a hit" if entry["id"] == "1A" else "Sound" for entry in entries},
+        {},
+        "wednesday",
+    )
+
+    assert result["status"] == "completed"
+    assert result["scope"] == "deterministic-risk-selection"
+    assert result["checkedCount"] == 1
+    assert seen == [["1A"]]
+
+
+def test_clue_grounding_reports_structure_without_claiming_semantic_facts():
+    grounding = private_generation._clue_grounding(
+        {"answer": "MOMENT"}, "Entry supported by its crossings (6 letters)"
+    )
+
+    assert grounding["status"] == "crossing-scaffold"
+    assert grounding["answerLength"] == 6
+    assert grounding["answerShape"] == "letters-only"
+    assert grounding["repeatedLetterCount"] == 1
+    assert grounding["relation"] is None
+    assert grounding["riskFlags"] == []
+    assert grounding["uncertainty"] == [
+        "semantic-meaning-unverified",
+        "factual-support-unverified",
+    ]
+
+
+def test_clue_grounding_labels_mechanical_and_surface_conventions_separately():
+    anagram = private_generation._clue_grounding({"answer": "ECHO"}, "Anagram of HOCE")
+    plural = private_generation._clue_grounding({"answer": "CATS"}, "Felines (pl.)")
+
+    assert anagram["status"] == "mechanically-consistent"
+    assert anagram["relation"] == "anagram"
+    assert anagram["relationVerification"] == "consistent"
+    assert plural["status"] == "surface-convention-only"
+    assert plural["relation"] == "plural-label"
+    assert plural["morphology"] == "plural-marker-present; answer morphology unverified"
+    assert plural["relationVerification"] == "surface-only"
+
+
+def test_private_clue_safety_catches_explicit_plural_marker_mismatch():
+    mismatch = private_generation._clue_grounding(
+        {"answer": "CAT", "needsFoothold": False}, "Felines (pl.)"
+    )
+
+    assert mismatch["status"] == "morphology-check-failed"
+    assert mismatch["morphologyIssue"] == "plural-marker-with-singular-shape"
+    assert private_generation._enforce_private_clue_safety(
+        [{"id": "1A", "answer": "CAT", "length": 3, "needsFoothold": False}],
+        {"1A": "Felines (pl.)"},
+    )["1A"] == "Entry supported by its crossings (3 letters)"
+
+
+def test_private_clue_safety_catches_plain_language_and_present_future_tense_mismatch():
+    plural = private_generation._clue_grounding(
+        {"answer": "CAT", "needsFoothold": False}, "Felines (plural)"
+    )
+    assert plural["status"] == "morphology-check-failed"
+    assert plural["relation"] == "plural-label"
+    assert plural["morphology"] == "plural-marker-with-singular-shape"
+    present = private_generation._clue_grounding(
+        {"answer": "RAN", "needsFoothold": False}, "Move (present tense)"
+    )
+    future = private_generation._clue_grounding(
+        {"answer": "RAN", "needsFoothold": False}, "Move (future tense)"
+    )
+    assert present["morphology"] == "present-tense-marker-with-past-shape"
+    assert future["morphology"] == "future-tense-marker-with-past-shape"
+    entries = [{"id": "1A", "answer": "RAN", "length": 3, "needsFoothold": False}]
+    assert private_generation._enforce_private_clue_safety(
+        entries, {"1A": "Move (present tense)"}
+    )["1A"] == "Entry supported by its crossings (3 letters)"
+    assert private_generation._enforce_private_clue_safety(
+        entries, {"1A": "Move (future tense)"}
+    )["1A"] == "Entry supported by its crossings (3 letters)"
+
+
+def test_private_clue_safety_catches_explicit_past_tense_marker_mismatch():
+    assert (
+        private_generation._clue_morphology_issue(
+            {"answer": "RAN"}, "Past tense"
+        )
+        is None
+    )
+    mismatch = private_generation._clue_grounding(
+        {"answer": "RUN", "needsFoothold": False}, "Past tense"
+    )
+
+    assert mismatch["status"] == "morphology-check-failed"
+    assert mismatch["morphologyIssue"] == "past-tense-marker-with-nonpast-shape"
+    assert private_generation._enforce_private_clue_safety(
+        [{"id": "1A", "answer": "RUN", "length": 3, "needsFoothold": False}],
+        {"1A": "Past tense"},
+    )["1A"] == "Entry supported by its crossings (3 letters)"
+
+
+def test_clue_grounding_exposes_risk_flags_for_local_inspection():
+    grounding = private_generation._clue_grounding(
+        {"id": "1A", "answer": "EVAN", "needsFoothold": False},
+        "Singer with a hit song?",
+    )
+
+    assert grounding["riskFlags"] == ["unsupported-factual-surface"]
+
+
+def test_reviewed_clue_pack_projection_matches_exact_answers_and_keeps_receipt():
+    configured = SimpleNamespace(
+        pack_id="pack-v1",
+        pack_sha256="a" * 64,
+        content=SimpleNamespace(
+            lexemes=(
+                SimpleNamespace(
+                    lexeme_id="lexeme-cat",
+                    answer="CAT",
+                    senses=(
+                        SimpleNamespace(
+                            sense_id="sense-cat-gloss",
+                            gloss="a small domesticated feline",
+                            resolution_status="reviewed",
+                        ),
+                    ),
+                    facts=(
+                        SimpleNamespace(
+                            fact_id="fact-cat",
+                            statement="Cats are mammals",
+                        ),
+                    ),
+                    clues=(
+                        SimpleNamespace(
+                            clue_id="clue-cat",
+                            text="Feline, familiarly",
+                            evidence_type="sense",
+                            evidence_id="sense-cat",
+                            grammar={"grammarVersion": "clue-grammar-v1"},
+                            provenance={
+                                "source": {
+                                    "sourceId": "source-v1",
+                                    "version": "2026",
+                                    "artifactSha256": "b" * 64,
+                                },
+                                "evidenceRefs": ["fixture:sense/CAT"],
+                                "reviewerId": "reviewer",
+                                "reviewedAt": "2026-09-28",
+                            },
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    projection = private_generation._reviewed_clue_pack_projection(
+        [{"id": "1A", "answer": "CAT"}, {"id": "2D", "answer": "DOG"}],
+        configured,
+    )
+
+    assert projection["status"] == "configured"
+    assert projection["byId"]["1A"]["text"] == "Feline, familiarly"
+    assert projection["byId"]["1A"]["evidenceId"] == "sense-cat"
+    assert projection["byId"]["1A"]["sourceId"] == "source-v1"
+    assert projection["byId"]["1A"]["senses"] == [
+        {
+            "senseId": "sense-cat-gloss",
+            "gloss": "a small domesticated feline",
+            "resolutionStatus": "reviewed",
+        }
+    ]
+    assert projection["byId"]["1A"]["facts"] == [
+        {"factId": "fact-cat", "statement": "Cats are mammals"}
+    ]
+    assert "2D" not in projection["byId"]
+    assert private_generation._reviewed_clue_pack_summary(projection) == {
+        "version": "private-reviewed-clue-pack-v1",
+        "status": "configured",
+        "matchedCount": 1,
+        "contextCount": 1,
+        "uncertainty": "reviewed-source-provenance-is-not-a-publication-claim",
+        "packId": "pack-v1",
+        "packSha256": "a" * 64,
+    }
+
+
+def test_reviewed_clue_pack_treats_empty_app_defaults_as_not_configured(
+    api, monkeypatch
+):
+    keys = (
+        "FUTURE_ADMITTED_PACK_PATH",
+        "FUTURE_ADMITTED_PACK_ID",
+        "FUTURE_ADMITTED_PACK_SHA256",
+        "FUTURE_ADMITTED_SOURCE_PINS_JSON",
+    )
+    with api.app.app_context():
+        for key in keys:
+            monkeypatch.setitem(api.app.config, key, None)
+        projection = private_generation._load_reviewed_clue_pack([])
+
+    assert projection == {
+        "version": "private-reviewed-clue-pack-v1",
+        "status": "not-configured",
+        "byId": {},
+    }
+
+
+def test_make_clues_preserves_exact_reviewed_text(monkeypatch):
+    monkeypatch.setattr(
+        private_generation,
+        "_chat",
+        lambda *args, **kwargs: {
+            "title": "A small board",
+            "clues": [{"id": "1A", "text": "Model paraphrase"}],
+        },
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    title, clues = private_generation._make_clues(
+        "gemma4:26b",
+        [{"id": "1A", "answer": "CAT", "length": 3, "theme": False}],
+        {},
+        "wednesday",
+        reviewed_pack={
+            "byId": {
+                "1A": {
+                    "text": "Feline, familiarly",
+                    "evidenceType": "sense",
+                    "evidenceId": "sense-cat",
+                }
+            }
+        },
+    )
+
+    assert title == "A small board"
+    assert clues == {"1A": "Feline, familiarly"}
+
+
+def test_make_clues_repairs_language_starter_to_explicit_signal(monkeypatch):
+    monkeypatch.setattr(
+        private_generation,
+        "_chat",
+        lambda *args, **kwargs: {
+            "title": "A language thread",
+            "clues": [{"id": "1A", "text": "German refusal"}],
+        },
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+
+    _, clues = private_generation._make_clues(
+        "gemma4:26b",
+        [{"id": "1A", "answer": "NEIN", "length": 4, "theme": False}],
+        {
+            "language_learning": {
+                "language": "German",
+                "eligibleReviewForms": ["NEIN"],
+            }
+        },
+        "wednesday",
+    )
+
+    assert clues == {"1A": "German for refusal"}
+
+
+def test_make_clues_uses_the_local_task_pair_source_text(monkeypatch):
+    monkeypatch.setattr(
+        private_generation,
+        "_chat",
+        lambda *args, **kwargs: {
+            "title": "A language thread",
+            "clues": [{"id": "1A", "text": "French refusal"}],
+        },
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+
+    _, clues = private_generation._make_clues(
+        "gemma4:26b",
+        [{"id": "1A", "answer": "OUI", "length": 3, "theme": False}],
+        {
+            "language_learning": {
+                "language": "French",
+                "eligibleReviewForms": ["OUI"],
+            }
+        },
+        "wednesday",
+    )
+
+    assert clues == {"1A": "French for yes"}
+
+
+def test_make_clues_passes_bounded_reviewed_context(monkeypatch):
+    captured = {}
+    context = {}
+
+    def fake_chat(*args, **kwargs):
+        captured["messages"] = args[1]
+        return {
+            "title": "A contextual board",
+            "clues": [{"id": "1A", "text": "Small domesticated animal"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    private_generation._make_clues(
+        "gemma4:26b",
+        [{"id": "1A", "answer": "CAT", "length": 3, "theme": False}],
+        context,
+        "wednesday",
+        reviewed_pack={
+            "byId": {
+                "1A": {
+                    "text": None,
+                    "senses": [
+                        {
+                            "senseId": "sense-cat",
+                            "gloss": "a small domesticated feline",
+                            "resolutionStatus": "reviewed",
+                        }
+                    ],
+                    "facts": [
+                        {"factId": "fact-cat", "statement": "Cats are mammals"}
+                    ],
+                }
+            }
+        },
+    )
+
+    assert "plural form" in captured["messages"][0]["content"]
+    assert "domain_hints are private, unadmitted subject invitations" in captured["messages"][0]["content"]
+    payload = json.loads(captured["messages"][1]["content"])
+    assert payload["reviewedClues"] == []
+    assert payload["reviewedContent"] == [
+        {
+            "id": "1A",
+            "senses": [
+                {
+                    "senseId": "sense-cat",
+                    "gloss": "a small domesticated feline",
+                    "resolutionStatus": "reviewed",
+                }
+            ],
+            "facts": [{"factId": "fact-cat", "statement": "Cats are mammals"}],
+        }
+    ]
+    assert context["_clue_generation_timing"]["version"] == (
+        "private-clue-generation-timing-v1"
+    )
+    assert context["_clue_generation_timing"]["primaryWriter"] >= 0
+
+
+def test_make_clues_receives_the_answer_free_foothold_seed_plan(monkeypatch):
+    captured = {}
+
+    def fake_chat(*args, **kwargs):
+        captured["messages"] = args[1]
+        return {
+            "title": "Seeded crossings",
+            "clues": [{"id": "1A", "text": "A small animal"}],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    plan = {
+        "version": "private-foothold-seed-plan-v1",
+        "targetCount": 1,
+        "seededTargetCount": 1,
+        "entries": [
+            {
+                "targetEntryId": "1A",
+                "supportEntryId": "1D",
+                "crossingCells": [{"row": 0, "col": 0}],
+            }
+        ],
+    }
+    private_generation._make_clues(
+        "gemma4:26b",
+        [{"id": "1A", "answer": "CAT", "length": 3, "theme": False}],
+        {"_foothold_seed_plan": plan},
+        "wednesday",
+    )
+
+    payload = json.loads(captured["messages"][1]["content"])
+    assert payload["footholdSeedPlan"] == plan
+    assert "_foothold_seed_plan" not in payload["wordField"]
+
+
+def test_large_definition_heavy_board_gets_bounded_surface_diversity_repair(monkeypatch):
+    entries = [
+        {"id": f"{index}A", "answer": "CAT", "length": 3, "theme": False}
+        for index in range(1, 31)
+    ]
+    calls = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append(messages)
+        ids = schema["properties"]["clues"]["items"]["properties"]["id"]["enum"]
+        if len(calls) == 1:
+            return {
+                "title": "A definition-heavy board",
+                "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
+            }
+        surfaces = {
+            ids[0]: "Branch, perhaps?",
+            ids[1]: "Safe and ___",
+            ids[2]: "[Sound heard nearby]",
+            ids[3]: "“Not a chance!”",
+        }
+        return {
+            "title": "A varied board",
+            "clues": [{"id": clue_id, "text": surfaces[clue_id]} for clue_id in ids],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    context = {}
+
+    _, clues = private_generation._make_clues(
+        "gemma4:26b", entries, context, "wednesday"
+    )
+
+    assert len(calls) == 2
+    assert context["_clue_diversity_repair"] == {
+        "version": "private-clue-diversity-repair-v2",
+        "status": "repaired",
+        "attempted": True,
+        "selectedCount": 4,
+        "rewrittenCount": 4,
+        "minimumFamilies": 2,
+        "achievedFamilies": 4,
+        "reason": "definition-heavy-board",
+    }
+    report = private_generation._clue_diversity_report(entries, clues)
+    assert report["status"] == "varied"
+    assert report["familyCounts"] == {
+        "definition": 26,
+        "fill-blank": 1,
+        "nonverbal-expression": 1,
+        "pun": 1,
+        "spoken-equivalent": 1,
+    }
+
+
+def test_tuesday_diversity_prompt_gives_puns_a_second_reading_example(monkeypatch):
+    entries = [
+        {"id": f"{index}A", "answer": "CAT", "length": 3, "theme": False}
+        for index in range(1, 31)
+    ]
+    captured = {}
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        captured["messages"] = messages
+        requested = json.loads(messages[-1]["content"])["entries"]
+        surfaces = {
+            "pun": "Branch specialist?",
+            "fill-blank": "Safe and ___",
+            "nonverbal-expression": "[Sound heard nearby]",
+            "spoken-equivalent": "“Not a chance!”",
+            "metalinguistic": "Estimated arrival, briefly",
+        }
+        return {
+            "title": "A Tuesday board",
+            "clues": [
+                {"id": item["id"], "text": surfaces[item["desiredFamily"]]}
+                for item in requested
+            ],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    clues, repair = private_generation._repair_clue_diversity(
+        "gemma4:26b",
+        entries,
+        {entry["id"]: "A thing" for entry in entries},
+        {},
+        "tuesday",
+        {},
+    )
+
+    assert repair["rewrittenCount"] > 0
+    system_prompt = captured["messages"][0]["content"]
+    assert "hinge the surface on a word with two real senses" in system_prompt
+    assert "Branch specialist?" in system_prompt
+    payload = json.loads(captured["messages"][-1]["content"])
+    pun_entry = next(
+        item for item in payload["entries"] if item["desiredFamily"] == "pun"
+    )
+    assert pun_entry["requiredSurface"].startswith(
+        "end with ? AND hinge on a word with two real senses present in the surface"
+    )
+    assert "A bare ? with no double-meaning word is not a pun." in pun_entry["requiredSurface"]
+    assert clues[pun_entry["id"]] == "Branch specialist?"
+
+
+def test_pun_surface_accepts_only_a_terminal_question_mark():
+    assert private_generation._desired_clue_family_matches(
+        "Branch specialist?", "pun"
+    )
+    assert private_generation._desired_clue_family_matches(
+        "Branch specialist?  ", "pun"
+    )
+    assert not private_generation._desired_clue_family_matches(
+        "Branch specialist", "pun"
+    )
+    assert private_generation._clue_surface_issues("Branch specialist?!") == [
+        "question-mark-placement"
+    ]
+    # A closing quotation belongs to the quoted cue: the question still ends
+    # the clue. Census: '"___ really mean it?"' (NYT, Monday).
+    assert private_generation._clue_surface_issues('"___ really mean it?"') == []
+    assert private_generation._clue_surface_issues('"Wie ___ es Ihnen?"') == []
+    # A parenthetical aside or an attribution tail carries its own question.
+    assert private_generation._clue_surface_issues("Resident (in Tarrytown?)") == []
+    assert private_generation._clue_surface_issues('"O earth! What ___?": Hamlet') == []
+    assert private_generation._clue_surface_issues('"Could ___ Be Magic?" (1957 hit)') == []
+    assert private_generation._clue_surface_issues('"Quo Vadis?" character') == []
+    assert private_generation._clue_surface_issues('"Ain\'t She Sweet?" composer') == []
+    assert private_generation._clue_surface_issues("Air that makes you go [cough, cough]") == []
+    assert private_generation._clue_surface_issues("Couldn't shpeak shtraight [hic]?") == []
+    # Braces as spaced subjects are legitimate ("{ }, in mathematics" ->
+    # NULL); unspaced brace shapes are model debris.
+    assert private_generation._clue_surface_issues("{ }, in mathematics") == []
+    assert private_generation._clue_surface_issues("Math items represented using { and }") == []
+    assert private_generation._clue_surface_issues("Sound adjustment (6)},{") == [
+        "syntax-debris",
+    ]
+    # Spelled-out trailing counts lean on the number, not the clue; NYT
+    # parenthetical enumeration stays untouched.
+    assert private_generation._clue_surface_issues("Surprise, 3 letters") == [
+        "trailing-enumeration",
+    ]
+    assert private_generation._clue_surface_issues("City named for a chief (7)") == []
+    assert private_generation._clue_surface_issues("Common Latin word") == []
+    assert private_generation._clue_surface_issues("Word with fish or grass") == []
+    # Possessive blanks with human-attribute nouns complete to nonsense
+    # ("GARDEN's favorite hobby") or unsourced trivia; plain possessive
+    # blanks ("___'s Day") stay fair.
+    assert private_generation._clue_surface_issues(
+        "Fruit of knowledge, or ___________'s favorite hobby?"
+    ) == [
+        "possessive-blank-attribute",
+    ]
+    assert private_generation._possessive_blank_attribute("___'s favorite hobby")
+    assert not private_generation._possessive_blank_attribute("___'s Day")
+    assert not private_generation._possessive_blank_attribute("___ voyage")
+
+
+def test_tuesday_recipe_reports_a_bounded_floor_shortfall(monkeypatch):
+    entries = [
+        {
+            "id": f"{index}A",
+            "answer": "JA" if index == 6 else "BARK",
+            "length": 2 if index == 6 else 4,
+            "theme": False,
+        }
+        for index in range(1, 31)
+    ]
+    calls = []
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append(messages)
+        ids = schema["properties"]["clues"]["items"]["properties"]["id"]["enum"]
+        if len(calls) == 1:
+            return {
+                "title": "A Tuesday board",
+                "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
+            }
+        requested = json.loads(messages[-1]["content"])["entries"]
+        surfaces = {
+            "pun": "Branch, perhaps?",
+            "fill-blank": "Safe and ___",
+            "nonverbal-expression": "[Sound heard nearby]",
+            "spoken-equivalent": "“Not a chance!”",
+            "metalinguistic": "Estimated arrival, briefly",
+        }
+        return {
+            "title": "A Tuesday board",
+            "clues": [
+                {
+                    "id": item["id"],
+                    "text": surfaces[item["desiredFamily"]],
+                }
+                for item in requested[:4]
+            ],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    context = {}
+
+    _, clues = private_generation._make_clues(
+        "gemma4:26b", entries, context, "tuesday"
+    )
+
+    assert len(calls) <= 6
+    assert context["_clue_diversity_repair"]["reason"] == "weekday-surface-floor"
+    assert context["_clue_diversity_repair"]["selectedCount"] <= 48
+    report = private_generation._clue_diversity_report(
+        entries, clues, repair=context["_clue_diversity_repair"]
+    )
+    assert len(report["nonDefinitionFamilies"]) >= 5
+    assert report["status"] == "varied-below-recipe-floor"
+    assert report["nonDefinitionCount"] >= 20
+    assert report["targetNonDefinitionClues"] == 22
+    assert report["requiredNonDefinitionClues"] == 40
+    assert report["floorMet"] is False
+
+
+def test_tuesday_surface_floor_scales_to_full_board_target(monkeypatch):
+    monkeypatch.setenv("CROSSWORD_PRIVATE_CLUE_DIVERSITY_REPAIR", "0")
+    entries = [
+        {"id": f"{index}A", "answer": "BARK", "length": 4, "theme": False}
+        for index in range(1, 79)
+    ]
+    clues = {entry["id"]: "A thing" for entry in entries}
+    _, repair = private_generation._repair_clue_diversity(
+        "gemma4:26b", entries, clues, {}, "tuesday", {}
+    )
+    assert repair["minimumClueCount"] == 40
+    assert repair["targetNonDefinitionRate"] == 0.72
+    assert repair["targetNonDefinitionClues"] == 57
+
+
+def test_tuesday_floor_reports_missing_required_surface_family():
+    entries = [
+        {"id": f"{index}A", "answer": "BARK", "length": 4, "theme": False}
+        for index in range(1, 31)
+    ]
+    surfaces = [
+        "Branch, perhaps?",
+        "Safe and ___",
+        "[Sound heard nearby]",
+        "Estimated arrival, briefly",
+    ]
+    clues = {
+        entry["id"]: surfaces[index % len(surfaces)]
+        for index, entry in enumerate(entries)
+    }
+    report = private_generation._clue_diversity_report(
+        entries,
+        clues,
+        repair={
+            "minimumFamilies": 5,
+            "minimumClueCount": 28,
+            "requiredNonDefinitionFamilySet": [
+                "pun",
+                "fill-blank",
+                "nonverbal-expression",
+                "spoken-equivalent",
+                "metalinguistic",
+            ],
+        },
+    )
+    assert report["missingNonDefinitionFamilies"] == ["spoken-equivalent"]
+    assert report["floorMet"] is False
+    assert report["status"] == "varied-below-recipe-floor"
+
+
+def test_tuesday_surface_floor_uses_one_extra_bounded_repair_batch(monkeypatch):
+    entries = [
+        {
+            "id": f"{index}A",
+            "answer": "JA" if index == 6 else "BARK",
+            "length": 2 if index == 6 else 4,
+            "theme": False,
+        }
+        for index in range(1, 51)
+    ]
+    calls = []
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append(messages)
+        if len(calls) == 1:
+            return {
+                "title": "A Tuesday board",
+                "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
+            }
+        requested = json.loads(messages[-1]["content"])["entries"]
+        surfaces = {
+            "pun": "Branch, perhaps?",
+            "fill-blank": "Safe and ___",
+            "nonverbal-expression": "[Sound heard nearby]",
+            "spoken-equivalent": "“Not a chance!”",
+            "metalinguistic": "Estimated arrival, briefly",
+        }
+        return {
+            "title": "A Tuesday board",
+            "clues": [
+                {"id": item["id"], "text": surfaces[item["desiredFamily"]]}
+                for item in requested[:8]
+            ],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    context = {}
+
+    _, clues = private_generation._make_clues(
+        "gemma4:26b", entries, context, "tuesday"
+    )
+
+    assert len(calls) <= 6
+    assert context["_clue_diversity_repair"]["attemptCount"] == 5
+    assert len(context["_clue_diversity_repair"]["attempts"]) == 5
+    report = private_generation._clue_diversity_report(
+        entries, clues, repair=context["_clue_diversity_repair"]
+    )
+    assert report["nonDefinitionCount"] >= 32
+    assert report["floorMet"] is True
+
+
+def test_tuesday_qwen_repair_budget_stops_after_one_followup(monkeypatch):
+    entries = [
+        {
+            "id": f"{index}A",
+            "answer": "BARK",
+            "length": 4,
+            "theme": False,
+        }
+        for index in range(1, 31)
+    ]
+    calls = []
+
+    def fake_chat(_model, _messages, schema, **_kwargs):
+        calls.append(schema)
+        ids = schema["properties"]["clues"]["items"]["properties"]["id"]["enum"]
+        if len(calls) == 1:
+            return {
+                "title": "A Tuesday board",
+                "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
+            }
+        return {
+            "title": "A Tuesday board",
+            "clues": [
+                {"id": clue_id, "text": "Branch, perhaps?"}
+                for clue_id in ids[:4]
+            ],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    context = {}
+
+    _, clues = private_generation._make_clues(
+        "qwen3.8:27b", entries, context, "tuesday"
+    )
+
+    assert len(calls) == 3  # initial writer + initial diversity + one follow-up
+    repair = context["_clue_diversity_repair"]
+    assert repair["maxAttempts"] == 2
+    assert repair["attemptCount"] == 2
+    assert len(repair["attempts"]) == 2
+    assert "Branch, perhaps?" in clues.values()
+
+
+def test_tuesday_surface_floor_allows_one_additional_bounded_repair_batch(monkeypatch):
+    entries = [
+        {
+            "id": f"{index}A",
+            "answer": "BARK",
+            "length": 4,
+            "theme": False,
+        }
+        for index in range(1, 51)
+    ]
+    calls = []
+    initial_surfaces = [
+        "Branch, perhaps?",
+        "Safe and ___",
+        "[Sound heard nearby]",
+        '“Not a chance!”',
+        "Briefly, perhaps",
+        "German for yes",
+        "Branch, perhaps?",
+        "Safe and ___",
+        "[Sound heard nearby]",
+        '“Not a chance!”',
+        "Briefly, perhaps",
+    ]
+    def fake_chat(_model, _messages, schema, **_kwargs):
+        calls.append(schema)
+        if len(calls) == 1:
+            clues = [
+                {"id": entry["id"], "text": "A thing"}
+                for entry in entries
+            ]
+            for index, text in enumerate(initial_surfaces):
+                clues[index]["text"] = text
+            return {"title": "A Tuesday board", "clues": clues}
+        requested = json.loads(_messages[-1]["content"])["entries"]
+        surfaces = {
+            "pun": "Branch, perhaps?",
+            "fill-blank": "Safe and ___",
+            "nonverbal-expression": "[Sound heard nearby]",
+            "spoken-equivalent": "“Not a chance!”",
+            "metalinguistic": "Estimated arrival, briefly",
+        }
+        return {
+            "title": "A Tuesday board",
+            "clues": [
+                {"id": item["id"], "text": surfaces[item["desiredFamily"]]}
+                for item in requested[:8]
+            ],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    context = {}
+
+    _, clues = private_generation._make_clues(
+        "gemma4:26b", entries, context, "tuesday"
+    )
+
+    assert len(calls) == 5
+    assert context["_clue_diversity_repair"]["attemptCount"] == 4
+    report = private_generation._clue_diversity_report(
+        entries, clues, repair=context["_clue_diversity_repair"]
+    )
+    assert report["nonDefinitionCount"] >= 32
+    assert report["floorMet"] is True
+
+
+def test_tuesday_missing_family_retries_rotate_fresh_candidates_and_record_exhaustion(monkeypatch):
+    entries = [
+        {"id": f"{index}A", "answer": "BARK", "length": 4, "theme": False}
+        for index in range(1, 37)
+    ]
+    calls = []
+    spoken_batches = []
+    surfaces = {
+        "pun": "Branch, perhaps?",
+        "fill-blank": "Safe and ___",
+        "nonverbal-expression": "[Sound heard nearby]",
+        "metalinguistic": "Estimated arrival, briefly",
+    }
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        calls.append(messages)
+        if len(calls) == 1:
+            return {
+                "title": "A Tuesday board",
+                "clues": [{"id": entry["id"], "text": "A thing"} for entry in entries],
+            }
+        requested = json.loads(messages[-1]["content"])["entries"]
+        spoken_batches.append(
+            [item["id"] for item in requested if item["desiredFamily"] == "spoken-equivalent"]
+        )
+        # Deliberately leave the requested family unavailable. Every other
+        # accepted surface remains valid, so the test proves that retries do
+        # not fake the missing family with answer-bearing fallback text.
+        return {
+            "title": "A Tuesday board",
+            "clues": [
+                {"id": item["id"], "text": surfaces[item["desiredFamily"]]}
+                for item in requested
+                if item["desiredFamily"] in surfaces
+            ],
+        }
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+    monkeypatch.setattr(
+        private_generation,
+        "_repair_risky_clues",
+        lambda model, entries, clues, context, weekday: clues,
+    )
+    context = {}
+
+    _, clues = private_generation._make_clues(
+        "gemma4:26b", entries, context, "tuesday"
+    )
+
+    assert len(calls) <= 6
+    non_empty_spoken_batches = [batch for batch in spoken_batches if batch]
+    assert len(non_empty_spoken_batches) >= 2
+    assert len(non_empty_spoken_batches[0]) >= 2
+    assert set(non_empty_spoken_batches[0]).isdisjoint(non_empty_spoken_batches[1]), spoken_batches
+    repair = context["_clue_diversity_repair"]
+    assert repair["unavailableFamilies"] == ["spoken-equivalent"]
+    assert repair["familyRetryStatus"] == "bounded-exhausted"
+    report = private_generation._clue_diversity_report(
+        entries, clues, repair=repair
+    )
+    assert report["missingNonDefinitionFamilies"] == ["spoken-equivalent"]
+    assert report["floorMet"] is False
+    assert not any("Entry supported by" in clue for clue in clues.values())
+
+
+def test_clue_surface_checks_and_normalization_preserve_the_answer_free_surface():
+    assert private_generation._clue_surface_issues("[Sound? that bounces back") == [
+        "unbalanced-brackets",
+        "question-mark-placement",
+    ]
+    assert private_generation._clue_surface_issues("A [sound] that bounces back") == [
+        "bracket-scope",
+    ]
+    assert private_generation._clue_surface_issues("Sound adjustment (6)},{") == [
+        "syntax-debris",
+    ]
+    assert (
+        private_generation._normalize_clue_surface("[Sound? that bounces back")
+        == "Sound that bounces back"
+    )
+    grounding = private_generation._clue_grounding(
+        {"answer": "ECHO"}, "A [sound] that bounces back"
+    )
+    assert grounding["status"] == "surface-convention-invalid"
+    assert grounding["surfaceIssues"] == ["bracket-scope"]
+
+
+def test_fill_family_requires_house_blank_marker_shape():
+    assert private_generation._clue_family_observation("Safe and __")["family"] == "definition"
+    assert private_generation._clue_family_observation("Safe and ___")["family"] == "fill-blank"
+    assert private_generation._clue_family_observation("Once upon a …")["family"] == "fill-blank"
+    assert private_generation._clue_family_observation("Ready, set, ...")["family"] == "fill-blank"
+
+
+def test_clue_risk_flags_only_specific_factual_surfaces_and_tracks_footholds():
+    weak_entry = {"id": "1A", "answer": "EVAN", "needsFoothold": True}
+    assert private_generation._clue_risk_flags(
+        weak_entry, "Singer with a hit song?"
+    ) == ["unsupported-factual-surface", "foothold-required"]
+    assert private_generation._clue_risk_flags(
+        weak_entry, "Sound that bounces back"
+    ) == ["foothold-required"]
+
+
+@pytest.mark.parametrize(
+    "clue",
+    [
+        "Representative Alexandria",
+        "Italian city",
+        "French film director",
+        "Actress Davis",
+    ],
+)
+def test_clue_risk_flags_source_free_identity_surfaces(clue):
+    assert private_generation._clue_risk_flags(
+        {"id": "1A", "answer": "XXXX"}, clue
+    ) == ["unsupported-factual-surface"]
+
+
+def test_low_information_surface_guard_is_narrow_and_tuesday_only():
+    entry = {"id": "1A", "answer": "BARK"}
+
+    assert (
+        private_generation._clue_information_issue(
+            entry, "A thing?", weekday="tuesday"
+        )
+        == "low-information-surface"
+    )
+    assert (
+        private_generation._clue_information_issue(
+            entry, "A thing", weekday="wednesday"
+        )
+        is None
+    )
+    assert (
+        private_generation._clue_information_issue(
+            entry, "A sound that bounces back", weekday="tuesday"
+        )
+        is None
+    )
+
+
+def test_tuesday_safety_replaces_low_information_surface_with_answer_free_scaffold():
+    fallback_reasons = {}
+    safe = private_generation._enforce_private_clue_safety(
+        [{"id": "1A", "answer": "BARK", "length": 4}],
+        {"1A": "A thing?"},
+        weekday="tuesday",
+        fallback_reasons=fallback_reasons,
+    )
+
+    assert safe["1A"] == "Entry supported by its crossings (4 letters)"
+    assert fallback_reasons == {"1A": ["low-information-surface"]}
+
+
+def test_low_information_surface_does_not_change_other_weekday_safety():
+    safe = private_generation._enforce_private_clue_safety(
+        [{"id": "1A", "answer": "BARK", "length": 4}],
+        {"1A": "A thing"},
+        weekday="wednesday",
+    )
+
+    assert safe == {"1A": "A thing"}
+
+
+def test_private_clue_safety_replaces_unresolved_trivia_for_ordinary_entries():
+    entries = [
+        {"id": "1A", "answer": "EVAN", "length": 4, "needsFoothold": True},
+        {"id": "2D", "answer": "RESONANCE", "length": 9, "needsFoothold": False},
+    ]
+    clues = {
+        "1A": "Singer with a hit song?",
+        "2D": "Singer with a hit song?",
+    }
+
+    fallback_reasons = {}
+    safe = private_generation._enforce_private_clue_safety(
+        entries, clues, fallback_reasons=fallback_reasons
+    )
+
+    assert safe["1A"] == "Entry supported by its crossings (4 letters)"
+    assert safe["2D"] == "Entry supported by its crossings (9 letters)"
+    assert "EVAN" not in safe["1A"]
+    assert fallback_reasons == {
+        "1A": ["unsupported-factual-surface"],
+        "2D": ["unsupported-factual-surface"],
+    }
+
+
+def test_private_clue_safety_replaces_source_free_identity_surfaces():
+    entries = [{"id": "1A", "answer": "AOC", "length": 3, "needsFoothold": False}]
+    safe = private_generation._enforce_private_clue_safety(
+        entries, {"1A": "Representative Alexandria"}
+    )
+
+    assert safe["1A"] == "Entry supported by its crossings (3 letters)"
+
+
+def test_private_clue_safety_replaces_role_plus_name_surface():
+    entries = [{"id": "1A", "answer": "DAVIS", "length": 5, "needsFoothold": False}]
+    safe = private_generation._enforce_private_clue_safety(
+        entries, {"1A": "Actress Davis"}
+    )
+
+    assert safe["1A"] == "Entry supported by its crossings (5 letters)"
+
+
+def test_private_clue_safety_preserves_an_exact_reviewed_factual_surface():
+    entries = [
+        {"id": "1A", "answer": "ASHE", "length": 4, "needsFoothold": False}
+    ]
+    clues = {"1A": "Singer of 'Smooth'"}
+
+    safe = private_generation._enforce_private_clue_safety(
+        entries,
+        clues,
+        reviewed_by_id={"1A": {"text": "Singer of 'Smooth'"}},
+    )
+
+    assert safe == clues
+
+
+def test_grounded_bundle_preserves_the_original_reason_for_a_safety_scaffold():
+    entries = [{"id": "1A", "answer": "ASHE", "length": 4}]
+    clues = {"1A": "Entry supported by its crossings (4 letters)"}
+    safety_fallbacks = {"1A": ["unsupported-factual-surface"]}
+
+    bundle = private_generation._grounded_clue_bundle(
+        entries,
+        clues,
+        safety_fallbacks=safety_fallbacks,
+    )
+
+    assert bundle["safetyFallbacks"] == safety_fallbacks
+    assert bundle["fallbacks"] == [
+        {
+            "id": "1A",
+            "kind": "crossing-scaffold",
+            "reasonCodes": ["unsupported-factual-surface"],
+            "answerDisclosure": "none",
+            "semanticStatus": "not-established",
+        }
+    ]
+
+
+def test_private_clue_safety_keeps_a_repaired_themed_name_surface():
+    entries = [
+        {
+            "id": "1A",
+            "answer": "EVAN",
+            "length": 4,
+            "needsFoothold": True,
+            "theme": True,
+        }
+    ]
+    clues = {"1A": "Singer with a hit song?"}
+
+    safe = private_generation._enforce_private_clue_safety(entries, clues)
+
+    assert safe["1A"] == clues["1A"]
+
+
+def test_private_clue_safety_replaces_giveaways_and_false_wordplay_for_any_entry():
+    entries = [
+        {"id": "1A", "answer": "ECHO", "length": 4, "needsFoothold": False},
+        {"id": "2D", "answer": "ECHO", "length": 4, "needsFoothold": False},
+    ]
+    clues = {
+        "1A": "ECHO, repeated sound",
+        "2D": "Anagram of MIND",
+    }
+
+    safe = private_generation._enforce_private_clue_safety(entries, clues)
+
+    assert safe == {
+        "1A": "Entry supported by its crossings (4 letters)",
+        "2D": "Entry supported by its crossings (4 letters)",
+    }
+
+
+def test_private_clue_safety_replaces_answer_root_and_generic_clues():
+    entries = [
+        {"id": "1A", "answer": "REDS", "length": 4, "needsFoothold": False},
+        {"id": "2D", "answer": "XENON", "length": 5, "needsFoothold": False},
+    ]
+    clues = {"1A": "Shades of red", "2D": "Common name"}
+
+    safe = private_generation._enforce_private_clue_safety(entries, clues)
+
+    assert safe == {
+        "1A": "Entry supported by its crossings (4 letters)",
+        "2D": "Entry supported by its crossings (5 letters)",
+    }
+
+
+def test_clue_quality_summary_reports_source_less_factual_surface():
+    summary = private_generation._clue_quality_summary(
+        [{"id": "1A", "answer": "EVAN", "needsFoothold": True}],
+        {"1A": "Singer with a hit song?"},
+    )
+
+    assert summary["issueCounts"] == {"unsupported-factual-surface": 1}
+    assert summary["issueCount"] == 1
+
+
+def test_grounded_clue_bundle_marks_proper_name_risk_and_source_free_fallback():
+    entries = [
+        {
+            "id": "1A",
+            "answer": "EVAN",
+            "length": 4,
+            "fillScore": 42,
+            "needsFoothold": True,
+            "cluePolicy": "source-free-foothold",
+        },
+        {
+            "id": "2D",
+            "answer": "ECHO",
+            "length": 4,
+            "fillScore": 88,
+            "needsFoothold": False,
+        },
+    ]
+    bundle = private_generation._grounded_clue_bundle(
+        entries,
+        {
+            "1A": "Entry supported by its crossings (4 letters)",
+            "2D": "Sound that bounces back",
+        },
+    )
+
+    weak = next(item for item in bundle["entries"] if item["id"] == "1A")
+    assert bundle["version"] == "private-grounded-clue-bundle-v1"
+    assert bundle["semanticStatus"] == "not-established"
+    assert weak["supportBand"] == "weak"
+    assert weak["factRisk"]["truth"] == "not-established"
+    assert weak["fallback"] == {
+        "used": True,
+        "kind": "crossing-scaffold",
+        "reasonCodes": ["weak-or-obscure-fill"],
+        "answerDisclosure": "none",
+        "semanticStatus": "not-established",
+        "textPolicy": "source-free-and-answer-free",
+    }
+    assert bundle["fallbacks"] == [
+        {
+            "id": "1A",
+            "kind": "crossing-scaffold",
+            "reasonCodes": ["weak-or-obscure-fill"],
+            "answerDisclosure": "none",
+            "semanticStatus": "not-established",
+        }
+    ]
+
+
+def test_grounded_clue_bundle_separates_fact_risk_from_visible_family_signals():
+    bundle = private_generation._grounded_clue_bundle(
+        [
+            {
+                "id": "1A",
+                "answer": "EVAN",
+                "length": 4,
+                "fillScore": 78,
+                "needsFoothold": False,
+            },
+            {
+                "id": "2D",
+                "answer": "CATS",
+                "length": 4,
+                "fillScore": 78,
+                "needsFoothold": False,
+            },
+        ],
+        {
+            "1A": "Singer with a hit song?",
+            "2D": "Felines (pl.)",
+        },
+    )
+
+    factual = next(item for item in bundle["entries"] if item["id"] == "1A")
+    plural = next(item for item in bundle["entries"] if item["id"] == "2D")
+    assert factual["factRisk"]["category"] == "proper-name-or-biography"
+    assert factual["semanticStatus"] == "not-established"
+    assert plural["familyObservation"]["family"] == "definition"
+    assert plural["relation"] == "plural-label"
+    assert plural["relationVerification"] == "surface-only"
+    assert bundle["factRiskCounts"] == {
+        "proper-name-or-biography": 1,
+        "none-observed": 1,
+    }
+
+
+def test_grounded_clue_bundle_counts_literal_surface_signals():
+    bundle = private_generation._grounded_clue_bundle(
+        [
+            {"id": "1A", "answer": "NO WAY", "length": 5},
+            {"id": "2D", "answer": "PHEW", "length": 4},
+            {"id": "3A", "answer": "SOUND", "length": 5},
+            {"id": "4D", "answer": "EST", "length": 3},
+            {"id": "5A", "answer": "BRANCH", "length": 6},
+            {"id": "6D", "answer": "CATS", "length": 4},
+            {"id": "7D", "answer": "RAN", "length": 3},
+        ],
+        {
+            "1A": "“Not a chance!”",
+            "2D": "[Sigh of relief]",
+            "3A": "Safe and ___",
+            "4D": "Estimated arrival, briefly",
+            "5A": "Branch specialist?",
+            "6D": "Felines (pl.)",
+            "7D": "Past tense of run",
+        },
+    )
+
+    assert bundle["signalCounts"] == {
+        "abbreviation-indicator": 1,
+        "brackets": 1,
+        "fill-blank": 1,
+        "plural-marker": 1,
+        "question-mark": 1,
+        "quote": 1,
+        "tense-marker": 1,
+    }
+
+
+def test_grounded_clue_bundle_marks_exact_reviewed_sense_join_without_promoting_model_text():
+    entries = [
+        {"id": "1A", "answer": "CAT", "length": 3, "fillScore": 88},
+        {"id": "2D", "answer": "DOG", "length": 3, "fillScore": 88},
+    ]
+    clues = {"1A": "Mammal", "2D": "Animal friend"}
+    reviewed_pack = {
+        "packId": "pack-synthetic",
+        "packSha256": "a" * 64,
+        "byId": {
+            "1A": {
+                "text": "Mammal",
+                "lexemeId": "lexeme-cat",
+                "clueId": "clue-cat-mammal",
+                "evidenceType": "sense",
+                "evidenceId": "sense-cat",
+                "senses": [{"senseId": "sense-cat", "gloss": "A small mammal"}],
+                "facts": [],
+                "packId": "pack-synthetic",
+                "packSha256": "a" * 64,
+            }
+        },
+    }
+
+    bundle = private_generation._grounded_clue_bundle(
+        entries,
+        clues,
+        reviewed_pack=reviewed_pack,
+    )
+    reviewed = next(item for item in bundle["entries"] if item["id"] == "1A")
+    ordinary = next(item for item in bundle["entries"] if item["id"] == "2D")
+
+    assert bundle["sourcePolicy"] == "private-model-with-reviewed-source"
+    assert bundle["reviewedCount"] == 1
+    assert bundle["semanticStatus"] == "reviewed-source-present"
+    assert reviewed["semanticStatus"] == "reviewed-source"
+    assert reviewed["reviewedSource"]["senseIds"] == ["sense-cat"]
+    assert reviewed["reviewedSource"]["packId"] == "pack-synthetic"
+    assert ordinary["semanticStatus"] == "not-established"
+
+
+def test_clue_generation_bundle_exposes_shape_and_forbids_fact_inference():
+    bundle = private_generation._clue_generation_bundle(
+        [
+            {
+                "id": "1A",
+                "answer": "MOMENT",
+                "fillScore": 55,
+                "needsFoothold": True,
+                "cluePolicy": "source-free-foothold",
+                "theme": False,
+            }
+        ]
+    )
+
+    record = bundle["entries"][0]
+    assert record["answerLength"] == 6
+    assert record["answerShape"] == "letters-only"
+    assert record["supportBand"] == "weak"
+    assert record["factRisk"]["status"] == "unassessed-before-clue-surface"
+    assert "proper-name-from-short-answer" in record["forbiddenInference"]
+    assert bundle["uncertainty"] == [
+        "semantic-sense-unverified",
+        "factual-support-unverified",
+        "player-support-unmeasured",
+    ]
+
+
+def test_generation_retries_after_a_private_fill_artefact(monkeypatch):
+    monkeypatch.setattr(private_generation, "_installed_model", lambda: "qwen3.8:27b")
+    monkeypatch.setattr(
+        private_generation, "_make_themes", lambda *_args: ["ECHO", "MOSS"]
+    )
+    calls = []
+
+    def fake_fill(*, seed, options):
+        calls.append(options["themes"])
+        answer = "FUCCBOIS" if len(calls) == 1 else "ECHO"
+        return {
+            "grid": {
+                "entries": [
+                    {
+                        "num": 1,
+                        "dir": "A",
+                        "answer": answer,
+                        "len": len(answer),
+                        "row": 0,
+                        "col": 0,
+                        "theme": True,
+                    }
+                ]
+            }
+        }
+
+    monkeypatch.setattr(private_generation, "generate_full_size_draft", fake_fill)
+    monkeypatch.setattr(
+        private_generation,
+        "_make_clues",
+        lambda *_args: ("Echoes in the Morning", {"1A": "Sound that bounces back"}),
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_legacy_puzzle",
+        lambda *_args: ("solver-ready puzzle", {"registered": True}),
+    )
+
+    starting = SimpleNamespace(profile={"associations": []}, draft={})
+    episteme = SimpleNamespace(profile_json={"projection": {}})
+    _generate = private_generation._generate
+    _crossword, _manifest, _provenance = _generate(42, "monday", starting, episteme)
+
+    assert calls == [["ECHO", "MOSS"], ["ECHO"]]
+
+
+@pytest.mark.parametrize(
+    ("weekday", "theme_count", "recipe_id", "theme_mode"),
+    [
+        ("monday", 3, "monday-private-v1", "approachable-cluster"),
+        ("wednesday", 4, "wednesday-private-v1", "inferable-cluster"),
+        ("thursday", 5, "thursday-private-v1", "standard-theme"),
+    ],
+)
+def test_selected_weekday_recipe_changes_theme_locks_and_provenance(
+    monkeypatch, weekday, theme_count, recipe_id, theme_mode
+):
+    themes = ["ECHO", "MOSS", "TUNING", "STITCH", "LORE", "THREAD"]
+    fill_options = []
+    monkeypatch.setattr(private_generation, "_installed_model", lambda: "local-model")
+    monkeypatch.setattr(private_generation, "_make_themes", lambda *_args: themes)
+    if weekday == "thursday":
+        monkeypatch.setattr(
+            private_generation,
+            "_make_thursday_theme_proposal",
+            lambda *_args: (_ for _ in ()).throw(ValueError("invalid proposal")),
+        )
+
+    def fake_fill(*, seed, options):
+        fill_options.append(options)
+        return {
+            "grid": {
+                "entries": [
+                    {
+                        "num": 1,
+                        "dir": "A",
+                        "answer": "ECHO",
+                        "len": 4,
+                        "row": 0,
+                        "col": 0,
+                        "theme": True,
+                        "score": 80,
+                    }
+                ]
+            }
+        }
+
+    monkeypatch.setattr(private_generation, "generate_full_size_draft", fake_fill)
+    monkeypatch.setattr(
+        private_generation,
+        "_make_clues",
+        lambda *_args: ("Echoes", {"1A": "Sound that bounces back"}),
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_legacy_puzzle",
+        lambda *_args: ("solver-ready puzzle", {"registered": True}),
+    )
+
+    starting = SimpleNamespace(profile={"associations": []}, draft={})
+    episteme = SimpleNamespace(profile_json={"projection": {}})
+    _puzzle, _manifest, provenance = private_generation._generate(
+        42, weekday, starting, episteme
+    )
+
+    assert fill_options[0]["themes"] == themes[: min(theme_count, private_generation._NATIVE_THEME_LOCK_LIMIT)]
+    assert provenance["weekdayRecipe"] == {
+        "id": recipe_id,
+        "intent": private_generation._weekday_recipe(weekday)["intent"],
+        "themeMode": theme_mode,
+        "themeAnswerTarget": theme_count,
+        "themeLocksUsed": min(theme_count, private_generation._NATIVE_THEME_LOCK_LIMIT),
+        "themeEntriesUsed": 1,
+        "gridMechanic": "ordinary-letter-grid",
+    }
+
+
+def test_personalization_receipt_binds_one_episteme_revision_without_profile_text():
+    episteme = {
+        "profileId": "profile-1",
+        "revision": 4,
+        "projection": {
+            "claims": [{"concept": {"label": "wordplay"}}],
+            "associations": [{"phrase": "river clock"}],
+            "knowledge": [{"task": {"taskId": "answer-form:river"}}],
+        },
+        "evidence": [{"type": "preference-signal"}],
+    }
+    receipt = private_generation._personalization_receipt(
+        episteme,
+        {
+            "clue_family_targets": [{"family": "wordplay"}],
+            "recent_private_answers": ["RIVER"],
+            "language_learning": {"code": "de"},
+            "play_calibration": {"recommendation": "balanced"},
+        },
+        seed=42,
+        weekday="wednesday",
+        model="gemma4:26b",
+    )
+    assert receipt["version"] == "private-personalization-receipt-v1"
+    assert receipt["epistemeRevision"] == 4
+    assert len(receipt["epistemeDigest"]) == 64
+    assert receipt["associationSteering"]["projectionCount"] == 1
+    assert receipt["associationSteering"]["eligibleCount"] == 1
+    assert receipt["inputs"] == {
+        "claimCount": 1,
+        "associationCount": 1,
+        "knowledgeItemCount": 1,
+        "evidenceCount": 1,
+        "clueFamilyTargetCount": 1,
+        "recentExposureCount": 1,
+        "languageThread": True,
+        "domainHintCount": 0,
+        "difficultyRecommendation": "balanced",
+    }
+    assert "wordplay" not in receipt
+
+
+def test_sunday_retry_policy_has_fast_personal_probe_and_playable_anchor():
+    options = {
+        "seed": 42,
+        "candidates": 200,
+        "time": 5,
+        "keepMean": 50,
+        "minScore": 40,
+        "maxIffy": 20,
+        "themes": ["RESONANCE", "FREQUENCY", "ECHO", "SOUND"],
+        "gridSize": 21,
+    }
+
+    attempts = private_generation._fill_retry_options(42, options)
+
+    assert attempts[0]["label"] == "theme-locked-primary"
+    assert attempts[0]["options"]["candidates"] == 10
+    assert attempts[0]["options"]["time"] == 0.25
+    anchor = next(item for item in attempts if item["label"] == "sunday-anchor-fallback")
+    assert anchor["seed"] == private_generation._SUNDAY_FALLBACK_SEED
+    assert anchor["options"]["themes"] == private_generation._SUNDAY_FALLBACK_THEMES
+    assert anchor["options"]["maxIffy"] == 100
+
+
+def test_shared_affix_mechanic_validator_requires_every_theme_answer_to_match():
+    mechanic = {"type": "shared-affix", "affix": "AT", "position": "suffix"}
+    assert (
+        private_generation._validate_shared_affix_mechanic(
+            ["CAT", "BAT", "HAT"], mechanic
+        )
+        == mechanic
+    )
+    assert (
+        private_generation._validate_shared_affix_mechanic(
+            ["CAT", "BAT", "DOG"], mechanic
+        )
+        is None
+    )
+    assert (
+        private_generation._validate_shared_affix_mechanic(["CAT", "BAT"], mechanic)
+        is None
+    )
+    assert (
+        private_generation._validate_shared_affix_mechanic(
+            ["CAT", "BAT", "HAT"], {**mechanic, "position": "middle"}
+        )
+        is None
+    )
+
+
+def test_local_shared_affix_groups_use_the_native_fill_dictionary(
+    monkeypatch, tmp_path
+):
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "xwordlist.dict").write_text(
+        "CAT;80\nBAT;80\nHAT;80\nDOG;80\n", encoding="utf-8"
+    )
+    (data / "supplemental.txt").write_text("# no extra words\n", encoding="utf-8")
+    monkeypatch.setenv("CROSSWORD_XFILL_ROOT", str(tmp_path))
+    private_generation._local_shared_affix_groups.cache_clear()
+
+    groups = private_generation._local_shared_affix_groups()
+
+    assert any(
+        group["position"] == "suffix"
+        and group["affix"] == "AT"
+        and set(group["answers"]) == {"BAT", "CAT", "HAT"}
+        for group in groups
+    )
+    private_generation._local_shared_affix_groups.cache_clear()
+
+
+def test_language_review_forms_are_optional_local_fill_candidates(
+    monkeypatch, tmp_path
+):
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "xwordlist.dict").write_text("HALLO;80\nNEIN;80\nJA;80\n", encoding="utf-8")
+    (data / "supplemental.txt").write_text("# no extra words\n", encoding="utf-8")
+    monkeypatch.setenv("CROSSWORD_XFILL_ROOT", str(tmp_path))
+    private_generation._local_fill_word_set.cache_clear()
+
+    assert private_generation._eligible_language_review_forms(
+        ["HALLO", "NEIN", "JA", "MISSING"]
+    ) == ["HALLO", "NEIN"]
+
+    private_generation._local_fill_word_set.cache_clear()
+
+
+def test_language_learning_generation_records_used_and_unplaced_forms():
+    context = {
+        "language_learning": {
+            "language": "German",
+            "reviewForms": ["HALLO", "NEIN"],
+            "eligibleReviewForms": ["HALLO", "NEIN"],
+        }
+    }
+    record = private_generation._language_learning_generation_record(
+        context,
+        [
+            {"id": "1A", "answer": "HALLO"},
+            {"id": "2D", "answer": "NEIN"},
+        ],
+        {"1A": "Hello, in German", "2D": "No, in German"},
+    )
+
+    assert record["usedForms"] == ["HALLO", "NEIN"]
+    assert record["unplacedForms"] == []
+    assert record["candidatePolicy"] == "optional-local-fill"
+
+
+def test_language_learning_generation_records_task_pair_provenance():
+    record = private_generation._language_learning_generation_record(
+        {
+            "language_learning": {
+                "language": "French",
+                "reviewForms": ["OUI"],
+                "eligibleReviewForms": ["OUI"],
+            }
+        },
+        [{"id": "1A", "number": 1, "direction": "across", "answer": "OUI"}],
+        {"1A": "French for yes"},
+    )
+
+    source = record["taskPairSources"]
+    assert len(source) == 1
+    assert source[0]["entryId"] == "across-1"
+    assert source[0]["pairId"] == "fr-en-oui-v1"
+    assert source[0]["packId"] == "synthetic-local-language-pairs-v1"
+    assert len(source[0]["packDigest"]) == 64
+    assert all(character in "0123456789abcdef" for character in source[0]["packDigest"])
+    assert source[0]["sourceText"] == "yes"
+    assert source[0]["semanticStatus"] == "not-established"
+    assert source[0]["reviewStatus"] == "synthetic-unadmitted"
+
+
+@pytest.mark.parametrize(
+    "clue",
+    ["German for yes", "German word for no", "Yes in German"],
+)
+def test_language_learning_generation_accepts_explicit_generated_clue_wording(clue):
+    context = {
+        "language_learning": {
+            "language": "German",
+            "reviewForms": ["HALLO"],
+            "eligibleReviewForms": ["HALLO"],
+        }
+    }
+
+    record = private_generation._language_learning_generation_record(
+        context,
+        [{"id": "1A", "answer": "HALLO"}],
+        {"1A": clue},
+    )
+
+    assert record["usedForms"] == ["HALLO"]
+    assert record["unplacedForms"] == []
+
+
+def test_language_learning_generation_emits_explicit_display_token_hints(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        private_generation,
+        "private_display_text_for_review",
+        lambda language, answer: ("CAFÉ", "reviewed-admitted")
+        if language == "French" and answer == "CAFE"
+        else (None, None),
+    )
+    record = private_generation._language_learning_generation_record(
+        {
+            "language_learning": {
+                "language": "French",
+                "reviewForms": ["CAFE"],
+                "eligibleReviewForms": ["CAFE"],
+            }
+        },
+        [
+            {
+                "id": "1A",
+                "number": 1,
+                "direction": "across",
+                "answer": "CAFE",
+            }
+        ],
+        {"1A": "Coffee, in French"},
+    )
+
+    assert record["usedForms"] == ["CAFE"]
+    assert record["tokenHints"] == [
+        {"entryId": "across-1", "cellIndex": 3, "displayToken": "É"}
+    ]
+    assert record["tokenHintSource"] == "reviewed-admitted"
+
+
+def test_language_learning_generation_can_emit_a_local_synthetic_display_hint():
+    record = private_generation._language_learning_generation_record(
+        {
+            "language_learning": {
+                "language": "French",
+                "reviewForms": ["CAFE"],
+                "eligibleReviewForms": ["CAFE"],
+            }
+        },
+        [
+            {
+                "id": "1A",
+                "number": 1,
+                "direction": "across",
+                "answer": "CAFE",
+            }
+        ],
+        {"1A": "Coffee, in French"},
+    )
+
+    assert record["tokenHints"] == [
+        {"entryId": "across-1", "cellIndex": 3, "displayToken": "É"}
+    ]
+    assert record["tokenHintSource"] == "synthetic-unadmitted"
+
+
+def test_generation_decorates_explicit_language_hint_into_token_construction(
+    monkeypatch,
+):
+    monkeypatch.setattr(private_generation, "_installed_model", lambda: "local-model")
+    monkeypatch.setattr(
+        private_generation,
+        "_profile_context",
+        lambda *_args: {
+            "language_interest": "French",
+            "language_learning": {
+                "language": "French",
+                "reviewForms": ["CAFE"],
+                "eligibleReviewForms": ["CAFE"],
+            },
+        },
+    )
+    monkeypatch.setattr(private_generation, "_make_themes", lambda *_args: ["CAFE"])
+    monkeypatch.setattr(
+        private_generation,
+        "generate_full_size_draft",
+        lambda **_kwargs: {
+            "grid": {
+                "fill": ["A" * 15 for _ in range(15)],
+                "entries": [
+                    {"num": 1, "dir": "A", "answer": "CAFE", "len": 4, "row": 0, "col": 0, "theme": True},
+                    *[
+                        {"num": index + 1, "dir": "D", "answer": letter, "len": 1, "row": 0, "col": index}
+                        for index, letter in enumerate("CAFE")
+                    ],
+                ],
+            }
+        },
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_make_clues",
+        lambda _model, entries, _context, _weekday: (
+            "Cafe",
+            {entry["id"]: ("Coffee, in French" if entry["id"] == "1A" else "Letter") for entry in entries},
+        ),
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_legacy_puzzle",
+        lambda *_args: ("solver-ready puzzle", {"registered": True}),
+    )
+
+    starting = SimpleNamespace(
+        profile={"associations": [], "observations": [], "learningLanguage": "French"},
+        draft={},
+    )
+    episteme = SimpleNamespace(
+        profile_json={
+            "evidence": [
+                {
+                    "type": "session-analysis",
+                    "taskLinks": [
+                        {"entryId": "across-1", "tasks": [{"taskId": "private-answer-form:CAFE", "language": "fr"}]}
+                    ],
+                }
+            ],
+            "projection": {},
+        }
+    )
+
+    _puzzle, _manifest, provenance = private_generation._generate(
+        42, "monday", starting, episteme
+    )
+
+    assert provenance["tokenConstruction"]["status"] == "accepted"
+    assert provenance["tokenConstruction"]["cells"][0]["displayToken"] == "É"
+    assert provenance["tokenConstruction"]["cells"][0]["source"] == "private-language-decorator-v1"
+
+
+def test_thursday_theme_proposal_returns_answers_with_a_typed_mechanic(monkeypatch):
+    request = {}
+    proposal = {
+        "themes": ["CAT", "BAT", "HAT"],
+        "mechanic": {"type": "shared-affix", "affix": "AT", "position": "suffix"},
+    }
+
+    def fake_chat(_model, messages, schema, **_kwargs):
+        request["messages"] = messages
+        request["schema"] = schema
+        return proposal
+
+    monkeypatch.setattr(private_generation, "_chat", fake_chat)
+
+    themes, mechanic = private_generation._make_thursday_theme_proposal(
+        "local-model", {"recent_private_answers": []}
+    )
+
+    assert themes == ["CAT", "BAT", "HAT"]
+    assert mechanic == proposal["mechanic"]
+    assert request["schema"]["required"] == ["themes", "mechanic"]
+    assert request["schema"]["properties"]["mechanic"]["properties"]["type"][
+        "enum"
+    ] == ["shared-affix"]
+    assert "exact same 2-4 letter A-Z affix" in request["messages"][0]["content"]
+
+
+def test_thursday_theme_proposal_rejects_an_unmatched_mechanic(monkeypatch):
+    monkeypatch.setattr(
+        private_generation,
+        "_chat",
+        lambda *_args, **_kwargs: {
+            "themes": ["CAT", "BAT", "DOG"],
+            "mechanic": {
+                "type": "shared-affix",
+                "affix": "AT",
+                "position": "suffix",
+            },
+        },
+    )
+
+    with pytest.raises(ValueError, match="did not match"):
+        private_generation._make_thursday_theme_proposal(
+            "local-model", {"recent_private_answers": []}
+        )
+
+
+def test_thursday_mechanic_is_passed_to_clue_generation_and_provenance(
+    monkeypatch,
+):
+    themes = ["CAT", "BAT", "HAT"]
+    mechanic = {"type": "shared-affix", "affix": "AT", "position": "suffix"}
+    monkeypatch.setattr(private_generation, "_installed_model", lambda: "local-model")
+    monkeypatch.setattr(
+        private_generation,
+        "_make_thursday_theme_proposal",
+        lambda *_args: (themes, mechanic),
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "generate_full_size_draft",
+        lambda **_kwargs: {
+            "grid": {
+                "entries": [
+                    {
+                        "num": number,
+                        "dir": "A",
+                        "answer": answer,
+                        "len": len(answer),
+                        "row": 0,
+                        "col": number - 1,
+                        "theme": True,
+                        "score": 80,
+                    }
+                    for number, answer in enumerate(themes, start=1)
+                ]
+            }
+        },
+    )
+    received = {}
+
+    def fake_clues(_model, entries, context, _weekday):
+        received["mechanic"] = context.get("_weekday_theme_mechanic")
+        return "Pattern", {entry["id"]: "An ordinary answer clue" for entry in entries}
+
+    monkeypatch.setattr(private_generation, "_make_clues", fake_clues)
+    monkeypatch.setattr(
+        private_generation,
+        "_legacy_puzzle",
+        lambda *_args: ("solver-ready puzzle", {"registered": True}),
+    )
+    starting = SimpleNamespace(profile={"associations": []}, draft={})
+    episteme = SimpleNamespace(profile_json={"projection": {}})
+
+    _puzzle, _manifest, provenance = private_generation._generate(
+        42, "thursday", starting, episteme
+    )
+
+    assert received["mechanic"] == mechanic
+    assert provenance["themeMechanic"] == {
+        "status": "validated",
+        **mechanic,
+        "themeAnswers": themes,
+    }
+    assert provenance["mechanicEvaluation"]["status"] == "pass"
+    assert provenance["mechanicEvaluation"]["instanceCount"] == 3
+    assert provenance["weekdayRecipe"]["themeMode"] == "shared-affix"
+
+
+@pytest.mark.parametrize(
+    ("themes", "mechanic"),
+    [
+        (
+            ["CAT", "BAT", "HAT"],
+            {"type": "shared-affix", "affix": "AT", "position": "suffix"},
+        ),
+        (
+            ["RECAP", "REACT", "REBEL"],
+            {"type": "shared-affix", "affix": "RE", "position": "prefix"},
+        ),
+    ],
+    ids=["suffix-at", "prefix-re"],
+)
+def test_thursday_shared_affix_fixture_boards_keep_truthful_provenance_and_letter_cells(
+    monkeypatch, themes, mechanic
+):
+    """Two deterministic mechanic fixtures stay ordinary letter-grid puzzles."""
+    monkeypatch.setattr(private_generation, "_installed_model", lambda: "local-model")
+    monkeypatch.setattr(
+        private_generation,
+        "_make_thursday_theme_proposal",
+        lambda *_args: (themes, mechanic),
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "generate_full_size_draft",
+        lambda **_kwargs: {
+            "grid": {
+                "entries": [
+                    {
+                        "num": number,
+                        "dir": "A",
+                        "answer": answer,
+                        "len": len(answer),
+                        "row": (number - 1) * 2,
+                        "col": 0,
+                        "theme": True,
+                        "score": 80,
+                    }
+                    for number, answer in enumerate(themes, start=1)
+                ]
+            },
+            "sourceDigest": "sha256:fixture",
+        },
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_make_clues",
+        lambda _model, entries, _context, _weekday: (
+            "Fixture Thursday",
+            {entry["id"]: "Ordinary answer clue" for entry in entries},
+        ),
+    )
+
+    def fake_legacy_puzzle(
+        grid, _themes, title, clues, _model, _weekday, _seed, *_args
+    ):
+        return (
+            Crossword.model_validate(
+                {
+                    "metadata": {
+                        "date": "260101",
+                        "title": title,
+                        "authors": ["fixture"],
+                        "width": 15,
+                        "height": 15,
+                    },
+                    "entries": [
+                        {
+                            "clue_number": raw["num"],
+                            "clue_text": clues[f"{raw['num']}{raw['dir']}"],
+                            "direction": "across",
+                            "start_x": raw["col"],
+                            "start_y": raw["row"],
+                            "characters": [
+                                {"letters": letter} for letter in raw["answer"]
+                            ],
+                        }
+                        for raw in grid["entries"]
+                    ],
+                }
+            ),
+            {"registered": True},
+        )
+
+    monkeypatch.setattr(private_generation, "_legacy_puzzle", fake_legacy_puzzle)
+    starting = SimpleNamespace(profile={"associations": []}, draft={})
+    episteme = SimpleNamespace(profile_json={"projection": {}})
+
+    # The fixture conversion intentionally stops before registry validation;
+    # this checks the mechanic output itself never turns a normal letter answer
+    # into a rebus/special cell.
+    _puzzle, _manifest, provenance = private_generation._generate(
+        42, "thursday", starting, episteme
+    )
+
+    assert provenance["themeMechanic"] == {
+        "status": "validated",
+        **mechanic,
+        "themeAnswers": themes,
+    }
+    assert provenance["weekdayRecipe"] == {
+        "id": "thursday-private-v1",
+        "intent": private_generation._weekday_recipe("thursday")["intent"],
+        "themeMode": "shared-affix",
+        "themeAnswerTarget": 5,
+        "themeLocksUsed": 3,
+        "themeEntriesUsed": 3,
+        "gridMechanic": "ordinary-letter-grid",
+    }
+    assert provenance["mechanicEvaluation"]["status"] == "pass"
+    assert provenance["mechanicEvaluation"]["boardId"] == "thursday-42"
+    assert all(
+        all(len(character.letters) == 1 for character in entry.characters)
+        for entry in _puzzle.entries
+    )
+
+
+def test_invalid_thursday_mechanic_falls_back_to_standard_theme_generation(
+    monkeypatch,
+):
+    monkeypatch.setattr(private_generation, "_installed_model", lambda: "local-model")
+    monkeypatch.setattr(
+        private_generation,
+        "_make_thursday_theme_proposal",
+        lambda *_args: (_ for _ in ()).throw(ValueError("invalid proposal")),
+    )
+    monkeypatch.setattr(
+        private_generation, "_make_themes", lambda *_args: ["ECHO", "MOSS"]
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "generate_full_size_draft",
+        lambda **_kwargs: {
+            "grid": {
+                "entries": [
+                    {
+                        "num": 1,
+                        "dir": "A",
+                        "answer": "ECHO",
+                        "len": 4,
+                        "row": 0,
+                        "col": 0,
+                        "theme": True,
+                    }
+                ]
+            }
+        },
+    )
+    received = {}
+
+    def fake_clues(_model, _entries, context, _weekday):
+        received["mechanic"] = context.get("_weekday_theme_mechanic")
+        return "Ordinary theme", {"1A": "Sound that bounces back"}
+
+    monkeypatch.setattr(private_generation, "_make_clues", fake_clues)
+    monkeypatch.setattr(
+        private_generation,
+        "_legacy_puzzle",
+        lambda *_args: ("solver-ready puzzle", {"registered": True}),
+    )
+    starting = SimpleNamespace(profile={"associations": []}, draft={})
+    episteme = SimpleNamespace(profile_json={"projection": {}})
+
+    _puzzle, _manifest, provenance = private_generation._generate(
+        42, "thursday", starting, episteme
+    )
+
+    assert received["mechanic"] is None
+    assert provenance["themeMechanic"] == {
+        "status": "unavailable",
+        "type": "shared-affix",
+        "reason": "proposal-unavailable",
+    }
+    assert provenance["mechanicEvaluation"]["status"] == "fallback-safe"
+    assert provenance["weekdayRecipe"]["themeMode"] == "standard-theme"
+
+
+def test_thursday_uses_a_checked_local_affix_group_when_model_proposal_breaks(
+    monkeypatch,
+):
+    monkeypatch.setattr(private_generation, "_installed_model", lambda: "local-model")
+    monkeypatch.setattr(
+        private_generation,
+        "_make_thursday_theme_proposal",
+        lambda *_args: (_ for _ in ()).throw(ValueError("malformed model proposal")),
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_local_shared_affix_groups",
+        lambda: [
+            {
+                "type": "shared-affix",
+                "affix": "AT",
+                "position": "suffix",
+                "answers": ["CAT", "BAT", "HAT"],
+                "count": 3,
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "generate_full_size_draft",
+        lambda **_kwargs: {
+            "grid": {
+                "entries": [
+                    {
+                        "num": number,
+                        "dir": "A",
+                        "answer": answer,
+                        "len": len(answer),
+                        "row": 0,
+                        "col": number - 1,
+                        "theme": True,
+                        "score": 80,
+                    }
+                    for number, answer in enumerate(["CAT", "BAT", "HAT"], start=1)
+                ]
+            }
+        },
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_make_clues",
+        lambda _model, entries, _context, _weekday: (
+            "Local Thursday",
+            {entry["id"]: "Ordinary answer clue" for entry in entries},
+        ),
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_legacy_puzzle",
+        lambda *_args: ("solver-ready puzzle", {"registered": True}),
+    )
+    starting = SimpleNamespace(profile={"associations": []}, draft={})
+    episteme = SimpleNamespace(profile_json={"projection": {}})
+
+    _puzzle, _manifest, provenance = private_generation._generate(
+        42, "thursday", starting, episteme
+    )
+
+    assert provenance["themeProposal"] == {
+        "source": "deterministic-local-affix-group",
+        "mechanicRequested": True,
+    }
+    assert provenance["themeMechanic"]["status"] == "validated"
+    assert provenance["mechanicEvaluation"]["status"] == "pass"
+
+
+def test_thursday_mechanic_is_disabled_when_filled_theme_answers_do_not_match(
+    monkeypatch,
+):
+    mechanic = {"type": "shared-affix", "affix": "AT", "position": "suffix"}
+    monkeypatch.setattr(private_generation, "_installed_model", lambda: "local-model")
+    monkeypatch.setattr(
+        private_generation,
+        "_make_thursday_theme_proposal",
+        lambda *_args: (["CAT", "BAT", "HAT"], mechanic),
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "generate_full_size_draft",
+        lambda **_kwargs: {
+            "grid": {
+                "entries": [
+                    {
+                        "num": number,
+                        "dir": "A",
+                        "answer": answer,
+                        "len": len(answer),
+                        "row": 0,
+                        "col": number - 1,
+                        "theme": True,
+                    }
+                    for number, answer in enumerate(["CAT", "BAT", "DOG"], start=1)
+                ]
+            }
+        },
+    )
+    received = {}
+
+    def fake_clues(_model, entries, context, _weekday):
+        received["mechanic"] = context.get("_weekday_theme_mechanic")
+        return "Ordinary theme", {entry["id"]: "An ordinary clue" for entry in entries}
+
+    monkeypatch.setattr(private_generation, "_make_clues", fake_clues)
+    monkeypatch.setattr(
+        private_generation,
+        "_legacy_puzzle",
+        lambda *_args: ("solver-ready puzzle", {"registered": True}),
+    )
+    starting = SimpleNamespace(profile={"associations": []}, draft={})
+    episteme = SimpleNamespace(profile_json={"projection": {}})
+
+    _puzzle, _manifest, provenance = private_generation._generate(
+        42, "thursday", starting, episteme
+    )
+
+    assert received["mechanic"] is None
+    assert provenance["themeMechanic"] == {
+        "status": "unavailable",
+        "type": "shared-affix",
+        "reason": "fill-pattern-mismatch",
+    }
+    assert provenance["weekdayRecipe"]["themeMode"] == "standard-theme"
+    assert provenance["weekdayRecipe"]["gridMechanic"] == "ordinary-letter-grid"
+    assert provenance["mechanicEvaluation"]["status"] == "fallback-safe"
+    assert provenance["themeAnswers"] == ["CAT", "BAT", "DOG"]
+
+
+def test_risky_clue_repair_replaces_an_unverified_factual_surface(monkeypatch):
+    entries = [
+        {
+            "id": "1A",
+            "answer": "EVAN",
+            "length": 4,
+            "theme": False,
+            "fillScore": 48,
+            "needsFoothold": True,
+        },
+        {
+            "id": "2D",
+            "answer": "RESONANCE",
+            "length": 9,
+            "theme": True,
+            "fillScore": 90,
+            "needsFoothold": False,
+        },
+    ]
+    monkeypatch.setattr(
+        private_generation,
+        "_chat",
+        lambda *_args, **_kwargs: {
+            "clues": [
+                {"id": "1A", "text": "Singer with a hit song?"},
+            ]
+        },
+    )
+
+    repaired = private_generation._repair_risky_clues(
+        "qwen3.8:27b",
+        entries,
+        {"1A": "Singer with Uptown Funk fame", "2D": "Vibrational continuity"},
+        {"opening_associations": []},
+        "wednesday",
+    )
+
+    assert repaired["1A"] == "Singer with a hit song?"
+    assert repaired["2D"] == "Vibrational continuity"
+
+
+def test_risky_clue_selection_does_not_repair_a_clean_short_fill():
+    entries = [
+        {
+            "id": "1A",
+            "answer": "CAT",
+            "length": 3,
+            "fillScore": 92,
+            "needsFoothold": False,
+        }
+    ]
+
+    assert private_generation._risky_clue_entries(entries, {"1A": "Small pet"}) == []
+
+
+def test_generation_provenance_reports_monotonic_stage_timings(monkeypatch):
+    clock_values = iter([10.0, 10.1, 10.6, 11.0, 13.5, 14.0, 17.25, 17.5])
+    monkeypatch.setattr(private_generation, "monotonic", lambda: next(clock_values))
+    monkeypatch.setattr(private_generation, "_installed_model", lambda: "qwen3.8:27b")
+    monkeypatch.setattr(
+        private_generation, "_make_themes", lambda *_args: ["ECHO", "MOSS"]
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "generate_full_size_draft",
+        lambda **_kwargs: {
+            "grid": {
+                "entries": [
+                    {
+                        "num": 1,
+                        "dir": "A",
+                        "answer": "ECHO",
+                        "len": 4,
+                        "row": 0,
+                        "col": 0,
+                        "theme": True,
+                    }
+                ]
+            }
+        },
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_make_clues",
+        lambda *_args: ("Echoes in the Morning", {"1A": "Sound that bounces back"}),
+    )
+    monkeypatch.setattr(
+        private_generation,
+        "_legacy_puzzle",
+        lambda *_args: ("solver-ready puzzle", {"registered": True}),
+    )
+
+    starting = SimpleNamespace(
+        profile={"associations": ["private opening phrase"], "observations": []},
+        draft={"object": "thread", "traces": ["echo"]},
+    )
+    episteme = SimpleNamespace(profile_json={"projection": {}})
+
+    stages = []
+    _crossword, _manifest, provenance = private_generation._generate(
+        42, "monday", starting, episteme, stage_callback=stages.append
+    )
+
+    timings = provenance["timingsSeconds"]
+    assert list(timings) == [
+        "themeProposal",
+        "nativeXfill",
+        "clueGeneration",
+        "total",
+    ]
+    assert timings == {
+        "themeProposal": 0.5,
+        "nativeXfill": 2.5,
+        "clueGeneration": 3.25,
+        "total": 7.5,
+    }
+    assert timings["total"] >= sum(
+        timings[key] for key in ("themeProposal", "nativeXfill", "clueGeneration")
+    )
+    assert provenance["clueQuality"]["checkedCount"] == 1
+    assert provenance["clueQuality"]["issueCount"] == 0
+    assert provenance["clueQuality"]["issueCounts"] == {}
+    assert provenance["clueQuality"]["grounding"]["statusCounts"] == {
+        "semantic-unverified": 1
+    }
+    assert provenance["clueFamilyTargets"] == []
+    assert stages == [
+        "theme-proposal",
+        "native-xfill",
+        "clue-generation",
+        "finalizing",
+    ]
+    assert "private opening phrase" not in str(provenance)
+
+
+def _profile():
+    return {
+        "version": 1,
+        "id": str(uuid4()),
+        "step": 4,
+        "object": "thread",
+        "companion": "fork",
+        "traces": ["echo", "moss"],
+        "weekday": "thursday",
+        "learningLanguage": "None for now",
+        "excluded": [],
+        "complete": True,
+    }
+
+
+def _crossword():
+    rows = ["CAT", "ARE", "TEN"]
+    entries = []
+    across_numbers = [1, 4, 5]
+    for row, answer in enumerate(rows):
+        entries.append(
+            {
+                "clue_number": across_numbers[row],
+                "clue_text": f"Synthetic across clue {row + 1}",
+                "direction": "across",
+                "start_x": 0,
+                "start_y": row,
+                "characters": [{"letters": letter} for letter in answer],
+            }
+        )
+    for column in range(3):
+        answer = "".join(row[column] for row in rows)
+        entries.append(
+            {
+                "clue_number": column + 1,
+                "clue_text": f"Synthetic down clue {column + 1}",
+                "direction": "down",
+                "start_x": column,
+                "start_y": 0,
+                "characters": [{"letters": letter} for letter in answer],
+            }
+        )
+    return Crossword.model_validate(
+        {
+            "metadata": {
+                "date": "260927",
+                "title": "Synthetic local puzzle",
+                "authors": ["Test fixture"],
+                "width": 3,
+                "height": 3,
+            },
+            "entries": entries,
+        }
+    )
+
+
+@pytest.fixture
+def saved_profile(api):
+    profile = _profile()
+    response = api.app.test_client().put(
+        f"/api/future/profile/{profile['id']}",
+        json=profile,
+        headers={"If-None-Match": "*"},
+    )
+    assert response.status_code == 200, response.json
+    return profile
+
+
+def test_private_generation_returns_a_solver_puzzle_and_registers_its_manifest(
+    api, monkeypatch, saved_profile
+):
+    crossword = _crossword()
+    with api.app.app_context():
+        manifest = register_legacy_puzzle(crossword)
+    provenance = {
+        "source": "local-ollama-xfill",
+        "model": "gemma4:26b",
+        "engine": "xfill",
+        "seed": 42,
+        "weekday": "thursday",
+        "themeAnswers": ["CAT"],
+        "generatedAt": "2026-09-27T12:00:00+00:00",
+        "experimental": True,
+    }
+    monkeypatch.setattr(
+        private_generation,
+        "_generate",
+        lambda *args: (crossword, manifest, provenance),
+    )
+
+    response = api.app.test_client().post(
+        "/api/future/private-puzzles",
+        json={"profileId": saved_profile["id"], "seed": 42, "weekday": "thursday"},
+        headers={"Origin": "http://localhost"},
+    )
+
+    assert response.status_code == 200, response.json
+    assert response.json["metadata"]["title"] == "Synthetic local puzzle"
+    assert len(response.json["entries"]) == 6
+    assert response.json["puzzleManifest"] == manifest
+    assert response.json["provenance"] == provenance
+    assert response.cache_control.no_store
+
+    frozen = response.json["puzzleManifest"]
+    session_id = str(uuid4())
+    started = api.app.test_client().post(
+        "/api/future/sessions",
+        json={
+            "sessionId": session_id,
+            "profileId": saved_profile["id"],
+            "puzzleHash": frozen["integrity"]["value"],
+            "writerToken": "a" * 64,
+            "initialGrid": [
+                {"cellId": cell["id"], "token": None, "origin": "unknown"}
+                for cell in frozen["cells"]
+                if not cell["block"]
+            ],
+        },
+        headers={"Origin": "http://localhost"},
+    )
+    assert started.status_code == 201, started.json
+    receipt = api.app.test_client().get(
+        f"/api/future/sessions/{session_id}/private-provenance?profileId={saved_profile['id']}"
+    )
+    assert receipt.status_code == 200, receipt.json
+    assert receipt.json["provenance"] == provenance
+
+
+def test_private_generation_job_freezes_profile_and_returns_playable_result(
+    api, monkeypatch, saved_profile
+):
+    crossword = _crossword()
+    with api.app.app_context():
+        manifest = register_legacy_puzzle(crossword)
+    provenance = {
+        "source": "local-ollama-xfill",
+        "model": "gemma4:26b",
+        "engine": "xfill",
+        "seed": 42,
+        "weekday": "thursday",
+        "themeAnswers": ["CAT"],
+        "experimental": True,
+    }
+    captured = {}
+
+    def fake_generate(*args, **kwargs):
+        captured["starting"] = args[2]
+        return crossword, manifest, provenance
+
+    monkeypatch.setattr(private_generation, "_generate", fake_generate)
+    idempotency_key = str(uuid4())
+    client = api.app.test_client()
+    created = client.post(
+        "/api/future/private-puzzle-jobs",
+        json={
+            "profileId": saved_profile["id"],
+            "idempotencyKey": idempotency_key,
+            "seed": 42,
+            "weekday": "thursday",
+        },
+        headers={"Origin": "http://localhost"},
+    )
+
+    assert created.status_code == 202, created.json
+    job_id = created.json["id"]
+    assert created.json["state"] == "queued"
+    assert created.json["playable"] is False
+
+    duplicate = client.post(
+        "/api/future/private-puzzle-jobs",
+        json={
+            "profileId": saved_profile["id"],
+            "idempotencyKey": idempotency_key,
+            "seed": 42,
+            "weekday": "thursday",
+        },
+        headers={"Origin": "http://localhost"},
+    )
+    assert duplicate.status_code == 200
+    assert duplicate.json["id"] == job_id
+
+    assert process_next_grid_draft(api.app) is True
+    ready = client.get(
+        f"/api/future/private-puzzle-jobs/{job_id}?profileId={saved_profile['id']}"
+    )
+    assert ready.status_code == 200, ready.json
+    assert ready.json["state"] == "ready"
+    assert ready.json["playable"] is True
+    assert (
+        ready.json["result"]["puzzle"]["metadata"]["title"] == "Synthetic local puzzle"
+    )
+    assert ready.json["result"]["provenance"] == provenance
+    assert captured["starting"].id == saved_profile["id"]
+    durable_session_id = str(uuid4())
+    durable_manifest = ready.json["result"]["puzzleManifest"]
+    started = client.post(
+        "/api/future/sessions",
+        json={
+            "sessionId": durable_session_id,
+            "profileId": saved_profile["id"],
+            "puzzleHash": durable_manifest["integrity"]["value"],
+            "writerToken": "c" * 64,
+            "initialGrid": [
+                {"cellId": cell["id"], "token": None, "origin": "unknown"}
+                for cell in durable_manifest["cells"]
+                if not cell["block"]
+            ],
+        },
+        headers={"Origin": "http://localhost"},
+    )
+    assert started.status_code == 201, started.json
+    receipt = client.get(
+        f"/api/future/sessions/{durable_session_id}/private-provenance?profileId={saved_profile['id']}"
+    )
+    assert receipt.status_code == 200, receipt.json
+    assert {
+        key: value
+        for key, value in receipt.json["provenance"].items()
+        if key != "jobRuntime"
+    } == provenance
+    assert receipt.json["provenance"]["jobRuntime"] == {
+        "version": "private-job-runtime-v1",
+        "durable": True,
+        "attempt": 1,
+        "recovery": "first-attempt",
+        "elapsedSeconds": pytest.approx(0.0, abs=0.1),
+    }
+
+
+def test_private_generation_job_records_reclaimed_runtime_receipt(
+    api, monkeypatch, saved_profile
+):
+    crossword = _crossword()
+    with api.app.app_context():
+        manifest = register_legacy_puzzle(crossword)
+    provenance = {
+        "source": "local-ollama-xfill",
+        "model": "gemma4:26b",
+        "engine": "xfill",
+    }
+
+    def fake_generate(*_args, **_kwargs):
+        return crossword, manifest, provenance
+
+    monkeypatch.setattr(private_generation, "_generate", fake_generate)
+    client = api.app.test_client()
+    created = client.post(
+        "/api/future/private-puzzle-jobs",
+        json={
+            "profileId": saved_profile["id"],
+            "idempotencyKey": str(uuid4()),
+            "seed": 42,
+            "weekday": "thursday",
+        },
+        headers={"Origin": "http://localhost"},
+    )
+    assert created.status_code == 202, created.json
+
+    expired = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat(
+        timespec="milliseconds"
+    )
+    with api.app.app_context():
+        job = api.db.session.get(FutureGridDraftJob, created.json["id"])
+        job.state = "running"
+        job.attempt = 1
+        job.lease_token = str(uuid4())
+        job.lease_until = expired
+        api.db.session.commit()
+
+    assert process_next_grid_draft(api.app) is True
+    with api.app.app_context():
+        stored = api.db.session.get(
+            FuturePuzzleProvenanceRecord,
+            (manifest["integrity"]["value"].removeprefix("sha256:"), saved_profile["id"]),
+        )
+        assert stored is not None
+        assert stored.provenance_json["jobRuntime"]["version"] == (
+            "private-job-runtime-v1"
+        )
+        assert stored.provenance_json["jobRuntime"]["durable"] is True
+        assert stored.provenance_json["jobRuntime"]["attempt"] == 2
+        assert stored.provenance_json["jobRuntime"]["recovery"] == "reclaimed"
+        assert stored.provenance_json["jobRuntime"]["elapsedSeconds"] >= 0
+
+
+def test_private_generation_job_survives_file_backed_restart_and_reclaims_once(
+    api, monkeypatch, saved_profile
+):
+    """A worker/session restart must leave one ready, replayable private result."""
+    crossword = _crossword()
+    with api.app.app_context():
+        manifest = register_legacy_puzzle(crossword)
+    provenance = {
+        "source": "local-ollama-xfill",
+        "model": "gemma4:26b",
+        "engine": "xfill",
+        "semanticStatus": "not-established",
+    }
+
+    def fake_generate(*_args, **kwargs):
+        # Exercise the real worker stage writer so the terminal cleanup is
+        # tested rather than only the lease-reclaim path.
+        kwargs["stage_callback"]("clue-generation")
+        return crossword, manifest, provenance
+
+    monkeypatch.setattr(private_generation, "_generate", fake_generate)
+    client = api.app.test_client()
+    created = client.post(
+        "/api/future/private-puzzle-jobs",
+        json={
+            "profileId": saved_profile["id"],
+            "idempotencyKey": str(uuid4()),
+            "seed": 42,
+            "weekday": "thursday",
+        },
+        headers={"Origin": "http://localhost"},
+    )
+    assert created.status_code == 202, created.json
+    job_id = created.json["id"]
+
+    # The first host/session disappears after reservation. The committed
+    # queued row must remain visible through a fresh client/session.
+    with api.app.app_context():
+        api.db.session.remove()
+        api.db.engine.dispose()
+    restarted_client = api.app.test_client()
+    queued = restarted_client.get(
+        f"/api/future/private-puzzle-jobs/{job_id}",
+        query_string={"profileId": saved_profile["id"]},
+    )
+    assert queued.status_code == 200, queued.json
+    assert queued.json["state"] == "queued"
+    assert queued.json["attempt"] == 0
+
+    # Simulate a worker that claimed the row, published progress, and then
+    # vanished. Expiring the lease is the durable handoff to the next worker.
+    with api.app.app_context():
+        claimed = grid_jobs_module._claim_next_job()
+        assert claimed is not None
+        claimed_id, first_token, _frozen = claimed
+        assert claimed_id == job_id
+        grid_jobs_module._set_runtime_stage(
+            api.app, job_id, first_token, "clue-generation"
+        )
+        job = api.db.session.get(FutureGridDraftJob, job_id)
+        job.lease_until = (
+            datetime.now(timezone.utc) - timedelta(minutes=10)
+        ).isoformat(timespec="milliseconds")
+        api.db.session.commit()
+        assert job.state == "running"
+        assert job.request_json["runtimeStage"] == "clue-generation"
+        api.db.session.remove()
+        api.db.engine.dispose()
+
+    assert process_next_grid_draft(api.app) is True
+    ready = restarted_client.get(
+        f"/api/future/private-puzzle-jobs/{job_id}",
+        query_string={"profileId": saved_profile["id"]},
+    )
+    assert ready.status_code == 200, ready.json
+    assert ready.json["state"] == "ready"
+    assert ready.json["attempt"] == 2
+    assert ready.json["recovery"] == "reclaimed"
+    assert ready.json["playable"] is True
+
+    with api.app.app_context():
+        stored_job = api.db.session.get(FutureGridDraftJob, job_id)
+        assert stored_job.request_json.get("runtimeStage") is None
+        assert stored_job.request_json.get("runtimeStageStartedAt") is None
+        assert (
+            api.db.session.query(FuturePuzzleProvenanceRecord).filter_by(
+                profile_id=saved_profile["id"],
+                puzzle_hash=manifest["integrity"]["value"].removeprefix("sha256:"),
+            ).count()
+            == 1
+        )
+        assert (
+            api.db.session.query(FutureGridDraftPrivateSelection)
+            .filter_by(job_id=job_id)
+            .count()
+            == 0
+        )
+        assert (
+            stored_job.result_json["provenance"]["semanticStatus"]
+            == "not-established"
+        )
+        assert "answer" not in json.dumps(
+            stored_job.result_json["provenance"], ensure_ascii=False
+        ).casefold()
+
+    # A late scheduler tick cannot process or duplicate a terminal result.
+    assert process_next_grid_draft(api.app) is False
+    with api.app.app_context():
+        assert api.db.session.query(FuturePuzzleProvenanceRecord).count() == 1
+
+
+def test_private_generation_passes_a_selected_local_model_to_sync_generator(
+    api, monkeypatch, saved_profile
+):
+    crossword = _crossword()
+    with api.app.app_context():
+        manifest = register_legacy_puzzle(crossword)
+    captured = {}
+
+    monkeypatch.setattr(
+        private_generation, "_ollama_installed_models", lambda: {"qwen3.8:27b"}
+    )
+
+    def fake_generate(*args, **kwargs):
+        captured["model"] = kwargs.get("model_override")
+        return crossword, manifest, {
+            "source": "local-ollama-xfill",
+            "model": "qwen3.8:27b",
+            "engine": "xfill",
+        }
+
+    monkeypatch.setattr(private_generation, "_generate", fake_generate)
+    response = api.app.test_client().post(
+        "/api/future/private-puzzles",
+        json={
+            "profileId": saved_profile["id"],
+            "seed": 42,
+            "weekday": "wednesday",
+            "model": "qwen3.8:27b",
+        },
+        headers={"Origin": "http://localhost"},
+    )
+
+    assert response.status_code == 200, response.json
+    assert captured["model"] == "qwen3.8:27b"
+
+
+def test_private_generation_uses_saved_model_preference_when_request_omits_model(
+    api, monkeypatch, saved_profile
+):
+    with api.app.app_context():
+        record = db.session.get(StartingProfile, saved_profile["id"])
+        record.profile = {**record.profile, "modelPreference": "qwen3.8:27b"}
+        db.session.commit()
+
+    crossword = _crossword()
+    with api.app.app_context():
+        manifest = register_legacy_puzzle(crossword)
+    captured = {}
+    monkeypatch.setattr(
+        private_generation, "_ollama_installed_models", lambda: {"qwen3.8:27b"}
+    )
+
+    def fake_generate(*args, **kwargs):
+        captured["model"] = kwargs.get("model_override")
+        return crossword, manifest, {
+            "source": "local-ollama-xfill",
+            "model": "qwen3.8:27b",
+            "engine": "xfill",
+        }
+
+    monkeypatch.setattr(private_generation, "_generate", fake_generate)
+    response = api.app.test_client().post(
+        "/api/future/private-puzzles",
+        json={
+            "profileId": saved_profile["id"],
+            "seed": 42,
+            "weekday": "wednesday",
+        },
+        headers={"Origin": "http://localhost"},
+    )
+
+    assert response.status_code == 200, response.json
+    assert captured["model"] == "qwen3.8:27b"
+
+
+def test_private_generation_job_freezes_selected_model_for_worker(
+    api, monkeypatch, saved_profile
+):
+    monkeypatch.setattr(
+        private_generation, "_ollama_installed_models", lambda: {"gemma4:26b"}
+    )
+    key = str(uuid4())
+    response = api.app.test_client().post(
+        "/api/future/private-puzzle-jobs",
+        json={
+            "profileId": saved_profile["id"],
+            "idempotencyKey": key,
+            "seed": 42,
+            "weekday": "wednesday",
+            "model": "gemma4:26b",
+        },
+        headers={"Origin": "http://localhost"},
+    )
+    assert response.status_code == 202, response.json
+    with api.app.app_context():
+        job = db.session.get(FutureGridDraftJob, response.json["id"])
+        assert job.request_json["model"] == "gemma4:26b"
+
+
+def test_private_generation_job_freezes_saved_model_preference_when_request_omits_model(
+    api, monkeypatch, saved_profile
+):
+    with api.app.app_context():
+        record = db.session.get(StartingProfile, saved_profile["id"])
+        record.profile = {**record.profile, "modelPreference": "gemma4:26b"}
+        db.session.commit()
+    monkeypatch.setattr(
+        private_generation, "_ollama_installed_models", lambda: {"gemma4:26b"}
+    )
+    response = api.app.test_client().post(
+        "/api/future/private-puzzle-jobs",
+        json={
+            "profileId": saved_profile["id"],
+            "idempotencyKey": str(uuid4()),
+            "seed": 42,
+            "weekday": "wednesday",
+        },
+        headers={"Origin": "http://localhost"},
+    )
+    assert response.status_code == 202, response.json
+    with api.app.app_context():
+        job = db.session.get(FutureGridDraftJob, response.json["id"])
+        assert job.request_json["model"] == "gemma4:26b"
+
+
+def test_private_generation_rejects_unlisted_model_before_generation(
+    api, monkeypatch, saved_profile
+):
+    monkeypatch.setattr(
+        private_generation, "_generate", lambda *args, **kwargs: pytest.fail("called")
+    )
+    response = api.app.test_client().post(
+        "/api/future/private-puzzles",
+        json={
+            "profileId": saved_profile["id"],
+            "seed": 42,
+            "weekday": "wednesday",
+            "model": "made-up:model",
+        },
+        headers={"Origin": "http://localhost"},
+    )
+    assert response.status_code == 400
+    assert response.json["error"] == "Unsupported local writing model"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {},
+        {"profileId": "not-a-profile", "seed": 1, "weekday": "wednesday"},
+        {"profileId": str(uuid4()), "seed": True, "weekday": "wednesday"},
+        {"profileId": str(uuid4()), "seed": 1, "weekday": "not-a-day"},
+    ],
+)
+def test_private_generation_rejects_invalid_requests_without_model_work(
+    api, monkeypatch, body
+):
+    monkeypatch.setattr(
+        private_generation, "_generate", lambda *args: pytest.fail("called")
+    )
+    response = api.app.test_client().post(
+        "/api/future/private-puzzles",
+        json=body,
+        headers={"Origin": "http://localhost"},
+    )
+    assert response.status_code == 400
+    assert "error" in response.json
+
+
+def test_private_generation_is_same_origin_only(api):
+    response = api.app.test_client().post(
+        "/api/future/private-puzzles",
+        json={"profileId": str(uuid4()), "seed": 1, "weekday": "wednesday"},
+        headers={"Origin": "https://example.invalid"},
+    )
+    assert response.status_code == 403
+
+
+def test_utterance_blank_candidates_basic_blanking():
+    candidates = private_generation.utterance_blank_candidates(
+        "SEEN", ["I have seen it all"]
+    )
+
+    assert candidates == [
+        {"sentence": "I have seen it all", "blanked": "I have ___ it all"}
+    ]
+
+
+def test_utterance_blank_candidates_case_insensitive():
+    candidates = private_generation.utterance_blank_candidates(
+        "HELLO", ["hello there, friend"]
+    )
+
+    assert candidates == [
+        {"sentence": "hello there, friend", "blanked": "___ there, friend"}
+    ]
+
+
+def test_utterance_blank_candidates_word_boundary():
+    candidates = private_generation.utterance_blank_candidates(
+        "SEEN", ["The seenager arrived", "I have seen it"]
+    )
+
+    assert candidates == [
+        {"sentence": "I have seen it", "blanked": "I have ___ it"}
+    ]
+
+
+def test_utterance_blank_candidates_no_match_returns_empty():
+    assert (
+        private_generation.utterance_blank_candidates(
+            "SEEN", ["Nothing relevant here"]
+        )
+        == []
+    )
+
+
+# Q01 answer-stem gate (prototype, single variable, no judging). Derivation
+# chain follows /tmp/friday_metric.py: -ER/-EST/-IER/-Y/-NESS/-LY plus
+# UN-/DIS-/MIS-/RE- (full: NESS/MENT/TION/LESS/FUL/IVE/LY/AL/EST/ER/ED/ING/
+# ES/S + UN-/DIS-/MIS-/IM-/IN-/NON-/RE-). 40 leak pairs must be rejected
+# with the new reasons; 40 control pairs must stay legal.
+_Q01_STEM_LEAKS = [
+    ("SHADINESS", "Shady business practices", "answer-stem-in-clue"),
+    ("HAPPINESS", "happy feeling", "answer-stem-in-clue"),
+    ("DARKNESS", "dark alley", "answer-stem-in-clue"),
+    ("KINDNESS", "kind gesture", "answer-stem-in-clue"),
+    ("CALMNESS", "calm morning", "answer-stem-in-clue"),
+    ("BRIGHTNESS", "bright light", "answer-stem-in-clue"),
+    ("LONELINESS", "lonely night", "answer-stem-in-clue"),
+    ("QUIETNESS", "quiet room", "answer-stem-in-clue"),
+    ("QUICKLY", "quick response", "answer-stem-in-clue"),
+    ("SLOWLY", "slow walk", "answer-stem-in-clue"),
+    ("BRIGHTLY", "bright idea", "answer-stem-in-clue"),
+    ("QUIETLY", "quiet plea", "answer-stem-in-clue"),
+    ("HAPPILY", "happy crowd", "answer-stem-in-clue"),
+    ("HAPPY", "unhappy feeling", "answer-stem-in-clue"),
+    ("CLEAR", "unclear remark", "answer-stem-in-clue"),
+    ("HONEST", "dishonest answer", "answer-stem-in-clue"),
+    ("LOYAL", "disloyal rival", "answer-stem-in-clue"),
+    ("FORTUNE", "misfortune strikes", "answer-stem-in-clue"),
+    ("PRINT", "misprint error", "answer-stem-in-clue"),
+    ("WRITE", "rewrite draft", "answer-stem-in-clue"),
+    ("BUILD", "rebuild city", "answer-stem-in-clue"),
+    ("TEACHER", "teach class", "answer-stem-in-clue"),
+    ("LEADER", "lead role", "answer-stem-in-clue"),
+    ("PAINTER", "paint portrait", "answer-stem-in-clue"),
+    ("READER", "read book", "answer-stem-in-clue"),
+    ("FASTEST", "fast car", "answer-stem-in-clue"),
+    ("BRIGHTEST", "bright star", "answer-stem-in-clue"),
+    ("QUIETEST", "quiet corner", "answer-stem-in-clue"),
+    ("HAPPIEST", "happy days", "answer-stem-in-clue"),
+    ("SHADIER", "shady business", "answer-stem-in-clue"),
+    ("HAPPIER", "happy camper", "answer-stem-in-clue"),
+    ("DIRTIER", "dirty floor", "answer-stem-in-clue"),
+    ("NOISIER", "noisy room", "answer-stem-in-clue"),
+    ("SHADIER", "more shady", "tautological-comparative"),
+    ("SHADIEST", "most shady", "tautological-comparative"),
+    ("HAPPINESS", "more happy", "tautological-comparative"),
+    ("DARKNESS", "more dark", "tautological-comparative"),
+    ("QUICKLY", "more quick", "tautological-comparative"),
+    ("SORRIER", "sorry excuse", "answer-stem-in-clue"),
+    ("HAPPIER", "most happy", "tautological-comparative"),
+]
+
+_Q01_STEM_CONTROLS = [
+    ("WOES", "Misfortunes"),
+    ("WOES", "Grief"),
+    ("SAD", "Unhappy feeling"),
+    ("EARLY", "ear of corn"),
+    ("FORMER", "more formal"),
+    ("LATTER", "more formal"),
+    ("COVER", "cove by the sea"),
+    ("CASHIER", "clerk at a till"),
+    ("PIONEER", "early settler"),
+    ("MINER", "worker in a pit"),
+    ("BIGGER", "large in scope"),
+    ("LEADER", "head of the team"),
+    ("CARPET", "rug in the hall"),
+    ("DEVIL", "Evil spirit"),
+    ("PARTY", "Part of G.O.P."),
+    ("CATER", "Provide food"),
+    ("ARE", "They ___ here"),
+    ("HAMLIN", "Vice president from Maine"),
+    ("TOTO", "Dog that went to Oz"),
+    ("ERAT", "Common Latin word"),
+    ("ETRE", "Common French word"),
+    ("SHADIER", "more bright"),
+    ("SHADIER", "suspicious-looking"),
+    ("NICER", "more dull"),
+    ("OLDER", "more young"),
+    ("LARGER", "more tiny"),
+    ("DARKER", "more pale"),
+    ("QUIETER", "more shrill"),
+    ("HAPPIER", "more grim"),
+    ("EARLIER", "more later"),
+    ("SIMPLER", "more ornate"),
+    ("WISER", "more foolish"),
+    ("FASTER", "quick runner"),
+    ("BEST", "more good"),
+    ("BETTER", "more good"),
+    ("MEN", "more manly"),
+    ("QUIET", "hush falls"),
+    ("ODD", "stranger than fiction"),
+    ("DEEP", "bottom of the sea"),
+    ("COOLER", "more hot"),
+]
+
+_Q01_LEAK_REASONS = {
+    "answer-giveaway",
+    "answer-form-in-clue",
+    "tautological-degree-form",
+    "answer-stem-in-clue",
+    "tautological-comparative",
+}
+
+
+def test_q01_shadier_more_shady_flags_and_woes_misfortunes_legal():
+    assert private_generation._clue_answer_stem_issue(
+        {"answer": "SHADIER"}, "more shady"
+    ) == "tautological-comparative"
+    assert private_generation._clue_wordplay_issue(
+        {"answer": "SHADIER"}, "more shady"
+    ) in _Q01_LEAK_REASONS
+    assert private_generation._clue_answer_stem_issue(
+        {"answer": "WOES"}, "Misfortunes"
+    ) is None
+    assert private_generation._clue_wordplay_issue(
+        {"answer": "WOES"}, "Misfortunes"
+    ) is None
+
+
+@pytest.mark.parametrize(("answer", "clue", "reason"), _Q01_STEM_LEAKS)
+def test_q01_answer_stem_gate_rejects_derivation_leaks(answer, clue, reason):
+    assert private_generation._clue_answer_stem_issue(
+        {"answer": answer}, clue
+    ) == reason
+    assert private_generation._clue_wordplay_issue(
+        {"answer": answer}, clue
+    ) in _Q01_LEAK_REASONS
+
+
+@pytest.mark.parametrize(("answer", "clue"), _Q01_STEM_CONTROLS)
+def test_q01_answer_stem_gate_keeps_controls_legal(answer, clue):
+    assert private_generation._clue_answer_stem_issue(
+        {"answer": answer}, clue
+    ) is None
+    assert private_generation._clue_wordplay_issue(
+        {"answer": answer}, clue
+    ) is None

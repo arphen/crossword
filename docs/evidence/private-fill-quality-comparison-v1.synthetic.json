@@ -1,0 +1,178 @@
+{
+  "evaluationVersion": "private-fill-quality-comparison-v1",
+  "kind": "private-fill-quality-comparison",
+  "scope": "fixed-seed-native-fill-study",
+  "status": "observed",
+  "labels": {
+    "left": "support-aware",
+    "right": "baseline",
+    "delta": "left-minus-right"
+  },
+  "uncertainty": {
+    "fillQuality": "xfill-heuristic-not-human-quality",
+    "humanSolveProbability": "unmeasured",
+    "clueFairness": "unmeasured",
+    "playerEnjoyment": "unmeasured",
+    "winnerClaim": "none"
+  },
+  "inputs": {
+    "expectedSeeds": [
+      7,
+      9,
+      11
+    ],
+    "leftMeasuredSelectedSeeds": [
+      7,
+      9
+    ],
+    "rightMeasuredSelectedSeeds": [
+      7,
+      9
+    ],
+    "pairedSeeds": [
+      7,
+      9
+    ],
+    "leftOnlySeeds": [],
+    "rightOnlySeeds": []
+  },
+  "summary": {
+    "meanScore": {
+      "paired": 2,
+      "meanDelta": 1.45,
+      "minimumDelta": 0.0,
+      "maximumDelta": 2.9,
+      "direction": {
+        "leftWins": 1,
+        "rightWins": 0,
+        "ties": 1,
+        "paired": 2
+      }
+    },
+    "minimumScore": {
+      "paired": 2,
+      "meanDelta": 3.5,
+      "minimumDelta": 0.0,
+      "maximumDelta": 7.0,
+      "direction": {
+        "leftWins": 1,
+        "rightWins": 0,
+        "ties": 1,
+        "paired": 2
+      }
+    },
+    "iffyCount": {
+      "paired": 2,
+      "meanDelta": -1.5,
+      "minimumDelta": -3.0,
+      "maximumDelta": 0.0,
+      "direction": {
+        "leftWins": 1,
+        "rightWins": 0,
+        "ties": 1,
+        "paired": 2
+      }
+    },
+    "weakCount": {
+      "paired": 2,
+      "meanDelta": -2.5,
+      "minimumDelta": -5.0,
+      "maximumDelta": 0.0,
+      "direction": {
+        "leftWins": 1,
+        "rightWins": 0,
+        "ties": 1,
+        "paired": 2
+      }
+    },
+    "themeCount": {
+      "paired": 2,
+      "meanDelta": 0.0,
+      "minimumDelta": 0.0,
+      "maximumDelta": 0.0,
+      "direction": {
+        "leftWins": 0,
+        "rightWins": 0,
+        "ties": 2,
+        "paired": 2
+      }
+    }
+  },
+  "pairedRows": {
+    "meanScore": [
+      {
+        "seed": 7,
+        "left": 80.0,
+        "right": 77.1,
+        "delta": 2.9
+      },
+      {
+        "seed": 9,
+        "left": 81.2,
+        "right": 81.2,
+        "delta": 0.0
+      }
+    ],
+    "minimumScore": [
+      {
+        "seed": 7,
+        "left": 55.0,
+        "right": 48.0,
+        "delta": 7.0
+      },
+      {
+        "seed": 9,
+        "left": 57.0,
+        "right": 57.0,
+        "delta": 0.0
+      }
+    ],
+    "iffyCount": [
+      {
+        "seed": 7,
+        "left": 0,
+        "right": 3,
+        "delta": -3.0
+      },
+      {
+        "seed": 9,
+        "left": 0,
+        "right": 0,
+        "delta": 0.0
+      }
+    ],
+    "weakCount": [
+      {
+        "seed": 7,
+        "left": 3,
+        "right": 8,
+        "delta": -5.0
+      },
+      {
+        "seed": 9,
+        "left": 2,
+        "right": 2,
+        "delta": 0.0
+      }
+    ],
+    "themeCount": [
+      {
+        "seed": 7,
+        "left": 4,
+        "right": 4,
+        "delta": 0.0
+      },
+      {
+        "seed": 9,
+        "left": 3,
+        "right": 3,
+        "delta": 0.0
+      }
+    ]
+  },
+  "policy": {
+    "humanQualityGate": "not-applied",
+    "interpretation": "paired native xfill receipts only; no human-quality winner"
+  },
+  "comparisonDigest": "sha256:ff2749e3e9829ae1f6a0a081bf5bcef7084c83215f3757e15ebbd56601d962a4"
+}

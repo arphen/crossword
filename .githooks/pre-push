@@ -1,0 +1,17 @@
+#!/bin/sh
+# Push-time quality gate: the full local suite must be green before anything
+# leaves this machine. Slow (minutes); that is the price of no red pushes.
+set -eu
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo '[pre-push] verifying repository map…'
+if ! bash .scripts/generate-repo-map.sh --check; then
+  echo 'PUSH BLOCKED: docs/REPO_MAP.md is stale; run make map-update and commit the result.' >&2
+  exit 1
+fi
+
+echo '[pre-push] full local test gate (make test)…'
+make test
+
+echo '[pre-push] all test gates passed.'

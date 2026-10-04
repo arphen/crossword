@@ -1,0 +1,62 @@
+{
+  "version": "private-weekday-mechanic-study-v1",
+  "scope": "loopback-private-thursday-boards",
+  "status": "observed",
+  "studyId": "real-gemma4-26b-thursday-mechanic-20260928",
+  "profileId": "22222222-2222-4222-8222-222222222222",
+  "requestedSeeds": [
+    139
+  ],
+  "summary": {
+    "pass": 0,
+    "fallbackSafe": 1,
+    "fail": 0,
+    "requestFailed": 0,
+    "boardCount": 1
+  },
+  "cases": [
+    {
+      "seed": 139,
+      "status": "fallback-safe",
+      "mechanicStatus": "unavailable",
+      "report": {
+        "version": "private-weekday-mechanic-evaluation-v1",
+        "scope": "private-local-evaluation",
+        "boardId": "thursday-139",
+        "boardDigest": "sha256:f93490b0a612f0c977b319652d04bd6d5a9615b350670b4e346e94f60ea4eb23",
+        "status": "fallback-safe",
+        "mechanic": {
+          "status": "unavailable",
+          "type": "shared-affix",
+          "reason": "proposal-unavailable"
+        },
+        "instanceCount": 0,
+        "instances": [],
+        "recipe": {
+          "id": "thursday-private-v1",
+          "themeMode": "standard-theme",
+          "gridMechanic": "ordinary-letter-grid"
+        },
+        "reasonCodes": [],
+        "uncertainty": {
+          "semanticFairness": "unverified",
+          "modelQuality": "not-measured",
+          "playerSolveProbability": "unmeasured",
+          "humanPlaytest": "not-run"
+        }
+      }
+    }
+  ],
+  "uncertainty": {
+    "semanticFairness": "unverified",
+    "modelQuality": "not-measured",
+    "playerSolveProbability": "unmeasured",
+    "humanPlaytest": "not-run"
+  },
+  "metadata": {
+    "transport": "loopback-http",
+    "baseUrl": "http://127.0.0.1:5001",
+    "weekday": "thursday"
+  },
+  "studyDigest": "sha256:6b088d4218745a8e1857a8fa4e91875a3c1e6e019ca327415306ecd7666b660a"
+}

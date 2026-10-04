@@ -1,0 +1,21 @@
+{
+  "version": "private-clue-corpus-attestation-v1",
+  "kind": "counts-only",
+  "generatedAt": "2026-10-01T08:32:29+00:00",
+  "claim": "the local answer-bearing clue corpus holds this many pairs under this digest; only counts and the digest are committed",
+  "corpus": {
+    "version": "private-clue-corpus-v1",
+    "captured": false,
+    "pairs": 0,
+    "digest": null,
+    "weeks": [],
+    "models": [],
+    "withIssues": 0,
+    "fallbacks": 0,
+    "reviewed": 0
+  },
+  "knownLimits": [
+    "the attestation proves a denominator exists, not that any clue is good",
+    "answer-bearing records stay on this host and are never committed"
+  ]
+}

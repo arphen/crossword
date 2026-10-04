@@ -1,0 +1,112 @@
+{
+  "claim": "full production boards per clue arm: scaffold vs real counts only",
+  "generatedAt": "2026-10-02T17:33:18+00:00",
+  "kind": "live-model",
+  "knownLimits": [
+    "counts only; clue text stays local and is never committed",
+    "single-arm variance is across runs (temperature 0.65, one shot each)",
+    "boards also enter the operator corpus via the production capture"
+  ],
+  "runs": [
+    {
+      "arms": {
+        "candidate": {
+          "batches": [
+            {
+              "clues": 72,
+              "entries": 72,
+              "manifestCreatedAt": "2026-10-02T10:08:12.445+00:00",
+              "real": 69,
+              "realRate": 0.958,
+              "recordedAt": "2026-10-02T10:08:12+00:00",
+              "scaffold": 3
+            },
+            {
+              "clues": 78,
+              "entries": 78,
+              "real": 78,
+              "realRate": 1.0,
+              "recordedAt": "2026-10-02T10:56:23+00:00",
+              "scaffold": 0,
+              "wallSeconds": 275.031
+            }
+          ]
+        },
+        "single": {
+          "runs": [
+            {
+              "clues": 76,
+              "entries": 76,
+              "note": "pre-registration run; corpus capture only, no manifest",
+              "real": 20,
+              "realRate": 0.263,
+              "recordedAt": "2026-10-02T09:59:44+00:00",
+              "scaffold": 56
+            },
+            {
+              "clues": 78,
+              "entries": 78,
+              "manifestCreatedAt": "2026-10-02T10:03:31.346+00:00",
+              "real": 0,
+              "realRate": 0.0,
+              "recordedAt": "2026-10-02T10:03:31+00:00",
+              "scaffold": 78
+            }
+          ],
+          "wallSeconds": 196.294
+        }
+      },
+      "generatedAt": "2026-10-02T12:15:00+00:00",
+      "model": "llama3.2:3b",
+      "seed": 6110,
+      "weekday": "monday"
+    },
+    {
+      "arms": {
+        "candidate": {
+          "candidateCalls": null,
+          "clues": 72,
+          "entries": 72,
+          "generationFallback": null,
+          "real": 71,
+          "salvage": null,
+          "scaffold": 1,
+          "wallSeconds": 242.065
+        },
+        "single": {
+          "candidateCalls": null,
+          "clues": 74,
+          "entries": 74,
+          "generationFallback": null,
+          "real": 0,
+          "salvage": null,
+          "scaffold": 74,
+          "wallSeconds": 182.265
+        }
+      },
+      "generatedAt": "2026-10-02T15:04:22+00:00",
+      "model": "llama3.2:3b",
+      "seed": 6111,
+      "weekday": "monday"
+    },
+    {
+      "arms": {
+        "candidate": {
+          "candidateCalls": null,
+          "clues": 72,
+          "entries": 72,
+          "generationFallback": null,
+          "real": 70,
+          "salvage": null,
+          "scaffold": 2,
+          "wallSeconds": 264.949
+        }
+      },
+      "generatedAt": "2026-10-02T17:33:18+00:00",
+      "model": "llama3.2:3b",
+      "seed": 6112,
+      "weekday": "monday"
+    }
+  ],
+  "version": "private-full-board-validation-v1"
+}

@@ -1,0 +1,38 @@
+{
+  "version": "private-clue-cold-solver-v1",
+  "generatedAt": "2026-10-03T08:52:15+00:00",
+  "kind": "counts-only",
+  "claim": "blind cold-solver solvability probe; behaviour-derived buckets, no style score",
+  "method": {
+    "blind": "solver sees clue + length only; answer revealed after both attempts",
+    "judgeIndependence": "judge model family differs from the drafter",
+    "bucketDerivation": "computed in Python from solver-reported facts",
+    "noWitScale": "no model emits a numeric quality or wit score"
+  },
+  "knownLimits": [
+    "length-only probe: a real solver also sees crossing letters, so trivial detection is conservative and gold detection is strict",
+    "unresolved is reported separately and never counted as gold",
+    "solver self-reports its own trajectory; a 4b local model is a weak proxy for a human solver and a blind human verdict still overrides this receipt"
+  ],
+  "summary": {
+    "label": "arm-steering-off",
+    "judge": "gemma3:4b",
+    "buckets": {
+      "unresolved": 6,
+      "trivial": 2,
+      "scaffold": 2,
+      "unfair": 5
+    },
+    "judged": 13,
+    "goldRate": 0.0,
+    "trivialRate": 0.1538,
+    "unfairRate": 0.3846,
+    "unresolvedRate": 0.4615,
+    "definitionSoundness": {
+      "sound": 5,
+      "unsound": 8
+    },
+    "soundRate": 0.3846,
+    "wallSeconds": 159.781
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "version": "private-clue-judge-calibration-v1",
+  "generatedAt": "2026-10-03T07:01:00+00:00",
+  "kind": "counts-only",
+  "claim": "judge false-unsound rate on fifteen factually correct clues",
+  "knownLimits": [
+    "these clues are correct by construction, so unsound verdicts are judge errors, not clue defects",
+    "fifteen clues bound the error rate only loosely; the figure is a discount, not a precise correction factor"
+  ],
+  "summary": {
+    "judge": "gemma3:4b",
+    "knownGoodClues": 15,
+    "judgedCorrectly": 6,
+    "falseUnsound": 9,
+    "falseUnsoundRate": 0.6,
+    "judgeSoundnessPrecision": 0.4,
+    "falseUnsoundIds": [
+      "0A",
+      "10A",
+      "11A",
+      "13A",
+      "14A",
+      "3A",
+      "4A",
+      "6A",
+      "7A"
+    ],
+    "buckets": {
+      "unresolved": 4,
+      "trivial": 5,
+      "unfair": 6
+    },
+    "soundness": {
+      "unsound": 9,
+      "sound": 6
+    },
+    "goldRate": 0.0,
+    "trivialRate": 0.3333,
+    "unfairRate": 0.4,
+    "wallSeconds": 153.488
+  }
+}

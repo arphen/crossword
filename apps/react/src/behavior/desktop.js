@@ -1,5 +1,40 @@
-// Mechanically ported from the curated Vue desktop behavior.
-// Regenerate with node scripts/snapshot-react-behavior.mjs; original files remain unchanged.
+// Solver behavior for the React desktop client (frozen port; the Vue
+// originals are shelved in git history).
+//
+// Writable-first focus: grid inputs persist across renders (stable keys), so
+// handlers focus the live node synchronously instead of waiting for the
+// selection commit — the cursor accepts input while the paint catches up.
+// Far jumps (ladder to board) skip the focus scroll and meet the view on the
+// next frame; adjacent moves keep the native scroll.
+export function focusCell(controller, rowIndex, cellIndex, { deferScroll = false } = {}) {
+    const input = controller.$refs[`input-${rowIndex}-${cellIndex}`]?.[0];
+    if (!input) {
+        // Grid still loading: focus after the render commits, as before.
+        controller.$nextTick(() => {
+            controller.$refs[`input-${rowIndex}-${cellIndex}`]?.[0]?.focus();
+        });
+        return false;
+    }
+    if (deferScroll) {
+        try {
+            input.focus({ preventScroll: true });
+        } catch {
+            input.focus();
+        }
+    } else {
+        input.focus();
+    }
+    if (deferScroll) {
+        const scroll = () => input.scrollIntoView?.({ block: 'nearest' });
+        if (typeof requestAnimationFrame === 'undefined') scroll();
+        else requestAnimationFrame(scroll);
+    }
+    return true;
+}
+
+export function focusEntryStart(controller, entry) {
+    return focusCell(controller, entry.start_y, entry.start_x, { deferScroll: true });
+}
 export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout, clearTimeout, setInterval, clearInterval, requestAnimationFrame, cancelAnimationFrame }) {
   return {
     delimiters: ['[[', ']]'],
@@ -58,6 +93,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             showCacheModal: false, // For the cache status modal
             solvedPuzzlesList: {},   // To store { day: [id1, id2], ... }
             currentPuzzleMetadata: null, // To store metadata of the currently loaded puzzle
+            currentPuzzleManifest: null, // Optional versioned puzzle document supplied by the host
             score: 100, // Starting score
             timer: 0, // Time in seconds
             timerInterval: null, // Timer interval reference
@@ -135,7 +171,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
         // Listen for multiplayer updates
         socket.on('cell_updated', (data) => {
             if (this.grid && this.grid[data.row] && typeof this.grid[data.row][data.col] !== 'undefined') {
-                // Use Vue.set to ensure reactivity
+                // Use the reactive setter to ensure updates propagate
                 this.$set(this.grid[data.row], data.col, data.value);
             }
         });
@@ -240,6 +276,9 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 localStorage.setItem(storageKey, JSON.stringify(solvedPuzzles));
                 this.updateSolvedCounts(); // This might need adjustment if it just counts length
             }
+            // Evict the solved puzzle from the offline stock so the retained
+            // cache holds playable puzzles; the freed quota goes to fresh ones.
+            this.evictCachedPuzzle(day, puzzleId);
 
             // Also save to backend database
             try {
@@ -255,6 +294,16 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             } catch (error) {
                 console.error('Error saving puzzle completion to backend:', error);
                 // Don't fail if backend is unavailable - localStorage already has it
+            }
+        },
+        evictCachedPuzzle(day, puzzleId) {
+            if (!puzzleId) return;
+            const storageKey = `crosswords_${day}`;
+            const puzzles = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            const kept = puzzles.filter(puzzle => this.getPuzzleId(puzzle.metadata) !== puzzleId);
+            if (kept.length !== puzzles.length) {
+                localStorage.setItem(storageKey, JSON.stringify(kept));
+                this.updateCachedCounts();
             }
         },
         getPuzzleId(puzzleMetadata) {
@@ -311,6 +360,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             day = day.toLowerCase();
             this.selectedWeekday = day;
             this.currentPuzzleMetadata = null; // Reset metadata on new load
+            this.currentPuzzleManifest = null;
 
             if (this.isOffline) {
                 this.loadCachedCrossword(day);
@@ -346,11 +396,26 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                     return;
                 }
 
-                // Cache the whole puzzle object (metadata + entries)
-                this.cacheCrossword(day, response.data);
+                // Keep the optional canonical document alongside the legacy
+                // entry model. Older puzzle responses remain unchanged.
+                this.currentPuzzleManifest = response.data.puzzleManifest ?? null;
+
+                // Cache the whole puzzle object (metadata + entries).
+                // Best-effort: a full or unavailable store must never
+                // displace the fresh puzzle just fetched.
+                try {
+                    this.cacheCrossword(day, response.data);
+                } catch (error) {
+                    console.error('Error caching crossword:', error);
+                }
 
                 this.init();
                 this.lastLoadedWeekday = day;
+                // Top the offline stock back up while online: a drained cache
+                // refills during normal play instead of waiting for the next
+                // offline-to-online transition. The low-stock gate and the
+                // hourly cooldown inside keep this a no-op otherwise.
+                if (!this.isOffline) this.checkAndStartCaching();
             } catch (error) {
                 console.error(`Error loading ${day} crossword:`, error);
                 // If fetch fails, try to load from cache
@@ -361,42 +426,48 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             const storageKey = `crosswords_${day}`;
             let puzzles = JSON.parse(localStorage.getItem(storageKey) || '[]');
 
-            // Don't cache invalid puzzles
+            // Don't cache invalid puzzles. Returns whether the stock grew, so
+            // refill loops can tell progress from a dry well.
             if (!this.isValidPuzzle(puzzleData)) {
                 console.error('Attempting to cache invalid puzzle, skipping...');
-                return;
+                return false;
             }
 
             const puzzleId = this.getPuzzleId(puzzleData.metadata);
 
             // Don't cache if we've already solved it
             if (puzzleId && this.isPuzzleSolved(day, puzzleId)) {
-                return;
+                return false;
             }
 
             // Check if we already have this puzzle cached
             const isDuplicate = puzzles.some(p => this.getPuzzleId(p.metadata) === puzzleId);
 
-            if (!isDuplicate) {
-                // Add new puzzle and keep only the latest 50
-                puzzles.push(puzzleData);
-                if (puzzles.length > 50) {
-                    puzzles = puzzles.slice(-50);
-                }
+            if (isDuplicate) {
+                return false;
+            }
 
-                try {
+            // Add new puzzle and keep only the latest 50
+            puzzles.push(puzzleData);
+            if (puzzles.length > 50) {
+                puzzles = puzzles.slice(-50);
+            }
+
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(puzzles));
+                this.updateCachedCounts();
+            } catch (e) {
+                console.error('Error caching crossword:', e);
+                // If storage is full, remove the oldest puzzle and try again
+                if (e.name === 'QuotaExceededError') {
+                    puzzles.shift();
                     localStorage.setItem(storageKey, JSON.stringify(puzzles));
                     this.updateCachedCounts();
-                } catch (e) {
-                    console.error('Error caching crossword:', e);
-                    // If storage is full, remove the oldest puzzle and try again
-                    if (e.name === 'QuotaExceededError') {
-                        puzzles.shift();
-                        localStorage.setItem(storageKey, JSON.stringify(puzzles));
-                        this.updateCachedCounts();
-                    }
+                } else {
+                    throw e;
                 }
             }
+            return true;
         },
         loadCachedCrossword(day, attempt = 1) { // Add attempt counter for safety
             const storageKey = `crosswords_${day}`;
@@ -407,7 +478,11 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 return;
             }
 
-            if (attempt > puzzles.length + 1 || attempt > 10) { // Safety break for recursion
+            // Backstop only: every recursion below evicts at least one entry
+            // (or loads terminally), so an empty stock always terminates
+            // through the branch above. Bounding by the shrinking list would
+            // trip while bad entries are still being cleared.
+            if (attempt > 10) {
                 alert(`Could not find an unsolved ${day} crossword in the cache.`);
                 return;
             }
@@ -446,20 +521,23 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
 
             // --- If puzzle is NOT solved, proceed as before ---
             this.currentPuzzleMetadata = selectedPuzzle.metadata; // Set metadata for the loaded puzzle
+            this.currentPuzzleManifest = selectedPuzzle.puzzleManifest ?? null;
             this.crossword = selectedPuzzle.entries; // Set entries
 
-            // Remove the used puzzle from cache
-            puzzles.splice(randomIndex, 1);
-            localStorage.setItem(storageKey, JSON.stringify(puzzles));
-            this.updateCachedCounts();
-
-            // If we're online and cache is getting low, fill it up
-            if (!this.isOffline && puzzles.length < 25) {
-                this.fillCache(day, 50 - puzzles.length);
-            }
-
+            // The played puzzle stays cached: offline stock is retained across
+            // sessions and only solved or invalid entries are evicted, so a
+            // trip offline ends with the same stock it started with. Topping
+            // up happens online below and after online loads.
             this.init();
             this.lastLoadedWeekday = day;
+
+            // If we're online and cache is getting low, fill it up
+            if (!this.isOffline) {
+                this.updateCachedCounts();
+                if (puzzles.length < 25) {
+                    this.fillCache(day, 50 - puzzles.length);
+                }
+            }
         },
         handleWeekdayClick(day) {
             this.attemptLoadDay(day);
@@ -621,7 +699,13 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                     const input = this.$refs[`input-${y}-${x}`]?.[0];
                     if (!input) continue;
 
-                    const value = input.value.toLowerCase();
+                    // Future token-aware cells render a display grapheme in
+                    // the input (for example `ß`) while the controller keeps
+                    // the canonical fill token (`SS`). Compare the grid's
+                    // canonical value so check works for both ordinary and
+                    // explicit rebus/language cells; the input remains the
+                    // visual surface only.
+                    const value = String(this.grid[y]?.[x] ?? '').toLowerCase();
                     const correct = entry.characters[i].letters.toLowerCase();
 
                     if (value === '') {
@@ -875,13 +959,12 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             this.activeClueNumber = entry.clue_number;
             this.activeDirection = entry.direction;
 
-            // Focus on the first cell of this entry
-            this.$nextTick(() => {
-                const input = this.$refs[`input-${entry.start_y}-${entry.start_x}`];
-                if (input) {
-                    input[0].focus();
-                }
-            });
+            // The cursor goes writable first: the grid node already exists, so
+            // focus it synchronously instead of waiting for the selection
+            // render to commit — this also folds the cursor render into the
+            // same commit. The view scrolls to meet it best-effort on the
+            // next frame; input is accepted meanwhile.
+            focusEntryStart(this, entry);
         },
         handle_cell_click(event, entry, cellIndex) {
             // Stop event propagation so it doesn't trigger the clue wrapper click
@@ -894,13 +977,9 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             const x = entry.direction === 'across' ? entry.start_x + cellIndex : entry.start_x;
             const y = entry.direction === 'across' ? entry.start_y : entry.start_y + cellIndex;
 
-            // Focus on the specific cell
-            this.$nextTick(() => {
-                const input = this.$refs[`input-${y}-${x}`];
-                if (input) {
-                    input[0].focus();
-                }
-            });
+            // Focus on the specific cell, synchronously like a clue click: the
+            // node exists, so the cursor is writable before the commit.
+            focusCell(this, y, x, { deferScroll: true });
         },
         getCurrentAnswer(entry) {
             // Get current user input for an entry
@@ -945,59 +1024,29 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             }
             return null;
         },
-        findNextWord(currentEntry) {
-            if (!currentEntry) return null;
-
-            // Sort entries by clue number for the current direction
-            const directionEntries = this.crossword
-                .filter(e => e.direction === currentEntry.direction)
-                .sort((a, b) => a.clue_number - b.clue_number);
-
-            // Find the next entry
-            const currentIndex = directionEntries.findIndex(e => e.clue_number === currentEntry.clue_number);
-            if (currentIndex < directionEntries.length - 1) {
-                return directionEntries[currentIndex + 1];
+        isWordEdge(rowIndex, cellIndex, direction) {
+            // True when this cell is the last cell going forward, or the first
+            // going backward, inside the word currently under the cursor.
+            const word = this.findCurrentWord(rowIndex, cellIndex);
+            if (!word) return false;
+            if (this.direction === 'across') {
+                return direction === 'forward'
+                    ? cellIndex === word.start_x + word.characters.length - 1
+                    : cellIndex === word.start_x;
             }
-            return null;
-        },
-        isWordComplete(entry) {
-            if (!entry) return false;
-            const answer = this.getCurrentAnswer(entry).join('');
-            // Word is complete if all cells have letters (no spaces)
-            return answer.trim().length === entry.characters.length && !answer.includes(' ');
+            return direction === 'forward'
+                ? rowIndex === word.start_y + word.characters.length - 1
+                : rowIndex === word.start_y;
         },
         move(rowIndex, cellIndex, direction) {
             const sign = direction === 'forward' ? 1 : -1;
-            const currentWord = this.findCurrentWord(rowIndex, cellIndex);
 
-            // Check if we're at the end of a word or about to hit a black square
-            if (currentWord && direction === 'forward') {
-                const nextCell = this.direction === 'across' ?
-                    this.grid[rowIndex]?.[cellIndex + 1] :
-                    this.grid[rowIndex + 1]?.[cellIndex];
-
-                const isLastCell = (this.direction === 'across' &&
-                    cellIndex === currentWord.start_x + currentWord.characters.length - 1) ||
-                    (this.direction === 'down' &&
-                        rowIndex === currentWord.start_y + currentWord.characters.length - 1);
-
-                const isBlackSquareNext = nextCell === null;
-
-                if ((isLastCell || isBlackSquareNext) && this.isWordComplete(currentWord)) {
-                    const nextWord = this.findNextWord(currentWord);
-                    if (nextWord) {
-                        this.$nextTick(() => {
-                            const nextInput = this.$refs[`input-${nextWord.start_y}-${nextWord.start_x}`];
-                            if (nextInput) {
-                                nextInput[0].focus();
-                                return;
-                            }
-                        });
-                        this.selectWordAt(nextWord.start_y, nextWord.start_x);
-                        return;
-                    }
-                }
-            }
+            // A word boundary is a hard stop. Finishing a clue used to teleport the
+            // reader to the next clue of the same direction, halfway across the
+            // grid; the cursor arrived somewhere the eyes had not agreed to go.
+            // Crossing a boundary is now a decision, made with a clue click, a cell
+            // click, or Tab - never as a side effect of typing the last letter.
+            if (this.isWordEdge(rowIndex, cellIndex, direction)) return;
 
             // Check bounds
             if (this.direction === 'across' && (cellIndex + 1 * sign < 0 || cellIndex + 1 * sign >= this.grid[0].length)) {
@@ -1010,14 +1059,11 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             let targetY = rowIndex + sign * (this.direction === 'down');
             let targetCell = this.grid[targetY][targetX];
 
-            // If target is a valid cell (not black square), move there
+            // If target is a valid cell (not black square), move there. The
+            // focus lands synchronously — adjacent cell, native scroll — so
+            // the keystroke's letter and the cursor commit together.
             if (targetCell !== null) {
-                this.$nextTick(() => {
-                    const nextInput = this.$refs[`input-${targetY}-${targetX}`];
-                    if (nextInput) {
-                        nextInput[0].focus();
-                    }
-                });
+                focusCell(this, targetY, targetX);
                 this.selectWordAt(targetY, targetX);
             } else {
                 // Target is a black square, skip over it recursively
@@ -1233,13 +1279,22 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
 
             this.activeCaching[day] = true;
             let successfulCaches = 0;
+            // Refusals (solved, duplicate, invalid) are not progress: after a
+            // run of them the well is dry for now, so stop instead of burning
+            // the backend until the request count runs out.
+            let consecutiveSkips = 0;
 
             try {
                 for (let i = 0; i < count && this.cachedCrosswordsCount[day] < 50; i++) {
                     try {
                         const response = await axios.get(`${this.baseUrl}/random_crossword/${day}`);
-                        await this.cacheCrossword(day, response.data);
-                        successfulCaches++;
+                        if (await this.cacheCrossword(day, response.data)) {
+                            successfulCaches++;
+                            consecutiveSkips = 0;
+                        } else {
+                            consecutiveSkips++;
+                            if (consecutiveSkips >= 8) break;
+                        }
                         this.cachingErrors[day] = 0;
                         await new Promise(resolve => setTimeout(resolve, 100));
                     } catch (error) {
@@ -1356,21 +1411,21 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             this.solvedPuzzlesList = allSolved;
         },
 
-        async markCurrentPuzzleAsComplete() {
+        async markCurrentPuzzleAsComplete(onConfirmed = undefined) {
             if (!this.currentPuzzleMetadata) {
                 alert("No puzzle loaded to mark as complete.");
-                return;
+                return false;
             }
 
-            if (confirm("Are you sure you want to mark this puzzle as complete? You won't see it again.")) {
-                const puzzleId = this.getPuzzleId(this.currentPuzzleMetadata);
-                if (puzzleId) {
-                    const day = this.getCurrentDay();
-                    await this.markPuzzleSolved(day, puzzleId);
-                    alert("Puzzle marked as complete. Loading a new one.");
-                    this.loadCrossword(this.selectedWeekday);
-                }
-            }
+            if (!confirm("Are you sure you want to mark this puzzle as complete? You won't see it again.")) return false;
+            const puzzleId = this.getPuzzleId(this.currentPuzzleMetadata);
+            if (!puzzleId) return false;
+            const day = this.getCurrentDay();
+            await this.markPuzzleSolved(day, puzzleId);
+            await onConfirmed?.();
+            alert("Puzzle marked as complete. Loading a new one.");
+            this.loadCrossword(this.selectedWeekday);
+            return true;
         },
 
         // Multiplayer Methods
@@ -1441,10 +1496,10 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             // Play sounds
             this.playCelebrationSounds(soundCount, celebrationLevel);
 
-            // Auto-hide after celebration
+            // Auto-hide after the finale card has had its moment
             setTimeout(() => {
                 this.stopFireworks();
-            }, celebrationLevel === 'spectacular' ? 8000 : celebrationLevel === 'great' ? 6000 : 4000);
+            }, 9000);
         },
 
         launchFireworksSequence(count) {

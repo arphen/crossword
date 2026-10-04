@@ -1,0 +1,57 @@
+{
+  "version": "private-clue-benchmark-v1",
+  "generatedAt": "2026-10-03T11:16:05+00:00",
+  "kind": "counts-only",
+  "claim": "one AutoResearch iteration: fixed 15-answer benchmark, deterministic scoring only",
+  "iterations": [
+    {
+      "label": "laneC-seed-6215",
+      "entries": 15,
+      "strictAdmission": false,
+      "admitted": 9,
+      "scaffold": 6,
+      "admissionRate": 0.6,
+      "guardHits": 0,
+      "families": {
+        "definition": 8,
+        "genre:plain-definition": 8,
+        "genre:sound-or-action-cue": 1,
+        "pseudo-pun": 1
+      },
+      "draftCalls": null,
+      "compareCalls": null,
+      "redraftSteeringRounds": 0,
+      "wallSeconds": 70.978,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6215
+    },
+    {
+      "label": "laneC-seed-6216",
+      "entries": 15,
+      "strictAdmission": false,
+      "admitted": 10,
+      "scaffold": 5,
+      "admissionRate": 0.6667,
+      "guardHits": 0,
+      "families": {
+        "definition": 9,
+        "genre:abbreviation": 1,
+        "genre:plain-definition": 8,
+        "genre:quotational": 1,
+        "metalinguistic": 1
+      },
+      "draftCalls": null,
+      "compareCalls": null,
+      "redraftSteeringRounds": 0,
+      "wallSeconds": 55.191,
+      "model": "llama3.2:3b",
+      "weekday": "monday",
+      "seed": 6216
+    }
+  ],
+  "knownLimits": [
+    "counts only; clue text stays local and is never committed",
+    "quality (wit) is not scored here; blind human verdicts score it"
+  ]
+}
