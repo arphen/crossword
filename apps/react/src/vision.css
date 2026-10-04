@@ -552,29 +552,118 @@
   animation: clue-breath 2.9s ease-in-out infinite;
 }
 
-/* The cursor speaks the clue: outline, ring and fill in the active word's
-   hue, so the current square is primary-coloured like the rest of the
-   selection. Each falls back to its direction colour when no word is lit yet
-   (focus without a selection), which renders exactly desktop.css. White
-   lettering stays put: the mixed fill stays dark by construction. */
-#app.react-desktop-app[data-ramp='on'] .grid-cell:focus-within {
-  outline-color: var(--active-clue-flame, var(--cursor-edge));
-  background: color-mix(
-    in oklab,
-    var(--cursor-fill) 55%,
-    var(--active-clue-flame, var(--cursor-fill))
-  ) !important;
+/* ==========================================================================
+   1c. Ink on the lit word.
+   Whether a letter can be read is a question of lightness alone — hue never
+   helps or hurts — so the lit word holds one lightness from its first square
+   to its last and spends the position fade in chroma instead: the opening
+   square wears the clue's colour at full strength, the far end the same hue
+   nearly greyed out. Board and track fade square for square, so a box still
+   points at its square by how much colour it carries, and one ink — the
+   word's own hue, taken deep — reads at every position. Across lights on a
+   higher plane than Down, so the direction still reads as value.
+   The cursor is the one deep square: the same hue saturated and dark under
+   pale lettering, ringed in the word's light, so where you type is the
+   strongest contrast on the board without leaving the word's colour.
+   Check verdicts keep their own red and green ink and fills (desktop.css).
+   Number colours Off keeps desktop.css's direction fills untouched.
+   ========================================================================== */
+#app.react-desktop-app {
+  --lit-l-across: 0.84;
+  --lit-l-down: 0.75;
+  --lit-chroma: 0.105;
+  /* How much of the chroma survives at the word's far end. */
+  --lit-floor: 0.18;
+  --lit-ink-l: 0.25;
+  --lit-ink-c: 0.055;
+  --cursor-l-across: 0.57;
+  --cursor-l-down: 0.5;
+  --cursor-chroma: 0.15;
 }
-#app.react-desktop-app[data-ramp='on'] .grid-cell:focus-within::before {
-  border-color: var(--active-clue-flame, var(--cursor-edge));
+
+/* Low-bloom tiers lower the lit plane rather than brighten it; the ink stays. */
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil']) {
+  --lit-l-across: 0.77;
+  --lit-l-down: 0.69;
+  --lit-chroma: 0.08;
+  --cursor-l-across: 0.52;
+  --cursor-l-down: 0.47;
+  --cursor-chroma: 0.12;
 }
-#app.react-desktop-app[data-ramp='on'] li .state.cursor-cell {
-  border-color: var(--active-clue-flame, var(--cursor-edge)) !important;
-  background: color-mix(
-    in oklab,
-    var(--cursor-fill) 55%,
-    var(--active-clue-flame, var(--cursor-fill))
-  ) !important;
+
+#app.react-desktop-app[data-direction='across'] [data-entry-index] {
+  --lit-l: var(--lit-l-across);
+  --cursor-l: var(--cursor-l-across);
+}
+#app.react-desktop-app[data-direction='down'] [data-entry-index] {
+  --lit-l: var(--lit-l-down);
+  --cursor-l: var(--cursor-l-down);
+}
+
+/* Every lit element computes its own wash from its own position, in the hue
+   the direction rules above hand it (the active word's rank on the active
+   half of the wheel). Interpolating in oklch between two colours that share
+   lightness and hue moves chroma alone. */
+#app.react-desktop-app[data-ramp='on'] [data-entry-index] {
+  --lit-wash: color-mix(
+    in oklch,
+    oklch(var(--lit-l) var(--lit-chroma) var(--clue-hue))
+      calc(100% - var(--entry-position, 0%) * (1 - var(--lit-floor))),
+    oklch(
+      var(--lit-l) calc(var(--lit-chroma) * var(--lit-floor))
+        var(--clue-hue)
+    )
+  );
+  --lit-edge: oklch(
+    calc(var(--lit-l) - 0.17) calc(var(--lit-chroma) * 0.85) var(--clue-hue)
+  );
+  --lit-ink: oklch(var(--lit-ink-l) var(--lit-ink-c) var(--clue-hue));
+  --cursor-wash: oklch(var(--cursor-l) var(--cursor-chroma) var(--clue-hue));
+  --cursor-ring: oklch(
+    calc(var(--lit-l) + 0.06) calc(var(--lit-chroma) * 1.1) var(--clue-hue)
+  );
+}
+
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:not(:focus-within),
+#app.react-desktop-app[data-ramp='on']
+  li
+  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green) {
+  background: var(--lit-wash) !important;
+  border-color: var(--lit-edge) !important;
+  color: var(--lit-ink) !important;
+}
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:not(:focus-within)
+  input:not(.red):not(.green) {
+  color: var(--lit-ink) !important;
+}
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:not(:focus-within):not(
+    :has(input:is(.red, .green))
+  )
+  .clue-index {
+  color: var(--lit-ink) !important;
+  opacity: 0.78;
+}
+
+/* The cursor: deep fill, pale lettering, the word's light as its ring. With no
+   word lit yet (focus without a selection) it falls back to desktop.css. */
+#app.react-desktop-app[data-ramp='on'] .grid-cell[data-entry-index]:focus-within,
+#app.react-desktop-app[data-ramp='on'] li .state[data-entry-index].cursor-cell {
+  outline-color: var(--cursor-ring);
+  border-color: var(--cursor-ring) !important;
+  background: var(--cursor-wash) !important;
+  color: oklch(0.98 0.012 var(--clue-hue)) !important;
+}
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:focus-within
+  :is(input:not(.red):not(.green), .clue-index) {
+  color: oklch(0.98 0.012 var(--clue-hue));
+}
+#app.react-desktop-app[data-ramp='on']
+  .grid-cell[data-entry-index]:focus-within::before {
+  border-color: color-mix(in oklab, var(--cursor-ring) 70%, transparent);
 }
 #app.react-desktop-app[data-ramp='on'] .grid-cell:focus-within {
   box-shadow:
@@ -599,138 +688,6 @@
         transparent
       );
   animation: clue-breath 2.1s ease-in-out infinite;
-}
-
-/* The grid's selection wash is the clue's own light, stepping down along the
-   word so neighbouring squares read apart: mostly tint at the word's start,
-   mostly direction fill at its far end. The floor stays bright enough for
-   dark lettering in both lanes. Without an active rank the tint is invalid
-   and desktop.css's wash stands untouched. */
-#app.react-desktop-app[data-direction='across'][data-ramp='on']
-  .grid-cell[data-entry-index]:not(:focus-within) {
-  background: color-mix(
-    in oklab,
-    var(--entry-fill) calc(22% + var(--entry-position, 0%) * 0.56),
-    var(--active-clue-tint)
-  ) !important;
-}
-#app.react-desktop-app[data-direction='down'][data-ramp='on']
-  .grid-cell[data-entry-index]:not(:focus-within) {
-  background: color-mix(
-    in oklab,
-    var(--entry-fill) calc(45% + var(--entry-position, 0%) * 0.2),
-    var(--active-clue-tint)
-  ) !important;
-}
-
-/* Selection speaks the clue first and spends the direction as an accent: the
-   word's edge and its boxes' edge wash in the clue's flame over the direction
-   tone — close enough to read as the chip's own colour, never a muddy
-   midpoint — while the thin rings, the rails and the halo keep the direction
-   readable at a glance. Check verdicts keep their red and green edges.
-   Number colours off keeps desktop.css's direction fills untouched. */
-#app.react-desktop-app[data-ramp='on']
-  li
-  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green) {
-  border-color: color-mix(
-    in oklab,
-    var(--active-clue-flame)
-      calc(85% - var(--entry-position, 0%) * 0.6),
-    var(--entry-tone)
-  ) !important;
-}
-#app.react-desktop-app[data-ramp='on']
-  .grid-cell[data-entry-index]:not(:focus-within) {
-  border-color: color-mix(
-    in oklab,
-    var(--active-clue-flame)
-      calc(85% - var(--entry-position, 0%) * 0.6),
-    color-mix(in oklab, var(--entry-tone) 40%, var(--entry-fill))
-  ) !important;
-}
-
-/* Lit boxes and squares take their lettering dark, exactly like the selected
-   chip does on its solid flame: pale ink would drown on a light wash. Check
-   verdicts and the cursor keep their own ink — red, green and white stay
-   exactly as legible as desktop.css sets them. */
-#app.react-desktop-app[data-ramp='on']
-  li
-  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green),
-#app.react-desktop-app[data-ramp='on']
-  .grid-cell[data-entry-index]:not(:focus-within),
-#app.react-desktop-app[data-ramp='on']
-  .grid-cell[data-entry-index]:not(:focus-within)
-  input:not(.red):not(.green),
-#app.react-desktop-app[data-ramp='on']
-  .grid-cell[data-entry-index]:not(:focus-within):not(
-    :has(input:is(.red, .green))
-  )
-  .clue-index {
-  color: var(--react-bg) !important;
-}
-:root[style*='color-scheme: light']
-  #app.react-desktop-app[data-ramp='on']
-  li
-  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green),
-:root[style*='color-scheme: light']
-  #app.react-desktop-app[data-ramp='on']
-  .grid-cell[data-entry-index]:not(:focus-within),
-:root[style*='color-scheme: light']
-  #app.react-desktop-app[data-ramp='on']
-  .grid-cell[data-entry-index]:not(:focus-within)
-  input:not(.red):not(.green),
-:root[style*='color-scheme: light']
-  #app.react-desktop-app[data-ramp='on']
-  .grid-cell[data-entry-index]:not(:focus-within):not(
-    :has(input:is(.red, .green))
-  )
-  .clue-index {
-  color: var(--react-ink) !important;
-}
-
-/* The track's wash matches the grid's square for square: the same position
-   fade in the shared active tint, so ladder and board read as one selection
-   in both lanes — every lit box names the active word, wherever it stands. */
-#app.react-desktop-app[data-direction='across'][data-ramp='on']
-  li.highlighted-clue
-  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green),
-#app.react-desktop-app[data-direction='across'][data-ramp='on']
-  li.affected-clue
-  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green) {
-  background: color-mix(
-    in oklab,
-    var(--entry-fill) calc(22% + var(--entry-position, 0%) * 0.56),
-    var(--active-clue-tint)
-  ) !important;
-}
-#app.react-desktop-app[data-direction='down'][data-ramp='on']
-  li.highlighted-clue
-  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green),
-#app.react-desktop-app[data-direction='down'][data-ramp='on']
-  li.affected-clue
-  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green) {
-  background: color-mix(
-    in oklab,
-    var(--entry-fill) calc(45% + var(--entry-position, 0%) * 0.2),
-    var(--active-clue-tint)
-  ) !important;
-}
-
-/* Dimmed screens deepen every selection wash back toward the direction fill
-   so lit words never bloom, with the dark lettering above staying put. */
-#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])[data-ramp='on']
-  .grid-cell[data-entry-index]:not(:focus-within),
-#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])[data-ramp='on']
-  li.highlighted-clue
-  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green),
-#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])[data-ramp='on']
-  li.affected-clue
-  .state[data-entry-index]:not(.cursor-cell):not(.red):not(.green) {
-  background: color-mix(
-    in oklab,
-    var(--entry-fill) 60%,
-    var(--active-clue-tint)
-  ) !important;
 }
 
 /* The active lane's watermark breathes the highlighted word's hue the same
