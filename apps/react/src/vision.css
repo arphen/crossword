@@ -1350,8 +1350,11 @@
 }
 
 /* Each answer carries its own fading light: a wash that enters from the word's
-   start edge and weakens along the word, in that word's hue on its lane's
-   half of the wheel — eastward for Across answers, southward for Down ones.
+   start edge and dies out within its first two or three squares, in that
+   word's hue on its lane's half of the wheel — eastward for Across answers,
+   southward for Down ones. A long tail across the whole word would lay two
+   hues over every square and mix the board to mud; a short spill keeps the
+   notch's light where the notch is.
    Each square holds its own level flat across its width so neighbours step
    down visibly instead of averaging out, which a fade-to-transparent inside
    every square would do. Distance arrives per square from boardCues.js; a
@@ -1391,15 +1394,17 @@
       color-mix(
           in oklab,
           var(--spot-acolor)
-            calc(var(--spot-alpha) / (1 + var(--spot-adist, 999) * 0.45)),
+            clamp(0%, var(--spot-alpha) * (1 - var(--spot-adist, 999) * 0.42), 100%),
           transparent
         )
         0,
       color-mix(
           in oklab,
           var(--spot-acolor)
-            calc(
-              var(--spot-alpha) / (1 + (var(--spot-adist, 999) + 1) * 0.45)
+            clamp(
+              0%,
+              var(--spot-alpha) * (1 - (var(--spot-adist, 999) + 1) * 0.42),
+              100%
             ),
           transparent
         )
@@ -1410,15 +1415,17 @@
       color-mix(
           in oklab,
           var(--spot-dcolor)
-            calc(var(--spot-alpha) / (1 + var(--spot-ddist, 999) * 0.45)),
+            clamp(0%, var(--spot-alpha) * (1 - var(--spot-ddist, 999) * 0.42), 100%),
           transparent
         )
         0,
       color-mix(
           in oklab,
           var(--spot-dcolor)
-            calc(
-              var(--spot-alpha) / (1 + (var(--spot-ddist, 999) + 1) * 0.45)
+            clamp(
+              0%,
+              var(--spot-alpha) * (1 - (var(--spot-ddist, 999) + 1) * 0.42),
+              100%
             ),
           transparent
         )

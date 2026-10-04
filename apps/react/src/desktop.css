@@ -3,7 +3,7 @@
 #app.react-desktop-app {
     --react-bg: #0c1015;
     --react-panel: #1a2027;
-    --panel-light: #303741;
+    --panel-light: #252b33;
     --slot-fill: #23262d;
     --slot-edge: #525760;
     --surface-glint: #ffffff13;
@@ -29,8 +29,10 @@
     --cursor-edge: #ffd38c;
     --selection-shadow: #ffad322e;
     --react-panel-edge: #3a414b;
-    --react-cell: #2b3039;
-    --react-cell-edge: #454c56;
+    /* The squares are the paper: the lightest surface in the console, a step
+       above the panel and bezel around them. */
+    --react-cell: #343a45;
+    --react-cell-edge: #4b525e;
     --react-ink: #f2f2f6;
     --react-muted: #aeb6c2;
     --react-orange: #ffad32;
