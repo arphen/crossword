@@ -2173,6 +2173,9 @@ html[data-luma='veil'] {
     calc(-1 * (var(--glow-room) + var(--overlap-px, 0px)));
   display: block;
   pointer-events: none;
+  /* Its own compositor layer, so repainting the backlight does not spread
+     to the board. Transform-only hint: nothing here moves it. */
+  will-change: transform;
   background:
     radial-gradient(
       50% 46% at var(--glow-room) var(--glow-room),
