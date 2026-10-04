@@ -41,7 +41,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --tb=short"
+addopts = "-q --tb=short"
 markers = [
     "live_provider: private provider integration; requires explicit opt-in",
 ]

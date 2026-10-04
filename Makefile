@@ -81,8 +81,8 @@ setup: check-uv check-node hooks-install ## Clean-clone setup using both pinned 
 build: react-assets ## Build the React frontend
 
 test: check-uv check-node ## Run local Python and JavaScript tests without live provider calls
-	uv run python -m pytest tests/ -m "not live_provider" -v
-	npm test -- --runInBand
+	uv run python -m pytest tests/ -m "not live_provider" -q
+	npm test -- --runInBand --silent
 	npm --workspace @crossword/domain run test
 	npm --workspace @crossword/persistence run test
 	npm --workspace @crossword/react-port run test
@@ -95,10 +95,10 @@ mutation-test: check-node ## Mutation-test the deterministic construction core
 	npm run test:mutation
 
 test-js: check-node ## Run the JavaScript unit suite
-	npm test -- --runInBand
+	npm test -- --runInBand --silent
 
 test-live: check-uv ## Explicitly run private live-provider tests (opt-in only)
-	CROSSWORD_ALLOW_LIVE_PROVIDER=1 uv run python -m pytest tests/ -m live_provider -v
+	CROSSWORD_ALLOW_LIVE_PROVIDER=1 uv run python -m pytest tests/ -m live_provider -q
 
 legacy-test: test ## Named legacy test entrypoint used by the continuity gate
 
@@ -140,10 +140,10 @@ future-worker-once: check-uv check-node ## Process one queued /future answer-gri
 	CROSSWORD_XFILL_ROOT="$(CROSSWORD_XFILL_ROOT)" uv run --no-sync python -m src.crossword.future_worker --once
 
 test-cov: check-uv ## Run Python coverage for the local test suite
-	uv run python -m pytest tests/ -m "not live_provider" --cov=src --cov-report=term-missing --cov-report=html
+	uv run python -m pytest tests/ -m "not live_provider" -q --cov=src --cov-report=term-missing --cov-report=html
 
 test-watch: check-uv ## Run Python tests in watch mode when pytest-watch is installed
-	uv run python -m pytest_watch tests/ -m "not live_provider"
+	uv run python -m pytest_watch tests/ -m "not live_provider" -q
 
 lint: ## Placeholder for the legacy lint gate
 	@echo "$(YELLOW)No legacy linter is configured yet; see the quality plan.$(NC)"
@@ -155,8 +155,9 @@ clean: ## Remove generated caches and browser assets
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	@rm -rf .coverage htmlcov .uv_cache src/crossword/static/lib src/crossword/static/react
+	@rm -rf .coverage htmlcov coverage .uv_cache playwright-report test-results .stryker-tmp reports/mutation src/crossword/static/lib src/crossword/static/react
 	@echo "$(GREEN)Generated files cleaned; lockfiles and source are unchanged.$(NC)"
 
 run-prod: check-uv ## Serve the built app with a production WSGI server (CROSSWORD_PORT, default 5001)

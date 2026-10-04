@@ -6,7 +6,8 @@ export default {
   vitest: { configFile: 'vitest.mutation.config.mjs' },
   coverageAnalysis: 'perTest',
   concurrency: 2,
-  reporters: ['clear-text', 'progress', 'html', 'json'],
+  // Console stays quiet (progress dots); HTML/JSON details land in reports/.
+  reporters: ['progress', 'html', 'json'],
   htmlReporter: { fileName: 'reports/mutation/index.html' },
   jsonReporter: { fileName: 'reports/mutation/mutation.json' },
   // Initial adoption floor: measured score ~60% after adding blocked-cell coverage.

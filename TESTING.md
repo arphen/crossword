@@ -125,7 +125,7 @@ CROSSWORD_E2E_BACKEND_PORT=15002 npx playwright test    # E2E (see port note)
 npm run test:mutation                       # mutation (minutes)
 
 uv run --no-sync ruff check .               # backend lint
-uv run --no-sync python -m pytest tests/test_api_isolated.py -v  # isolated API
+uv run --no-sync python -m pytest tests/test_api_isolated.py  # isolated API (add -q for concise output)
 ```
 
 Note: existing Jest suites (`npm test`), workspace Vitest suites
