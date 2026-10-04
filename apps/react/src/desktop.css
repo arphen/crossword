@@ -374,12 +374,11 @@
     color: var(--react-bg) !important;
 }
 
-#app.react-desktop-app .highlighted-clue .clue-text {
-    font-weight: 700;
-}
-
-#app.react-desktop-app .affected-clue .clue-text {
-    font-weight: 700;
+/* Emphasis thickens the strokes without changing the face's metrics: a real
+   weight change rewraps the clue, and every cursor move would resize rows and
+   shove the lane under the reader's eye. */
+#app.react-desktop-app :is(.highlighted-clue, .affected-clue) .clue-text {
+    -webkit-text-stroke: 0.032em currentColor;
 }
 
 #app.react-desktop-app .state-container {
@@ -521,6 +520,10 @@
     font-size: 0.9rem;
     font-weight: 700;
 }
+
+/* The authors ride the far edge, so the separator before them has nothing to
+   separate and would dangle after the weekday. */
+#app.react-desktop-app .info-bar .puzzle-separator:has(+ .puzzle-authors) { display: none; }
 
 #app.react-desktop-app .info-bar .puzzle-authors {
     margin-left: auto;

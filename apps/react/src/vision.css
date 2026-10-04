@@ -88,17 +88,18 @@
   --ruler-minor: color-mix(in oklab, var(--react-ink) 18%, transparent);
   --ruler-major: color-mix(in oklab, var(--react-ink) 38%, transparent);
   --letter-glow: 0 0 14px rgba(180, 205, 235, 0.22);
-  /* Board size. desktop.css fits the cell to whichever budget is tightest; the
-       reader's choice is a factor on that fit, kept modest at the top end because
-       the board column has only a few pixels of slack around the frame. */
+  /* Board size. The reader's choice scales the board column's budget (section
+       8), and the cell fits whichever budget is tightest: the column's width,
+       or the window's height. Height never grows with the choice — a larger
+       board widens its column, it does not run off the bottom of the window. */
   --board-scale: 1;
-  --cell-size: calc(
-    min(
-        3.25rem,
-        calc((min(42.4vw, 814px) - 52px) / var(--grid-columns)),
-        calc((100dvh - 310px) / var(--grid-rows))
-      ) *
-      var(--board-scale)
+  --board-budget: min(calc(min(42.4vw, 814px) * var(--board-scale)), 52vw);
+  --cell-size: min(
+    calc(3.25rem * var(--board-scale)),
+    calc((var(--board-budget) - 52px) / var(--grid-columns)),
+    calc(
+      (100dvh - 310px) / var(--grid-rows) * min(var(--board-scale), 1)
+    )
   );
 }
 
@@ -124,7 +125,6 @@
   --halo-alpha: 14%;
   --spot-alpha: 10%;
 }
-}
 #app.react-desktop-app[data-vibrance='bold'] {
   --ramp-chroma: 0.2;
   --ember-chroma: 0.8;
@@ -135,7 +135,6 @@
   --cursor-alpha: 50%;
   --halo-alpha: 24%;
   --spot-alpha: 22%;
-}
 }
 
 /* Paper takes colour as ink: on a light ground the whole arc sits deeper so a
@@ -663,7 +662,9 @@
   .grid-cell[data-entry-index]:not(:focus-within)
   input:not(.red):not(.green),
 #app.react-desktop-app[data-ramp='on']
-  .grid-cell[data-entry-index]:not(:focus-within)
+  .grid-cell[data-entry-index]:not(:focus-within):not(
+    :has(input:is(.red, .green))
+  )
   .clue-index {
   color: var(--react-bg) !important;
 }
@@ -680,7 +681,9 @@
   input:not(.red):not(.green),
 :root[style*='color-scheme: light']
   #app.react-desktop-app[data-ramp='on']
-  .grid-cell[data-entry-index]:not(:focus-within)
+  .grid-cell[data-entry-index]:not(:focus-within):not(
+    :has(input:is(.red, .green))
+  )
   .clue-index {
   color: var(--react-ink) !important;
 }
@@ -1577,7 +1580,9 @@ html[data-luma='veil'] {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  /* Same padding as the command buttons it sits beside, so the bar stays level. */
+  /* Same height as the command buttons it sits beside, so the bar stays level. */
+  box-sizing: border-box;
+  min-height: 44px;
   padding: 8px 12px;
   border: 1px solid var(--control-edge);
   border-radius: 11px;
@@ -1743,31 +1748,14 @@ html[data-luma='veil'] {
 /* ==========================================================================
    8. Board size.
    The board column in desktop.css is a budget — min(42.4vw, 814px) — and the cell
-   size is that budget divided by the number of columns. So the scale is applied to
-   the budget, not to the result: a larger board also widens the column that holds
-   it, and the clue column gives up the space instead of being pushed out of the
-   window. The 52vw ceiling keeps the board inside the shell at every scale. Below
-   900px the layout stacks and the budget no longer applies, so the column rule is
-   scoped to wide windows.
+   size is that budget divided by the number of columns (section 0). So the scale
+   is applied to the budget, not to the result: a larger board also widens the
+   column that holds it, and the two clue lanes give up the space instead of the
+   board's last column being clipped by its frame. The 52vw ceiling keeps the
+   board inside the shell at every scale.
    ========================================================================== */
-#app.react-desktop-app {
-  --board-budget: min(calc(min(42.4vw, 814px) * var(--board-scale)), 52vw);
-}
-
-#app.react-desktop-app .board {
-  --cell-size: min(
-    calc(3.25rem * var(--board-scale)),
-    calc((var(--board-budget) - 52px) / var(--grid-columns)),
-    calc((100dvh - 310px) / var(--grid-rows) * var(--board-scale))
-  );
-}
-
-@media (min-width: 901px) {
-  #app.react-desktop-app .clue-board {
-    grid-template-columns: fit-content(
-        calc(46% - (var(--board-scale) - 1) * 26%)
-      ) minmax(0, 1fr) minmax(280px, var(--board-budget));
-  }
+#app.react-desktop-app #notmenu {
+  grid-template-columns: minmax(0, 1fr) var(--board-budget) minmax(0, 1fr);
 }
 
 /* In the action bar the view cluster rides the right edge, away from the commands
