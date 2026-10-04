@@ -1068,11 +1068,11 @@
     180deg,
     transparent,
     color-mix(in oklab, var(--rail) 72%, transparent) 30%,
-    color-mix(in oklab, white 42%, var(--rail)) 50%,
+    color-mix(in oklab, white var(--tick-core), var(--rail)) 50%,
     color-mix(in oklab, var(--rail) 72%, transparent) 70%,
     transparent
   );
-  box-shadow: 0 0 5px color-mix(in oklab, var(--rail) 55%, transparent);
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--rail) var(--tick-glow-alpha), transparent);
 }
 #app.react-desktop-app[data-cues='on'][data-ramp='on']
   .state-container
@@ -1082,11 +1082,11 @@
     180deg,
     transparent,
     color-mix(in oklab, var(--clue-tint) 72%, transparent) 30%,
-    color-mix(in oklab, white 45%, var(--clue-tint)) 50%,
+    color-mix(in oklab, white var(--tick-core), var(--clue-tint)) 50%,
     color-mix(in oklab, var(--clue-tint) 72%, transparent) 70%,
     transparent
   );
-  box-shadow: 0 0 6px color-mix(in oklab, var(--clue-tint) 65%, transparent);
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--clue-tint) var(--tick-glow-alpha), transparent);
 }
 
 /* The notch's spill: the first squares of the strip carry the same short
@@ -1096,8 +1096,8 @@
   .state-container
   .state-run:first-child
   > .state:nth-child(-n + 3) {
-  --spill-from: var(--spot-alpha);
-  --spill-to: calc(var(--spot-alpha) * 0.58);
+  --spill-from: var(--spill-alpha);
+  --spill-to: calc(var(--spill-alpha) * 0.58);
   background-image: linear-gradient(
     90deg,
     color-mix(in oklab, var(--clue-tint) var(--spill-from), transparent),
@@ -1108,14 +1108,14 @@
   .state-container
   .state-run:first-child
   > .state:nth-child(2) {
-  --spill-from: calc(var(--spot-alpha) * 0.58);
-  --spill-to: calc(var(--spot-alpha) * 0.16);
+  --spill-from: calc(var(--spill-alpha) * 0.58);
+  --spill-to: calc(var(--spill-alpha) * 0.16);
 }
 #app.react-desktop-app[data-cues='on'][data-ramp='on']
   .state-container
   .state-run:first-child
   > .state:nth-child(3) {
-  --spill-from: calc(var(--spot-alpha) * 0.16);
+  --spill-from: calc(var(--spill-alpha) * 0.16);
   --spill-to: 0%;
 }
 
@@ -1263,12 +1263,12 @@
     180deg,
     transparent,
     color-mix(in oklab, var(--tick-across) 72%, transparent) 30%,
-    color-mix(in oklab, white 42%, var(--tick-across)) 50%,
+    color-mix(in oklab, white var(--tick-core), var(--tick-across)) 50%,
     color-mix(in oklab, var(--tick-across) 72%, transparent) 70%,
     transparent
   );
-  box-shadow: 0 0 5px color-mix(in oklab, var(--tick-across) 55%, transparent);
-  opacity: calc(var(--open-e, 0) * 0.5);
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--tick-across) var(--tick-glow-alpha), transparent);
+  opacity: calc(var(--open-e, 0) * min(1, 0.5 * var(--charge)));
 }
 
 /* South edge: a Down word begins in the square below, tick centred on the
@@ -1283,20 +1283,20 @@
     90deg,
     transparent,
     color-mix(in oklab, var(--tick-down) 72%, transparent) 30%,
-    color-mix(in oklab, white 42%, var(--tick-down)) 50%,
+    color-mix(in oklab, white var(--tick-core), var(--tick-down)) 50%,
     color-mix(in oklab, var(--tick-down) 72%, transparent) 70%,
     transparent
   );
-  box-shadow: 0 0 5px color-mix(in oklab, var(--tick-down) 55%, transparent);
-  opacity: calc(var(--open-s, 0) * 0.5);
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--tick-down) var(--tick-glow-alpha), transparent);
+  opacity: calc(var(--open-s, 0) * min(1, 0.5 * var(--charge)));
 }
 
 #app.react-desktop-app[data-cues='on'][data-direction='across'] .black-cell::before {
-  opacity: var(--open-e, 0);
+  opacity: calc(var(--open-e, 0) * min(1, var(--charge)));
 }
 
 #app.react-desktop-app[data-cues='on'][data-direction='down'] .black-cell::after {
-  opacity: var(--open-s, 0);
+  opacity: calc(var(--open-s, 0) * min(1, var(--charge)));
 }
 
 /* With Number colours on, each tick spends its opener's hue in its lane's
@@ -1308,12 +1308,12 @@
     180deg,
     transparent,
     color-mix(in oklab, var(--gate-across-tint) 72%, transparent) 30%,
-    color-mix(in oklab, white 45%, var(--gate-across-tint)) 50%,
+    color-mix(in oklab, white var(--tick-core), var(--gate-across-tint)) 50%,
     color-mix(in oklab, var(--gate-across-tint) 72%, transparent) 70%,
     transparent
   );
-  box-shadow: 0 0 6px
-    color-mix(in oklab, var(--gate-across-tint) 65%, transparent);
+  box-shadow: 0 0 var(--tick-glow)
+    color-mix(in oklab, var(--gate-across-tint) var(--tick-glow-alpha), transparent);
 }
 
 #app.react-desktop-app[data-cues='on'][data-ramp='on'] .black-cell::after {
@@ -1321,12 +1321,12 @@
     90deg,
     transparent,
     color-mix(in oklab, var(--gate-down-tint) 72%, transparent) 30%,
-    color-mix(in oklab, white 45%, var(--gate-down-tint)) 50%,
+    color-mix(in oklab, white var(--tick-core), var(--gate-down-tint)) 50%,
     color-mix(in oklab, var(--gate-down-tint) 72%, transparent) 70%,
     transparent
   );
-  box-shadow: 0 0 6px
-    color-mix(in oklab, var(--gate-down-tint) 65%, transparent);
+  box-shadow: 0 0 var(--tick-glow)
+    color-mix(in oklab, var(--gate-down-tint) var(--tick-glow-alpha), transparent);
 }
 
 /* Words that open on the grid's edge have no black square to carry their tick,
@@ -1373,12 +1373,12 @@
     180deg,
     transparent,
     color-mix(in oklab, var(--tick-across) 72%, transparent) 30%,
-    color-mix(in oklab, white 42%, var(--tick-across)) 50%,
+    color-mix(in oklab, white var(--tick-core), var(--tick-across)) 50%,
     color-mix(in oklab, var(--tick-across) 72%, transparent) 70%,
     transparent
   );
-  box-shadow: 0 0 5px color-mix(in oklab, var(--tick-across) 55%, transparent);
-  opacity: 0.5;
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--tick-across) var(--tick-glow-alpha), transparent);
+  opacity: min(1, 0.5 * var(--charge));
 }
 #app.react-desktop-app[data-cues='on']
   .grid
@@ -1392,12 +1392,12 @@
     90deg,
     transparent,
     color-mix(in oklab, var(--tick-down) 72%, transparent) 30%,
-    color-mix(in oklab, white 42%, var(--tick-down)) 50%,
+    color-mix(in oklab, white var(--tick-core), var(--tick-down)) 50%,
     color-mix(in oklab, var(--tick-down) 72%, transparent) 70%,
     transparent
   );
-  box-shadow: 0 0 5px color-mix(in oklab, var(--tick-down) 55%, transparent);
-  opacity: 0.5;
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--tick-down) var(--tick-glow-alpha), transparent);
+  opacity: min(1, 0.5 * var(--charge));
 }
 #app.react-desktop-app[data-cues='on']
   .grid
@@ -1414,7 +1414,7 @@
       180deg,
       transparent,
       color-mix(in oklab, var(--tick-across) 72%, transparent) 30%,
-      color-mix(in oklab, white 42%, var(--tick-across)) 50%,
+      color-mix(in oklab, white var(--tick-core), var(--tick-across)) 50%,
       color-mix(in oklab, var(--tick-across) 72%, transparent) 70%,
       transparent
     ) left center / 2px 38% no-repeat,
@@ -1422,24 +1422,24 @@
       90deg,
       transparent,
       color-mix(in oklab, var(--tick-down) 72%, transparent) 30%,
-      color-mix(in oklab, white 42%, var(--tick-down)) 50%,
+      color-mix(in oklab, white var(--tick-core), var(--tick-down)) 50%,
       color-mix(in oklab, var(--tick-down) 72%, transparent) 70%,
       transparent
     ) center top / 38% 2px no-repeat;
   box-shadow: none;
-  opacity: 0.75;
+  opacity: min(1, 0.75 * var(--charge));
 }
 #app.react-desktop-app[data-cues='on'][data-direction='across']
   .grid
   > .grid-row
   > .grid-cell[data-start~='across']:first-child:not(:focus-within)::before {
-  opacity: 1;
+  opacity: min(1, var(--charge));
 }
 #app.react-desktop-app[data-cues='on'][data-direction='down']
   .grid
   > .grid-row:first-child
   > .grid-cell[data-start~='down']:not(:focus-within)::before {
-  opacity: 1;
+  opacity: min(1, var(--charge));
 }
 #app.react-desktop-app[data-cues='on'][data-ramp='on']
   .grid
@@ -1449,11 +1449,11 @@
     180deg,
     transparent,
     color-mix(in oklab, var(--clue-tint) 72%, transparent) 30%,
-    color-mix(in oklab, white 45%, var(--clue-tint)) 50%,
+    color-mix(in oklab, white var(--tick-core), var(--clue-tint)) 50%,
     color-mix(in oklab, var(--clue-tint) 72%, transparent) 70%,
     transparent
   );
-  box-shadow: 0 0 6px color-mix(in oklab, var(--clue-tint) 65%, transparent);
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--clue-tint) var(--tick-glow-alpha), transparent);
 }
 #app.react-desktop-app[data-cues='on'][data-ramp='on']
   .grid
@@ -1463,11 +1463,11 @@
     90deg,
     transparent,
     color-mix(in oklab, var(--clue-tint) 72%, transparent) 30%,
-    color-mix(in oklab, white 45%, var(--clue-tint)) 50%,
+    color-mix(in oklab, white var(--tick-core), var(--clue-tint)) 50%,
     color-mix(in oklab, var(--clue-tint) 72%, transparent) 70%,
     transparent
   );
-  box-shadow: 0 0 6px color-mix(in oklab, var(--clue-tint) 65%, transparent);
+  box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--clue-tint) var(--tick-glow-alpha), transparent);
 }
 #app.react-desktop-app[data-cues='on'][data-ramp='on']
   .grid
@@ -1478,7 +1478,7 @@
       180deg,
       transparent,
       color-mix(in oklab, var(--clue-tint) 72%, transparent) 30%,
-      color-mix(in oklab, white 45%, var(--clue-tint)) 50%,
+      color-mix(in oklab, white var(--tick-core), var(--clue-tint)) 50%,
       color-mix(in oklab, var(--clue-tint) 72%, transparent) 70%,
       transparent
     ) left center / 2px 38% no-repeat,
@@ -1486,7 +1486,7 @@
       90deg,
       transparent,
       color-mix(in oklab, var(--clue-down-tint) 72%, transparent) 30%,
-      color-mix(in oklab, white 45%, var(--clue-down-tint)) 50%,
+      color-mix(in oklab, white var(--tick-core), var(--clue-down-tint)) 50%,
       color-mix(in oklab, var(--clue-down-tint) 72%, transparent) 70%,
       transparent
     ) center top / 38% 2px no-repeat;
@@ -1538,7 +1538,7 @@
       color-mix(
           in oklab,
           var(--spot-acolor)
-            clamp(0%, var(--spot-alpha) * (1 - var(--spot-adist, 999) * 0.42), 100%),
+            clamp(0%, var(--spot-a-alpha) * (1 - var(--spot-adist, 999) * 0.42), 100%),
           transparent
         )
         0,
@@ -1547,7 +1547,7 @@
           var(--spot-acolor)
             clamp(
               0%,
-              var(--spot-alpha) * (1 - (var(--spot-adist, 999) + 1) * 0.42),
+              var(--spot-a-alpha) * (1 - (var(--spot-adist, 999) + 1) * 0.42),
               100%
             ),
           transparent
@@ -1559,7 +1559,7 @@
       color-mix(
           in oklab,
           var(--spot-dcolor)
-            clamp(0%, var(--spot-alpha) * (1 - var(--spot-ddist, 999) * 0.42), 100%),
+            clamp(0%, var(--spot-d-alpha) * (1 - var(--spot-ddist, 999) * 0.42), 100%),
           transparent
         )
         0,
@@ -1568,7 +1568,7 @@
           var(--spot-dcolor)
             clamp(
               0%,
-              var(--spot-alpha) * (1 - (var(--spot-ddist, 999) + 1) * 0.42),
+              var(--spot-d-alpha) * (1 - (var(--spot-ddist, 999) + 1) * 0.42),
               100%
             ),
           transparent
@@ -2105,6 +2105,145 @@ html[data-luma='veil'] {
     --territory-across-bottom 900ms var(--ease-out, ease),
     --territory-down-top 900ms var(--ease-out, ease),
     --territory-down-bottom 900ms var(--ease-out, ease);
+}
+
+/* ==========================================================================
+   11. Libido, and what remains.
+   The notches are where the board wants: each one the open address of a
+   word not yet said. The board holds one charge of that light and shares it
+   among the words still open. CrosswordView publishes how much of the
+   puzzle remains (--remaining, 1 down to 0) and how much libido the solve
+   has kept (--libido, from the score: every check and reveal drains it).
+   - At the start the charge is spread thin over every notch, and the short
+     spills of light overlap into a soft, smudged board.
+   - Each solved word goes out: its spill leaves the board, its squares flare
+     once as the word settles into the grid and then rest as clean paper with
+     only a trace of its hue in the letters, and its notch contracts to a
+     single point — the remainder the closing could not absorb. A finished
+     board is a dark, whole lattice dotted with these leftovers.
+   - The charge a word gave up flows into the notches still open (the inverse
+     square root of what remains), so the board clears from smudge into a few
+     intense lights, and the last notch carries nearly all of it.
+   - A low score dims every light at once, backlight included: the board
+     loses its desire along with the points.
+   Transitions carry the flow, so the light drains and gathers rather than
+   jumping; reduced motion keeps the states and drops the drift.
+   ========================================================================== */
+@property --settle {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+#app.react-desktop-app {
+  --remaining: 1;
+  --libido: 1;
+  --charge: clamp(
+    0.18,
+    calc(var(--libido) * pow(max(var(--remaining), 0.05), -0.5)),
+    2.6
+  );
+  --tick-glow: calc(6px * var(--charge));
+  --tick-glow-alpha: min(96%, calc(62% * var(--charge)));
+  --tick-core: min(78%, calc(44% * var(--charge)));
+  --spill-alpha: min(30%, calc(var(--spot-alpha) * var(--charge)));
+}
+
+/* The open words' spills draw on the charge; a solved word's spill is gone. */
+#app.react-desktop-app .grid-cell:not(.black-cell) {
+  --spot-a-alpha: var(--spill-alpha);
+  --spot-d-alpha: var(--spill-alpha);
+}
+#app.react-desktop-app .grid-cell[data-solved~='across'] {
+  --spot-a-alpha: 0%;
+}
+#app.react-desktop-app .grid-cell[data-solved~='down'] {
+  --spot-d-alpha: 0%;
+}
+
+/* Settling in: one flare inside the solved word's squares, in its own hue,
+   fading to clean paper; the letters keep a trace of the hue. */
+#app.react-desktop-app .grid-cell[data-solved] {
+  --solved-tint: var(--react-green);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .grid-cell[data-solved='across'] {
+  --solved-tint: var(--spot-acolor);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .grid-cell[data-solved='down'] {
+  --solved-tint: var(--spot-dcolor);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on']
+  .grid-cell[data-solved='across down'] {
+  --solved-tint: color-mix(in oklab, var(--spot-acolor), var(--spot-dcolor));
+}
+#app.react-desktop-app[data-ramp]
+  .grid-cell[data-solved]:not([data-entry-index]):not(:focus-within) {
+  box-shadow:
+    inset 0 1px 0 var(--cell-glint),
+    inset 0 0 calc(var(--cell-size) * 0.55)
+      color-mix(
+        in oklab,
+        var(--solved-tint) calc(58% * var(--settle)),
+        transparent
+      );
+  animation: solved-settle 1800ms var(--ease-out, ease-out) both;
+}
+#app.react-desktop-app[data-ramp]
+  .grid-cell[data-solved]:not([data-entry-index]):not(:focus-within)
+  input:not(.red):not(.green) {
+  color: color-mix(in oklab, var(--react-ink) 80%, var(--solved-tint));
+}
+@keyframes solved-settle {
+  from {
+    --settle: 1;
+  }
+  to {
+    --settle: 0;
+  }
+}
+
+/* The flow: notches drain and gather rather than jump. */
+#app.react-desktop-app[data-cues='on'] .black-cell::before,
+#app.react-desktop-app[data-cues='on'] .black-cell::after,
+#app.react-desktop-app[data-cues='on'] .grid-cell[data-start]::before {
+  transition:
+    transform 1100ms var(--ease-out, ease),
+    opacity 900ms var(--ease-out, ease),
+    box-shadow 900ms var(--ease-out, ease);
+}
+
+/* What remains: a solved word's notch contracts to one point of light. */
+#app.react-desktop-app[data-cues='on']
+  .black-cell[data-gate-solved~='e']::before {
+  opacity: 0.85;
+  transform: translateY(-50%) scaleY(0.09);
+  box-shadow: 0 0 3px color-mix(in oklab, var(--tick-across) 50%, transparent);
+}
+#app.react-desktop-app[data-cues='on']
+  .black-cell[data-gate-solved~='s']::after {
+  opacity: 0.85;
+  transform: translateX(-50%) scaleX(0.09);
+  box-shadow: 0 0 3px color-mix(in oklab, var(--tick-down) 50%, transparent);
+}
+#app.react-desktop-app[data-cues='on']
+  .grid
+  > .grid-row
+  > .grid-cell[data-start~='across'][data-solved~='across']:first-child:not(
+    :focus-within
+  )::before {
+  opacity: 0.85;
+  transform: scaleY(0.09);
+}
+#app.react-desktop-app[data-cues='on']
+  .grid
+  > .grid-row:first-child
+  > .grid-cell[data-start~='down'][data-solved~='down']:not(
+    :focus-within
+  )::before {
+  opacity: 0.85;
+  transform: scaleX(0.09);
 }
 
 /* ==========================================================================

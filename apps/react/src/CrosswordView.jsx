@@ -358,8 +358,42 @@ export default function CrosswordView({
     // square is (where a word starts, which black squares open a slot); the
     // appearance belongs to vision.css. The static cues are precomputed per
     // puzzle above; the per-square work here is map lookups, not walks.
+    // The board's libido: one charge of light shared by the notches still
+    // open. As words are solved their notches go out and the charge flows into
+    // the ones that remain, which burn brighter (vision.css section 11); every
+    // check and reveal drains the whole charge with the score.
+    let solvedCount = 0;
+    // What the solve has closed, per square: the directions of the solved words
+    // a square belongs to, and on a black square which of the words it opens
+    // are solved. vision.css lets a solved word settle into the board and its
+    // notch close down to a single remaining point (section 11). Derived from
+    // the controller's completed words on every render; nothing is stored.
+    const solvedSquares = new Map();
+    const solvedOpenings = new Set();
+    for (const entry of entries) {
+        if (!completedWords.has(entry.clue_text)) continue;
+        solvedOpenings.add(`${entry.start_y},${entry.start_x},${entry.direction}`);
+        solvedCount += 1;
+        entry.characters.forEach((_, index) => {
+            const key = entry.direction === 'across'
+                ? `${entry.start_y},${entry.start_x + index}`
+                : `${entry.start_y + index},${entry.start_x}`;
+            solvedSquares.set(key, [...(solvedSquares.get(key) || []), entry.direction]);
+        });
+    }
+    const solvedProps = (rowIndex, cellIndex) => {
+        const directions = solvedSquares.get(`${rowIndex},${cellIndex}`);
+        if (directions) {
+            return { 'data-solved': ['across', 'down'].filter(direction => directions.includes(direction)).join(' ') };
+        }
+        const closed = [
+            solvedOpenings.has(`${rowIndex},${cellIndex + 1},across`) && 'e',
+            solvedOpenings.has(`${rowIndex + 1},${cellIndex},down`) && 's',
+        ].filter(Boolean);
+        return closed.length && grid[rowIndex]?.[cellIndex] === null ? { 'data-gate-solved': closed.join(' ') } : {};
+    };
     const gridCellProps = (rowIndex, cellIndex) => {
-        const presentation = cellPresentation(rowIndex, cellIndex);
+        const presentation = { ...cellPresentation(rowIndex, cellIndex), ...solvedProps(rowIndex, cellIndex) };
         // A numbered square wears its own clue's rank; the selection style is
         // spread over it afterwards, so a lit square shows the active clue's
         // hue instead — interaction over identity, on the same property.
@@ -509,6 +543,8 @@ export default function CrosswordView({
                 ...(settings.ramp && activeEntry && clueRamp.has(activeEntry.clue_number)
                     ? { '--active-clue-ramp': String(clueRamp.get(activeEntry.clue_number)) }
                     : {}),
+                '--remaining': String(entries.length ? (entries.length - solvedCount) / entries.length : 1),
+                '--libido': String(Math.round(Math.pow(Math.min(1, Math.max(0, app.score / 100)), 1.25) * 1000) / 1000),
             })}>
             <div id="notmenu">
                 <div className={classes('clue-column', { active: app.direction === 'across', inactive: app.direction !== 'across' })} data-label="ACROSS">
