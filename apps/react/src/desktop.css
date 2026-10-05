@@ -142,6 +142,9 @@
     padding: 0;
     overflow-y: auto;
     scrollbar-width: none;
+    /* Scope layout and paint to the lane that changed; the territory
+       measurement still reads real row boxes (no content-visibility). */
+    contain: layout paint;
 }
 
 #app.react-desktop-app #across::-webkit-scrollbar,
@@ -471,7 +474,7 @@
     --dur-quick: 140ms;
     --dur-settle: 260ms;
     --track-empty: color-mix(in oklab, var(--react-ink) 9%, var(--react-panel));
-    --glass: color-mix(in oklab, var(--react-panel) 76%, transparent);
+    --glass: color-mix(in oklab, var(--react-panel) 88%, transparent);
     --glass-edge: color-mix(in oklab, var(--react-ink) 10%, transparent);
     --smoke: color-mix(in oklab, var(--react-bg) 58%, transparent);
 }
@@ -548,8 +551,8 @@
     box-sizing: border-box;
     border: 1px solid var(--glass-edge);
     background: var(--glass);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
-    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     box-shadow:
         inset 0 1px 0 var(--surface-glint),
         0 18px 40px -18px var(--panel-shadow),
