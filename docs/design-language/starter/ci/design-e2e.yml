@@ -1,0 +1,38 @@
+# Copy to .github/workflows/design-e2e.yml and adjust the paths marked  <<like this>>.
+# Make this job a REQUIRED status check on the default branch, so a design that fails the
+# journeys, the contracts or the screenshots cannot merge.
+name: design-e2e
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: design-e2e-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  design:
+    runs-on: ubuntu-24.04          # baselines must be generated on the same OS as this runner
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Static design audit (fast; fails while a core slice is missing)
+        run: node <<docs/design-language>>/starter/ui/audit-static.mjs --src <<src>> --e2e-dir <<tests/e2e>>
+      - name: Install the browser Playwright expects
+        run: npx playwright install --with-deps chromium
+      - name: Journeys, design contracts and screenshots
+        run: npx playwright test -c <<tests/e2e>>/playwright.config.mjs
+      - name: Upload the report and screenshot diffs, even on failure
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            <<tests/e2e>>/playwright-report/
+            <<tests/e2e>>/test-results/
+          retention-days: 14

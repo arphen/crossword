@@ -1,12 +1,12 @@
 # Afterglow: agent core (condensed)
 
-A condensed extract of `DESIGN_LANGUAGE.md`, sized for agents with a small context window (about 9k tokens). It keeps the section numbers of the full guide, so "§6.4" here means the same thing there. Read this completely. Open the full guide only for the section you are working on.
+A condensed extract of `DESIGN_LANGUAGE.md`, sized for agents with a small context window (about 12k tokens). It keeps the section numbers of the full guide, so "§6.4" here means the same thing there. Read this completely. Open the full guide only for the section you are working on.
 
 **What this is.** A design language in which *what a thing is can be read from how it looks*: every item has a colour that is its name, the screen glows where something is still open, and finished things leave an afterglow. It scales from the whole composition (macro) down to a glyph's weight (nano).
 
-**The files you can copy** (in `starter/`, tested in headless Chromium): `afterglow.css` (tokens, ramp, material, light, motion, view tiers), `view-settings.js` (settings contract and `createRamp`), `view-panel.js` (the View panel), `territory.js` (publishes corner ranks), `fit-contour.mjs` (fits the lightness contour), `demo.html` (everything assembled).
+**Files to copy into the project** (the `starter/` folder next to this file, tested in headless Chromium and under Playwright 1.55): `afterglow.css`, `view-settings.js`, `view-panel.js`, `territory.js`, `fit-contour.mjs`, `demo.html`; the test suite in `e2e/` (config, helpers, design and journey specs, `JOURNEYS.md`); `ui/audit-static.mjs`; and the CI workflows in `ci/`.
 
-**Your first move is §16.1, not code.**
+**Your acceptance test is `npm run design:check` plus a green `design-e2e` job in CI. Your first move is §16.1, not code.**
 
 ---
 
@@ -20,8 +20,9 @@ You are being asked to give an existing application a distinctive visual languag
 2. **Fill in the Content Identity Brief (§16.2)** for the project you are in. Show it to the user. Wait for corrections.
 3. **List the non-negotiable keeps (§16.3).** These are the existing things users already rely on. You evolve them; you do not replace them. A previous agent that flattened a well-loved layout was reverted entirely.
 4. **Work in slices (§16.4).** Each slice is small, ends green (tests, lint, typecheck), and ends with a screenshot.
-5. **Verify with measurement (§16.5).** Read computed styles. Take screenshots. Never assume CSS landed. In the source project, two stray `}` silently disabled a whole feature until a visual review caught it.
-6. **Write the why-comments (§12.3).** Future agents, including weaker ones, learn the language from the comments you leave.
+5. **Prove it with the test suite (§17).** Playwright journeys, design contracts and screenshots, in CI. Never assume CSS landed: in the source project, two stray `}` silently disabled a whole feature until a visual review caught it.
+6. **Write the why-comments (§12.1).** Future agents, including weaker ones, learn the language from the comments you leave.
+7. **Report only with the words DONE, INCOMPLETE or BLOCKED (§17.1).** DONE means `npm run design:check` exits 0 and CI is green. A list of remaining debt is INCOMPLETE: keep working. "No browser tooling" is BLOCKED or an install, never done.
 
 ### 0.2 Things you must never do
 
@@ -29,13 +30,14 @@ You are being asked to give an existing application a distinctive visual languag
 - Never add an animation that loops. (§9)
 - Never put `backdrop-filter` on list rows, cells, cards in a grid, or anything repeated. (§7)
 - Never use colour as decoration. If a hue does not name something, remove it. (R1)
-- Never write UI copy that tells the user who they are, what they secretly want, or what they feel. (§12)
+- Never report the work as done while any gate is red, any core slice is missing, or any screenshot is unlooked-at. (R28, §17.1)
+- Never skip or `fixme` a test, or run `--update-snapshots` blindly, to get green. (§17.6)
 - Never rewrite the whole stylesheet in one pass. Never replace the existing layout. (R30)
 - Never use `!important` to win an argument you could win with a token. (The source leans on it where later sheets override earlier ones, which is a cost of layering stylesheets, not a model to copy. Layer deliberately, or keep one sheet.)
 
 ### 0.3 If you are stuck or the project is unlike a crossword
 
-You do not need a crossword. You need: **a set of N things that each have an identity (a number, a name, an index), arranged in two kinds (two poles), some of which are open and some of which are closed.** Almost everything is that: tasks (open/closed) in two lanes, files in two panes, log lines in two streams, notes in two categories, experiments in two arms. Map your project onto §16.2 and proceed. If it genuinely has no such structure, apply only §6 (colour), §7 (material), §9 (motion), §12 (voice), and skip §10.
+You do not need a crossword. You need: **a set of N things that each have an identity (a number, a name, an index), arranged in two kinds (two poles), some of which are open and some of which are closed.** Almost everything is that: tasks (open/closed) in two lanes, files in two panes, log lines in two streams, notes in two categories, experiments in two arms. Map your project onto §16.2 and proceed. If it genuinely has no such structure, apply only §6 (colour), §7 (material), §9 (motion), §12 (why-comments), §17 (testing), and skip §10.
 
 ---
 
@@ -80,8 +82,8 @@ Cite these by number in your commit messages (`applies R5, R14`). They are order
 - **R26. Every mark is checked by a crossing.** A decoration that answers to nothing else on screen is an unchecked cell. Delete it, or give it a second place to appear.
 - **R27. Hue never says anything the reader must unlearn.** The same rank is the same hue everywhere, in every state, in every theme.
 
-### Voice and process
-- **R28. Plain, concrete, honest copy.** No diagnosing the user. No Lacan in UI text (comments are fine).
+### Proof and process
+- **R28. Prove it.** Done means the static audit passes, the Playwright suite (every journey, every design contract, every screenshot) is green locally and in CI, and every changed screenshot was looked at. "Cannot verify" is BLOCKED; a debt list is INCOMPLETE. Neither is done. (§17)
 - **R29. Comment the *why*:** intent, the rejected alternative, and the measured number.
 - **R30. Evolve, don't replace.** List the keeps before you touch anything.
 - **R31. Verify computed styles and screenshots.** If you did not measure it, it did not land.
@@ -284,17 +286,33 @@ How much light each state may spend. "Quiet by design: dozens of answers carry i
 - **At the end** "the board clears from smudge into a few intense lights, and the last notch carries nearly all of it".
 - **Help drains the whole charge.** Every check and reveal lowers the score and dims *every light at once, backlight included*: "the board loses its desire along with the points".
 
-### 12.1 UI copy rules
+### 12.1 The why-comment
 
-1. **Short, declarative, concrete nouns.** "No mistakes." "3 letters to fix." Not "Great job! You're crushing it!"
-2. **Honest about what is still wrong.** A celebration note states the remaining errors.
-3. **Describe how the outcome was reached, not how the user is.** "Solved with no help and no slips." / "That one fought back, and you got it anyway."
-4. **Never diagnose.** No "you are…", "your desire…", "you secretly…". A colour or object choice is never a personality finding. The source asserts this in a test.
-5. **An exit on every screen.** "Skip", "Take one", "Nothing here has to stay". Choosing one option is never framed as rejecting the others.
-6. **No countdowns; no interpretation of hesitation.** The player controls pace.
-7. **No exclamation marks, no emoji, no gamified praise inflation, no streak pressure.**
-8. **Tell the user what the assistance costs, before they use it.** The score receipt waits behind the score on hover or focus.
-9. **Plain words for the Lacan.** The vocabulary of §4 never reaches the screen.
+The source's stylesheets carry long comments that read like design notes. They are why a later agent could extend the language without breaking it. **Write them.** Every non-obvious rule gets a comment with three parts:
+
+1. **Intent**: what the reader should experience.
+2. **The rejected alternative**: what you tried or considered and why it failed.
+3. **The measured number**: the contrast ratio, OKLab L, px, ms or percentage that justifies the value.
+
+Template:
+
+```css
+/* <What it is, in the reader's terms.>
+   <Why it is this way: the failed attempt, and what it did to the reader.>
+   <The number: "L 0.35 vs 0.33", "28% not 55%", "640ms once".> */
+```
+
+Section banners (the source's format):
+
+```css
+/* ==========================================================================
+   N. Title in plain words.
+   Two to six sentences: the problem, the idea, the constraints it must honour
+   (performance, themes, reduced motion), what it deliberately does NOT do.
+   ========================================================================== */
+```
+
+Also: the **file header** names what it keeps intact ("Kept intact: the two-column zigzag, the watermarks, blue/orange, matte surfaces") and states the motion contract once.
 
 ---
 
@@ -302,15 +320,18 @@ How much light each state may spend. "Quiet by design: dozens of answers carry i
 
 ### 16.1 Kickoff protocol (paste this to your local agent)
 
-> Read `docs/DESIGN_LANGUAGE.md` in full before doing anything. Then do exactly this, in order, and stop after each numbered step to show me the result:
+> Read `docs/DESIGN_LANGUAGE.md` in full before doing anything.
 >
-> 1. Fill in the **Content Identity Brief** (§16.2) for this project. No code.
-> 2. List the **non-negotiable keeps** (§16.3): the layouts, colours and interactions users already rely on.
-> 3. Take baseline screenshots: desktop 1440×1000 dark, desktop light, and a 390×844 phone. Save them under `design/baseline/`.
-> 4. Propose slices S1–S10 (§16.4) tailored to this codebase, naming the files each will touch.
-> 5. Only then implement **S1**, run the project's tests, lint and typecheck, take an after-screenshot, and show me a before/after.
+> **Your acceptance test is `npm run design:check` plus a green `design-e2e` job in CI (guide 17).** You are not finished until both pass. Do not stop to report progress, ask whether to continue, or summarise "remaining debt": that is your to-do list, so keep going. Report only with the words DONE, INCOMPLETE or BLOCKED (guide 17.1).
 >
-> Cite rule numbers (R1…R32) in each commit message. Do not combine slices. Do not invent colours; use the ramp. Nothing loops. If anything in the guide conflicts with an existing product behaviour, ask me.
+> Do exactly this, in order:
+>
+> 1. Fill in the **Content Identity Brief** (§16.2) for this project. No code. Show it to me and wait.
+> 2. List the **non-negotiable keeps** (§16.3) and the **journey inventory** (§17.3, `JOURNEYS.md`). Show both.
+> 3. Set up Playwright and the suite from §17.13 (install the browser; if that is impossible, report BLOCKED with the error). Generate baselines **before** changing any styling, so there is a "before" for every journey.
+> 4. Propose slices S1 to S10 (§16.4) for this codebase, naming the files each will touch. S1 to S6 are mandatory.
+> 5. Work test-first, slice by slice: write or extend the failing tests, paste the red output into `design-evidence.md`, implement until green, **open every changed screenshot and describe it**, commit with the rule numbers (`applies R4, R14`). Do not combine slices. Do not invent colours; use the ramp. Nothing loops.
+> 6. If anything in the guide conflicts with an existing product behaviour, ask me. Skipping a skippable slice needs my written approval.
 
 ### 16.2 The Content Identity Brief (fill every field)
 
@@ -334,8 +355,8 @@ PROJECT: <one sentence: what is it for, and who uses it, in what posture?>
 11. SCALES    macro: composition decisions.  mini: which comfort dials?
               micro: which reading aids?  nano: which fine cues?
 12. KEEPS     Non-negotiable existing things (see §16.3).
-13. VOICE     Write: a headline, a description, a finish message for each of 3
-              outcomes, and one line the product will never say.
+13. JOURNEYS   Every user journey, by the checklist in §17.3 (routes, modals, data states,
+              settings that persist, success/abandon/failure paths). This becomes JOURNEYS.md.
 14. RISK      Where could this language fail here? (e.g. N = 3, or N = 10,000.)
 ```
 
@@ -353,70 +374,206 @@ Before changing anything, write a "keeps" list: every layout, colour, interactio
 6. **Verification gates.** The exact commands that must exit 0; the screenshot size.
 7. **Working discipline.** Small slices, each green; verify computed styles and screenshots; "when in doubt, cut the animation".
 
-### 16.4 Slices (do them in this order; each ends green with a screenshot)
+### 16.4 Slices (in this order; each is test-first, ends green, and is looked at)
 
-| Slice | Do | Acceptance |
+**Core slices are mandatory: S1 to S6.** S7 and S8 are required unless the brief records why the project has no open/closed items or no finishing event *and* the user approves in writing (`--skip economy="..."`, §17.8). Surface-by-surface polish (landing screens, modals, emoji) comes **after** the core, never instead of it.
+
+| Slice | Do | Acceptance (all are executable) |
 | --- | --- | --- |
-| **S0** | Brief, keeps, baseline screenshots. No code. | Brief shown and approved. |
-| **S1 Tokens** | Add the token block (§14.1 section 0) and the light theme; map the existing surface colours onto them. | App looks the same or slightly deeper; tests green. |
-| **S2 Material** | Figure/ground by lightness; seams; 1px glints; matte controls; glass on ≤ 4 floating instruments. | `grep backdrop-filter` shows ≤ 5 hits, none repeated. |
-| **S3 Identity** | Publish `--rank`; ramp; contour; chips and wearers coloured; ember at rest. | The same item has the same hue in ≥ 2 places (R1). |
-| **S4 Interaction** | Flame, halo, ignition; hover/press/arrive; cursor; verdict colours. | `document.getAnimations()` has no infinite; reduced motion kills motion and keeps light. |
-| **S5 View settings** | `data-*` contract, mini/micro/nano panel, persistence, low-bloom tiers, media hints. | Corners of the dial matrix are legible; Reset works; unknown stored values fall back. |
-| **S6 Territory** | Four-corner backlight; conic edge; scroll publishing. | Light hue equals the on-screen item hue (R27). |
-| **S7 Economy** (only if the project has open/closed items) | Notches, charge, remainder. | Closing an item contracts its notch; help dims the whole. |
-| **S8 Celebration** (optional) | Tiers, note, finale from the last notch. | Finite; honest about errors. |
-| **S9 Voice** | Copy pass; why-comments; comment banners. | No diagnosing language; every non-obvious rule has intent/rejection/number. |
-| **S10 Audit** | The anti-slop checklist (§17); the verification matrix (§16.5). | All boxes ticked, screenshots attached. |
+| **S0** | Brief, keeps, `JOURNEYS.md`, Playwright set up, baselines made **before** any styling change. No styling. | `design:check` runs; the audit's red checks are listed. |
+| **S1 Tokens** | Add the token block (§14.1 section 0) and the light theme; map existing surface colours onto them. | Audit: `tokens`, `registered-glow`. Suite green; baselines show no unintended change. |
+| **S2 Material** | Figure/ground by lightness; seams; 1px glints; matte controls; glass on ≤ 4 floating instruments. | Audit and probe: `glass-budget`. |
+| **S3 Identity** (core) | Publish `--rank`; ramp; contour; wearers coloured; ember at rest. | Audit: `identity-ramp`. Probes: `identity-*`, `contrast`. |
+| **S4 Interaction** (core) | Flame, halo, ignition; hover/press/arrive; cursor; verdict colours. | Audit: `no-infinite`, `reduced-motion`. Probe: `no-infinite-animations`; test `[D3]`. |
+| **S5 View settings** (core) | `data-*` contract, mini/micro/nano **panel UI**, persistence, low-bloom tiers, media hints. | Audit: `view-tiers`. Probe: `low-bloom-tier`. The `[D1]` matrix and a "setting persists after reload" journey. |
+| **S6 Territory** (core) | Four-corner backlight; conic edge; scroll publishing. | Audit: `territory`. A journey that scrolls and asserts the corner ranks change. |
+| **S7 Economy** | Notches, charge, remainder. | Audit: `economy` (or an approved skip). A journey that closes an item and asserts its notch contracts. |
+| **S8 Celebration** | Tiers, note, finale from the last notch. | Audit: `celebration` (or an approved skip). A journey that reaches the finish. |
+| **S9 Comments** | Why-comments and section banners (§12.1). | Every non-obvious rule has intent, rejected alternative and number. |
+| **S10 Final** | Anti-slop checklist (§18); evidence ledger complete; CI green. | `design:check` exits 0; `design-e2e` green on the branch head; status DONE. |
 
-### 16.5 Verification (R31)
+### 16.5 Verification
 
-**Measure, never assume.**
-
-```bash
-# No looping motion anywhere
-grep -rn "infinite" src/ --include=*.css --include=*.js --include=*.jsx    # expect: no hits
-# Blur is rare and large
-grep -rn "backdrop-filter" src/ --include=*.css                             # expect: ≤ 5 selectors; none on rows/cells
-# Hand-picked colours that bypass the ramp (review each hit)
-grep -rnE "#[0-9a-fA-F]{6}" src/ --include=*.css | grep -v "^src/.*tokens"
-```
-
-**In a real browser** (Playwright or Chrome DevTools Protocol), for a selected item:
-
-- Read `getComputedStyle(chip).color` and the background; confirm they are `oklch(...)` values from the ramp.
-- `document.getAnimations().filter(a => a.effect.getComputedTiming().iterations === Infinity).length === 0`.
-- Read `--glow-pulse` after 1 s: it is `1`.
-- Scroll a lane and confirm the territory properties on the ground change.
-
-**Screenshot matrix** at 1440×1000 (and 390×844 once macro is adapted): dark/light × standard/dim × vivid/soft, plus (a) nothing selected, (b) an item selected, (c) cursor in an item, (d) a verdict showing, (e) one item solved, (f) all solved, (g) `prefers-reduced-motion: reduce`.
-
-**Quick contrast proxy:** keep the OKLab/OKLCH lightness difference between text and its background at **0.40 or more** for working text, then confirm with a real contrast checker. Remember R5: lightness is what makes text legible.
-
-**Unit tests worth writing**
-- `normalizeViewSettings`: unknown values fall back; booleans stay booleans.
-- `readViewSettings`: a stored value beats a media hint; corrupt JSON falls back; no storage works.
-- `createRamp`: shared ids share a rank; 1 item → rank 0; ranks span 0..1.
-- Celebration tiers: 0, 1, 2, 5, 10 solved × with/without mistakes.
-- No UI string matches `/you are|your desire|you secretly/i`.
+Verification is §17: Playwright journeys, design contracts, screenshots and CI, with a static audit in front. Nothing in this guide counts as verified until `npm run design:check` exits 0 and the CI job is green. Read §17.1 before you report anything.
 
 ### 16.6 If the agent stalls, or goes off the rails
 
 | Symptom | Say this |
 | --- | --- |
 | It starts coding immediately | "Stop. Show me the filled §16.2 brief first. No code." |
+| It reports "Done" with a list of remaining debt | "That is INCOMPLETE. The list is your to-do list. Run `npm run design:check`, quote the failing checks, and continue until it exits 0." |
+| It says it has no browser tooling | "That is an install or BLOCKED, never done. Run `npm i -D @playwright/test && npx playwright install chromium`. If it fails, report BLOCKED with the exact error." |
+| It cites a pre-existing failure (formatter, lint, tests) | "Prove it on a clean checkout, then make every file you touched pass. Format untouched-but-unformatted files in their own earlier commit." |
+| It did a cosmetic screen first and left S3, S5, S6 | "Core before cosmetic. Do S3, then S5, then S6. The audit stays red until they exist." |
 | It rewrites everything | "Revert to the last green commit. Do only slice S<n>. List the files you will touch before touching them." |
 | It invents hex colours | "Which rank is that colour? Show me the `--rank` and the ramp it came from, or delete it. (R1, R6)" |
 | It adds a pulsing glow | "Nothing loops. Make it ignite once (§9.3). (R14)" |
 | It adds blur to cards | "Blur only on ≤ 4 large floating instruments. (R10)" |
-| It claims success | "Show the screenshot and the computed style. (R31)" |
-| It writes 'delightful' copy | "Rewrite in the voice of §12.1: short, concrete, honest, no praise." |
+| It claims success | "Show the `design:check` output, the CI run, and the ledger entry for each changed screenshot. (R28)" |
+| It ran `--update-snapshots` to get green | "Revert the baselines. Update only the affected tests, open every changed image, and describe each in the ledger (§17.6)." |
 | It stalls on ambiguity | "Pick the option the guide's §3 prefers; record the choice in a comment with the rejected alternative. (R29)" |
 | It forgets the guide | "Quote the rule numbers you are applying in this commit message." |
+| It stops early for any reason | "Status? Quote the last `design:check` output and the failing check names, then continue." |
 
 ---
 
-## 17. Anti-slop checklist
+## §17 UI testing (excerpt)
+
+### 17.1 The contract (read this twice)
+
+The work is **finished** only when the acceptance command exits 0 *and* CI is green on the branch. Until then the status is one of three words, and the agent must use exactly these:
+
+```
+STATUS: DONE | INCOMPLETE | BLOCKED
+
+DONE        every one of these is true:
+            1. `npm run design:check` exits 0 locally (static audit + the whole Playwright suite)
+            2. the CI job `design-e2e` is green on the head commit of the branch
+            3. every SKIP the audit printed carries a reason the user has approved in writing
+            4. every changed screenshot was opened and described in the evidence ledger (17.9)
+INCOMPLETE  anything else. Keep working. A list of "remaining debt" means INCOMPLETE.
+BLOCKED     you need a human decision or an environment you cannot obtain. Say exactly which,
+            with the exact error or the exact question.
+```
+
+What this rules out, because each of these has already happened:
+
+- **"Done" followed by a debt list.** The debt list is the to-do list. Do it.
+- **"No browser tooling here, so no screenshots."** There is always a way: `npm i -D @playwright/test && npx playwright install chromium`. If that is truly impossible (no network), the status is BLOCKED, with the error, and the agent stops. It does not proceed without evidence. (17.10)
+- **"That check was already failing at HEAD."** Prove it on a clean checkout (`git stash`), then still make the files *you touched* pass. If a file was unformatted before you came, format it in its own preceding commit so your diff stays reviewable.
+- **Skipping the core slices.** S3 (identity ramp on content), S5 (View settings including the panel UI) and S6 (territory) are what the language *is*. A cosmetic pass over a landing screen or a modal is not a substitute, and must come after them.
+- **Skipping tests to get green.** `test.skip`, `test.fixme`, `test.only` and `--update-snapshots` run blindly are all failures (17.6, 17.8).
+
+### 17.2 What gets built
+
+| Piece | File | Job |
+| --- | --- | --- |
+| Runner config | `e2e/playwright.config.mjs` | projects = viewport × theme; screenshot settings; CI behaviour; web server |
+| The only project-specific file | `e2e/design.config.mjs` | your selectors, tokens, thresholds |
+| Helpers | `e2e/design-helpers.mjs` | console guard on every test; `applyView`; `settle`; the design probes as assertions |
+| Design contracts | `e2e/design.spec.mjs` | view matrix (brightness × intensity), keyboard focus, reduced motion; each with a screenshot |
+| User journeys | `e2e/journeys.spec.mjs` | one test per journey, titled `[J1] ...`, each ending in a screenshot |
+| Journey inventory | `e2e/JOURNEYS.md` | the complete list of what a user can do |
+| Static audit | `ui/audit-static.mjs` | source rules + "every journey is tested, with screenshots, in CI" |
+| CI | `ci/design-e2e.yml`, `ci/update-screenshots.yml` | run it on every PR; upload the report |
+
+The whole thing is verified at the browser level, so it works for any framework (Vue, React, Svelte, plain HTML).
+
+**One command.** In `package.json`:
+
+```json
+"design:check": "node <<tests/design>>/audit-static.mjs --src src --e2e-dir <<tests/e2e>> && playwright test -c <<tests/e2e>>/playwright.config.mjs"
+```
+
+### 17.3 The journey inventory (all user journeys)
+
+`JOURNEYS.md` is the source of truth for coverage. Every row `| J<n> |` must have a Playwright test whose title contains `[J<n>]`, and every `[J<n>]` tag in a test must have a row. The audit fails on a gap in either direction.
+
+Build the inventory by doing **all** of these before declaring it complete:
+
+1. Every route or page in the router.
+2. Every `data-testid`, button, link and form in the templates.
+3. Every modal, drawer, menu, toast and tooltip, opened *and* dismissed.
+4. Every data state of every screen: **loading, empty, one item, many items, error, offline**.
+5. First run vs returning user; signed out vs signed in; permission denied.
+6. Every setting a user can change, and that it **persists after a reload**.
+7. The success path, the abandon path and the failure path of each task.
+8. Destructive actions and their confirmations.
+9. Any multi-step flow, with a screenshot at each *beat* (use `test.step`), not only at the end.
+
+Each journey test runs once per Playwright project, so a journey is automatically captured at **desktop/dark, desktop/light and phone/dark**. Name screenshots after the beat: `j2-selected.png`, `j3-panel-dim.png`.
+
+Design contracts get ids `D1…` and are not journeys. They are checked on every project too.
+
+### 17.4 Screenshots that do not flake
+
+A screenshot test that flakes gets disabled, and then there is no test. Rules:
+
+1. **Generate baselines in the same environment CI uses (Linux).** Fonts and anti-aliasing differ per OS, so a baseline made on a Mac fails in CI. Use the `update-screenshots` workflow, or locally:
+   `docker run --rm -v "$PWD":/work -w /work mcr.microsoft.com/playwright:v1.55.0-noble npx playwright test --update-snapshots` (match the tag to your `@playwright/test` version, and **pin that version**).
+2. **Finite animations are fast-forwarded** to their end state (`animations: 'disabled'`). That is why the language's rule "nothing loops" matters twice: infinite animations are cancelled in screenshots, and the design probe fails if any exist.
+3. **Never `sleep`.** Wait for a condition: `settle(page)` waits until every finite animation and transition has finished; `expect.poll` and web-first assertions do the rest.
+4. **Control the data.** Seed random generators, freeze time (`page.clock.install({ time })`), use fixed fixtures or a seeded backend, and `mask` anything that is genuinely dynamic (`toHaveScreenshot({ mask: [page.locator('.timestamp')] })`).
+5. **Tighten the pixel tolerance.** Playwright's default per-pixel `threshold` (0.2) waved through a visible recolour of the tiles in this guide's own mutation test. The config sets `threshold: 0.05` with `maxDiffPixelRatio: 0.002`. It stayed stable across repeated runs in one environment, and it failed a 29,176-pixel recolour.
+6. **One baseline per project**: viewport × theme. The path template is `__screenshots__/{projectName}/{testFilePath}/{arg}.png`. **Commit the PNGs.** The audit fails if there are fewer baselines than journeys.
+7. **Screenshot what matters.** Viewport screenshots for composition; element screenshots (`locator.toHaveScreenshot`) for a component's states. Do not full-page a long scrolling list.
+
+### 17.6 Updating baselines (never blindly)
+
+`--update-snapshots` overwrites the evidence. The protocol:
+
+1. Run the suite. Read every failure. A screenshot diff is either a **bug** (fix the code) or an **intended change** (update the baseline).
+2. For an intended change, update only the affected tests: `npx playwright test -g "J3" --update-snapshots`, not the whole suite.
+3. **Open every changed image** (and the diff in `playwright-report`). Describe each in one sentence in the ledger: what changed and why that is intended. A weaker agent that cannot view images must say so, and the user reviews the diffs.
+4. Commit the new PNGs in the *same* commit as the code that changed them, so review shows both.
+5. Never run a blanket `--update-snapshots` to turn a red run green.
+
+### 17.8 The static audit (`audit-static.mjs`)
+
+Fast, no browser, runs first in CI. **Core checks fail until the slice exists**, which makes it the to-do list for S3–S8:
+
+| Check | Fails until |
+| --- | --- |
+| `no-infinite`, `glass-budget`, `reduced-motion`, `tokens`, `registered-glow` | the foundations (S1, S2, S4) exist |
+| `identity-ramp` | `--rank` is published on items *and* read by the ramp (S3) |
+| `view-tiers` | `data-luma`/`data-vibrance` tiers exist in CSS, are published and persisted, a media hint picks the first-visit tier, **and a View panel UI is mounted** (S5) |
+| `territory` | the corner ranks are registered and published (S6) |
+| `economy`, `celebration` | S7, S8 exist, **or** are skipped with a written reason: `--skip economy="no open/closed items (brief 16.2 #3)"` |
+| `e2e-playwright` | Playwright is a dependency with a config and specs |
+| `e2e-journeys` | every journey row has a `[J<n>]` test and every tag has a row |
+| `e2e-screenshots` | at least one `toHaveScreenshot` per journey, and committed baselines |
+| `e2e-no-skips` | no `test.skip`, `test.fixme` or `test.only` |
+| `e2e-reduced-motion` | reduced motion is emulated through `contextOptions` or `emulateMedia` |
+| `e2e-ci` | a CI workflow installs the browser, runs `playwright test` and uploads the report |
+
+Standard checks (hex literals outside tokens, `!important` count, emoji in markup, layout transitions) warn, and fail under `--strict`.
+
+**Skips.** Only `economy` and `celebration` can be skipped, and only with a reason of 15+ characters. The report prints every skip and tells the agent to report them verbatim. The user decides whether each reason holds. Skipping any other check exits 2.
+
+### 17.9 Test-first, slice by slice, with a ledger
+
+For **every** slice in §16.4:
+
+1. **Red.** Add or extend the journey or contract tests that express the slice, and run them. Paste the failing output into the ledger. (For S3, S5, S6, S7, S8 the audit is already red: paste that.)
+2. **Green.** Implement until the slice's tests pass and the whole suite stays green.
+3. **Look.** Open every new or changed screenshot. Write one sentence per image.
+4. **Commit** with the rule numbers it applies (`applies R4, R6, R14`) and the images.
+5. **Next slice.** Do not stop here to report.
+
+The ledger (`design-evidence.md`, committed) is a table the user can read in a minute:
+
+```
+| Slice | Commit | Red (before) | Green (after) | Screenshots opened and what they show | Rules |
+| S3 Identity | abc1234 | audit: identity-ramp FAIL | 37/37 pass | j1-first-view (3 projects): chips now a warm-to-cool ramp, selected row ignites | R1 R2 R6 |
+```
+
+### 17.10 Getting a browser, and the Playwright traps already hit
+
+- **Install:** `npm i -D @playwright/test && npx playwright install chromium` (add `--with-deps` on a bare Linux box). Already installed elsewhere? Set `CHROME_PATH=/path/to/chrome` (the config reads it). If the install is blocked, the status is **BLOCKED**, with the error. It is never a reason to skip.
+- **`reducedMotion` is not a top-level `use` option in Playwright 1.55.** It is silently ignored. Use `contextOptions: { reducedMotion: 'reduce' }` (or `page.emulateMedia`). The `[D3]` test first asserts that the media query is really on, because a reduced-motion test that does not emulate reduced motion proves nothing. The audit also checks this.
+- **A phone's layout viewport grows to fit overflowing content**, so `window.innerWidth` can never reveal horizontal overflow (it read 442 on a 390px device). Compare `scrollWidth` with the *configured* viewport width. The helpers do.
+- **The backlight layer reached 4rem past its box and made a phone page wider**, so the layout viewport grew and taps missed their targets. Clip the root with `overflow-x: clip` (not `hidden`, which makes a scroller).
+- **A pseudo-element can widen a phone page, and `overflow-x: clip` then hides it from `scrollWidth`.** Measure every element's right edge as well (the `no-horizontal-overflow` probe does both).
+- **`position: fixed` inside an element with `backdrop-filter` or `transform` is positioned against that element**, not the viewport (known CSS behaviour; the starter avoids it by centring its phone panel with absolute positioning against its trigger).
+- **Playwright's default screenshot tolerance is too loose** (17.4 #5).
+- **Pin the Playwright version** and the CI image, or baselines shift under you.
+- **Light-theme contrast:** a solid flame fill under text measured 3.6 to 4.45:1 on paper, below 4.5. Use a tinted ground with ink text there (guide 14.1). The contrast probe is how this was found.
+
+### 17.12 Making an agent just do it
+
+The failure to prevent is an agent that stops early and calls it done. What works, in order of strength:
+
+1. **Give it an executable acceptance test.** "Make `npm run design:check` exit 0" is a to-do list the machine keeps for you. The core audit checks stay red while S3, S5, S6 are missing, so there is nowhere to hide.
+2. **Forbid the early stop in the prompt.** Paste this at the top of the task:
+
+   > Your acceptance test is `npm run design:check`, plus a green `design-e2e` job in CI. You are not finished until both pass. Do not stop to report progress, ask whether to continue, or summarise "remaining debt": that is your to-do list, so keep going. Report only with the status words DONE, INCOMPLETE or BLOCKED (guide 17.1). Work test-first: for each slice write or extend the failing tests, paste the red output into `design-evidence.md`, implement until green, then open every changed screenshot and describe it. Skipping any core slice needs the user's written approval. "No browser tooling" is BLOCKED, not done: install Playwright.
+3. **Make the order hard to game.** Foundations (S1, S2), then the core (S3, S4, S5, S6), then optional (S7, S8 with a recorded reason), and only then surface-by-surface polish (landing screens, modals, emoji).
+4. **Review the evidence, not the claims.** Read the audit's SKIP list and the ledger, and open a few screenshots yourself. A capable model will usually tell you the truth about gaps; the point is that the truth has a name (INCOMPLETE) and a consequence (keep going).
+5. **If it still stops early,** reply with one line: *"Status? Quote the last `design:check` output and the failing check names, then continue."*
+
+---
+
+## 18. Anti-slop checklist
 
 Tick every box before calling the work finished. If you cannot tick it, say so.
 
@@ -437,9 +594,11 @@ Tick every box before calling the work finished. If you cannot tick it, say so.
 - [ ] A stored choice beats a media hint; corrupt storage falls back; Reset works. (R21, R22)
 - [ ] Closing an item leaves a remainder; help visibly costs. (R23–R25)
 - [ ] Hue never contradicts structure. (R27)
-- [ ] Copy is plain, concrete, honest, and never diagnoses. (R28)
 - [ ] Every non-obvious rule has a why-comment with intent, rejected alternative, number. (R29)
 - [ ] I listed the keeps before I changed anything, and none is broken. (R30)
-- [ ] I have screenshots and computed styles for the final state. (R31)
+- [ ] `npm run design:check` exits 0 and `design-e2e` is green in CI on the branch head. (R28)
+- [ ] Every user journey in `JOURNEYS.md` has a test and a committed baseline; nothing is skipped. (§17.3)
+- [ ] I opened every changed screenshot and described it in the evidence ledger. (§17.6, §17.9)
+- [ ] I report one of DONE, INCOMPLETE or BLOCKED, and it is true. (§17.1)
 
 **Things to refuse on sight:** purple-to-blue gradient backgrounds; glassmorphism on every card; neon glows at rest; rainbow with no ranking; emoji in UI; bouncy springs on controls; confetti on every action; pulsing "notification" dots; tooltips on everything; decorative blobs; a legend explaining what colours mean (the colour should teach itself by use); borders on every box; boxes inside boxes.

@@ -1,0 +1,30 @@
+# Copy to .github/workflows/update-screenshots.yml. Run it by hand from the Actions tab on
+# the branch whose screenshots you intend to change. Baselines come from CI's own OS, so they
+# match what design-e2e compares against. A human must LOOK at every changed image in the diff.
+name: update-screenshots
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test -c <<tests/e2e>>/playwright.config.mjs --update-snapshots
+      - name: Commit changed baselines
+        run: |
+          git config user.name "design-bot"
+          git config user.email "design-bot@users.noreply.github.com"
+          git add -A <<tests/e2e>>/__screenshots__
+          git diff --cached --quiet || git commit -m "Update design screenshots (review every changed image)"
+          git push

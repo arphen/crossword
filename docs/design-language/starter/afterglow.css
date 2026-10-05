@@ -78,6 +78,9 @@
   color: var(--ink);
   font-family: var(--face);
   color-scheme: dark;
+  /* The backlight layer reaches past its box; clip it here or it widens the page (a phone's
+     layout viewport silently grows to fit it). `clip`, unlike `hidden`, makes no scroller. */
+  overflow-x: clip;
 }
 
 /* Light theme = paper and ink. Same structure, inverted material: the ramp
@@ -177,6 +180,15 @@ li.is-selected > .chip {
     0 0 13px color-mix(in oklab, var(--rail) var(--halo-alpha), transparent),
     0 4px 12px -4px #000c;
   animation: ignite var(--dur-ignite) cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* On paper a solid flame fill cannot carry text at 4.5:1 (measured 3.6 to 4.45). The
+   selected chip keeps the item's colour as a tinted ground, a flame border and the glow,
+   with ink for the numeral. */
+.afterglow[data-theme='light'] li.is-selected > .chip {
+  background: color-mix(in oklab, var(--flame) 22%, var(--paper));
+  border-color: var(--flame);
+  color: var(--ink);
 }
 
 /* Ignition: the light flares ONCE as something is selected, then settles.
@@ -332,6 +344,11 @@ li.is-selected > .chip {
 .view-tier[data-tier='nano']  .view-choice[aria-pressed='true'] { color: var(--pole-b); }
 .view-reset { justify-self: start; padding: 2px 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: 0.7rem; text-decoration: underline; cursor: pointer; }
 .view-reset:hover { color: var(--ink); }
+/* On a phone the panel is centred on its button so it cannot fall off the screen. (Do not use
+   position: fixed here: a parent with backdrop-filter or transform becomes its containing block.) */
+@media (max-width: 700px) {
+  .view-cluster-panel { right: auto; left: 50%; transform: translateX(-50%); width: min(300px, calc(100vw - 16px)); }
+}
 .afterglow :is(button, a, summary, select):focus-visible { outline: 2px solid var(--pole-b); outline-offset: 3px; }
 
 @media (prefers-contrast: more) { .afterglow { --grout: #6b7480; --panel-edge: #78818c; } }

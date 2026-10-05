@@ -193,9 +193,19 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/design-language/DESIGN_LANGUAGE.md`
 - `docs/design-language/README.md`
 - `docs/design-language/starter/afterglow.css`
+- `docs/design-language/starter/ci/design-e2e.yml`
+- `docs/design-language/starter/ci/update-screenshots.yml`
 - `docs/design-language/starter/demo.html`
+- `docs/design-language/starter/e2e/JOURNEYS.md`
+- `docs/design-language/starter/e2e/design-helpers.mjs` — `test:8`, `applyView:24`, `settle:32`, `probe:38`, `add:40`, `toRGB:41`, `lum:48`, `ratio:49`, `over:50`, `effectiveBg:51`, `infinite:68`, `running:73`, `missing:79`, `bad:84`, `rankOf:89`, `bySel:90` (+8 more)
+- `docs/design-language/starter/e2e/design.config.mjs`
+- `docs/design-language/starter/e2e/design.spec.mjs`
+- `docs/design-language/starter/e2e/journeys.spec.mjs`
+- `docs/design-language/starter/e2e/playwright.config.mjs` — `project:19`
+- `docs/design-language/starter/e2e/serve.mjs`
 - `docs/design-language/starter/fit-contour.mjs` — `inGamut:26`, `bestL:42`, `samples:52`, `offsets:53`, `S:56`, `B:62`
 - `docs/design-language/starter/territory.js` — `edgeRanks:6`, `visible:8`, `rank:13`, `publishTerritory:17`, `publish:19`, `schedule:26`
+- `docs/design-language/starter/ui/audit-static.mjs` — `opt:28`, `all:29`, `stripComments:72`, `blank:73`, `docs:78`, `cssText:84`, `nonStyle:85`, `hits:87`, `anyIn:94`, `add:98`, `pass:99`, `repeated:114`, `missing:127`, `listFiles:181`, `specs:193`, `specText:194` (+13 more)
 - `docs/design-language/starter/view-panel.js` — `mountViewPanel:3`, `sync:20`
 - `docs/design-language/starter/view-settings.js` — `VIEW_SETTINGS_KEY:6`, `TIERS:8`, `VIEW_DEFAULTS:23`, `normalizeViewSettings:33`, `prefersLowBloom:45`, `readViewSettings:51`, `writeViewSettings:58`, `viewAttributes:63`, `applyViewSettings:72`, `createRamp:79`, `unique:80`
 - `docs/evidence/live-model-smoke-holdout-v1.20260928.json`

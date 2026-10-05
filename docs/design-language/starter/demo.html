@@ -19,6 +19,12 @@
   .tiles { display: grid; grid-template-columns: repeat(5, auto); }
   .toolbar { padding: 8px; width: fit-content; margin: 0 0 16px; display: flex; gap: 8px; }
   button.press { font: inherit; color: var(--ink); padding: 8px 14px; border-radius: 10px; border: 1px solid var(--panel-edge); background: var(--panel-light); }
+  @media (max-width: 700px) {
+    .stage { grid-template-columns: 1fr; }
+    .afterglow { padding: 12px; }
+    .tiles { grid-template-columns: repeat(5, auto); }
+    #dock { bottom: 8px; }
+  }
   #dock { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); padding: 5px; border-radius: 14px; }
 </style>
 <body>
@@ -53,7 +59,7 @@
   fill(document.getElementById('lane-a'), ids.slice(0, 9), 9);
   fill(document.getElementById('lane-b'), ids.slice(4, 14), 26);
   document.getElementById('lane-a').style.cssText = document.getElementById('lane-b').style.cssText =
-    'max-height: 70vh; overflow: auto;';
+    'max-height: 360px; overflow: auto;';
 
   const tiles = document.getElementById('tiles');
   [...'LIGHTGLOWSAFTER'].forEach((ch, i) => {
@@ -70,7 +76,16 @@
   if (q.get('theme')) root.setAttribute('data-theme', q.get('theme'));
   mountViewPanel(root, document.getElementById('viewhost'));
   if (q.get('open')) document.querySelector('.view-cluster').open = true;
-  publishTerritory(document.getElementById('ground'), document.getElementById('lane-a'), document.getElementById('lane-b'));
+  // Click a row to select it (the flame ignites once). A real app does this in its own state.
+  for (const lane of document.querySelectorAll('.lane')) {
+    lane.addEventListener('click', (e) => {
+      const li = e.target.closest('li'); if (!li) return;
+      for (const other of document.querySelectorAll('li.is-selected')) other.classList.remove('is-selected');
+      li.classList.add('is-selected');
+      root.setAttribute('data-direction', lane.dataset.lane === 'a' ? 'across' : 'down');
+    });
+  }
+    publishTerritory(document.getElementById('ground'), document.getElementById('lane-a'), document.getElementById('lane-b'));
 </script>
 </body>
 </html>
