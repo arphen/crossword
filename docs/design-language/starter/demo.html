@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Afterglow starter demo</title>
+<!-- Serve this folder (ES modules do not load from file://):
+       python3 -m http.server 8000     then open  http://localhost:8000/demo.html
+     Try  ?theme=light   ?luma=dim   ?luma=veil   ?vibrance=soft   ?vibrance=bold   ?open=1 -->
+<link rel="stylesheet" href="afterglow.css">
+<style>
+  body { margin: 0; }
+  .afterglow { min-height: 100vh; padding: 24px; box-sizing: border-box; }
+  .stage { display: grid; grid-template-columns: 1fr 1.1fr 1fr; gap: 24px; align-items: start; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  li { display: flex; align-items: center; gap: 12px; padding: 8px 10px; }
+  .slots { display: flex; margin-top: 6px; }
+  .slot { width: 22px; height: 22px; border: 1px solid var(--grout); background: var(--paper); margin-left: -1px; }
+  .ground { padding: 40px; display: grid; place-items: center; }
+  .tiles { display: grid; grid-template-columns: repeat(5, auto); }
+  .toolbar { padding: 8px; width: fit-content; margin: 0 0 16px; display: flex; gap: 8px; }
+  button.press { font: inherit; color: var(--ink); padding: 8px 14px; border-radius: 10px; border: 1px solid var(--panel-edge); background: var(--panel-light); }
+  #dock { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); padding: 5px; border-radius: 14px; }
+</style>
+<body>
+<main class="afterglow" id="root">
+  <div class="toolbar glass"><button class="press">Check</button><button class="press">Reveal</button></div>
+  <div class="stage">
+    <ul class="lane" data-lane="a" id="lane-a"></ul>
+    <div class="ground" id="ground" style="--remaining:.6; --libido:.9">
+      <div class="tiles" id="tiles"></div>
+    </div>
+    <ul class="lane" data-lane="b" id="lane-b"></ul>
+  </div>
+  <!-- Everything that uses the tokens lives INSIDE the token root. -->
+  <nav class="glass" id="dock"><div id="viewhost"></div></nav>
+</main>
+<script type="module">
+  import { createRamp, readViewSettings, applyViewSettings } from './view-settings.js';
+  import { mountViewPanel } from './view-panel.js';
+  import { publishTerritory } from './territory.js';
+
+  const ids = [1, 3, 5, 8, 9, 12, 14, 17, 20, 23, 26, 31, 37, 41];
+  const ramp = createRamp(ids);                       // rank, not value
+  const fill = (list, items, selected) => items.forEach((n) => {
+    const li = document.createElement('li');
+    li.style.setProperty('--rank', ramp.get(n));      // every wearer declares its own rank
+    if (n === selected) li.classList.add('is-selected');
+    li.innerHTML = `<b class="chip" style="--rank:${ramp.get(n)}">${n}</b>
+      <div><div>Clue text for ${n}</div>
+      <div class="slots">${'<i class="slot"></i>'.repeat(5)}</div></div>`;
+    list.append(li);
+  });
+  fill(document.getElementById('lane-a'), ids.slice(0, 9), 9);
+  fill(document.getElementById('lane-b'), ids.slice(4, 14), 26);
+  document.getElementById('lane-a').style.cssText = document.getElementById('lane-b').style.cssText =
+    'max-height: 70vh; overflow: auto;';
+
+  const tiles = document.getElementById('tiles');
+  [...'LIGHTGLOWSAFTER'].forEach((ch, i) => {
+    const t = document.createElement('i');
+    t.className = 'tile'; t.textContent = ch;
+    t.style.setProperty('--rank', (i % 5) / 4);
+    if (i % 3 === 0) t.setAttribute('data-done', ''); // flares once, then rests with a trace
+    tiles.append(t);
+  });
+
+  const root = document.getElementById('root');
+  const q = new URLSearchParams(location.search);
+  applyViewSettings(root, { ...readViewSettings(), ...(q.get('luma') && { luma: q.get('luma') }), ...(q.get('vibrance') && { vibrance: q.get('vibrance') }) });
+  if (q.get('theme')) root.setAttribute('data-theme', q.get('theme'));
+  mountViewPanel(root, document.getElementById('viewhost'));
+  if (q.get('open')) document.querySelector('.view-cluster').open = true;
+  publishTerritory(document.getElementById('ground'), document.getElementById('lane-a'), document.getElementById('lane-b'));
+</script>
+</body>
+</html>

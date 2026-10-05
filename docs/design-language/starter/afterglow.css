@@ -1,0 +1,345 @@
+/* ==========================================================================
+   afterglow.css — starter tokens and mechanisms.
+   Rename .afterglow / .lane / .chip / .tile to your own nouns; keep the
+   variable names and the logic. Every rule here is explained in the guide.
+   ========================================================================== */
+
+/* Registered numbers can be eased by transitions and animations. Without
+   @property a custom property jumps; with it, light can gather and drain. */
+@property --glow-pulse { syntax: '<number>'; inherits: true;  initial-value: 1; }
+@property --settle     { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --ta-top     { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --ta-bottom  { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --tb-top     { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --tb-bottom  { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* --- 0. Tokens ----------------------------------------------------------- */
+.afterglow {
+  /* Surfaces. Figure is lighter than ground: tile > bezel > bg. */
+  --bg: #0c1015;
+  --panel: #1a2027;
+  --panel-light: #252b33;
+  --panel-edge: #3a414b;
+  --bezel: #151b21;
+  --paper: #343a45;       /* the lightest surface: where the work is done */
+  --grout: #1e232a;       /* seams between paper tiles; darker than paper */
+  --well: #0d1218;        /* a recess; darker than the grout */
+  --ink: #f2f2f6;
+  --muted: #aeb6c2;
+  --glint: #ffffff13;     /* 1px top-edge highlight on raised things */
+  --paper-glint: #ffffff0d;
+
+  /* Two poles: the two things your content comes in two kinds of. */
+  --pole-a: #ffad32;      /* warm */
+  --pole-b: #8dc7ff;      /* cool */
+  --ok: #8fe4b1;
+  --bad: #ff9c9c;
+
+  /* The colour ramp. Each pole owns half of the hue wheel (OKLCH degrees),
+     so the two gradients never overlap. Pole A runs warm, pole B runs cool. */
+  --a-start: 2;   --a-end: 142;
+  --b-start: 183; --b-end: 323;
+  --ramp-l: 0.82;           /* base lightness on a dark ground */
+  --ramp-c: 0.14;           /* base chroma */
+  /* Contour: lightness offset l0 + l1*r + l2*r^2 per rank r (0..1) so tight
+     hues (pink, orange, violet) are lowered enough to fit sRGB at this
+     chroma, and generous ones (green, yellow) are lifted back. */
+  --a-l0: -0.115; --a-l1: 0;     --a-l2: 0.105;
+  --b-l0: 0.035;  --b-l1: -0.24; --b-l2: 0.24;
+  /* Direction reads as VALUE, never as a second hue. */
+  --a-lift: 0.07;
+  --b-drop: 0.07;
+
+  /* Interaction reads as SATURATION. Ember = at rest, flame = being worked,
+     halo = names the pole (not the item). Alphas decide how much light each
+     state may make on this display. */
+  --ember-chroma: 0.7;
+  --flame-chroma: 1.75;
+  --ember-alpha: 14%;
+  --cross-alpha: 22%;
+  --flame-alpha: 34%;
+  --halo-alpha: 18%;
+  /* Light from behind (section 6). Tiers and themes tune it HERE, on the
+     root: a token declared on the element that uses it cannot be overridden
+     by a tier that sits above it. */
+  --backlight: 36%;
+  --glow-chroma: 1.3;  /* the light spends a little more chroma than numerals */
+
+  /* One curve, three durations. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-quick: 140ms;
+  --dur-settle: 260ms;
+  --dur-ignite: 640ms;
+
+  --face: 'Avenir Next', 'SF Pro Rounded', 'Segoe UI Variable Text',
+    'Segoe UI', system-ui, sans-serif;
+
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--face);
+  color-scheme: dark;
+}
+
+/* Light theme = paper and ink. Same structure, inverted material: the ramp
+   sits deeper, the contour moves (on paper the narrow places are yellow and
+   cyan), and light-from-behind turns faint so it does not read as a stain. */
+.afterglow[data-theme='light'] {
+  --bg: #f3f3ef; --panel: #e5e8e6; --panel-light: #f9faf8; --panel-edge: #cbd1ce;
+  --bezel: #d7ded8; --paper: #fdfdf9; --grout: #c8cfcd; --well: #34433e;
+  --ink: #263430; --muted: #64716b;
+  --glint: #ffffffd9; --paper-glint: #fff;
+  --pole-a: #995c10; --pole-b: #306b9e; --ok: #246a43; --bad: #ad313d;
+  --ramp-l: 0.42; --ramp-c: 0.12; --backlight: 14%;
+  --a-l0: -0.02; --a-l1: 0.44;  --a-l2: -0.44;
+  --b-l0: 0.23;  --b-l1: -0.36; --b-l2: 0.18;
+  color-scheme: light;
+}
+
+/* --- 1. A pole (lane) says which half of the wheel its items live on ------ */
+.lane {
+  --rail: var(--pole-a);
+  --arc-start: var(--a-start);
+  --arc-end: var(--a-end);
+  --is-b: 0;
+  --lane-l: calc(var(--ramp-l) + var(--a-lift));
+}
+.lane[data-lane='b'] {
+  --rail: var(--pole-b);
+  --arc-start: var(--b-start);
+  --arc-end: var(--b-end);
+  --is-b: 1;
+  --lane-l: calc(var(--ramp-l) - var(--b-drop));
+}
+
+/* --- 2. Identity: rank -> hue ---------------------------------------------
+   Declare --rank (0..1) on EVERY element that wears the colour (the row, the
+   chip, the slots, the tile). Custom properties are substituted where they
+   are declared, so each place computes its own hue where that hue is shown. */
+.lane > li, .chip, .slot, .tile {
+  --hue: calc(var(--arc-start) + var(--rank, 0) * (var(--arc-end) - var(--arc-start)));
+  --contour: calc(
+    (1 - var(--is-b)) * (var(--a-l0) + var(--a-l1) * var(--rank, 0) + var(--a-l2) * var(--rank, 0) * var(--rank, 0)) +
+    var(--is-b)       * (var(--b-l0) + var(--b-l1) * var(--rank, 0) + var(--b-l2) * var(--rank, 0) * var(--rank, 0))
+  );
+  --l: calc(var(--lane-l) + var(--contour));
+  --tint:  oklch(var(--l) var(--ramp-c) var(--hue));
+  --ember: oklch(var(--l) calc(var(--ramp-c) * var(--ember-chroma)) var(--hue));
+  --flame: oklch(var(--l) calc(var(--ramp-c) * var(--flame-chroma)) var(--hue));
+}
+
+/* --- 3. Material ----------------------------------------------------------- */
+/* Glass: ONLY on a few large floating instruments. Never per item. */
+.glass {
+  border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
+  background: color-mix(in oklab, var(--panel) 76%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: inset 0 1px 0 var(--glint), 0 18px 40px -18px #00000038, 0 2px 6px #00000030;
+}
+
+/* The chip: numeral wears the item's colour; frame wears the pole's. */
+.chip {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 32px;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in oklab, var(--rail) 50%, var(--bg));
+  border-radius: 8px;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--rail) 10%, var(--bg)), var(--bg));
+  color: var(--tint);
+  font: 700 1.12rem var(--face);
+  font-variant-numeric: tabular-nums lining-nums;
+  /* Ember: the resting light, mostly inside the border. */
+  box-shadow:
+    inset 0 1px 0 var(--glint),
+    0 3px 8px -4px #000c,
+    inset 0 0 6px color-mix(in oklab, var(--ember) var(--ember-alpha), transparent),
+    0 0 9px color-mix(in oklab, var(--ember) var(--ember-alpha), transparent);
+  transition: transform var(--dur-quick) var(--ease-out);
+}
+/* Hover is attention, not selection: more light, same hue. */
+li:hover > .chip {
+  box-shadow:
+    inset 0 1px 0 var(--glint),
+    0 3px 8px -4px #000c,
+    inset 0 0 6px color-mix(in oklab, var(--ember) var(--cross-alpha), transparent),
+    0 0 10px color-mix(in oklab, var(--ember) var(--cross-alpha), transparent);
+}
+/* Flame: the same hue, saturated and solid. Halo: the pole's own colour. */
+li.is-selected > .chip {
+  background: var(--flame);
+  border-color: var(--flame);
+  color: var(--bg);
+  box-shadow:
+    inset 0 1px 0 var(--glint),
+    inset 0 0 7px color-mix(in oklab, var(--flame) calc(var(--flame-alpha) * var(--glow-pulse, 1)), transparent),
+    0 0 13px color-mix(in oklab, var(--rail) var(--halo-alpha), transparent),
+    0 4px 12px -4px #000c;
+  animation: ignite var(--dur-ignite) cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Ignition: the light flares ONCE as something is selected, then settles.
+   Nothing translates; only the glow's alpha moves; it never loops. */
+@keyframes ignite { from { --glow-pulse: 2; } to { --glow-pulse: 1; } }
+
+/* --- 4. Vibration: micro-feedback on contact -------------------------------- */
+.press { transition: transform var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out); }
+.press:hover  { transform: translateY(-1px); }
+.press:active { transform: translateY(0) scale(0.97); transition-duration: 60ms; }
+
+/* A letter (any committed input) arrives, it does not appear. */
+.arrive { animation: arrive 160ms ease-out; }
+@keyframes arrive {
+  from { opacity: 0.35; transform: translateY(2px) scale(0.94); }
+  to   { opacity: 1;    transform: translateY(0)   scale(1); }
+}
+
+/* --- 5. Afterglow: what a finished thing leaves behind ----------------------
+   The tile flares once from inside in its own hue, then rests as clean paper
+   with only a trace of the hue left in its ink. */
+.tile {
+  --cell: 3rem;
+  width: var(--cell); height: var(--cell);
+  box-sizing: border-box;
+  display: inline-grid; place-items: center;
+  background: var(--paper);
+  border: 1px solid var(--grout);
+  box-shadow: inset 0 1px 0 var(--paper-glint);
+  font: 600 1.4rem var(--face);
+  text-transform: uppercase;
+}
+.tile[data-done] {
+  box-shadow:
+    inset 0 1px 0 var(--paper-glint),
+    inset 0 0 calc(var(--cell) * 0.55) color-mix(in oklab, var(--tint) calc(58% * var(--settle)), transparent);
+  color: color-mix(in oklab, var(--ink) 80%, var(--tint));
+  animation: settle 1800ms var(--ease-out) both;
+}
+@keyframes settle { from { --settle: 1; } to { --settle: 0; } }
+
+/* --- 6. Territory: the ground is lit by what is on screen -------------------
+   Publish the ranks of the items visible in the four screen corners as
+   --ta-top / --ta-bottom / --tb-top / --tb-bottom (0..1) on .ground. The four
+   corner colours are exactly the hues of those items. Registered numbers
+   transition, so the light drifts as the lists scroll. */
+.ground {
+  --remaining: 1;   /* 1 -> 0 as the work is finished */
+  --libido: 1;      /* 0..1: how much of the desire the session has kept */
+  /* One charge of light shared among what is still open. */
+  --charge: clamp(0.18, calc(var(--libido) * pow(max(var(--remaining), 0.05), -0.5)), 2.6);
+  position: relative;
+  isolation: isolate;
+  transition:
+    --ta-top 900ms var(--ease-out), --ta-bottom 900ms var(--ease-out),
+    --tb-top 900ms var(--ease-out), --tb-bottom 900ms var(--ease-out);
+  --c-tl: oklch(calc(var(--ramp-l) + var(--a-lift) + var(--a-l0) + var(--a-l1) * var(--ta-top) + var(--a-l2) * var(--ta-top) * var(--ta-top)) calc(var(--ramp-c) * var(--glow-chroma)) calc(var(--a-start) + var(--ta-top) * (var(--a-end) - var(--a-start))));
+  --c-bl: oklch(calc(var(--ramp-l) + var(--a-lift) + var(--a-l0) + var(--a-l1) * var(--ta-bottom) + var(--a-l2) * var(--ta-bottom) * var(--ta-bottom)) calc(var(--ramp-c) * var(--glow-chroma)) calc(var(--a-start) + var(--ta-bottom) * (var(--a-end) - var(--a-start))));
+  --c-tr: oklch(calc(var(--ramp-l) - var(--b-drop) + var(--b-l0) + var(--b-l1) * var(--tb-top) + var(--b-l2) * var(--tb-top) * var(--tb-top)) calc(var(--ramp-c) * var(--glow-chroma)) calc(var(--b-start) + var(--tb-top) * (var(--b-end) - var(--b-start))));
+  --c-br: oklch(calc(var(--ramp-l) - var(--b-drop) + var(--b-l0) + var(--b-l1) * var(--tb-bottom) + var(--b-l2) * var(--tb-bottom) * var(--tb-bottom)) calc(var(--ramp-c) * var(--glow-chroma)) calc(var(--b-start) + var(--tb-bottom) * (var(--b-end) - var(--b-start))));
+}
+.ground::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -4rem;
+  pointer-events: none;
+  --a: calc(var(--backlight) * max(var(--libido), 0.3));
+  background:
+    radial-gradient(50% 46% at 4rem 4rem,                       color-mix(in oklab, var(--c-tl) var(--a), transparent), transparent),
+    radial-gradient(50% 46% at calc(100% - 4rem) 4rem,          color-mix(in oklab, var(--c-tr) var(--a), transparent), transparent),
+    radial-gradient(50% 46% at 4rem calc(100% - 4rem),          color-mix(in oklab, var(--c-bl) var(--a), transparent), transparent),
+    radial-gradient(50% 46% at calc(100% - 4rem) calc(100% - 4rem), color-mix(in oklab, var(--c-br) var(--a), transparent), transparent);
+  /* The layer fades to nothing at its rim, so no light is cut by a box edge. */
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent, #000 4rem, #000 calc(100% - 4rem), transparent),
+    linear-gradient(180deg, transparent, #000 4rem, #000 calc(100% - 4rem), transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent, #000 4rem, #000 calc(100% - 4rem), transparent),
+    linear-gradient(180deg, transparent, #000 4rem, #000 calc(100% - 4rem), transparent);
+  mask-composite: intersect;
+}
+
+/* --- 7. View tiers: the reader's own dials --------------------------------
+   JS publishes settings as data-* on the root; CSS owns every appearance.
+   mini = comfort, micro = reading aids, nano = fine cues. */
+.afterglow[data-vibrance='soft'] {
+  --ramp-c: 0.095; --ember-chroma: 0.55; --flame-chroma: 1.4;
+  --ember-alpha: 10%; --cross-alpha: 16%; --flame-alpha: 26%; --halo-alpha: 14%;
+}
+.afterglow[data-vibrance='bold'] {
+  --ramp-c: 0.18; --ember-chroma: 0.8; --flame-chroma: 1.9;
+  --ember-alpha: 17%; --cross-alpha: 26%; --flame-alpha: 39%; --halo-alpha: 24%;
+}
+.afterglow[data-ramp='off'] { --ramp-c: 0; --ramp-l: 0.72; }
+.afterglow[data-scale='compact'] { --scale: 0.9; }
+.afterglow[data-scale='full']    { --scale: 1.16; }
+
+/* Low-bloom: a dim or smudged screen blooms at highlights, not midtones. Take
+   the bloom away; keep the structure and the hue. Lower the plane, keep the ink. */
+.afterglow:is([data-luma='dim'], [data-luma='veil']) {
+  --ember-alpha: 0%; --cross-alpha: 0%; --flame-alpha: 11%; --halo-alpha: 6%;
+  --ink: #e3e8ee; --muted: #9ba5b1; --paper: #262b33; --grout: #4f5863;
+  --backlight: 20%;
+}
+.afterglow[data-luma='veil'] { --bg: #10151b; --panel: #191f26; --backlight: 12%; }
+.afterglow:is([data-luma='dim'], [data-luma='veil']) :is(.chip, .tile) { text-shadow: none; }
+
+/* Best-effort glow: set data-glow="off" for a frame or two after the selection
+   changes, so blurred shadows are not painted on the expensive first frame. */
+.afterglow[data-glow='off'] li.is-selected > .chip { box-shadow: none !important; animation: none !important; }
+
+/* --- 8. The View panel -------------------------------------------------------
+   A native <details>: keyboard and screen-reader correct for free. Opens UPWARD
+   from the dock (the ground owns the space above it) and scrolls rather than
+   running past a short window. The pressed choice takes its tier's accent so a
+   row is recognisable by colour alone: comfort green, reading amber, cues blue. */
+.view-cluster { position: relative; }
+.view-cluster-summary {
+  display: inline-flex; align-items: center; height: 40px; padding: 0 10px;
+  border-radius: 8px; color: var(--muted); font-size: 0.78rem; font-weight: 600;
+  letter-spacing: 0.04em; list-style: none; cursor: pointer;
+  transition: color var(--dur-quick) var(--ease-out), background-color var(--dur-quick) var(--ease-out), transform var(--dur-quick) var(--ease-out);
+}
+.view-cluster-summary::-webkit-details-marker { display: none; }
+.view-cluster-summary:hover, .view-cluster[open] .view-cluster-summary {
+  background: color-mix(in oklab, var(--ink) 8%, transparent); color: var(--ink);
+}
+.view-cluster-summary:active { transform: scale(0.96); transition-duration: 60ms; }
+.view-cluster-panel {
+  position: absolute; z-index: 30; right: 0; bottom: calc(100% + 8px);
+  display: grid; gap: 9px; width: 300px; padding: 12px; box-sizing: border-box;
+  border: 1px solid var(--panel-edge); border-radius: 12px;
+  background: linear-gradient(180deg, var(--panel-light), var(--panel));
+  box-shadow: 0 14px 34px -12px rgba(0, 0, 0, 0.8);
+  max-height: min(72dvh, 620px); overflow: auto;
+}
+.view-tier { display: grid; gap: 6px; margin: 0; padding: 8px; border: 1px solid color-mix(in oklab, var(--ink) 7%, transparent); border-radius: 10px; }
+.view-tier legend { display: flex; align-items: baseline; gap: 6px; padding: 0 4px; color: var(--muted); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.view-tier-hint { letter-spacing: 0.04em; text-transform: none; opacity: 0.75; }
+.view-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.view-row-label { font-size: 0.76rem; }
+.view-choices { display: inline-flex; gap: 4px; }
+.view-choice {
+  min-height: 28px; padding: 2px 9px; border: 1px solid var(--panel-edge); border-radius: 8px;
+  background: var(--panel-light); color: var(--muted); font: inherit; font-size: 0.72rem; font-weight: 600; cursor: pointer;
+}
+.view-choice:hover { border-color: var(--muted); color: var(--ink); }
+.view-choice[aria-pressed='true'] { border-color: currentColor; color: var(--ink); box-shadow: inset 0 1px 0 var(--glint); }
+.view-tier[data-tier='mini']  .view-choice[aria-pressed='true'] { color: var(--ok); }
+.view-tier[data-tier='micro'] .view-choice[aria-pressed='true'] { color: var(--pole-a); }
+.view-tier[data-tier='nano']  .view-choice[aria-pressed='true'] { color: var(--pole-b); }
+.view-reset { justify-self: start; padding: 2px 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: 0.7rem; text-decoration: underline; cursor: pointer; }
+.view-reset:hover { color: var(--ink); }
+.afterglow :is(button, a, summary, select):focus-visible { outline: 2px solid var(--pole-b); outline-offset: 3px; }
+
+@media (prefers-contrast: more) { .afterglow { --grout: #6b7480; --panel-edge: #78818c; } }
+
+/* Finite motion only, and only if the reader allows it. The light stays. */
+@media (prefers-reduced-motion: reduce) {
+  .afterglow *, .afterglow *::before, .afterglow *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

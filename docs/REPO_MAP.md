@@ -189,6 +189,15 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `docs/adr/0002-in-browser-model-runtime.md`
 - `docs/adr/0003-local-ollama-native-runtime.md`
 - `docs/content-scan.md`
+- `docs/design-language/AGENT_CORE.md`
+- `docs/design-language/DESIGN_LANGUAGE.md`
+- `docs/design-language/README.md`
+- `docs/design-language/starter/afterglow.css`
+- `docs/design-language/starter/demo.html`
+- `docs/design-language/starter/fit-contour.mjs` — `inGamut:26`, `bestL:42`, `samples:52`, `offsets:53`, `S:56`, `B:62`
+- `docs/design-language/starter/territory.js` — `edgeRanks:6`, `visible:8`, `rank:13`, `publishTerritory:17`, `publish:19`, `schedule:26`
+- `docs/design-language/starter/view-panel.js` — `mountViewPanel:3`, `sync:20`
+- `docs/design-language/starter/view-settings.js` — `VIEW_SETTINGS_KEY:6`, `TIERS:8`, `VIEW_DEFAULTS:23`, `normalizeViewSettings:33`, `prefersLowBloom:45`, `readViewSettings:51`, `writeViewSettings:58`, `viewAttributes:63`, `applyViewSettings:72`, `createRamp:79`, `unique:80`
 - `docs/evidence/live-model-smoke-holdout-v1.20260928.json`
 - `docs/evidence/model-evaluation-holdout-v1.structural.json`
 - `docs/evidence/private-clue-benchmark-laneA-v1.20261003.json`
