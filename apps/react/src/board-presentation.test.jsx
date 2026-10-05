@@ -47,7 +47,7 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-async function mountBoard(customEntries) {
+async function mountBoard(customEntries, notepad) {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   const socket = { on: vi.fn(), emit: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), removeAllListeners: vi.fn() };
   const axios = { get: vi.fn(async () => ({ data: { entries: [] } })), post: vi.fn(async () => ({ data: {} })) };
@@ -55,7 +55,7 @@ async function mountBoard(customEntries) {
   controllers.push(controller);
   const { app } = controller;
   // The fixture stands in for the daily load: the board is drawn from the entries.
-  app.currentPuzzleMetadata = { date: '260829', title: 'Synthetic fixture', authors: ['Test'], width: 11, height: 5 };
+  app.currentPuzzleMetadata = { date: '260829', title: 'Synthetic fixture', authors: ['Test'], width: 11, height: 5, ...(notepad ? { notepad } : {}) };
   app.crossword = customEntries || entries();
   // The behaviour narrates its grid build; the test reads the board, not the log.
   const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -91,6 +91,22 @@ async function choose(host, row, choice) {
   if (!button) throw new Error(`Row "${row}" has no choice "${choice}". Choices: ${buttons.map((one) => one.textContent).join(', ')}`);
   await act(async () => { button.dispatchEvent(new window.MouseEvent('click', { bubbles: true })); });
 }
+
+it('gives the constructor note its own masthead row, outside the title column', async () => {
+  const note = 'When this puzzle is completed, the circled letters spell a name.';
+  const host = await mountBoard(undefined, note);
+  const notepad = host.querySelector('.puzzle-notepad');
+  expect(notepad.textContent).toBe(note);
+  // A direct child of the masthead is what the notepad grid row (and the
+  // matching extra space above the board) keys on.
+  expect(notepad.parentElement.id).toBe('menu-top');
+  expect(host.querySelector('.info-bar .puzzle-notepad')).toBeNull();
+});
+
+it('leaves the masthead without a note row when the puzzle carries none', async () => {
+  const host = await mountBoard();
+  expect(host.querySelector('.puzzle-notepad')).toBeNull();
+});
 
 it('puts the reader view settings on the board for CSS to read', async () => {
   const host = await mountBoard();

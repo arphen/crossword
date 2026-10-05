@@ -459,6 +459,7 @@
    shares one motion curve and two durations. */
 #app.react-desktop-app {
     --top-band: 96px;
+    --notepad-band: 34px;
     --bottom-band: 84px;
     --bezel: 6px;
     --overlap: 0.3;
@@ -622,11 +623,34 @@
     text-overflow: ellipsis;
 }
 
+/* The constructor's note has its own full-width row under the title, so it
+   reads in full instead of being squeezed beside the stats. The space above
+   the board grows by that row (--notepad-band: a wrapped two-line note and
+   its gap), so the masthead floats over the board's edge by the same sliver
+   whether or not a puzzle carries a note. */
 #app.react-desktop-app .puzzle-notepad {
-    max-width: 100%;
+    grid-area: notepad;
+    box-sizing: border-box;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
     color: var(--react-muted);
     font-size: 0.72rem;
+    font-style: italic;
     line-height: 1.3;
+    opacity: 1;
+    text-align: left;
+}
+#app.react-desktop-app #menu-top:has(> .puzzle-notepad) {
+    grid-template-areas:
+        "info time score"
+        "notepad notepad notepad"
+        "progress progress progress";
+}
+#app.react-desktop-app:has(.puzzle-notepad) {
+    --top-band: calc(96px + var(--notepad-band));
 }
 
 /* The stats' wrapper dissolves, so each stat takes its own place in the

@@ -608,10 +608,10 @@ export default function CrosswordView({
                                     <span className="puzzle-authors" data-full-text={app.currentPuzzleMetadata.authors.join(', ')} title={app.currentPuzzleMetadata.authors.join(', ')}>{app.currentPuzzleMetadata.authors.join(', ')}</span>
                                 </span>
                             )}
-                            {Boolean(app.currentPuzzleMetadata && app.currentPuzzleMetadata.notepad) && (
-                                <div className="puzzle-notepad">{app.currentPuzzleMetadata.notepad}</div>
-                            )}
                         </div>
+                        {Boolean(app.currentPuzzleMetadata && app.currentPuzzleMetadata.notepad) && (
+                            <div className="puzzle-notepad">{app.currentPuzzleMetadata.notepad}</div>
+                        )}
 
                         <div className="menu-row indicator-bar">
                             <div className="stat-item stat-progress" style={/** @type {React.CSSProperties} */ ({ '--progress': entries.length ? completedWords.size / entries.length : 0 })}>
