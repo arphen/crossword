@@ -15,7 +15,10 @@ export function createController(createOptions, configuration = {}) {
   let started = false;
   let app;
   const nextTicks = [];
-  const socket = configuration.socket ?? io({ autoConnect: false });
+  // Websocket-only: long-polling parks a server thread per client for the whole
+  // ping interval, and a reload leaves the old poll holding its thread, which
+  // starves ordinary requests under a threaded production server.
+  const socket = configuration.socket ?? io({ autoConnect: false, transports: ['websocket'] });
   const notify = () => { if (alive) { revision++; listeners.forEach(listener => listener()); } };
   const unwrap = value => rawValues.get(value) ?? value;
   function observe(value) {
@@ -82,7 +85,7 @@ export function createController(createOptions, configuration = {}) {
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     snapshot: () => revision,
     flush() { nextTicks.splice(0).forEach(callback => callback()); },
-    start() { if (started) return; started = true; options.created?.call(app); options.mounted?.call(app); socket.connect?.(); },
+    start() { if (started) return; started = true; options.created?.call(app); options.mounted?.call(app); if (!options.deferSocket) socket.connect?.(); },
     dispose() {
       options.beforeUnmount?.call(app); alive = false;
       window.removeEventListener('online', app.handleOnlineStatus);
