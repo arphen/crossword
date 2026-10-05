@@ -84,7 +84,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/behavior/desktop-cache.test.js`
 - `apps/react/src/behavior/desktop-focus.test.js`
 - `apps/react/src/behavior/desktop.d.ts` — `createOptions:2`
-- `apps/react/src/behavior/desktop.js` — `focusCell:9`, `scroll:28`, `focusEntryStart:35`, `createOptions:38`, `data:41`, `isHalfCompleted:120`, `weekdayOptions:126`, `selectedWeekday:137`, `activeDirection:140`, `created:149`, `beforeUnmount:179`, `checkAndStartCaching:186`, `needsMore:189`, `handleOnlineStatus:217`, `updateCachedCounts:226`, `updateSolvedCounts:233` (+85 more)
+- `apps/react/src/behavior/desktop.js` — `focusCell:9`, `scroll:28`, `focusEntryStart:35`, `createOptions:38`, `data:44`, `isHalfCompleted:123`, `weekdayOptions:129`, `selectedWeekday:140`, `activeDirection:143`, `created:152`, `beforeUnmount:182`, `checkAndStartCaching:189`, `needsMore:192`, `handleOnlineStatus:220`, `updateCachedCounts:229`, `updateSolvedCounts:236` (+85 more)
 - `apps/react/src/behavior/mobile.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/mobile.js` — `createOptions:3`, `myEntries:19`, `sortedEntries:23`, `checkButtonLabel:33`, `toggleCheck:38`, `clearIncorrectAndMarkSolved:48`, `isPerfect:57`, `isEntryFilled:91`, `isCellCorrect:96`, `loadPuzzle:102`, `getCellValue:111`, `getCoordinates:115`, `selectEntry:125`, `focusInput:134`, `handleInput:143`, `handleKeydown:167` (+3 more)
 - `apps/react/src/board-presentation.test.jsx`
@@ -94,7 +94,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/celebration.js` — `countMistakes:5`, `celebrationTier:25`, `seeded:37`, `sparkSpecs:50`, `raptureNote:66`, `finaleMessage:74`, `confettiSpecs:89`
 - `apps/react/src/celebration.test.js`
 - `apps/react/src/controller.d.ts` — `ControllerConfiguration:9`, `Controller:16`, `createController:26`
-- `apps/react/src/controller.js` — `createController:6`, `notify:19`, `unwrap:20`, `observe:21`, `get:28`, `set:45`, `deleteProperty:54`, `setTimeout:61`, `clearTimeout:62`, `setInterval:63`, `clearInterval:64`, `requestAnimationFrame:65`, `cancelAnimationFrame:66`, `subscribe:82`, `flush:84`, `start:85` (+1 more)
+- `apps/react/src/controller.js` — `createController:6`, `notify:22`, `unwrap:23`, `observe:24`, `get:31`, `set:48`, `deleteProperty:57`, `setTimeout:64`, `clearTimeout:65`, `setInterval:66`, `clearInterval:67`, `requestAnimationFrame:68`, `cancelAnimationFrame:69`, `subscribe:85`, `flush:87`, `start:88` (+1 more)
 - `apps/react/src/cssVars.js` — `cssVars:2`
 - `apps/react/src/desktop.css`
 - `apps/react/src/future/AssistancePanel.jsx` — `idFor:4`, `blankCell:8`, `revealEntry:14`, `AssistanceLadder:32`, `hasBlank:48`
