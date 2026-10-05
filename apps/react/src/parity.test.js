@@ -263,6 +263,26 @@ describe('desktop reference contracts (controller method tests)', () => {
   });
 });
 
+describe('socket connection', () => {
+  it('stays closed on the desktop until a multiplayer session starts', async () => {
+    const { app, controller, socket, axios } = fresh();
+    axios.get.mockResolvedValue({ data: { qr_image: 'qr' } });
+    axios.post.mockResolvedValue({ data: { room_id: 'ABCD' } });
+    controller.start();
+    expect(socket.connect).not.toHaveBeenCalled();
+    app.currentPuzzleMetadata = { ...metadata };
+    await app.startMultiplayerSession();
+    expect(socket.connect).toHaveBeenCalledOnce();
+    expect(socket.emit).toHaveBeenCalledWith('join', { room: 'ABCD', role: 'host' });
+  });
+
+  it('connects immediately on the mobile controller', () => {
+    const { controller, socket } = fresh(mobileOptions);
+    controller.start();
+    expect(socket.connect).toHaveBeenCalledOnce();
+  });
+});
+
 describe('mobile reference contracts (controller method tests)', () => {
   it('check-then-clear marks only fully correct own entries and emits actual coordinate clears', () => {
     const { app, socket, controller } = fresh(mobileOptions);

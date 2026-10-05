@@ -160,8 +160,10 @@ clean: ## Remove generated caches and browser assets
 	@rm -rf .coverage htmlcov coverage .uv_cache playwright-report test-results .stryker-tmp reports/mutation src/crossword/static/lib src/crossword/static/react
 	@echo "$(GREEN)Generated files cleaned; lockfiles and source are unchanged.$(NC)"
 
+# Socket.IO needs a single worker (room state is in-process) and one thread per
+# live connection, so keep the pool far larger than the number of open clients.
 run-prod: check-uv ## Serve the built app with a production WSGI server (CROSSWORD_PORT, default 5001)
-	uv run --no-sync gunicorn -w 1 --threads 4 --bind "0.0.0.0:$${CROSSWORD_PORT:-5001}" src.crossword.app:app
+	uv run --no-sync gunicorn -w 1 --threads "$${CROSSWORD_THREADS:-64}" --bind "0.0.0.0:$${CROSSWORD_PORT:-5001}" src.crossword.app:app
 
 shell: check-uv ## Open a Python shell inside the uv environment
 	uv run python

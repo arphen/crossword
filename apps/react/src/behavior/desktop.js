@@ -37,6 +37,9 @@ export function focusEntryStart(controller, entry) {
 }
 export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout, clearTimeout, setInterval, clearInterval, requestAnimationFrame, cancelAnimationFrame }) {
   return {
+    // The solver only needs a socket for multiplayer; connecting at startup
+    // would hold a server thread for every open tab.
+    deferSocket: true,
     delimiters: ['[[', ']]'],
     data() {
         // Check initial color scheme preference
@@ -1450,7 +1453,9 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 const qr2 = await axios.get(`/api/multiplayer/qr/${this.multiplayerRoomId}/down`);
                 this.qrDown = qr2.data.qr_image;
 
-                // Join room as spectator/host
+                // Join room as spectator/host (the socket is opened on demand;
+                // emits are buffered until it connects)
+                socket.connect?.();
                 socket.emit('join', { room: this.multiplayerRoomId, role: 'host' });
 
             } catch (error) {
