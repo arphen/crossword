@@ -1,7 +1,9 @@
 import { test, expect } from './fixtures';
 
-async function readFutureSolveJournal(page) {
-  return page.evaluate(async () => {
+// The store keeps one row per session, in key order, so a finished solve's row
+// can sit beside its replacement. Pass `exceptSessionId` to read the other one.
+async function readFutureSolveJournal(page, exceptSessionId?: string) {
+  return page.evaluate(async (exceptSessionId) => {
     const database = await new Promise((resolve, reject) => {
       const open = indexedDB.open('crossword');
       open.onsuccess = () => resolve(open.result);
@@ -14,8 +16,10 @@ async function readFutureSolveJournal(page) {
       read.onerror = () => reject(read.error);
     });
     database.close();
-    return rows.find((row) => row.kind === 'future-session-journal-v1');
-  });
+    return rows.find(
+      (row) => row.kind === 'future-session-journal-v1' && row.sessionId !== exceptSessionId,
+    );
+  }, exceptSessionId);
 }
 
 async function enterAndMakePersonalPuzzle(page) {
@@ -214,8 +218,15 @@ test('future carries a finished solve through a saved, revisable reflection', as
   expect((await nextJobCreated).status()).toBe(202);
   await expect(page.locator('.future-solver #check-all')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('.future-reflections')).toHaveCount(0);
-  const nextJournal = await readFutureSolveJournal(page);
-  expect(nextJournal.status).toBe('active');
+  // The old deck is cleared synchronously when the board is restored, but the
+  // replacement session's journal row is written afterwards, and the finished
+  // row may still be in the store beside it. Read the other session's row.
+  await expect
+    .poll(async () => (await readFutureSolveJournal(page, finishedJournal.sessionId))?.status, {
+      timeout: 10_000,
+    })
+    .toBe('active');
+  const nextJournal = await readFutureSolveJournal(page, finishedJournal.sessionId);
   expect(nextJournal.sessionId).not.toBe(finishedJournal.sessionId);
 });
 
