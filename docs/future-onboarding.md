@@ -200,8 +200,9 @@ currently on screen.
 
 The same creation panel exposes a local writing-model selector. **Automatic**
 keeps the host's preferred installed model order (large tier first, then
-local-small); choosing any allowlisted tag — Gemma 4 26B, Qwen 3.8 27B,
-Gemma 4 31B, Gemma 3 27B, Llama 3.2 3B, or Gemma 3 4B — sends that exact tag
+local-small, then the 8–14 B local-mid tier); choosing any allowlisted tag —
+Gemma 4 26B, Qwen 3.8 27B, Gemma 4 31B, Gemma 3 27B, Llama 3.2 3B, Gemma 3 4B,
+Llama 3.1 8B, Qwen 3 8B, Gemma 3 12B, or Qwen 3 14B — sends that exact tag
 through the durable job. The choice is part of the profile draft and is included when the
 player uses the constellation panel's existing **Save changes** action, so a
 later session restores the same preference. Flask checks the tag against this
@@ -404,9 +405,14 @@ a learning or mastery claim.
 
 For local use, install project dependencies with `make setup`, ensure Ollama
 is running with one supported model installed. Small local-small tags
-(`llama3.2:3b`, `gemma3:4b`) fit a 16 GB host; the large tier
-(`gemma4:26b`, `qwen3.8:27b`, `gemma4:31b`, `gemma3:27b`) needs ~15-18 GB
-and is selected first only where installed. Before starting the server, use
+(`llama3.2:3b`, `gemma3:4b`) fit a 16 GB host; the local-mid tier
+(`llama3.1:8b`, `qwen3:8b`, `gemma3:12b`, `qwen3:14b`) also fits but is never
+chosen automatically (name it with `CROSSWORD_PUZZLE_MODEL` or the profile
+preference), and the larger two may need a raised Metal wired limit; the large
+tier (`gemma4:26b`, `qwen3.8:27b`, `gemma4:31b`, `gemma3:27b`) needs ~15-18 GB
+and is selected first only where installed. An optional cloud clue model
+(`cloud:<name>`) is off by default; see
+[the generation plan](plans/16_GENERATION_PLAN.md). Before starting the server, use
 the read-only runtime doctor:
 
 ```sh
