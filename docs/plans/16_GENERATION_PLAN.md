@@ -102,3 +102,13 @@ These are estimates from memory bandwidth (150 GB/s on the M3 Pro) and must be r
 ## 8. First action
 
 `G1`: the adapter interface with the cloud adapter optional and off by default, the host receipt for three or four local candidates, and the thirty-answer blind bake-off. Everything after it is ordered by what that comparison shows.
+
+### G1 status (6 October)
+
+Built, offline-tested, and awaiting the owner's machine:
+
+- `src/crossword/clue_model.py`: the `ClueModelAdapter` seam behind `_chat`. A plain tag is the unchanged local Ollama call; `local:<name>` is a loopback OpenAI-compatible server (llama.cpp, MLX); `cloud:<name>` is the optional extension, off unless `CROSSWORD_CLOUD_CLUE_ENABLED=1` and configured by `CROSSWORD_CLOUD_CLUE_URL` / `_API_KEY`. Cloud calls must declare a clue-writing purpose and a clue-shaped JSON payload or they are refused; `_chat` call sites that are not yet labelled therefore cannot reach the cloud. Failures surface as the exceptions callers already handle, so a retired provider degrades to scaffolds. A content-free call trace records seed, temperature, token budget and timing.
+- `local-mid` registry tier (`llama3.1:8b`, `qwen3:8b`, `gemma3:12b`, `qwen3:14b`): admissible when named, deliberately last in the automatic order. The memory ceilings are estimates until the host receipt replaces them, and the list is a starting set to be checked against what is installed (including smaller Gemma 4 variants), not a recommendation.
+- `scripts/clue-bakeoff.py` with `src/crossword/clue_bakeoff.py`: `pipeline` clues the answers with the current pipeline (placeholders left out as missing), `prepare` drafts further arms and writes a shuffled, unlabelled `sheet.html` plus a secret key, and `score` turns the owners' keep / enjoyed-the-wordplay / best marks into a counts-only attestation. Its lane prompts are a prototype that `G4` replaces.
+
+Still to do for `G1`: run `scripts/private-host-model-tiers.py` on the M3 Pro for the host receipt (it already probes every installed registry tag), write the thirty answers with angles, run the bake-off, and thread the call trace into the puzzle receipt.
