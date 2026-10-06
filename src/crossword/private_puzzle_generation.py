@@ -34,6 +34,7 @@ from .clue_grammar_bridge import (
 )
 from .clue_grounding_validators import validate_private_clue_witnesses
 from .clue_genre import observe_clue_genre
+from .clue_model import ChatCall, resolve_adapter, run_chat
 from .clue_witness import witness_clue_family
 from .private_clue_corpus import append_corpus_records, build_corpus_records
 from .clue_semantic_challenger import (
@@ -1010,25 +1011,26 @@ def _lenient_json_loads(content):
         return json.loads(candidate), True
 
 
-_EXPLICIT_MODEL_TAGS = (
-    "gemma4:26b",
-    "qwen3.8:27b",
-    "gemma4:31b",
-    "gemma3:27b",
-    "llama3.2:3b",
-    "gemma3:4b",
-)
-
 # Model tiers: large tags exceed a 16 GB host and only run where ~15-18 GB
 # of weights fit; local-small tags are the lane this host can run. Order
 # matters: selection prefers large where installed (quality incumbents keep
 # their default) and falls through to local-small where large do not fit.
-# The fixture tier carries no tag; synthetic doubles run without a model.
+# local-mid (8-14 B at 4-bit) is admissible when named explicitly (the
+# CROSSWORD_PUZZLE_MODEL variable or the saved profile preference) but is
+# deliberately last in the automatic order: which mid tag, if any, earns the
+# default is the G1 bake-off's decision, not this table's. The fixture tier
+# carries no tag; synthetic doubles run without a model. Adapter-prefixed tags
+# (``cloud:``, ``local:``, ``fixture:``) are never in this table, so automatic
+# selection and the browser override cannot reach them.
 _MODEL_TIERS = {
     "large": ("gemma4:26b", "qwen3.8:27b", "gemma4:31b", "gemma3:27b"),
     "local-small": ("llama3.2:3b", "gemma3:4b"),
+    "local-mid": ("llama3.1:8b", "qwen3:8b", "gemma3:12b", "qwen3:14b"),
     "fixture": (),
 }
+_EXPLICIT_MODEL_TAGS = tuple(
+    tag for tier in ("large", "local-small", "local-mid") for tag in _MODEL_TIERS[tier]
+)
 
 # Steady-state resident bytes including KV cache, per tag. Large tags exceed
 # this host's ~10.2 GiB Metal budget; that is an admissibility fact, not a
@@ -1040,6 +1042,15 @@ _MODEL_MEMORY_CEILINGS = {
     "gemma3:27b": 18_000_000_000,
     "llama3.2:3b": 3_000_000_000,
     "gemma3:4b": 4_500_000_000,
+    # local-mid ceilings are estimates (weights at Q4 plus an 8192-token KV
+    # cache), to be replaced by the measured G1 host receipt. gemma3:12b is
+    # close to, and qwen3:14b past, the ~10.2 GiB default Metal budget of a
+    # 16 GB Mac; they need `sudo sysctl iogpu.wired_limit_mb=<higher>` and the
+    # browser closed, which is why admissibility here is not a quality ranking.
+    "llama3.1:8b": 6_000_000_000,
+    "qwen3:8b": 6_500_000_000,
+    "gemma3:12b": 10_000_000_000,
+    "qwen3:14b": 11_500_000_000,
 }
 
 # Explicit sampling parameters per tier, sent on every /api/chat call.
@@ -1052,13 +1063,26 @@ _MODEL_MEMORY_CEILINGS = {
 _TIER_SAMPLING = {
     "large": {"topP": None, "numCtx": None, "seed": None},
     "local-small": {"topP": None, "numCtx": 8192, "seed": None},
+    "local-mid": {"topP": None, "numCtx": 8192, "seed": None},
     "fixture": {"topP": None, "numCtx": None, "seed": None},
+    # Adapter-prefixed tags: the server owns its context window.
+    "cloud-extension": {"topP": None, "numCtx": None, "seed": None},
+    "local-openai": {"topP": None, "numCtx": None, "seed": None},
 }
+
+_ADAPTER_PREFIX_TIERS = (
+    ("cloud:", "cloud-extension"),
+    ("local:", "local-openai"),
+    ("fixture:", "fixture"),
+)
 
 
 def _model_tier(model) -> str:
     """Return the registry tier for a tag, or unlisted for unknown tags."""
     normalized = model.casefold() if isinstance(model, str) else ""
+    for prefix, tier in _ADAPTER_PREFIX_TIERS:
+        if normalized.startswith(prefix):
+            return tier
     for tier, tags in _MODEL_TIERS.items():
         if normalized in [tag.casefold() for tag in tags]:
             return tier
@@ -2122,7 +2146,13 @@ def _theme_exposure_receipt(context, theme_entries):
     }
 
 
-def _chat(model, messages, schema, *, timeout, tokens, temperature, seed=None, top_p=None, num_ctx=None, lenient=False):
+def _chat(model, messages, schema, *, timeout, tokens, temperature, seed=None, top_p=None, num_ctx=None, lenient=False, purpose=None):
+    """One structured model call, routed through the clue-model adapters.
+
+    A plain tag is the local Ollama runtime exactly as before. ``purpose``
+    names what the call is for; only clue-writing purposes may reach the
+    optional cloud adapter, and a call that does not say is refused there.
+    """
     sampling = _tier_sampling(model)
     if top_p is None:
         top_p = sampling.get("topP")
@@ -2130,24 +2160,20 @@ def _chat(model, messages, schema, *, timeout, tokens, temperature, seed=None, t
         num_ctx = sampling.get("numCtx")
     if seed is None:
         seed = sampling.get("seed")
-    options = {"temperature": temperature, "num_predict": tokens}
-    if top_p is not None:
-        options["top_p"] = top_p
-    if num_ctx is not None:
-        options["num_ctx"] = num_ctx
-    if seed is not None:
-        options["seed"] = seed
-    response = requests.post(
-        "http://127.0.0.1:11434/api/chat",
-        timeout=(2, timeout),
-        json={
-            "model": model,
-            "stream": False,
-            "think": False,
-            "format": schema,
-            "options": options,
-            "messages": messages,
-        },
+    response = run_chat(
+        resolve_adapter(model),
+        ChatCall(
+            model=model,
+            messages=messages,
+            schema=schema,
+            timeout=timeout,
+            tokens=tokens,
+            temperature=temperature,
+            seed=seed,
+            top_p=top_p,
+            num_ctx=num_ctx,
+            purpose=purpose,
+        ),
     )
     return _response_json(response, lenient=lenient)
 
@@ -5832,6 +5858,7 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     tokens=max(600, len(batch) * draft_tokens),
                     temperature=draft_temperature,
                     seed=seed,
+                    purpose="clue-draft",
                 )
             except (requests.RequestException, ValueError, TypeError, KeyError) as error:
                 for entry in batch:
@@ -6049,6 +6076,7 @@ def _make_candidate_clues(model, entries, context, weekday, *, reviewed_pack=Non
                     tokens=compare_tokens,
                     temperature=compare_temperature,
                     seed=seed,
+                    purpose="clue-compare",
                 ),
                 [item["draftId"] for item in survivors],
             )

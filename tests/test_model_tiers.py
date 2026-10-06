@@ -116,4 +116,84 @@ def test_policy_receipt_carries_tier_and_sampling():
 def test_readiness_lists_small_tags_after_large():
     tags = preferred_model_tags({})
     assert tags[:4] == ["gemma4:26b", "qwen3.8:27b", "gemma4:31b", "gemma3:27b"]
-    assert tags[4:] == ["llama3.2:3b", "gemma3:4b"]
+    assert tags[4:6] == ["llama3.2:3b", "gemma3:4b"]
+    assert tags[6:] == ["llama3.1:8b", "qwen3:8b", "gemma3:12b", "qwen3:14b"]
+
+
+def test_readiness_tags_match_the_generation_registry():
+    # The two lists are separate constants; this is the drift guard.
+    assert preferred_model_tags({}) == list(generation._EXPLICIT_MODEL_TAGS)
+
+
+def test_mid_tier_is_admissible_but_never_the_automatic_default(monkeypatch):
+    for tag in ("llama3.1:8b", "qwen3:8b", "gemma3:12b", "qwen3:14b"):
+        assert generation._model_tier(tag) == "local-mid"
+        assert tag in generation._EXPLICIT_MODEL_TAGS
+        assert generation._tier_sampling(tag)["numCtx"] == 8192
+        assert generation._MODEL_MEMORY_CEILINGS[tag] > 5_000_000_000
+    # With a small and a mid tag installed, the automatic choice stays small.
+    monkeypatch.setattr(
+        generation, "_ollama_installed_models", lambda: {"gemma3:12b", "llama3.2:3b"}
+    )
+    monkeypatch.delenv("CROSSWORD_PUZZLE_MODEL", raising=False)
+    monkeypatch.delenv("CROSSWORD_PROFILE_MODEL", raising=False)
+    assert generation._installed_model() == "llama3.2:3b"
+    # Naming it explicitly selects it.
+    monkeypatch.setenv("CROSSWORD_PUZZLE_MODEL", "gemma3:12b")
+    assert generation._installed_model() == "gemma3:12b"
+    assert generation._resolve_model_override("gemma3:12b") == "gemma3:12b"
+
+
+def test_adapter_prefixed_tags_are_not_registry_tags():
+    assert generation._model_tier("cloud:muse") == "cloud-extension"
+    assert generation._model_tier("local:mlx-clue") == "local-openai"
+    assert generation._model_tier("fixture:echo") == "fixture"
+    for tag in ("cloud:muse", "local:mlx-clue", "fixture:echo"):
+        assert tag not in generation._EXPLICIT_MODEL_TAGS
+        with pytest.raises(ValueError):
+            generation._resolve_model_override(tag)
+
+
+def test_chat_routes_through_a_fixture_adapter_and_records_sampling(monkeypatch):
+    from crossword import clue_model
+
+    clue_model.clear_trace()
+    clue_model.register_fixture("echo", lambda _call: json.dumps({"ok": True}))
+    monkeypatch.setattr(
+        generation.requests, "post", lambda *a, **k: pytest.fail("network used")
+    )
+    value = generation._chat(
+        "fixture:echo", [], {"type": "object"}, timeout=5, tokens=10, temperature=0.4, seed=9,
+        purpose="clue-draft",
+    )
+    assert value == {"ok": True}
+    (record,) = clue_model.recent_calls()
+    assert record["seed"] == 9 and record["purpose"] == "clue-draft"
+    clue_model.clear_fixtures()
+    clue_model.clear_trace()
+
+
+def test_cloud_tag_is_refused_when_the_extension_is_off(monkeypatch):
+    monkeypatch.delenv("CROSSWORD_CLOUD_CLUE_ENABLED", raising=False)
+    monkeypatch.setattr(
+        generation.requests, "post", lambda *a, **k: pytest.fail("network used")
+    )
+    with pytest.raises(ValueError):
+        generation._chat(
+            "cloud:muse", [], {"type": "object"}, timeout=5, tokens=10, temperature=0.4,
+            purpose="clue-draft",
+        )
+
+
+def test_default_chat_with_cloud_unconfigured_only_reaches_loopback(monkeypatch):
+    urls = []
+
+    def fake_post(url, timeout, json):
+        urls.append(url)
+        return _fake_chat_response({"ok": True})
+
+    monkeypatch.setattr(generation.requests, "post", fake_post)
+    for key in ("CROSSWORD_CLOUD_CLUE_ENABLED", "CROSSWORD_CLOUD_CLUE_URL"):
+        monkeypatch.delenv(key, raising=False)
+    generation._chat("llama3.2:3b", [], {"type": "object"}, timeout=5, tokens=10, temperature=0.5)
+    assert urls == ["http://127.0.0.1:11434/api/chat"]
