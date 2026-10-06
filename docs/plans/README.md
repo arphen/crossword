@@ -1,6 +1,6 @@
 # Crossword implementation planning index
 
-Status: updated 1 October 2026. The local Ollama/native runtime direction is accepted, and private profile-seeded play now works end to end. The next run improves clue/theme quality and generation time; that queue is [note 16](16_CLUE_QUALITY_RECOVERY.md).
+Status: updated 6 October 2026. The local Ollama/native runtime direction is accepted, and private profile-seeded play now works end to end. The next run makes clues witty, weekdays distinct and the lexicon worth learning, entirely on the owner's machine; that queue is [note 16](16_GENERATION_PLAN.md).
 
 ## Active specification
 
@@ -38,14 +38,17 @@ generation wait. The separate admitted-content worker, V2 candidate storage,
 diagnostics and publication packet belong to later sharing work; they are not
 requirements for making or playing a private puzzle.
 
-## Next-slice plan (clue quality)
+## Next-slice plan (generation)
 
-[Clue quality recovery](16_CLUE_QUALITY_RECOVERY.md) is the execution queue for
-the complaint that clues are still trivial: five named defects with the code that
-produces each, the model tiers reachable on a 16 GB host, and slices `Q01`–`Q08`
-in backlog-table form. It amends `E05`, `E06`, `E10` and `E18` rather than
-replacing them, and it is the operational half of
-[note 15](15_THE_SELF_CRITIQUE_OF_THE_CONCEPT.md) §4–§7.
+[The generation plan](16_GENERATION_PLAN.md) is the execution queue. It records
+the owner's 6 October requirements (local on a 16 GB M3 Pro in under ten
+minutes, one prompt per clue grammar, weekday voices, world rather than US
+knowledge, a learning episteme, multilingual play, cloud only as an optional
+extension, and a fine-tuned clue model), explains why the 1–3 October run
+converged on literal definitions, and queues workstreams `G1`–`G10`, which
+amend `E04`, `E05`, `E10`, `E12`, `E13`, `E17`, `E20` and `E21`. It replaces
+the earlier note 16, *Clue quality recovery* (`Q01`–`Q09`), which remains in
+git history at `d59a3ab`.
 
 ## Conceptual correspondence
 
