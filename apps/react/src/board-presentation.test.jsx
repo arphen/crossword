@@ -271,6 +271,40 @@ it('publishes each answer\u2019s fading light on its squares', async () => {
   }
 });
 
+it('follows the direction being solved, so CSS can light one lane at a time', async () => {
+  const host = await mountBoard();
+  const { app } = controllers[controllers.length - 1];
+  const across = app.crossword.find((entry) => entry.direction === 'across');
+  const down = app.crossword.find((entry) => entry.direction === 'down');
+  await act(async () => { app.handle_clue_click({}, down); });
+  expect(board(host).dataset.direction).toBe('down');
+  await act(async () => { app.handle_clue_click({}, across); });
+  expect(board(host).dataset.direction).toBe('across');
+});
+
+it('settles a solved word’s own squares, not the ones an open word still crosses', async () => {
+  const host = await mountBoard();
+  const { app } = controllers[controllers.length - 1];
+  // Solve only the Down word: NEVER, down the first column.
+  await act(async () => {
+    [...'NEVER'].forEach((letter, row) => { app.grid[row][0] = letter; });
+    app.check_all();
+  });
+  const square = (row, column) => host.querySelectorAll('.grid-row')[row].querySelectorAll('.grid-cell')[column];
+  // The middle of the column belongs to that word alone: finished with.
+  expect(square(2, 0).getAttribute('data-solved')).toBe('down');
+  expect(square(2, 0).hasAttribute('data-solved-all')).toBe(true);
+  // The top and the foot are also the starts of open Across words, so their
+  // letters are still clues there and keep most of their contrast.
+  for (const row of [0, 4]) {
+    expect(square(row, 0).getAttribute('data-solved')).toBe('down');
+    expect(square(row, 0).hasAttribute('data-solved-all')).toBe(false);
+  }
+  // Squares of unsolved words carry neither mark.
+  expect(square(0, 5).hasAttribute('data-solved')).toBe(false);
+  expect(square(0, 5).hasAttribute('data-solved-all')).toBe(false);
+});
+
 it('hands the appearance back to CSS when a view choice changes', async () => {
   const host = await mountBoard();
   await choose(host, 'Letter track', 'Solid');

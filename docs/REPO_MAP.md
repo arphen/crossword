@@ -75,7 +75,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/index.html`
 - `apps/react/package.json`
 - `apps/react/src/ClueSpring.jsx` — `readCentres:11`, `readHeight:24`, `ClueSpring:31`, `redraw:48`, `signature:71`, `schedule:87`, `retrace:96`
-- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:15`, `clueSignalKind:31`, `renderClueSurface:41`, `classes:69`, `CrosswordView:79`, `scheduleTerritory:98`, `changeSettings:109`, `describeRebusInput:114`, `entryContainsCell:131`, `entryAtCell:136`, `directional:137`, `tokenAt:150`, `displayGridValue:153`, `gridValues:178`, `clueClasses:181`, `cellPresentation:219` (+26 more)
+- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:15`, `clueSignalKind:31`, `renderClueSurface:41`, `classes:69`, `CrosswordView:79`, `scheduleTerritory:98`, `changeSettings:109`, `describeRebusInput:114`, `entryContainsCell:131`, `entryAtCell:136`, `directional:137`, `tokenAt:150`, `displayGridValue:153`, `gridValues:178`, `clueClasses:181`, `cellPresentation:219` (+28 more)
 - `apps/react/src/CrosswordView.test.jsx`
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
 - `apps/react/src/Rapture.jsx` — `RaptureSparks:11`, `RaptureLayer:34`, `Confetti:52`, `Finale:80`
@@ -88,7 +88,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/behavior/mobile.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/mobile.js` — `createOptions:3`, `myEntries:19`, `sortedEntries:23`, `checkButtonLabel:33`, `toggleCheck:38`, `clearIncorrectAndMarkSolved:48`, `isPerfect:57`, `isEntryFilled:91`, `isCellCorrect:96`, `loadPuzzle:102`, `getCellValue:111`, `getCoordinates:115`, `selectEntry:125`, `focusInput:134`, `handleInput:143`, `handleKeydown:167` (+3 more)
 - `apps/react/src/board-presentation.test.jsx`
-- `apps/react/src/boardCues.js` — `balancedRuns:7`, `isWordSeparator:22`, `groupSizes:35`, `groupRuns:43`, `createClueRamp:100`, `clueRampStyle:122`, `entryStartingAt:132`, `spotlightCues:150`, `isOpen:191`, `cellCues:206`
+- `apps/react/src/boardCues.js` — `balancedRuns:7`, `isWordSeparator:22`, `groupSizes:35`, `groupRuns:43`, `createClueRamp:100`, `clueRampStyle:122`, `entryStartingAt:132`, `spotlightCues:150`, `wordsThroughSquares:191`, `isOpen:214`, `cellCues:229`
 - `apps/react/src/boardCues.test.js`
 - `apps/react/src/celebration.css`
 - `apps/react/src/celebration.js` — `countMistakes:5`, `celebrationTier:25`, `seeded:37`, `sparkSpecs:50`, `raptureNote:66`, `finaleMessage:74`, `confettiSpecs:89`

@@ -446,9 +446,17 @@
     inset 0 1px 0 var(--surface-glint),
     0 3px 8px -4px #000c,
     inset 0 0 6px
-      color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent),
+      color-mix(
+        in oklab,
+        var(--clue-ember) calc(var(--ember-alpha) * var(--lane-live, 1)),
+        transparent
+      ),
     0 0 9px
-      color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent);
+      color-mix(
+        in oklab,
+        var(--clue-ember) calc(var(--ember-alpha) * var(--lane-live, 1)),
+        transparent
+      );
 }
 
 /* The answer track at rest is a strip of the board itself (section 3), so
@@ -466,9 +474,17 @@
   box-shadow:
     inset 0 1px 0 var(--cell-glint),
     inset 0 0 5px
-      color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent),
+      color-mix(
+        in oklab,
+        var(--clue-ember) calc(var(--ember-alpha) * var(--start-live, 1)),
+        transparent
+      ),
     0 0 8px
-      color-mix(in oklab, var(--clue-ember) var(--ember-alpha), transparent);
+      color-mix(
+        in oklab,
+        var(--clue-ember) calc(var(--ember-alpha) * var(--start-live, 1)),
+        transparent
+      );
 }
 
 /* A row the pointer rests on warms a step — more light, same hue, no lift in
@@ -1073,6 +1089,9 @@
     transparent
   );
   box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--rail) var(--tick-glow-alpha), transparent);
+  /* The same light as the notch it copies on the board: full in the lane being
+     solved, its resting fraction in the other (--lane-live, section 11b). */
+  opacity: calc(min(1, var(--charge)) * var(--lane-live, 1));
 }
 #app.react-desktop-app[data-cues='on'][data-ramp='on']
   .state-container
@@ -1096,8 +1115,8 @@
   .state-container
   .state-run:first-child
   > .state:nth-child(-n + 3) {
-  --spill-from: var(--spill-alpha);
-  --spill-to: calc(var(--spill-alpha) * 0.58);
+  --spill-from: calc(var(--spill-alpha) * var(--lane-live, 1));
+  --spill-to: calc(var(--spill-alpha) * var(--lane-live, 1) * 0.58);
   background-image: linear-gradient(
     90deg,
     color-mix(in oklab, var(--clue-tint) var(--spill-from), transparent),
@@ -1108,14 +1127,14 @@
   .state-container
   .state-run:first-child
   > .state:nth-child(2) {
-  --spill-from: calc(var(--spill-alpha) * 0.58);
-  --spill-to: calc(var(--spill-alpha) * 0.16);
+  --spill-from: calc(var(--spill-alpha) * var(--lane-live, 1) * 0.58);
+  --spill-to: calc(var(--spill-alpha) * var(--lane-live, 1) * 0.16);
 }
 #app.react-desktop-app[data-cues='on'][data-ramp='on']
   .state-container
   .state-run:first-child
   > .state:nth-child(3) {
-  --spill-from: calc(var(--spill-alpha) * 0.16);
+  --spill-from: calc(var(--spill-alpha) * var(--lane-live, 1) * 0.16);
   --spill-to: 0%;
 }
 
@@ -1181,13 +1200,14 @@
      the tick names both the word and its direction. Words that open on the
      grid's edge wear the same filament on the start square's boundary edge.
      A stub that opens no word publishes no rank and keeps the quiet direction
-     colour, and the ticks of the direction being solved sit a little brighter
-     than the other's.
+     colour, and the ticks of the direction being solved burn at full light
+     while the other lane's rest at a fraction of it (section 11b).
    - Spotlights: every answer projects its notch's light along itself, fading
      with distance from its start square in its own hue, so each cell carries
-     the colours of the words crossing on it. The ladder answers in the same
-     hues, lane for lane, so a colour learned either place points at the
-     other.
+     the colours of the words crossing on it — brightly for the lane being
+     solved, faintly for the other (section 11b), over a flat warm or cool
+     tint that names the mode. The ladder answers in the same hues, lane for
+     lane, so a colour learned either place points at the other.
    - Numbers: the small index in a word's first square is the same rank colour
      as its chip in the ladder (section 1).
    - Ruler: the bezel carries a tick at every column and row, longer every
@@ -1268,7 +1288,9 @@
     transparent
   );
   box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--tick-across) var(--tick-glow-alpha), transparent);
-  opacity: calc(var(--open-e, 0) * min(1, 0.5 * var(--charge)));
+  /* Lit by the lane's own light (section 11b): full while Across is being
+     solved, the lane's resting fraction otherwise. */
+  opacity: calc(var(--open-e, 0) * min(1, var(--charge)) * var(--lane-live-across));
 }
 
 /* South edge: a Down word begins in the square below, tick centred on the
@@ -1288,15 +1310,7 @@
     transparent
   );
   box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--tick-down) var(--tick-glow-alpha), transparent);
-  opacity: calc(var(--open-s, 0) * min(1, 0.5 * var(--charge)));
-}
-
-#app.react-desktop-app[data-cues='on'][data-direction='across'] .black-cell::before {
-  opacity: calc(var(--open-e, 0) * min(1, var(--charge)));
-}
-
-#app.react-desktop-app[data-cues='on'][data-direction='down'] .black-cell::after {
-  opacity: calc(var(--open-s, 0) * min(1, var(--charge)));
+  opacity: calc(var(--open-s, 0) * min(1, var(--charge)) * var(--lane-live-down));
 }
 
 /* With Number colours on, each tick spends its opener's hue in its lane's
@@ -1378,7 +1392,7 @@
     transparent
   );
   box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--tick-across) var(--tick-glow-alpha), transparent);
-  opacity: min(1, 0.5 * var(--charge));
+  opacity: calc(min(1, var(--charge)) * var(--lane-live-across));
 }
 #app.react-desktop-app[data-cues='on']
   .grid
@@ -1397,7 +1411,7 @@
     transparent
   );
   box-shadow: 0 0 var(--tick-glow) color-mix(in oklab, var(--tick-down) var(--tick-glow-alpha), transparent);
-  opacity: min(1, 0.5 * var(--charge));
+  opacity: calc(min(1, var(--charge)) * var(--lane-live-down));
 }
 #app.react-desktop-app[data-cues='on']
   .grid
@@ -1427,19 +1441,8 @@
       transparent
     ) center top / 38% 2px no-repeat;
   box-shadow: none;
-  opacity: min(1, 0.75 * var(--charge));
-}
-#app.react-desktop-app[data-cues='on'][data-direction='across']
-  .grid
-  > .grid-row
-  > .grid-cell[data-start~='across']:first-child:not(:focus-within)::before {
-  opacity: min(1, var(--charge));
-}
-#app.react-desktop-app[data-cues='on'][data-direction='down']
-  .grid
-  > .grid-row:first-child
-  > .grid-cell[data-start~='down']:not(:focus-within)::before {
-  opacity: min(1, var(--charge));
+  /* One element carries both ticks, so it follows whichever lane is lit. */
+  opacity: calc(min(1, var(--charge)) * max(var(--lane-live-across), var(--lane-live-down)));
 }
 #app.react-desktop-app[data-cues='on'][data-ramp='on']
   .grid
@@ -1532,6 +1535,20 @@
       )
       var(--ramp-chroma) var(--spot-dhue)
   );
+  /* The room's own light: one flat, very quiet wash across every open square,
+     warm while Across is being solved and cool while Down is (section 11b), so
+     the whole board takes the mode before any single spill is read. It is the
+     bottom layer, so the spills sit over it and a shaded square keeps its fill. */
+  --dir-tint: color-mix(
+    in oklab,
+    color-mix(
+        in oklab,
+        var(--react-orange) calc(var(--lane-warmth) * 100%),
+        var(--react-blue)
+      )
+      var(--dir-wash),
+    transparent
+  );
   background-image:
     linear-gradient(
       90deg,
@@ -1574,7 +1591,8 @@
           transparent
         )
         100%
-    );
+    ),
+    linear-gradient(var(--dir-tint), var(--dir-tint));
 }
 
 /* The bezel ruler: four tick layers painted into the 5px frame around the board.
@@ -2167,6 +2185,11 @@ html[data-luma='veil'] {
 }
 #app.react-desktop-app[data-ramp='on'] .board-glow {
   --glow-room: calc(var(--cell-size) * 2.4);
+  /* The left corners carry Across hues and the right ones Down hues, so each
+     side takes its lane's light (section 11b); the quiet side keeps a floor so
+     the board is never lit from one edge only. */
+  --glow-across: calc(0.45 + 0.55 * var(--lane-live-across));
+  --glow-down: calc(0.45 + 0.55 * var(--lane-live-down));
   position: absolute;
   z-index: -1;
   inset: calc(-1 * var(--glow-room))
@@ -2181,7 +2204,7 @@ html[data-luma='veil'] {
       50% 46% at var(--glow-room) var(--glow-room),
       color-mix(
           in oklab,
-          var(--corner-tl) calc(var(--backlight) * max(var(--libido, 1), 0.3)),
+          var(--corner-tl) calc(var(--backlight) * max(var(--libido, 1), 0.3) * var(--glow-across)),
           transparent
         )
         0,
@@ -2191,7 +2214,7 @@ html[data-luma='veil'] {
       50% 46% at calc(100% - var(--glow-room)) var(--glow-room),
       color-mix(
           in oklab,
-          var(--corner-tr) calc(var(--backlight) * max(var(--libido, 1), 0.3)),
+          var(--corner-tr) calc(var(--backlight) * max(var(--libido, 1), 0.3) * var(--glow-down)),
           transparent
         )
         0,
@@ -2201,7 +2224,7 @@ html[data-luma='veil'] {
       50% 46% at var(--glow-room) calc(100% - var(--glow-room)),
       color-mix(
           in oklab,
-          var(--corner-bl) calc(var(--backlight) * max(var(--libido, 1), 0.3)),
+          var(--corner-bl) calc(var(--backlight) * max(var(--libido, 1), 0.3) * var(--glow-across)),
           transparent
         )
         0,
@@ -2211,7 +2234,7 @@ html[data-luma='veil'] {
       50% 46% at calc(100% - var(--glow-room)) calc(100% - var(--glow-room)),
       color-mix(
           in oklab,
-          var(--corner-br) calc(var(--backlight) * max(var(--libido, 1), 0.3)),
+          var(--corner-br) calc(var(--backlight) * max(var(--libido, 1), 0.3) * var(--glow-down)),
           transparent
         )
         0,
@@ -2270,10 +2293,108 @@ html[data-luma='veil'] {
   --spill-alpha: min(30%, calc(var(--spot-alpha) * var(--charge)));
 }
 
-/* The open words' spills draw on the charge; a solved word's spill is gone. */
+/* ==========================================================================
+   11b. Direction light.
+   The board holds one charge of light (section 11) and the direction being
+   solved decides where it falls. Each lane has a live level: 1 for the lane
+   being solved, --lane-rest for the other, so the board reads warm while
+   Across is solved (the orange half of the wheel) and cool while Down is.
+   Everything that belongs to a lane reads its level: the notch ticks on the
+   board, the short spills and the flat room tint behind them, the backlight
+   on that lane's side, and the filament, spill and resting ember of the same
+   lane's clue boxes, so a lane lit on the board is lit in the ladder too.
+   Both levels are registered numbers animated on the root, so one eased
+   cross-fade carries every dependent in step instead of each surface
+   running its own timing (reduced motion drops the fade, not the states).
+   The charge still grows as words are solved, so what the lit lane shows
+   gets stronger as fewer words remain; a settled square gives up its tint.
+   ========================================================================== */
+@property --lane-live-across {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+@property --lane-live-down {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+@property --lane-warmth {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+#app.react-desktop-app {
+  /* How much of its light the lane not being solved keeps. */
+  --lane-rest: 0.3;
+  --lane-live-across: 1;
+  --lane-live-down: var(--lane-rest);
+  /* 1 is the warm end of the room tint, 0 the cool one. */
+  --lane-warmth: 1;
+  /* The room's flat wash, a fraction of the spill and swelling with the charge
+     (so the late board is tinted more than the fresh one), capped well under
+     what the spills spend. Low-bloom tiers zero --spot-alpha and so lose it. */
+  --dir-wash: min(12%, calc(var(--spot-alpha) * 0.4 * var(--charge)));
+  /* How far a solved word's letters step back, as a share of their ink: a
+     little where an open word still crosses the square (that letter is a clue
+     there), more once the square is settled. */
+  --solved-mute: 0.12;
+  --solved-mute-settled: 0.3;
+  /* A gentle symmetric ease: the shared ease-out is so steep it would be over
+     in a third of the time, and a change of light should be seen to happen. */
+  --lane-fade: 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    --lane-live-across var(--lane-fade),
+    --lane-live-down var(--lane-fade),
+    --lane-warmth var(--lane-fade);
+}
+#app.react-desktop-app[data-direction='down'] {
+  --lane-live-across: var(--lane-rest);
+  --lane-live-down: 1;
+  --lane-warmth: 0;
+}
+
+/* Each lane hands its level to the clue boxes inside it. */
+#app.react-desktop-app #across {
+  --lane-live: var(--lane-live-across);
+}
+#app.react-desktop-app #down {
+  --lane-live: var(--lane-live-down);
+}
+
+/* A numbered square follows the lane of the word it opens; one that opens
+   both follows whichever lane is lit. */
+#app.react-desktop-app .grid-cell {
+  --start-live: max(var(--lane-live-across), var(--lane-live-down));
+}
+#app.react-desktop-app .grid-cell[data-start='across'] {
+  --start-live: var(--lane-live-across);
+}
+#app.react-desktop-app .grid-cell[data-start='down'] {
+  --start-live: var(--lane-live-down);
+}
+
+/* The springs between the chips quiet with their lane; the active and
+   crossing ones keep the strengths set in section 2. */
+#app.react-desktop-app .spring-coil:not([data-state]) {
+  opacity: calc(0.3 + 0.4 * var(--lane-live, 1));
+}
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
+  .spring-coil:not([data-state]) {
+  opacity: calc(0.26 + 0.34 * var(--lane-live, 1));
+}
+
+/* The open words' spills draw on the charge, each at its lane's level; a
+   solved word's spill is gone. */
 #app.react-desktop-app .grid-cell:not(.black-cell) {
-  --spot-a-alpha: var(--spill-alpha);
-  --spot-d-alpha: var(--spill-alpha);
+  --spot-a-alpha: calc(var(--spill-alpha) * var(--lane-live-across));
+  --spot-d-alpha: calc(var(--spill-alpha) * var(--lane-live-down));
+}
+/* A square no open word runs through is finished with: no room tint either,
+   so the tinted board is exactly the part still to be solved. */
+#app.react-desktop-app .grid-cell[data-solved-all] {
+  --dir-wash: 0%;
 }
 #app.react-desktop-app .grid-cell[data-solved~='across'] {
   --spot-a-alpha: 0%;
@@ -2315,6 +2436,25 @@ html[data-luma='veil'] {
   .grid-cell[data-solved]:not([data-entry-index]):not(:focus-within)
   input:not(.red):not(.green) {
   color: color-mix(in oklab, var(--react-ink) 80%, var(--solved-tint));
+  /* A solved word steps back so the letters still to be found stand out.
+     Opacity rather than a colour, so it blends toward whatever the square is
+     painted in on either theme; the colour itself still flips instantly when
+     the word is lit, and only the step back eases in. The word being worked
+     is excluded above, so it never dims under the reader's hands. */
+  opacity: calc(1 - var(--solved-mute));
+  transition: opacity 600ms var(--ease-out, ease);
+}
+#app.react-desktop-app[data-ramp]
+  .grid-cell[data-solved-all]:not([data-entry-index]):not(:focus-within)
+  input:not(.red):not(.green) {
+  opacity: calc(1 - var(--solved-mute-settled));
+}
+/* The corner number of a settled square goes quiet with its letter. */
+#app.react-desktop-app[data-ramp]
+  .grid-cell[data-solved-all]:not([data-entry-index]):not(:focus-within)
+  .clue-index {
+  opacity: 0.6;
+  transition: opacity 600ms var(--ease-out, ease);
 }
 @keyframes solved-settle {
   from {

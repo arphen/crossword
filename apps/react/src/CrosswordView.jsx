@@ -8,7 +8,7 @@ import { Finale, RaptureLayer, RaptureSparks } from './Rapture';
 import { useRapture } from './useRapture';
 import { cssVars } from './cssVars';
 import { createSelectionPresentation } from './selectionPresentation';
-import { cellCues, clueRampStyle, createClueRamp, entryStartingAt, groupRuns, spotlightCues } from './boardCues';
+import { cellCues, clueRampStyle, createClueRamp, entryStartingAt, groupRuns, spotlightCues, wordsThroughSquares } from './boardCues';
 import { normalizeViewSettings, readViewSettings, VIEW_DEFAULTS, viewAttributes, writeViewSettings } from './viewSettings';
 import { normalizeFutureKey } from './future/languageInput';
 
@@ -247,6 +247,10 @@ export default function CrosswordView({
         }
         return starts;
     }, [entries]);
+    // How many words run through each square, so a solved square can tell
+    // whether it is finished with (every word through it is solved) or still
+    // lends its letter to an open crossing word.
+    const wordsThroughSquare = useMemo(() => wordsThroughSquares(entries), [entries]);
     // The opposite-lane clues the active word crosses, as a set of
     // `direction:clue_number` keys. app.isClueAffected rebuilds this from nested
     // scans on every call — once per row, several times per render — so it is
@@ -383,9 +387,15 @@ export default function CrosswordView({
         });
     }
     const solvedProps = (rowIndex, cellIndex) => {
-        const directions = solvedSquares.get(`${rowIndex},${cellIndex}`);
+        const key = `${rowIndex},${cellIndex}`;
+        const directions = solvedSquares.get(key);
         if (directions) {
-            return { 'data-solved': ['across', 'down'].filter(direction => directions.includes(direction)).join(' ') };
+            const solved = ['across', 'down'].filter(direction => directions.includes(direction));
+            // Settled: no open word is left through this square, so vision.css
+            // can quiet its letter fully; a square an open word still crosses
+            // keeps most of its contrast, because that letter is a clue there.
+            const settled = solved.length >= (wordsThroughSquare.get(key) || 1);
+            return { 'data-solved': solved.join(' '), ...(settled ? { 'data-solved-all': '' } : {}) };
         }
         const closed = [
             solvedOpenings.has(`${rowIndex},${cellIndex + 1},across`) && 'e',
