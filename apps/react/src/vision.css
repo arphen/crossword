@@ -2508,6 +2508,197 @@ html[data-luma='veil'] {
 }
 
 /* ==========================================================================
+   11c. Shaded squares, and the room's light on the black ones.
+   Some puzzles shade a few answer squares. The same light that tints the
+   board shows them off: a shaded square is a recessed panel, darker than
+   paper, ruled with fine diagonal hatching and pooled with the room's light
+   (warm while Across is solved, cool while Down is) so it reads as shaded at
+   a glance on either theme and in either direction. The texture is painted
+   on the input, the one full-cell layer under the corner number, because the
+   word being worked washes the square's own background; the verdict colours
+   still replace it, being painted later and more specifically. The low-bloom
+   tiers keep the hatching but drop the pool, as nothing glows there.
+   A black square is not flat paint either: it sits in the room, and the
+   edge where a word opens catches that lane's light as an ambient falloff
+   across the well, with a bright lip on the edge itself. Each edge draws on
+   its own lane's level and on the charge, so the glow follows the direction
+   and swells as fewer words remain; a solved word's edge dims to a trace.
+   ========================================================================== */
+@property --gate-e-live {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --gate-s-live {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+#app.react-desktop-app {
+  /* The colour of the room: orange at the warm end of --lane-warmth, blue at
+     the cool one, so it crosses over with the lane levels. */
+  --room-light: color-mix(
+    in oklab,
+    var(--react-orange) calc(var(--lane-warmth) * 100%),
+    var(--react-blue)
+  );
+  --shade-fill: color-mix(in oklab, var(--react-cell) 56%, var(--board-black));
+  --shade-line: 17%;
+  --shade-pool: 26%;
+}
+:root[style*='color-scheme: light'] #app.react-desktop-app {
+  --shade-fill: color-mix(in oklab, var(--react-cell) 68%, #46564e);
+  --shade-line: 24%;
+  --shade-pool: 18%;
+}
+#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil']) {
+  --shade-pool: 0%;
+}
+
+#app.react-desktop-app .grid-cell.shaded:not(.black-cell) {
+  background-color: var(--shade-fill);
+}
+#app.react-desktop-app .grid-cell.shaded:not(.black-cell) input {
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--room-light) var(--shade-line), transparent) 0
+        1px,
+      transparent 1px calc(var(--cell-size) * 0.085)
+    ),
+    radial-gradient(
+      circle at 50% 44%,
+      color-mix(in oklab, var(--room-light) var(--shade-pool), transparent),
+      transparent 74%
+    );
+  box-shadow:
+    inset 0 3px 7px #00000073,
+    inset 0 -1px 0 color-mix(in oklab, var(--room-light) 20%, transparent);
+}
+/* Inside the lit word the panel stays, a little shallower. */
+#app.react-desktop-app .grid-cell.shaded[data-entry-index] input {
+  box-shadow:
+    inset 0 2px 5px #0000003d,
+    inset 0 -1px 0 color-mix(in oklab, var(--room-light) 20%, transparent);
+}
+/* A solved shaded square steps its letter back with colour alpha rather than
+   the opacity used elsewhere (above), which would fade the hatching with it. */
+#app.react-desktop-app[data-ramp]
+  .grid-cell.shaded[data-solved]:not([data-entry-index]):not(:focus-within)
+  input:not(.red):not(.green) {
+  opacity: 1;
+  color: color-mix(
+    in oklab,
+    color-mix(in oklab, var(--react-ink) 80%, var(--solved-tint))
+      calc((1 - var(--solved-mute)) * 100%),
+    transparent
+  );
+}
+#app.react-desktop-app[data-ramp]
+  .grid-cell.shaded[data-solved-all]:not([data-entry-index]):not(:focus-within)
+  input:not(.red):not(.green) {
+  color: color-mix(
+    in oklab,
+    color-mix(in oklab, var(--react-ink) 80%, var(--solved-tint))
+      calc((1 - var(--solved-mute-settled)) * 100%),
+    transparent
+  );
+}
+
+/* The same panel in the clue's letter track. */
+#app.react-desktop-app .state-container .state.shaded {
+  background-color: var(--shade-fill);
+}
+#app.react-desktop-app .state-container .state.shaded::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--room-light) var(--shade-line), transparent) 0
+        1px,
+      transparent 1px calc(var(--strip-cell) * 0.17)
+    ),
+    radial-gradient(
+      circle at 50% 44%,
+      color-mix(in oklab, var(--room-light) var(--shade-pool), transparent),
+      transparent 74%
+    );
+  box-shadow: inset 0 2px 4px #0000005c;
+}
+
+/* Ambient light on the black squares. */
+#app.react-desktop-app[data-cues='on'] .black-cell {
+  --notch-e-color: var(--tick-across);
+  --notch-s-color: var(--tick-down);
+  /* The spill's strength, widened for a larger surface; zero in the low-bloom
+     tiers with --spot-alpha. */
+  --notch-ambient: calc(var(--spot-alpha) * 2.4);
+  --notch-reach: min(140%, calc(72% + 24% * var(--charge)));
+  --notch-e: calc(
+    var(--notch-ambient) * var(--open-e, 0) * min(1, var(--charge)) *
+      var(--lane-live-across) * var(--gate-e-live)
+  );
+  --notch-s: calc(
+    var(--notch-ambient) * var(--open-s, 0) * min(1, var(--charge)) *
+      var(--lane-live-down) * var(--gate-s-live)
+  );
+  background:
+    radial-gradient(
+      ellipse var(--notch-reach) 64% at 100% 50%,
+      color-mix(in oklab, var(--notch-e-color) var(--notch-e), transparent) 0,
+      color-mix(in oklab, var(--notch-e-color) calc(var(--notch-e) * 0.5), transparent)
+        20%,
+      color-mix(in oklab, var(--notch-e-color) calc(var(--notch-e) * 0.18), transparent)
+        48%,
+      transparent 100%
+    ),
+    radial-gradient(
+      ellipse 64% var(--notch-reach) at 50% 100%,
+      color-mix(in oklab, var(--notch-s-color) var(--notch-s), transparent) 0,
+      color-mix(in oklab, var(--notch-s-color) calc(var(--notch-s) * 0.5), transparent)
+        20%,
+      color-mix(in oklab, var(--notch-s-color) calc(var(--notch-s) * 0.18), transparent)
+        48%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle at 50% 38%,
+      color-mix(in oklab, var(--board-black), white 3%),
+      var(--board-black) 80%
+    );
+  box-shadow:
+    inset 0 1px 3px #00000044,
+    inset 0 -1px 2px #00000055,
+    inset -1px 0 0
+      color-mix(in oklab, var(--notch-e-color) calc(var(--notch-e) * 0.9), transparent),
+    inset 0 -1px 0
+      color-mix(in oklab, var(--notch-s-color) calc(var(--notch-s) * 0.9), transparent),
+    inset -9px 0 16px -8px
+      color-mix(in oklab, var(--notch-e-color) calc(var(--notch-e) * 0.55), transparent),
+    inset 0 -9px 16px -8px
+      color-mix(in oklab, var(--notch-s-color) calc(var(--notch-s) * 0.55), transparent);
+  transition:
+    --gate-e-live 900ms var(--ease-out, ease),
+    --gate-s-live 900ms var(--ease-out, ease);
+}
+#app.react-desktop-app[data-cues='on'][data-ramp='on'] .black-cell {
+  --notch-e-color: var(--gate-across-tint);
+  --notch-s-color: var(--gate-down-tint);
+}
+/* A solved word's edge keeps a trace of its light. */
+#app.react-desktop-app[data-cues='on'] .black-cell[data-gate-solved~='e'] {
+  --gate-e-live: 0.1;
+}
+#app.react-desktop-app[data-cues='on'] .black-cell[data-gate-solved~='s'] {
+  --gate-s-live: 0.1;
+}
+
+/* ==========================================================================
    9. Still light.
    The selection's ignition is decoration: under prefers-reduced-motion it
    stops and only the light remains. desktop.css already switches off every

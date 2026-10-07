@@ -329,3 +329,19 @@ it('resizes the board without losing the settings it started with', async () => 
   expect(board(host).dataset).toMatchObject({ scale: 'full', grouping: 'auto', cues: 'on' });
   expect(JSON.parse(localStorage.getItem(VIEW_SETTINGS_KEY))).toMatchObject({ scale: 'full' });
 });
+
+it('marks a shaded square on the board and in the clue letters it belongs to', async () => {
+  const shaded = entries();
+  // The third square of NEVERSOONER (the second E) is shaded; it is only an
+  // Across square, so it appears in exactly one clue's letter track.
+  shaded[0].characters[2] = { letters: 'V', is_shaded: true };
+  const host = await mountBoard(shaded);
+  const square = (row, column) => host.querySelectorAll('.grid-row')[row].querySelectorAll('.grid-cell')[column];
+  expect(square(0, 2).classList.contains('shaded')).toBe(true);
+  expect(square(0, 1).classList.contains('shaded')).toBe(false);
+  const across = host.querySelector('#across .state-container');
+  expect([...across.querySelectorAll('.state')].map((box) => box.classList.contains('shaded')).indexOf(true)).toBe(2);
+  expect(across.querySelectorAll('.state.shaded')).toHaveLength(1);
+  // The Down word does not pass through it.
+  expect(host.querySelectorAll('#down .state.shaded')).toHaveLength(0);
+});

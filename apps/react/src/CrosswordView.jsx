@@ -453,6 +453,7 @@ export default function CrosswordView({
                 'intersection-cell-across': app.activeDirection === 'across' && isCellInActiveSelection(entry, index),
                 'intersection-cell-down': app.activeDirection === 'down' && isCellInActiveSelection(entry, index),
                 'cursor-cell': isCursorCell(entry, index),
+                shaded: Boolean(app.getCell(col, row)?.is_shaded),
                 'rebus-state': rawChar.length > 1
             })} onClick={event => {
                 app.handle_cell_click(event, entry, index);
