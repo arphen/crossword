@@ -45,6 +45,12 @@ _DEFAULT_MODEL_TAGS = (
     "gemma3:27b",
     "llama3.2:3b",
     "gemma3:4b",
+    # local-mid: admissible when named, last in the automatic order. Kept in
+    # step with private_puzzle_generation._MODEL_TIERS (a test pins this).
+    "llama3.1:8b",
+    "qwen3:8b",
+    "gemma3:12b",
+    "qwen3:14b",
 )
 _HEARTBEAT_WRITE_LOCK = Lock()
 

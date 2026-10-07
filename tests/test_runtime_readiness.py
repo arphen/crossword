@@ -106,6 +106,10 @@ def test_readiness_is_advisory_when_ollama_and_worker_are_unavailable(
             "gemma3:27b",
             "llama3.2:3b",
             "gemma3:4b",
+            "llama3.1:8b",
+            "qwen3:8b",
+            "gemma3:12b",
+            "qwen3:14b",
         ],
         "installedPreferredModels": [],
     }
