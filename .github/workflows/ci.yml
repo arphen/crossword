@@ -13,7 +13,9 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
-  cancel-in-progress: true
+  # Only superseded PR pushes may be cancelled. A run on master is the record of
+  # whether master is green, so a newer merge must not cancel it.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
@@ -85,7 +87,7 @@ jobs:
     name: Frontend unit and component tests
     needs: [static]
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -96,7 +98,12 @@ jobs:
       - name: Activate pinned npm
         run: npm install --global "$(node -p 'require("./package.json").packageManager')"
       - run: npm ci --ignore-scripts
-      - run: npm run test:coverage
+        timeout-minutes: 5
+      # Normally 1-2 minutes. A step cap turns a hang into a named failure
+      # instead of a job cancelled at the job limit.
+      - name: Run frontend tests with coverage
+        run: npm run test:coverage
+        timeout-minutes: 8
       - name: Upload frontend coverage
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -110,7 +117,9 @@ jobs:
     name: Backend unit and isolated integration tests
     needs: [static]
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    # The suite takes 6-8 minutes; the old 10-minute job cap left no margin and
+    # cancelled runs that were merely slow.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -134,6 +143,7 @@ jobs:
       - name: Build React frontend
         run: npm run build
       - name: Test without live providers
+        timeout-minutes: 18
         run: >-
           uv run --no-sync python -m pytest tests/ -m 'not live_provider'
           --cov=src --cov-branch --cov-report=term-missing
@@ -177,7 +187,9 @@ jobs:
         run: npm run build
       # Playwright owns both processes, waits for HTTP readiness, and cleans up.
       # The backend uses an isolated SQLite database (no external DB required).
-      - run: npm run test:e2e
+      - name: Run Playwright tests
+        run: npm run test:e2e
+        timeout-minutes: 12
       - name: Upload failure diagnostics
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
