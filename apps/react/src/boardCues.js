@@ -181,6 +181,29 @@ export function spotlightCues(grid, entries, ramp, rowIndex, cellIndex) {
   return Object.keys(style).length > 0 ? { style } : {};
 }
 
+/** How many words run through each square, keyed `row,column`: one for a
+ *  square on a single word, two where an Across and a Down word cross. A solved
+ *  square compares this with how many of its words are solved to know whether
+ *  it is finished with (all of them) or still lends its letter to an open
+ *  crossing word. Depends on the puzzle alone, never on what has been solved.
+ * @returns {Map<string, number>}
+ */
+export function wordsThroughSquares(entries) {
+  const counts = new Map();
+  if (!Array.isArray(entries)) return counts;
+  for (const entry of entries) {
+    const length = Array.isArray(entry?.characters) ? entry.characters.length : 0;
+    for (let index = 0; index < length; index += 1) {
+      const key =
+        entry.direction === 'across'
+          ? `${entry.start_y},${entry.start_x + index}`
+          : `${entry.start_y + index},${entry.start_x}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+  }
+  return counts;
+}
+
 const OPEN_SIDES = [
   ['north', 'n', -1, 0],
   ['east', 'e', 0, 1],

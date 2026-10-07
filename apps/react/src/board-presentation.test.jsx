@@ -271,6 +271,40 @@ it('publishes each answer\u2019s fading light on its squares', async () => {
   }
 });
 
+it('follows the direction being solved, so CSS can light one lane at a time', async () => {
+  const host = await mountBoard();
+  const { app } = controllers[controllers.length - 1];
+  const across = app.crossword.find((entry) => entry.direction === 'across');
+  const down = app.crossword.find((entry) => entry.direction === 'down');
+  await act(async () => { app.handle_clue_click({}, down); });
+  expect(board(host).dataset.direction).toBe('down');
+  await act(async () => { app.handle_clue_click({}, across); });
+  expect(board(host).dataset.direction).toBe('across');
+});
+
+it('settles a solved word’s own squares, not the ones an open word still crosses', async () => {
+  const host = await mountBoard();
+  const { app } = controllers[controllers.length - 1];
+  // Solve only the Down word: NEVER, down the first column.
+  await act(async () => {
+    [...'NEVER'].forEach((letter, row) => { app.grid[row][0] = letter; });
+    app.check_all();
+  });
+  const square = (row, column) => host.querySelectorAll('.grid-row')[row].querySelectorAll('.grid-cell')[column];
+  // The middle of the column belongs to that word alone: finished with.
+  expect(square(2, 0).getAttribute('data-solved')).toBe('down');
+  expect(square(2, 0).hasAttribute('data-solved-all')).toBe(true);
+  // The top and the foot are also the starts of open Across words, so their
+  // letters are still clues there and keep most of their contrast.
+  for (const row of [0, 4]) {
+    expect(square(row, 0).getAttribute('data-solved')).toBe('down');
+    expect(square(row, 0).hasAttribute('data-solved-all')).toBe(false);
+  }
+  // Squares of unsolved words carry neither mark.
+  expect(square(0, 5).hasAttribute('data-solved')).toBe(false);
+  expect(square(0, 5).hasAttribute('data-solved-all')).toBe(false);
+});
+
 it('hands the appearance back to CSS when a view choice changes', async () => {
   const host = await mountBoard();
   await choose(host, 'Letter track', 'Solid');
@@ -294,4 +328,20 @@ it('resizes the board without losing the settings it started with', async () => 
   await choose(host, 'Board size', 'L');
   expect(board(host).dataset).toMatchObject({ scale: 'full', grouping: 'auto', cues: 'on' });
   expect(JSON.parse(localStorage.getItem(VIEW_SETTINGS_KEY))).toMatchObject({ scale: 'full' });
+});
+
+it('marks a shaded square on the board and in the clue letters it belongs to', async () => {
+  const shaded = entries();
+  // The third square of NEVERSOONER (the second E) is shaded; it is only an
+  // Across square, so it appears in exactly one clue's letter track.
+  shaded[0].characters[2] = { letters: 'V', is_shaded: true };
+  const host = await mountBoard(shaded);
+  const square = (row, column) => host.querySelectorAll('.grid-row')[row].querySelectorAll('.grid-cell')[column];
+  expect(square(0, 2).classList.contains('shaded')).toBe(true);
+  expect(square(0, 1).classList.contains('shaded')).toBe(false);
+  const across = host.querySelector('#across .state-container');
+  expect([...across.querySelectorAll('.state')].map((box) => box.classList.contains('shaded')).indexOf(true)).toBe(2);
+  expect(across.querySelectorAll('.state.shaded')).toHaveLength(1);
+  // The Down word does not pass through it.
+  expect(host.querySelectorAll('#down .state.shaded')).toHaveLength(0);
 });

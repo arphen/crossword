@@ -8,6 +8,7 @@ import {
   groupRuns,
   groupSizes,
   spotlightCues,
+  wordsThroughSquares,
 } from './boardCues';
 
 const entry = (answer) => ({
@@ -161,5 +162,33 @@ describe('board cues', () => {
     expect(spotlightCues(grid, entries, ramp, 1, 0)).toEqual({});
     expect(spotlightCues(grid, [], ramp, 0, 1)).toEqual({});
     expect(spotlightCues(grid, entries, ramp, 9, 9)).toEqual({});
+  });
+});
+
+describe('words through a square', () => {
+  const boxes = (answer) => [...answer].map((letters) => ({ letters }));
+  const entries = [
+    { clue_number: 1, direction: 'across', start_x: 0, start_y: 0, characters: boxes('ABC') },
+    { clue_number: 1, direction: 'down', start_x: 0, start_y: 0, characters: boxes('ADE') },
+    { clue_number: 2, direction: 'across', start_x: 0, start_y: 2, characters: boxes('EFG') },
+  ];
+
+  it('counts one word on a plain square and two where a pair cross', () => {
+    const counts = wordsThroughSquares(entries);
+    // The opening square belongs to both 1-Across and 1-Down.
+    expect(counts.get('0,0')).toBe(2);
+    expect(counts.get('0,2')).toBe(1);
+    expect(counts.get('1,0')).toBe(1);
+    // The foot of 1-Down is the first square of 2-Across.
+    expect(counts.get('2,0')).toBe(2);
+    expect(counts.get('2,2')).toBe(1);
+    // Three words of three squares, sharing two squares: seven in all.
+    expect(counts.size).toBe(7);
+  });
+
+  it('is empty for a puzzle with no words and ignores malformed entries', () => {
+    expect(wordsThroughSquares([]).size).toBe(0);
+    expect(wordsThroughSquares(undefined).size).toBe(0);
+    expect(wordsThroughSquares([{ direction: 'across', start_x: 0, start_y: 0 }, null]).size).toBe(0);
   });
 });
