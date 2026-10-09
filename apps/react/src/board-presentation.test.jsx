@@ -345,3 +345,21 @@ it('marks a shaded square on the board and in the clue letters it belongs to', a
   // The Down word does not pass through it.
   expect(host.querySelectorAll('#down .state.shaded')).toHaveLength(0);
 });
+
+it('keeps a clue on the ladder when another clue with the same wording is solved', async () => {
+  // Cross-references often repeat word for word; solving one must not take the
+  // other with it.
+  const twins = entries();
+  twins[1].clue_text = twins[0].clue_text;
+  const host = await mountBoard(twins);
+  const { app } = controllers[controllers.length - 1];
+  await act(async () => {
+    [...'NEVERSOONER'].forEach((letter, column) => { app.grid[0][column] = letter; });
+    app.check_all();
+  });
+  expect(app.completedWords.size).toBe(1);
+  // Let the celebration release the solved row.
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 3600)); });
+  expect(host.querySelectorAll('#across > li')).toHaveLength(1);
+  expect([...host.querySelectorAll('#down > li .clue-text')].map((text) => text.textContent)).toEqual([twins[0].clue_text]);
+});

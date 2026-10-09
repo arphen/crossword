@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { celebrationTier, countMistakes, raptureNote, sparkSpecs } from './celebration';
+import { entryKey } from './entryKey';
 
 // The rows a check solves do not vanish: they are held on the ladder for a beat so
 // they can turn green, rise and dissolve, and only then leave. When they go, every
@@ -49,19 +50,19 @@ export function useRapture(app) {
   }, [crossword]);
 
   const celebrate = useCallback((before) => {
-    const gained = [...app.completedWords].filter((text) => !before.has(text));
+    const gained = [...app.completedWords].filter((key) => !before.has(key));
     const mistakes = countMistakes(app.crossword, app.grid);
     const tier = celebrationTier({ solved: gained.length, mistakes });
     if (tier === 0 || reducedMotion()) return;
 
     const order = new Map();
     app.crossword
-      .filter((entry) => gained.includes(entry.clue_text))
+      .filter((entry) => gained.includes(entryKey(entry)))
       .sort((a, b) => a.clue_number - b.clue_number)
       .forEach((entry) => {
-        if (!order.has(entry.clue_text)) order.set(entry.clue_text, order.size);
+        if (!order.has(entryKey(entry))) order.set(entryKey(entry), order.size);
       });
-    const seed = gained.reduce((sum, text) => sum + text.length, 0) + gained.length;
+    const seed = gained.reduce((sum, key) => sum + key.length, 0) + gained.length;
     const sparks = sparkSpecs({ tier, solved: gained.length, seed });
     const longest = Math.min(order.size - 1, STAGGER_STEPS) * STAGGER_MS;
     const hold = ASCEND_MS + longest + 60;

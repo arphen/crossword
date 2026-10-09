@@ -75,7 +75,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/index.html`
 - `apps/react/package.json`
 - `apps/react/src/ClueSpring.jsx` — `readCentres:11`, `readHeight:24`, `ClueSpring:31`, `redraw:48`, `signature:71`, `schedule:87`, `retrace:96`
-- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:15`, `clueSignalKind:31`, `renderClueSurface:41`, `classes:69`, `CrosswordView:79`, `scheduleTerritory:98`, `changeSettings:109`, `describeRebusInput:114`, `entryContainsCell:131`, `entryAtCell:136`, `directional:137`, `tokenAt:150`, `displayGridValue:153`, `gridValues:178`, `clueClasses:181`, `cellPresentation:219` (+28 more)
+- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:16`, `clueSignalKind:32`, `renderClueSurface:42`, `classes:70`, `CrosswordView:80`, `scheduleTerritory:99`, `changeSettings:110`, `describeRebusInput:115`, `entryContainsCell:132`, `entryAtCell:137`, `directional:138`, `tokenAt:151`, `displayGridValue:154`, `gridValues:179`, `clueClasses:182`, `cellPresentation:220` (+28 more)
 - `apps/react/src/CrosswordView.test.jsx`
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
 - `apps/react/src/Rapture.jsx` — `RaptureSparks:11`, `RaptureLayer:34`, `Confetti:52`, `Finale:80`
@@ -84,7 +84,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/behavior/desktop-cache.test.js`
 - `apps/react/src/behavior/desktop-focus.test.js`
 - `apps/react/src/behavior/desktop.d.ts` — `createOptions:2`
-- `apps/react/src/behavior/desktop.js` — `focusCell:9`, `scroll:28`, `focusEntryStart:35`, `createOptions:38`, `data:44`, `isHalfCompleted:123`, `weekdayOptions:129`, `selectedWeekday:140`, `activeDirection:143`, `created:152`, `beforeUnmount:182`, `checkAndStartCaching:189`, `needsMore:192`, `handleOnlineStatus:220`, `updateCachedCounts:229`, `updateSolvedCounts:236` (+85 more)
+- `apps/react/src/behavior/desktop.js` — `focusCell:10`, `scroll:29`, `focusEntryStart:36`, `createOptions:39`, `data:45`, `isHalfCompleted:124`, `weekdayOptions:130`, `selectedWeekday:141`, `activeDirection:144`, `created:153`, `beforeUnmount:183`, `checkAndStartCaching:190`, `needsMore:193`, `handleOnlineStatus:221`, `updateCachedCounts:230`, `updateSolvedCounts:237` (+85 more)
 - `apps/react/src/behavior/mobile.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/mobile.js` — `createOptions:3`, `myEntries:19`, `sortedEntries:23`, `checkButtonLabel:33`, `toggleCheck:38`, `clearIncorrectAndMarkSolved:48`, `isPerfect:57`, `isEntryFilled:91`, `isCellCorrect:96`, `loadPuzzle:102`, `getCellValue:111`, `getCoordinates:115`, `selectEntry:125`, `focusInput:134`, `handleInput:143`, `handleKeydown:167` (+3 more)
 - `apps/react/src/board-presentation.test.jsx`
@@ -171,7 +171,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/selection-presentation.test.js`
 - `apps/react/src/selectionPresentation.js` — `createSelectionPresentation:3`
 - `apps/react/src/springGeometry.js` — `springTension:17`, `springEnds:31`, `reach:38`, `smooth:51`, `round:52`, `coilPath:60`, `springSegments:93`
-- `apps/react/src/useRapture.js` — `RETRACE_EVENT:16`, `reducedMotion:18`, `useRapture:22`, `retrace:28`, `tick:32`, `celebrate:51`, `gained:52`, `seed:64`
+- `apps/react/src/useRapture.js` — `RETRACE_EVENT:17`, `reducedMotion:19`, `useRapture:23`, `retrace:29`, `tick:33`, `celebrate:52`, `gained:53`, `seed:65`
 - `apps/react/src/viewSettings.js` — `VIEW_SETTINGS_KEY:7`, `LUMA_LEVELS:9`, `SCALE_LEVELS:10`, `VIBRANCE_LEVELS:11`, `GROUPING_MODES:12`, `GLYPH_LEVELS:13`, `VIEW_DEFAULTS:15`, `prefersLowBloom:29`, `pick:37`, `boolean:41`, `normalizeViewSettings:45`, `readViewSettings:70`, `writeViewSettings:84`, `viewAttributes:97`
 - `apps/react/src/viewSettings.test.js`
 - `apps/react/src/vision.css`

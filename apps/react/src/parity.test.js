@@ -153,16 +153,16 @@ describe('desktop reference contracts (controller method tests)', () => {
     fill(app, 2, 2, 'X');
     app.check_all();
     expect([app.checksUsed, app.score, app.isChecking]).toEqual([1, 90, true]);
-    expect([...app.completedWords]).toEqual(['Feline']);
+    expect([...app.completedWords]).toEqual(['across-1']);
     expect(input(app, 0, 0).classList.contains('green')).toBe(true);
     expect(input(app, 1, 0).classList.contains('red')).toBe(true);
     app.check_all();
     expect([app.checksUsed, app.score, app.isChecking]).toEqual([1, 90, false]);
-    expect([...app.completedWords]).toEqual(['Feline']);
+    expect([...app.completedWords]).toEqual(['across-1']);
     expect(document.querySelectorAll('.red, .green')).toHaveLength(0);
     app.check_all();
     expect([app.checksUsed, app.score]).toEqual([2, 80]);
-    expect([...app.completedWords]).toEqual(['Feline']);
+    expect([...app.completedWords]).toEqual(['across-1']);
   });
 
   it('checks the canonical fill behind a displayed multi-character token', () => {
@@ -231,14 +231,14 @@ describe('desktop reference contracts (controller method tests)', () => {
     const { app, axios } = fresh();
     app.grid[0][0] = 'A';
     app.isChecking = true;
-    app.completedWords.add('Feline');
+    app.completedWords.add('across-1');
     confirm.mockReturnValue(false);
     expect(app.attemptLoadDay('TUESDAY')).toBe(false);
     expect(confirm).toHaveBeenCalledOnce();
     expect(app.selectedWeekday).toBe('monday');
     expect(app.grid[0][0]).toBe('A');
     expect(app.isChecking).toBe(true);
-    expect([...app.completedWords]).toEqual(['Feline']);
+    expect([...app.completedWords]).toEqual(['across-1']);
     expect(axios.get).not.toHaveBeenCalled();
   });
 

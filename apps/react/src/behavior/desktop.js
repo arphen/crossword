@@ -1,5 +1,6 @@
 // Solver behavior for the React desktop client (frozen port; the Vue
 // originals are shelved in git history).
+import { entryKey } from '../entryKey';
 //
 // Writable-first focus: grid inputs persist across renders (stable keys), so
 // handlers focus the live node synchronously instead of waiting for the
@@ -56,7 +57,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             direction: 'across',
             isChecking: false,
             baseUrl: window.location.origin,
-            completedWords: new Set(),  // Track completed words
+            completedWords: new Set(),  // Solved clues, by entryKey (`across-17`), never by wording
             activeClueNumber: null,  // Track which clue is active for highlighting
             activeDirection: null,   // Track active clue's direction
             isOffline: false,
@@ -728,11 +729,12 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 }
 
                 // If entry is completely correct, add it to completedWords
+                // Keyed by lane and number: two clues can share their wording.
                 if (isWordCorrect) {
-                    this.completedWords.add(entry.clue_text);
+                    this.completedWords.add(entryKey(entry));
                 } else {
                     // If entry was previously marked as complete but is now incorrect, remove it
-                    this.completedWords.delete(entry.clue_text);
+                    this.completedWords.delete(entryKey(entry));
                 }
             });
 

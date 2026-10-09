@@ -11,6 +11,7 @@ import { createSelectionPresentation } from './selectionPresentation';
 import { cellCues, clueRampStyle, createClueRamp, entryStartingAt, groupRuns, spotlightCues, wordsThroughSquares } from './boardCues';
 import { normalizeViewSettings, readViewSettings, VIEW_DEFAULTS, viewAttributes, writeViewSettings } from './viewSettings';
 import { normalizeFutureKey } from './future/languageInput';
+import { entryKey } from './entryKey';
 
 export function displayedPuzzleWeekday(app, displayWeekday) {
     return displayWeekday || app.getCurrentDayName();
@@ -327,9 +328,9 @@ export default function CrosswordView({
     // Clues a check has just solved are held a moment so they can celebrate.
     const rapture = useRapture(app);
     const held = rapture.active?.holding ? rapture.active.order : undefined;
-    const laneEntries = direction => entries.filter(entry => entry.direction === direction && (!completedWords.has(entry.clue_text) || held?.has(entry.clue_text)));
+    const laneEntries = direction => entries.filter(entry => entry.direction === direction && (!completedWords.has(entryKey(entry)) || held?.has(entryKey(entry))));
     const raptureRow = entry => {
-        const index = held?.get(entry.clue_text);
+        const index = held?.get(entryKey(entry));
         if (index === undefined) return {};
         return {
             'data-rapture': rapture.active.tier,
@@ -346,10 +347,10 @@ export default function CrosswordView({
         return Object.keys(style).length > 0 ? { ...rowRapture, style } : rowRapture;
     };
     const raptureSparks = entry => {
-        const index = held?.get(entry.clue_text);
+        const index = held?.get(entryKey(entry));
         return index === undefined ? null : <RaptureSparks specs={rapture.active.sparks} index={index} />;
     };
-    const springState = entry => (held?.has(entry.clue_text) ? 'rapture' : app.isActiveClue(entry) ? 'active' : isClueAffected(entry) ? 'affected' : '');
+    const springState = entry => (held?.has(entryKey(entry)) ? 'rapture' : app.isActiveClue(entry) ? 'active' : isClueAffected(entry) ? 'affected' : '');
     const laneSprings = (direction, entries) => settings.rail && (
         <ClueSpring
             lane={direction}
@@ -376,7 +377,7 @@ export default function CrosswordView({
     const solvedSquares = new Map();
     const solvedOpenings = new Set();
     for (const entry of entries) {
-        if (!completedWords.has(entry.clue_text)) continue;
+        if (!completedWords.has(entryKey(entry))) continue;
         solvedOpenings.add(`${entry.start_y},${entry.start_x},${entry.direction}`);
         solvedCount += 1;
         entry.characters.forEach((_, index) => {
@@ -572,7 +573,7 @@ export default function CrosswordView({
     const [finaleOrigin, setFinaleOrigin] = useState(/** @type {{ x: number, y: number } | null | undefined} */ (undefined));
     useEffect(() => {
         if (!app.showFireworks) {
-            const open = entries.filter(entry => !completedWords.has(entry.clue_text));
+            const open = entries.filter(entry => !completedWords.has(entryKey(entry)));
             if (open.length) lastOpen.current = open;
             if (finaleOrigin !== undefined) setFinaleOrigin(undefined);
             return;
