@@ -65,21 +65,7 @@ class NYTFormatParser:
         # Extract grid
         grid_lines = lines[8].split('\n')
         
-        # Adjust dimensions based on actual grid content
-        # The grid is always reported as square, but may have trailing black squares
-        actual_width, actual_height = NYTFormatParser._calculate_actual_dimensions(
-            grid_lines, width, height
-        )
-        
-        metadata = CrosswordMetadata(
-            date=date,
-            title=title,
-            authors=authors,
-            width=actual_width,
-            height=actual_height,
-            notepad=notepad
-        )
-        
+
         # Get clues - they come after the grid
         # Split by double newline and find the two clue sections after the grid
         clue_text = api_text.split('org.apache')[0]
@@ -93,11 +79,57 @@ class NYTFormatParser:
         across_clues = [hint.strip() for hint in lines[across_section_idx].split('\n') if hint.strip()]
         down_clues = [hint.strip() for hint in lines[down_section_idx].split('\n') if hint.strip()]
         
-        # Parse entries using the ORIGINAL dimensions (before adjustment)
-        # The trailing black squares are just visual padding and don't affect entry positions
+        # Parse entries on the grid as reported, then cut the frame down to the
+        # squares the words use. The API reports every grid as square, so a
+        # rectangular puzzle arrives padded with whole rows or columns of black
+        # squares, and the padding can sit on any side (a leading column shows
+        # up as a black bar down the left of the board).
         entries = NYTFormatParser._parse_entries(grid_lines, across_clues, down_clues, width, height)
-        
+        entries, actual_width, actual_height = NYTFormatParser._trim_to_entries(entries, width, height)
+
+        metadata = CrosswordMetadata(
+            date=date,
+            title=title,
+            authors=authors,
+            width=actual_width,
+            height=actual_height,
+            notepad=notepad
+        )
+
         return Crossword(metadata=metadata, entries=entries)
+
+    @staticmethod
+    def _trim_to_entries(entries: List[Entry], width: int, height: int) -> Tuple[List[Entry], int, int]:
+        """
+        Cut the grid down to the bounding box of the squares its entries use.
+
+        Rows and columns outside every entry are all black (padding), wherever
+        they are; the entries are shifted so the first used row and column are
+        0. A grid with nothing to trim comes back unchanged.
+        """
+        if not entries:
+            return entries, width, height
+        rows: List[int] = []
+        columns: List[int] = []
+        for entry in entries:
+            length = len(entry.characters)
+            if entry.direction == "across":
+                rows.append(entry.start_y)
+                columns.extend((entry.start_x, entry.start_x + length - 1))
+            else:
+                columns.append(entry.start_x)
+                rows.extend((entry.start_y, entry.start_y + length - 1))
+        top, left = min(rows), min(columns)
+        trimmed_height = max(rows) - top + 1
+        trimmed_width = max(columns) - left + 1
+        if top == 0 and left == 0 and trimmed_width == width and trimmed_height == height:
+            return entries, width, height
+        print(f"Trimmed black padding: {width}x{height} -> {trimmed_width}x{trimmed_height} (offset {left},{top})")
+        shifted = [
+            entry.model_copy(update={"start_x": entry.start_x - left, "start_y": entry.start_y - top})
+            for entry in entries
+        ]
+        return shifted, trimmed_width, trimmed_height
     
     @staticmethod
     def _normalize_grid_line(line: str) -> str:
@@ -146,64 +178,6 @@ class NYTFormatParser:
                             break  # No more commas, done with this rebus
         
         return ''.join(result)
-    
-    @staticmethod
-    def _calculate_actual_dimensions(grid_lines: List[str], reported_width: int, reported_height: int) -> Tuple[int, int]:
-        """
-        Calculate actual grid dimensions by detecting trailing rows/columns of black squares.
-        
-        The API always reports square dimensions, but grids may be rectangular with
-        trailing black squares. This detects and removes them from the dimensions.
-        
-        Args:
-            grid_lines: Raw grid lines from API
-            reported_width: Width from API
-            reported_height: Height from API
-            
-        Returns:
-            Tuple of (actual_width, actual_height)
-        """
-        # Normalize grid for checking (remove formatting markers and collapse rebus sequences)
-        normalized_grid = []
-        for line in grid_lines:
-            if line.strip():  # Skip empty lines
-                normalized = NYTFormatParser._normalize_grid_line(line)
-                normalized_grid.append(normalized)
-        
-        actual_width = reported_width
-        actual_height = reported_height
-        
-        # Check if the last row is all black squares (dots)
-        if normalized_grid and actual_height > 0:
-            last_row = normalized_grid[actual_height - 1] if actual_height <= len(normalized_grid) else ""
-            # Check if last row is all dots (end-of-line markers which are black squares)
-            if last_row and all(c == '.' for c in last_row):
-                actual_height -= 1
-                print(f"Detected trailing row of black squares, adjusting height: {reported_height} -> {actual_height}")
-        
-        # Check if the last column is all black squares
-        # Need to check the last character of each row (before the dot)
-        if normalized_grid and actual_width > 0:
-            # The last actual column is at index (actual_width - 1)
-            # But rows end with '.', so the last letter column is at (actual_width - 2)
-            last_col_idx = actual_width - 1
-            
-            # Check if this column in all rows is '#' or we're at the dot
-            all_black = True
-            for y in range(min(actual_height, len(normalized_grid))):
-                row = normalized_grid[y]
-                if last_col_idx < len(row):
-                    char = row[last_col_idx]
-                    # If it's not a black square and not a dot, this column has content
-                    if char not in ['#', '.']:
-                        all_black = False
-                        break
-            
-            if all_black:
-                actual_width -= 1
-                print(f"Detected trailing column of black squares, adjusting width: {reported_width} -> {actual_width}")
-        
-        return actual_width, actual_height
     
     @staticmethod
     def _parse_entries(grid_lines: List[str], across_clues: List[str], down_clues: List[str], 

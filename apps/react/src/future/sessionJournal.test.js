@@ -1059,7 +1059,7 @@ describe('future event journal', () => {
     await first.eventChain;
     first.checked(firstApp);
     await first.eventChain;
-    firstApp.completedWords.add('Feline');
+    firstApp.completedWords.add('across-1');
     const oldSessionId = first.session.sessionId;
     first.dispose();
 
@@ -1077,7 +1077,7 @@ describe('future event journal', () => {
     await resumed.start(resumedApp);
     expect(resumed.session.sessionId).toBe(oldSessionId);
     expect(resumedApp.grid[0]).toEqual(['C', 'A', 'T']);
-    expect(resumedApp.completedWords.has('Feline')).toBe(true);
+    expect(resumedApp.completedWords.has('across-1')).toBe(true);
     expect(resumed.session.events.at(-1)).toMatchObject({
       type: 'session-resumed',
       snapshotSeq: 0,

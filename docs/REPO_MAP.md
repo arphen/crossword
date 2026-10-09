@@ -74,29 +74,37 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 - `apps/react/index.html`
 - `apps/react/package.json`
-- `apps/react/src/ClueSpring.jsx` — `readCentres:11`, `readHeight:24`, `ClueSpring:31`, `redraw:48`, `signature:71`, `schedule:87`, `retrace:96`
-- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:15`, `clueSignalKind:31`, `renderClueSurface:41`, `classes:69`, `CrosswordView:79`, `scheduleTerritory:98`, `changeSettings:109`, `describeRebusInput:114`, `entryContainsCell:131`, `entryAtCell:136`, `directional:137`, `tokenAt:150`, `displayGridValue:153`, `gridValues:178`, `clueClasses:181`, `cellPresentation:219` (+26 more)
+- `apps/react/src/ClueSpring.jsx` — `SPRING_EVENT:13`, `moveSprings:14`, `reducedMotion:18`, `readCentres:26`, `readHeight:41`, `ClueSpring:48`, `redraw:74`, `signature:97`, `restMotion:103`, `animate:119`, `offset:137`, `centres:149`, `index:158`, `startMotion:195`, `onMotion:203`, `schedule:279`
+- `apps/react/src/ComboMeter.jsx` — `formatPoints:10`, `multiplierText:11`, `ComboMeter:24`, `later:33`, `pop:34`, `unsubscribe:39`
+- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:20`, `clueSignalKind:36`, `renderClueSurface:46`, `classes:74`, `CrosswordView:84`, `scheduleTerritory:105`, `changeSettings:116`, `describeRebusInput:121`, `entryContainsCell:138`, `entryAtCell:143`, `directional:144`, `tokenAt:157`, `displayGridValue:160`, `gridValues:185`, `clueClasses:188`, `cellPresentation:226` (+26 more)
 - `apps/react/src/CrosswordView.test.jsx`
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
-- `apps/react/src/Rapture.jsx` — `RaptureSparks:11`, `RaptureLayer:34`, `Confetti:52`, `Finale:80`
+- `apps/react/src/Rapture.jsx` — `RaptureLayer:12`, `Confetti:31`, `Finale:59`
 - `apps/react/src/ViewControls.jsx` — `optionValue:88`, `ViewControls:90`, `choose:91`
+- `apps/react/src/Volley.jsx` — `reducedMotion:14`, `seeded:17`, `Volley:25`, `fit:37`, `draw:43`, `wake:131`, `room:143`, `add:144`, `burst:147`, `unsubscribe:184`
 - `apps/react/src/behavior/complete.test.js`
 - `apps/react/src/behavior/desktop-cache.test.js`
 - `apps/react/src/behavior/desktop-focus.test.js`
 - `apps/react/src/behavior/desktop.d.ts` — `createOptions:2`
-- `apps/react/src/behavior/desktop.js` — `focusCell:9`, `scroll:28`, `focusEntryStart:35`, `createOptions:38`, `data:44`, `isHalfCompleted:123`, `weekdayOptions:129`, `selectedWeekday:140`, `activeDirection:143`, `created:152`, `beforeUnmount:182`, `checkAndStartCaching:189`, `needsMore:192`, `handleOnlineStatus:220`, `updateCachedCounts:229`, `updateSolvedCounts:236` (+85 more)
+- `apps/react/src/behavior/desktop.js` — `focusCell:12`, `scroll:31`, `focusEntryStart:38`, `createOptions:41`, `data:47`, `isHalfCompleted:131`, `weekdayOptions:137`, `selectedWeekday:148`, `activeDirection:151`, `created:160`, `beforeUnmount:190`, `checkAndStartCaching:197`, `needsMore:200`, `handleOnlineStatus:228`, `updateCachedCounts:237`, `updateSolvedCounts:244` (+88 more)
 - `apps/react/src/behavior/mobile.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/mobile.js` — `createOptions:3`, `myEntries:19`, `sortedEntries:23`, `checkButtonLabel:33`, `toggleCheck:38`, `clearIncorrectAndMarkSolved:48`, `isPerfect:57`, `isEntryFilled:91`, `isCellCorrect:96`, `loadPuzzle:102`, `getCellValue:111`, `getCoordinates:115`, `selectEntry:125`, `focusInput:134`, `handleInput:143`, `handleKeydown:167` (+3 more)
 - `apps/react/src/board-presentation.test.jsx`
-- `apps/react/src/boardCues.js` — `balancedRuns:7`, `isWordSeparator:22`, `groupSizes:35`, `groupRuns:43`, `createClueRamp:100`, `clueRampStyle:122`, `entryStartingAt:132`, `spotlightCues:150`, `isOpen:191`, `cellCues:206`
+- `apps/react/src/boardCues.js` — `balancedRuns:7`, `isWordSeparator:22`, `groupSizes:35`, `groupRuns:43`, `createClueRamp:100`, `clueRampStyle:122`, `entryStartingAt:132`, `spotlightCues:150`, `wordsThroughSquares:191`, `isOpen:214`, `cellCues:229`
 - `apps/react/src/boardCues.test.js`
 - `apps/react/src/celebration.css`
-- `apps/react/src/celebration.js` — `countMistakes:5`, `celebrationTier:25`, `seeded:37`, `sparkSpecs:50`, `raptureNote:66`, `finaleMessage:74`, `confettiSpecs:89`
+- `apps/react/src/celebration.js` — `celebrationTier:12`, `seeded:21`, `raptureNote:30`, `finaleMessage:38`, `confettiSpecs:53`
 - `apps/react/src/celebration.test.js`
+- `apps/react/src/checkSequence.js` — `wordStep:11`, `ASCEND_MS:24`, `parseCell:26`, `planSequence:43`, `wrong:88`, `cells:92`
+- `apps/react/src/checkSequence.test.js`
+- `apps/react/src/combo.css`
+- `apps/react/src/combo.js` — `COMBO_TIERS:14`, `MISTAKE_COST:24`, `comboTier:27`, `comboMultiplier:35`, `comboHeat:41`, `wordValue:47`, `newComboState:51`, `scoreCheck:63`, `breakCombo:92`
+- `apps/react/src/combo.test.js`
 - `apps/react/src/controller.d.ts` — `ControllerConfiguration:9`, `Controller:16`, `createController:26`
 - `apps/react/src/controller.js` — `createController:6`, `notify:22`, `unwrap:23`, `observe:24`, `get:31`, `set:48`, `deleteProperty:57`, `setTimeout:64`, `clearTimeout:65`, `setInterval:66`, `clearInterval:67`, `requestAnimationFrame:68`, `cancelAnimationFrame:69`, `subscribe:85`, `flush:87`, `start:88` (+1 more)
 - `apps/react/src/cssVars.js` — `cssVars:2`
 - `apps/react/src/desktop.css`
+- `apps/react/src/entryKey.js` — `entryKey:4`
 - `apps/react/src/future/AssistancePanel.jsx` — `idFor:4`, `blankCell:8`, `revealEntry:14`, `AssistanceLadder:32`, `hasBlank:48`
 - `apps/react/src/future/AssistancePanel.test.jsx`
 - `apps/react/src/future/CalibrationHypotheses.jsx` — `getResponse:15`, `initialResponseActivity:20`, `responseActivityKey:30`, `CalibrationHypotheses:45`, `respond:69`, `revise:91`, `startSwipe:112`, `finishSwipe:120`
@@ -164,14 +172,34 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/specimens.test.js`
 - `apps/react/src/future/tokenManifest.js` — `FUTURE_TOKEN_MANIFEST_VERSION:16`, `FUTURE_TOKEN_POLICY_VERSION:17`, `FUTURE_TOKEN_CELL_POLICY:18`, `FUTURE_TOKEN_FILL_POLICY:19`, `FUTURE_TOKEN_PRODUCER_VERSION:26`, `isRecord:67`, `exactKeys:71`, `nonEmptyString:79`, `issue:83`, `stableJson:87`, `digest:98`, `sourcePuzzleDigest:109`, `puzzleDimensions:114`, `cellId:123`, `entryCells:127`, `tokenForCharacter:134` (+18 more)
 - `apps/react/src/future/tokenManifest.test.js`
+- `apps/react/src/glass/GlassLayer.jsx` — `GlassLayer:23`
+- `apps/react/src/glass/cellState.test.ts`
+- `apps/react/src/glass/cellState.ts` — `CELL_FLOATS:9`, `SLOT:12`, `FLAG:34`, `NEVER:54`, `CellFacts:56`, `readCellFacts:62`, `CellBook:93`, `constructor:97`, `sweepPositions:158`
+- `apps/react/src/glass/engine.ts` — `GlassBackend:16`, `GlassMood:18`, `GlassEngineOptions:25`, `animationFor:41`, `GlassEngine:50`, `constructor:79`, `read:189`, `visibility:199`, `resize:217`, `onWindowResize:219`, `mutations:221`, `cellOf:244`, `focus:249`, `blur:259`, `typed:264`, `key:272` (+6 more)
+- `apps/react/src/glass/flag.test.ts`
+- `apps/react/src/glass/flag.ts` — `GLASS_STORAGE_KEY:7`, `GlassFlag:9`, `StorageLike:18`, `truthy:22`, `readGlassFlag:24`
+- `apps/react/src/glass/glass.css`
+- `apps/react/src/glass/gpuTypes.ts` — `Descriptor:6`, `GpuLike:8`, `GpuAdapter:13`, `GpuDevice:18`, `GpuQueue:36`, `GpuBuffer:42`, `GpuTexture:49`, `GpuShaderModule:54`, `GpuRenderPipeline:58`, `GpuCommandEncoder:62`, `GpuRenderPass:69`, `GpuCanvasContext:76`, `BUFFER:83`, `TEXTURE:84`, `MAP_READ:85`, `gpuEntry:88`
+- `apps/react/src/glass/palette.test.ts`
+- `apps/react/src/glass/palette.ts` — `Rgb:9`, `GlassPalette:11`, `srgb:35`, `channel:37`, `scale:44`, `Day:53`, `weekdayIndex:75`, `glassPalette:81`, `mix:102`, `PALETTE_SLOTS:123`, `paletteFloats:124`
+- `apps/react/src/glass/renderer.ts` — `GLOBAL_FLOATS:8`, `GLOBAL:11`, `GlassScene:28`, `GlassStats:36`, `GlassRenderer:47`, `LostHandler:63`
+- `apps/react/src/glass/scheduler.test.ts`
+- `apps/react/src/glass/scheduler.ts` — `SchedulerOptions:7`, `DEFAULT_SCHEDULE:14`, `frameDue:22`, `loopNeeded:34`, `nextRenderScale:48`
+- `apps/react/src/glass/shaders.ts` — `GLASS_WGSL:12`
+- `apps/react/src/glass/webgl2.ts` — `compile:150`, `shader:151`, `createWebGl2Glass:168`, `WebGl2Glass:174`, `use:266`
+- `apps/react/src/glass/webgpu.ts` — `Descriptor:12`, `GpuBuffer:13`, `GpuCanvasContext:14`, `GpuDevice:15`, `GpuRenderPass:16`, `GpuRenderPipeline:17`, `GpuTexture:18`, `Target:30`, `Pipelines:36`, `WebGpuOptions:53`, `createWebGpuGlass:58`, `errors:74`, `WebGpuGlass:84`, `make:149`, `run:215`, `settle:294` (+2 more)
 - `apps/react/src/lattice.css`
 - `apps/react/src/main.jsx` — `FutureApp:14`, `App:17`
 - `apps/react/src/mobile.css`
 - `apps/react/src/parity.test.js`
+- `apps/react/src/puzzleFrame.js` — `cellsOf:7`, `trimPuzzleFrame:18`, `moveManifestIntoFrame:62`
+- `apps/react/src/puzzleFrame.test.js`
 - `apps/react/src/selection-presentation.test.js`
 - `apps/react/src/selectionPresentation.js` — `createSelectionPresentation:3`
-- `apps/react/src/springGeometry.js` — `springTension:17`, `springEnds:31`, `reach:38`, `smooth:51`, `round:52`, `coilPath:60`, `springSegments:93`
-- `apps/react/src/useRapture.js` — `RETRACE_EVENT:16`, `reducedMotion:18`, `useRapture:22`, `retrace:28`, `tick:32`, `celebrate:51`, `gained:52`, `seed:64`
+- `apps/react/src/springGeometry.js` — `springTension:17`, `springEnds:31`, `reach:38`, `smooth:51`, `round:52`, `coilPath:61`, `springSegments:94`
+- `apps/react/src/springMotion.js` — `CHAIN:10`, `createChain:19`, `pluck:24`, `stepChain:30`, `u:34`, `v:35`, `chainAtRest:59`, `cubicBezier:67`, `sample:68`, `slope:69`
+- `apps/react/src/springMotion.test.js`
+- `apps/react/src/useRapture.js` — `reducedMotion:28`, `createBus:32`, `subscribe:35`, `emit:39`, `cellsOf:45`, `standingBefore:53`, `useRapture:64`, `run:68`, `stop:71`, `play:90`, `inputAt:95`, `paint:109`, `unpaint:123`, `breakBeat:130`, `entries:143`, `cellAt:154` (+8 more)
 - `apps/react/src/viewSettings.js` — `VIEW_SETTINGS_KEY:7`, `LUMA_LEVELS:9`, `SCALE_LEVELS:10`, `VIBRANCE_LEVELS:11`, `GROUPING_MODES:12`, `GLYPH_LEVELS:13`, `VIEW_DEFAULTS:15`, `prefersLowBloom:29`, `pick:37`, `boolean:41`, `normalizeViewSettings:45`, `readViewSettings:70`, `writeViewSettings:84`, `viewAttributes:97`
 - `apps/react/src/viewSettings.test.js`
 - `apps/react/src/vision.css`
@@ -414,7 +442,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `src/crossword/machine_evidence_prerequisites.py` — `_canonical:47`, `_report:57`, `_blocked_report:77`, `_expected_job_result_receipt:95`, `_validate_result_and_manifest:123`, `_validate_private_selection:257`, `build_machine_evidence_prerequisite_report:323`
 - `src/crossword/model_evaluation.py` — `_canonical:36`, `_digest:46`, `canonical_model_evaluation_json:50`, `_object:56`, `_list:62`, `_string:68`, `_status:74`, `_number:80`, `_rounded:88`, `_summary:94`, `_size_summary:116`, `_with_missing:138`, `_provider_summary:144`, `_identity_receipt:170`, `_model_order:186`, `_semantic_editorial_pending:197` (+2 more)
 - `src/crossword/models.py` — `Character:23`, `Character.is_rebus:37`, `Character.display_value:43`, `Character.__str__:47`, `Entry:61`, `Entry.length:81`, `Entry.answer_text:87`, `Entry.__str__:91`, `CrosswordMetadata:95`, `CrosswordMetadata.__str__:104`, `Crossword:109`, `Crossword.across_entries:121`, `Crossword.down_entries:127`, `Crossword.get_entry:131`, `Crossword.__str__:138`
-- `src/crossword/parser.py` — `NYTFormatParser:12`, `NYTFormatParser.parse:25`, `NYTFormatParser._normalize_grid_line:103`, `NYTFormatParser._calculate_actual_dimensions:151`, `NYTFormatParser._parse_entries:209`, `NYTFormatParser._find_starting_positions:266`, `NYTFormatParser._find_across_starts:306`, `NYTFormatParser._find_down_starts:326`, `NYTFormatParser._extract_across_word:346`, `NYTFormatParser._extract_down_word:369`, `NYTFormatParser._extract_character_at_position:392`
+- `src/crossword/parser.py` — `NYTFormatParser:12`, `NYTFormatParser.parse:25`, `NYTFormatParser._trim_to_entries:102`, `NYTFormatParser._normalize_grid_line:135`, `NYTFormatParser._parse_entries:183`, `NYTFormatParser._find_starting_positions:240`, `NYTFormatParser._find_across_starts:280`, `NYTFormatParser._find_down_starts:300`, `NYTFormatParser._extract_across_word:320`, `NYTFormatParser._extract_down_word:343`, `NYTFormatParser._extract_character_at_position:366`
 - `src/crossword/personalized_manifest.py` — `PersonalizedManifestRejected:38`, `GridSlot:43`, `GridSlot.key:50`, `GridSlot.entry_id:54`, `PersonalizedManifestBuild:60`, `_reject:68`, `_mapping:72`, `_text:78`, `_freeze_json:84`, `_plain:97`, `_canonical_number:106`, `_canonical_json:138`, `_canonical_bytes:162`, `_is_iso_date_time:169`, `_digest:179`, `_frozen_json_digest:183` (+12 more)
 - `src/crossword/postgame_associations_api.py` — `PostgameAssociationRuntimeUnavailable:63`, `PostgameAssociationRunRecord:67`, `PostgameAssociationResponseRecord:82`, `_canonical:97`, `_hash:103`, `_valid_uuid:107`, `_local_origin:111`, `_error:116`, `_read_json:123`, `_text:142`, `_reject_inference:154`, `_model_identity:159`, `_read_response:170`, `_ollama_session:188`, `_validate_paths:194`, `_diversity_receipt:244` (+10 more)
 - `src/crossword/private_clue_corpus.py` — `_repo_root:32`, `corpus_path:36`, `_text:44`, `_string_list:48`, `build_corpus_records:54`, `_payload_digest:110`, `load_corpus:115`, `append_corpus_records:130`, `corpus_counts_attestation:163`, `reresolve_counters:182`

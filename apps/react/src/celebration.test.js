@@ -1,24 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { celebrationTier, confettiSpecs, countMistakes, finaleMessage, raptureNote, sparkSpecs } from './celebration';
+import { celebrationTier, confettiSpecs, finaleMessage, raptureNote } from './celebration';
 import { coilPath, springEnds, springSegments, springTension } from './springGeometry';
-
-const entry = (answer, extra = {}) => ({
-  direction: 'across',
-  start_x: 0,
-  start_y: 0,
-  characters: [...answer].map((letters) => ({ letters })),
-  ...extra,
-});
-
-describe('countMistakes', () => {
-  it('counts typed wrong letters once and ignores blanks', () => {
-    const across = entry('CAT');
-    const down = entry('CUP', { direction: 'down' });
-    const grid = [['C', 'A', ''], ['X', null, null], ['P', null, null]];
-    expect(countMistakes([across, down], grid)).toBe(1);
-    expect(countMistakes([across], [['c', 'a', 't']])).toBe(0);
-  });
-});
 
 describe('celebrationTier', () => {
   it('celebrates nothing for nothing and little for one clue', () => {
@@ -35,16 +17,6 @@ describe('celebrationTier', () => {
     expect(celebrationTier({ solved: 12, mistakes: 0 })).toBe(5);
     expect(celebrationTier({ solved: 12, mistakes: 2 })).toBe(4);
     expect(celebrationTier({ solved: 2, mistakes: 0 })).toBe(2);
-  });
-});
-
-describe('sparkSpecs', () => {
-  it('is deterministic and shares a budget across a big batch', () => {
-    expect(sparkSpecs({ tier: 4, solved: 3, seed: 5 })).toEqual(sparkSpecs({ tier: 4, solved: 3, seed: 5 }));
-    expect(sparkSpecs({ tier: 1, solved: 1 })).toEqual([]);
-    const perClue = sparkSpecs({ tier: 5, solved: 60, seed: 1 }).length;
-    expect(perClue * 60).toBeLessThanOrEqual(160);
-    expect(sparkSpecs({ tier: 5, solved: 2, seed: 1 }).every((spark) => spark.dy < 0)).toBe(true);
   });
 });
 

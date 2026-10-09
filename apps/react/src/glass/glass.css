@@ -1,0 +1,87 @@
+/* ==========================================================================
+   Glass — the optional GPU layer (?gpu=1).
+   The engine puts a canvas behind the grid and draws every square there as
+   glass or obsidian, lit. While it is drawing, the view marks the root
+   data-glass and the CSS board steps back to text: the squares, their washes,
+   rings and ticks go transparent, so the letters, numbers, focus and input
+   stay the DOM's and sit on the glass. Without the mark nothing here applies.
+   ========================================================================== */
+#app.react-desktop-app .glass-canvas {
+  position: absolute;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+}
+
+#app.react-desktop-app[data-glass] #crossword-container .grid {
+  position: relative;
+  z-index: 1;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+#app.react-desktop-app[data-glass] #crossword-container .board-glow {
+  display: none;
+}
+
+/* The squares: no paint of their own; the glass is the paint. */
+#app.react-desktop-app[data-glass] #crossword-container .grid .grid-cell {
+  border-color: transparent !important;
+  outline-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+#app.react-desktop-app[data-glass] #crossword-container .grid .grid-cell::before,
+#app.react-desktop-app[data-glass] #crossword-container .grid .grid-cell::after {
+  display: none;
+}
+#app.react-desktop-app[data-glass] #crossword-container .grid .grid-cell input {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Letters on glass: one ink, lifted off the surface with a soft shadow, so
+   they read on every tint the glass takes. Verdicts keep their colours. */
+#app.react-desktop-app[data-glass] #crossword-container .grid .grid-cell input:not(.red):not(.green) {
+  color: #f4f6fb !important;
+}
+#app.react-desktop-app[data-glass] #crossword-container .grid .grid-cell input {
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.55),
+    0 0 12px rgb(0 0 0 / 0.25);
+}
+#app.react-desktop-app[data-glass] #crossword-container .grid .clue-index {
+  color: rgb(230 236 246 / 0.72) !important;
+  opacity: 1 !important;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+}
+:root[style*='color-scheme: light']
+  #app.react-desktop-app[data-glass]
+  #crossword-container
+  .grid
+  .grid-cell
+  input:not(.red):not(.green) {
+  color: #18201d !important;
+}
+:root[style*='color-scheme: light'] #app.react-desktop-app[data-glass] #crossword-container .grid .grid-cell input {
+  text-shadow: 0 1px 1px rgb(255 255 255 / 0.6);
+}
+:root[style*='color-scheme: light'] #app.react-desktop-app[data-glass] #crossword-container .grid .clue-index {
+  color: rgb(24 32 29 / 0.62) !important;
+  text-shadow: none;
+}
+
+/* The debug readout (?gpu-debug). */
+.glass-debug {
+  position: fixed;
+  z-index: 90;
+  bottom: 10px;
+  left: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.72);
+  color: #c9f7d8;
+  font: 600 11px/1.3 ui-monospace, 'SF Mono', Menlo, monospace;
+  pointer-events: none;
+  white-space: pre;
+}

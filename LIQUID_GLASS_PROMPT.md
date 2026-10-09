@@ -82,11 +82,14 @@ Non-negotiable keeps:
   overlay; cell typography uses crisp monospace / tabular numerals and stays
   legible on the wide desktop solver at 1440×1000.
 
-6. **Motion contract (hard constraint).** No infinite or looping animations.
-   No canvas effects. All transitions on `transform`, `opacity`, or `filter`
-   only, 150–300ms, hardware-accompanied and non-blocking. Respect
-   `prefers-reduced-motion`. The app must feel fluid but never laggy or
-   battery-hungry; when in doubt, cut the animation.
+6. **Motion contract (hard constraint).** No infinite or looping CSS
+   animations. CSS transitions run on `transform`, `opacity`, or `filter`
+   only, 150–300ms, hardware-accompanied and non-blocking. Continuous or
+   looping motion is allowed only in a canvas/GPU layer (such as the optional
+   WebGPU glass layer) that renders on demand, pauses when the tab is hidden
+   and goes static under `prefers-reduced-motion`. Respect
+   `prefers-reduced-motion` everywhere. The app must feel fluid but never
+   laggy or battery-hungry; when in doubt, cut the animation.
 
 ## Hard boundaries
 
