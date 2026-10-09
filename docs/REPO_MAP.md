@@ -75,11 +75,13 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/index.html`
 - `apps/react/package.json`
 - `apps/react/src/ClueSpring.jsx` — `SPRING_EVENT:13`, `moveSprings:14`, `reducedMotion:18`, `readCentres:26`, `readHeight:41`, `ClueSpring:48`, `redraw:74`, `signature:97`, `restMotion:103`, `animate:119`, `offset:137`, `centres:149`, `index:158`, `startMotion:195`, `onMotion:203`, `schedule:279`
+- `apps/react/src/ComboMeter.jsx` — `formatPoints:10`, `multiplierText:11`, `ComboMeter:24`, `later:33`, `pop:34`, `unsubscribe:39`
 - `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:19`, `clueSignalKind:35`, `renderClueSurface:45`, `classes:73`, `CrosswordView:83`, `scheduleTerritory:102`, `changeSettings:113`, `describeRebusInput:118`, `entryContainsCell:135`, `entryAtCell:140`, `directional:141`, `tokenAt:154`, `displayGridValue:157`, `gridValues:182`, `clueClasses:185`, `cellPresentation:223` (+26 more)
 - `apps/react/src/CrosswordView.test.jsx`
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
 - `apps/react/src/Rapture.jsx` — `RaptureLayer:12`, `Confetti:31`, `Finale:59`
 - `apps/react/src/ViewControls.jsx` — `optionValue:88`, `ViewControls:90`, `choose:91`
+- `apps/react/src/Volley.jsx` — `reducedMotion:14`, `seeded:17`, `Volley:25`, `fit:37`, `draw:43`, `wake:131`, `room:143`, `add:144`, `burst:147`, `unsubscribe:184`
 - `apps/react/src/behavior/complete.test.js`
 - `apps/react/src/behavior/desktop-cache.test.js`
 - `apps/react/src/behavior/desktop-focus.test.js`
@@ -93,6 +95,9 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/celebration.css`
 - `apps/react/src/celebration.js` — `celebrationTier:12`, `seeded:21`, `raptureNote:30`, `finaleMessage:38`, `confettiSpecs:53`
 - `apps/react/src/celebration.test.js`
+- `apps/react/src/checkSequence.js` — `wordStep:11`, `ASCEND_MS:24`, `parseCell:26`, `planSequence:43`, `wrong:88`, `cells:92`
+- `apps/react/src/checkSequence.test.js`
+- `apps/react/src/combo.css`
 - `apps/react/src/combo.js` — `COMBO_TIERS:14`, `MISTAKE_COST:24`, `comboTier:27`, `comboMultiplier:35`, `comboHeat:41`, `wordValue:47`, `newComboState:51`, `scoreCheck:63`, `breakCombo:92`
 - `apps/react/src/combo.test.js`
 - `apps/react/src/controller.d.ts` — `ControllerConfiguration:9`, `Controller:16`, `createController:26`
@@ -176,6 +181,8 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/selection-presentation.test.js`
 - `apps/react/src/selectionPresentation.js` — `createSelectionPresentation:3`
 - `apps/react/src/springGeometry.js` — `springTension:17`, `springEnds:31`, `reach:38`, `smooth:51`, `round:52`, `coilPath:61`, `springSegments:94`
+- `apps/react/src/springMotion.js` — `CHAIN:10`, `createChain:19`, `pluck:24`, `stepChain:30`, `u:34`, `v:35`, `chainAtRest:59`, `cubicBezier:67`, `sample:68`, `slope:69`
+- `apps/react/src/springMotion.test.js`
 - `apps/react/src/useRapture.js` — `reducedMotion:28`, `createBus:32`, `subscribe:35`, `emit:39`, `cellsOf:45`, `standingBefore:53`, `useRapture:64`, `run:68`, `stop:71`, `play:90`, `inputAt:95`, `paint:109`, `unpaint:123`, `breakBeat:130`, `entries:143`, `cellAt:154` (+8 more)
 - `apps/react/src/viewSettings.js` — `VIEW_SETTINGS_KEY:7`, `LUMA_LEVELS:9`, `SCALE_LEVELS:10`, `VIBRANCE_LEVELS:11`, `GROUPING_MODES:12`, `GLYPH_LEVELS:13`, `VIEW_DEFAULTS:15`, `prefersLowBloom:29`, `pick:37`, `boolean:41`, `normalizeViewSettings:45`, `readViewSettings:70`, `writeViewSettings:84`, `viewAttributes:97`
 - `apps/react/src/viewSettings.test.js`
