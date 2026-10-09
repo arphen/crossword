@@ -378,3 +378,29 @@ it('draws a puzzle padded with a black column without the black bar', async () =
   }
   expect(host.querySelectorAll('.grid-row')[0].querySelectorAll('.grid-cell')).toHaveLength(11);
 });
+
+it('plays a check back word by word, then lands the solved state at once', async () => {
+  const host = await mountBoard();
+  const { app } = controllers[controllers.length - 1];
+  // 1-Across right, and one wrong letter at the start of the bottom row.
+  await act(async () => {
+    [...'NEVERSOONER'].forEach((letter, column) => { app.grid[0][column] = letter; });
+    app.grid[4][1] = 'X';
+    app.$forceUpdate();
+  });
+  await act(async () => { host.querySelector('#check-all').click(); });
+  expect(app.lastCheck.beats.map((beat) => beat.kind)).toEqual(['word', 'break']);
+  // The click's own frame paints nothing and restyles nothing: the board is
+  // still drawn as it stood, with the solved row held on the ladder.
+  expect(host.querySelectorAll('.grid-cell input:is(.green, .red)')).toHaveLength(0);
+  expect(host.querySelector('.grid-cell[data-solved]')).toBeNull();
+  expect(host.querySelector('#across li[data-entry="across-1"]')).not.toBeNull();
+  // Then the sequence plays out and lands.
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 2600)); });
+  expect(host.querySelectorAll('.grid-row')[0].querySelector('input').classList.contains('green')).toBe(true);
+  expect(host.querySelectorAll('.grid-row')[4].querySelectorAll('input')[1].classList.contains('red')).toBe(true);
+  expect(host.querySelector('#across li[data-entry="across-1"]')).toBeNull();
+  expect(host.querySelector('.grid-cell[data-solved]')).not.toBeNull();
+  expect(host.querySelector('.combo-meter .combo-points').textContent).toBe(String(app.points));
+  expect(app.combo).toBe(0);
+});

@@ -74,25 +74,27 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 - `apps/react/index.html`
 - `apps/react/package.json`
-- `apps/react/src/ClueSpring.jsx` — `readCentres:11`, `readHeight:24`, `ClueSpring:31`, `redraw:48`, `signature:71`, `schedule:87`, `retrace:96`
-- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:16`, `clueSignalKind:32`, `renderClueSurface:42`, `classes:70`, `CrosswordView:80`, `scheduleTerritory:99`, `changeSettings:110`, `describeRebusInput:115`, `entryContainsCell:132`, `entryAtCell:137`, `directional:138`, `tokenAt:151`, `displayGridValue:154`, `gridValues:179`, `clueClasses:182`, `cellPresentation:220` (+28 more)
+- `apps/react/src/ClueSpring.jsx` — `SPRING_EVENT:13`, `moveSprings:14`, `reducedMotion:18`, `readCentres:26`, `readHeight:41`, `ClueSpring:48`, `redraw:74`, `signature:97`, `restMotion:103`, `animate:119`, `offset:137`, `centres:149`, `index:158`, `startMotion:195`, `onMotion:203`, `schedule:279`
+- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:19`, `clueSignalKind:35`, `renderClueSurface:45`, `classes:73`, `CrosswordView:83`, `scheduleTerritory:102`, `changeSettings:113`, `describeRebusInput:118`, `entryContainsCell:135`, `entryAtCell:140`, `directional:141`, `tokenAt:154`, `displayGridValue:157`, `gridValues:182`, `clueClasses:185`, `cellPresentation:223` (+26 more)
 - `apps/react/src/CrosswordView.test.jsx`
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
-- `apps/react/src/Rapture.jsx` — `RaptureSparks:11`, `RaptureLayer:34`, `Confetti:52`, `Finale:80`
+- `apps/react/src/Rapture.jsx` — `RaptureLayer:12`, `Confetti:31`, `Finale:59`
 - `apps/react/src/ViewControls.jsx` — `optionValue:88`, `ViewControls:90`, `choose:91`
 - `apps/react/src/behavior/complete.test.js`
 - `apps/react/src/behavior/desktop-cache.test.js`
 - `apps/react/src/behavior/desktop-focus.test.js`
 - `apps/react/src/behavior/desktop.d.ts` — `createOptions:2`
-- `apps/react/src/behavior/desktop.js` — `focusCell:11`, `scroll:30`, `focusEntryStart:37`, `createOptions:40`, `data:46`, `isHalfCompleted:125`, `weekdayOptions:131`, `selectedWeekday:142`, `activeDirection:145`, `created:154`, `beforeUnmount:184`, `checkAndStartCaching:191`, `needsMore:194`, `handleOnlineStatus:222`, `updateCachedCounts:231`, `updateSolvedCounts:238` (+86 more)
+- `apps/react/src/behavior/desktop.js` — `focusCell:12`, `scroll:31`, `focusEntryStart:38`, `createOptions:41`, `data:47`, `isHalfCompleted:131`, `weekdayOptions:137`, `selectedWeekday:148`, `activeDirection:151`, `created:160`, `beforeUnmount:190`, `checkAndStartCaching:197`, `needsMore:200`, `handleOnlineStatus:228`, `updateCachedCounts:237`, `updateSolvedCounts:244` (+88 more)
 - `apps/react/src/behavior/mobile.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/mobile.js` — `createOptions:3`, `myEntries:19`, `sortedEntries:23`, `checkButtonLabel:33`, `toggleCheck:38`, `clearIncorrectAndMarkSolved:48`, `isPerfect:57`, `isEntryFilled:91`, `isCellCorrect:96`, `loadPuzzle:102`, `getCellValue:111`, `getCoordinates:115`, `selectEntry:125`, `focusInput:134`, `handleInput:143`, `handleKeydown:167` (+3 more)
 - `apps/react/src/board-presentation.test.jsx`
 - `apps/react/src/boardCues.js` — `balancedRuns:7`, `isWordSeparator:22`, `groupSizes:35`, `groupRuns:43`, `createClueRamp:100`, `clueRampStyle:122`, `entryStartingAt:132`, `spotlightCues:150`, `wordsThroughSquares:191`, `isOpen:214`, `cellCues:229`
 - `apps/react/src/boardCues.test.js`
 - `apps/react/src/celebration.css`
-- `apps/react/src/celebration.js` — `countMistakes:5`, `celebrationTier:25`, `seeded:37`, `sparkSpecs:50`, `raptureNote:66`, `finaleMessage:74`, `confettiSpecs:89`
+- `apps/react/src/celebration.js` — `celebrationTier:12`, `seeded:21`, `raptureNote:30`, `finaleMessage:38`, `confettiSpecs:53`
 - `apps/react/src/celebration.test.js`
+- `apps/react/src/combo.js` — `COMBO_TIERS:14`, `MISTAKE_COST:24`, `comboTier:27`, `comboMultiplier:35`, `comboHeat:41`, `wordValue:47`, `newComboState:51`, `scoreCheck:63`, `breakCombo:92`
+- `apps/react/src/combo.test.js`
 - `apps/react/src/controller.d.ts` — `ControllerConfiguration:9`, `Controller:16`, `createController:26`
 - `apps/react/src/controller.js` — `createController:6`, `notify:22`, `unwrap:23`, `observe:24`, `get:31`, `set:48`, `deleteProperty:57`, `setTimeout:64`, `clearTimeout:65`, `setInterval:66`, `clearInterval:67`, `requestAnimationFrame:68`, `cancelAnimationFrame:69`, `subscribe:85`, `flush:87`, `start:88` (+1 more)
 - `apps/react/src/cssVars.js` — `cssVars:2`
@@ -169,10 +171,12 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/main.jsx` — `FutureApp:14`, `App:17`
 - `apps/react/src/mobile.css`
 - `apps/react/src/parity.test.js`
+- `apps/react/src/puzzleFrame.js` — `cellsOf:7`, `trimPuzzleFrame:18`, `moveManifestIntoFrame:62`
+- `apps/react/src/puzzleFrame.test.js`
 - `apps/react/src/selection-presentation.test.js`
 - `apps/react/src/selectionPresentation.js` — `createSelectionPresentation:3`
-- `apps/react/src/springGeometry.js` — `springTension:17`, `springEnds:31`, `reach:38`, `smooth:51`, `round:52`, `coilPath:60`, `springSegments:93`
-- `apps/react/src/useRapture.js` — `RETRACE_EVENT:17`, `reducedMotion:19`, `useRapture:23`, `retrace:29`, `tick:33`, `celebrate:52`, `gained:53`, `seed:65`
+- `apps/react/src/springGeometry.js` — `springTension:17`, `springEnds:31`, `reach:38`, `smooth:51`, `round:52`, `coilPath:61`, `springSegments:94`
+- `apps/react/src/useRapture.js` — `reducedMotion:28`, `createBus:32`, `subscribe:35`, `emit:39`, `cellsOf:45`, `standingBefore:53`, `useRapture:64`, `run:68`, `stop:71`, `play:90`, `inputAt:95`, `paint:109`, `unpaint:123`, `breakBeat:130`, `entries:143`, `cellAt:154` (+8 more)
 - `apps/react/src/viewSettings.js` — `VIEW_SETTINGS_KEY:7`, `LUMA_LEVELS:9`, `SCALE_LEVELS:10`, `VIBRANCE_LEVELS:11`, `GROUPING_MODES:12`, `GLYPH_LEVELS:13`, `VIEW_DEFAULTS:15`, `prefersLowBloom:29`, `pick:37`, `boolean:41`, `normalizeViewSettings:45`, `readViewSettings:70`, `writeViewSettings:84`, `viewAttributes:97`
 - `apps/react/src/viewSettings.test.js`
 - `apps/react/src/vision.css`

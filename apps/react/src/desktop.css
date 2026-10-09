@@ -646,13 +646,15 @@
     opacity: 1;
     text-align: left;
 }
-#app.react-desktop-app #menu-top:has(> .puzzle-notepad) {
+/* Marked on the root by the view (data-notepad) rather than found with :has(),
+   which would make every class change on the board re-check the root. */
+#app.react-desktop-app[data-notepad] #menu-top {
     grid-template-areas:
         "info time score"
         "notepad notepad notepad"
         "progress progress progress";
 }
-#app.react-desktop-app:has(.puzzle-notepad) {
+#app.react-desktop-app[data-notepad] {
     --top-band: calc(96px + var(--notepad-band));
 }
 
