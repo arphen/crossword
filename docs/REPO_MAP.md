@@ -76,7 +76,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/package.json`
 - `apps/react/src/ClueSpring.jsx` — `SPRING_EVENT:13`, `moveSprings:14`, `reducedMotion:18`, `readCentres:26`, `readHeight:41`, `ClueSpring:48`, `redraw:74`, `signature:97`, `restMotion:103`, `animate:119`, `offset:137`, `centres:149`, `index:158`, `startMotion:195`, `onMotion:203`, `schedule:279`
 - `apps/react/src/ComboMeter.jsx` — `formatPoints:10`, `multiplierText:11`, `ComboMeter:24`, `later:33`, `pop:34`, `unsubscribe:39`
-- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:19`, `clueSignalKind:35`, `renderClueSurface:45`, `classes:73`, `CrosswordView:83`, `scheduleTerritory:102`, `changeSettings:113`, `describeRebusInput:118`, `entryContainsCell:135`, `entryAtCell:140`, `directional:141`, `tokenAt:154`, `displayGridValue:157`, `gridValues:182`, `clueClasses:185`, `cellPresentation:223` (+26 more)
+- `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:20`, `clueSignalKind:36`, `renderClueSurface:46`, `classes:74`, `CrosswordView:84`, `scheduleTerritory:105`, `changeSettings:116`, `describeRebusInput:121`, `entryContainsCell:138`, `entryAtCell:143`, `directional:144`, `tokenAt:157`, `displayGridValue:160`, `gridValues:185`, `clueClasses:188`, `cellPresentation:226` (+26 more)
 - `apps/react/src/CrosswordView.test.jsx`
 - `apps/react/src/MobileView.jsx` — `MobileView:5`, `setHiddenInput:6`
 - `apps/react/src/Rapture.jsx` — `RaptureLayer:12`, `Confetti:31`, `Finale:59`
@@ -172,6 +172,16 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/specimens.test.js`
 - `apps/react/src/future/tokenManifest.js` — `FUTURE_TOKEN_MANIFEST_VERSION:16`, `FUTURE_TOKEN_POLICY_VERSION:17`, `FUTURE_TOKEN_CELL_POLICY:18`, `FUTURE_TOKEN_FILL_POLICY:19`, `FUTURE_TOKEN_PRODUCER_VERSION:26`, `isRecord:67`, `exactKeys:71`, `nonEmptyString:79`, `issue:83`, `stableJson:87`, `digest:98`, `sourcePuzzleDigest:109`, `puzzleDimensions:114`, `cellId:123`, `entryCells:127`, `tokenForCharacter:134` (+18 more)
 - `apps/react/src/future/tokenManifest.test.js`
+- `apps/react/src/glass/cellState.test.ts`
+- `apps/react/src/glass/cellState.ts` — `CELL_FLOATS:9`, `SLOT:12`, `FLAG:34`, `NEVER:54`, `CellFacts:56`, `readCellFacts:62`, `CellBook:93`, `constructor:97`, `sweepPositions:158`
+- `apps/react/src/glass/flag.test.ts`
+- `apps/react/src/glass/flag.ts` — `GLASS_STORAGE_KEY:7`, `GlassFlag:9`, `StorageLike:18`, `truthy:22`, `readGlassFlag:24`
+- `apps/react/src/glass/gpuTypes.ts` — `Descriptor:6`, `GpuLike:8`, `GpuAdapter:13`, `GpuDevice:18`, `GpuQueue:36`, `GpuBuffer:42`, `GpuTexture:49`, `GpuShaderModule:54`, `GpuRenderPipeline:58`, `GpuCommandEncoder:62`, `GpuRenderPass:69`, `GpuCanvasContext:76`, `BUFFER:83`, `TEXTURE:84`, `MAP_READ:85`, `gpuEntry:88`
+- `apps/react/src/glass/palette.test.ts`
+- `apps/react/src/glass/palette.ts` — `Rgb:9`, `GlassPalette:11`, `srgb:35`, `channel:37`, `scale:44`, `Day:53`, `weekdayIndex:75`, `glassPalette:81`, `mix:102`, `PALETTE_SLOTS:123`, `paletteFloats:124`
+- `apps/react/src/glass/renderer.ts` — `GLOBAL_FLOATS:8`, `GLOBAL:11`, `GlassScene:28`, `GlassStats:36`, `GlassRenderer:47`, `LostHandler:63`
+- `apps/react/src/glass/scheduler.test.ts`
+- `apps/react/src/glass/scheduler.ts` — `SchedulerOptions:7`, `DEFAULT_SCHEDULE:14`, `frameDue:22`, `loopNeeded:34`, `nextRenderScale:48`
 - `apps/react/src/lattice.css`
 - `apps/react/src/main.jsx` — `FutureApp:14`, `App:17`
 - `apps/react/src/mobile.css`
