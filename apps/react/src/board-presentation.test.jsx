@@ -363,3 +363,18 @@ it('keeps a clue on the ladder when another clue with the same wording is solved
   expect(host.querySelectorAll('#across > li')).toHaveLength(1);
   expect([...host.querySelectorAll('#down > li .clue-text')].map((text) => text.textContent)).toEqual([twins[0].clue_text]);
 });
+
+it('draws a puzzle padded with a black column without the black bar', async () => {
+  // The feed reports a square grid; this one carries a blank column on its
+  // left, as cached puzzles from before the server trimmed it still do.
+  const padded = entries().map((entry) => ({ ...entry, start_x: entry.start_x + 1 }));
+  const host = await mountBoard(padded);
+  const { app } = controllers[controllers.length - 1];
+  expect(app.grid[0]).toHaveLength(11);
+  expect(app.currentPuzzleMetadata.width).toBe(11);
+  const columns = app.grid[0].length;
+  for (let column = 0; column < columns; column += 1) {
+    expect([column, app.grid.every((row) => row[column] === null)]).toEqual([column, false]);
+  }
+  expect(host.querySelectorAll('.grid-row')[0].querySelectorAll('.grid-cell')).toHaveLength(11);
+});

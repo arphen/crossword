@@ -1,6 +1,7 @@
 // Solver behavior for the React desktop client (frozen port; the Vue
 // originals are shelved in git history).
 import { entryKey } from '../entryKey';
+import { moveManifestIntoFrame, trimPuzzleFrame } from '../puzzleFrame';
 //
 // Writable-first focus: grid inputs persist across renders (stable keys), so
 // handlers focus the live node synchronously instead of waiting for the
@@ -572,6 +573,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
         init() {
             this.clearChecks(); // Reset visual indicators
             this.completedWords.clear(); // Clear completed words
+            this.fitPuzzleFrame(); // Cut away black padding around a rectangular grid
             this.buildCellMap();  // Build cell map from crossword entries with new Character model
             this.calculateGridSize();
             this.generateGrid();  // Now creates full grid of black squares
@@ -580,6 +582,21 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             this.score = 100; // Reset score for new puzzle
             this.checksUsed = 0; // Reset checks counter
             this.revealsUsed = 0; // Reset reveals counter
+        },
+        fitPuzzleFrame() {
+            // The feed pads rectangular grids to a square with whole rows or
+            // columns of black squares, on any side; the server trims them now,
+            // and puzzles cached before it did are trimmed here, the same way,
+            // so every client agrees on coordinates. Puzzles carrying a token
+            // manifest are generated in-frame and address squares by
+            // coordinate, so they are left exactly as they are.
+            if (this.currentPuzzleTokenManifest) return;
+            const metadata = this.currentPuzzleMetadata;
+            const frame = trimPuzzleFrame({ entries: this.crossword, width: metadata?.width, height: metadata?.height });
+            if (!frame.trimmed) return;
+            this.crossword = frame.entries;
+            if (metadata) this.currentPuzzleMetadata = { ...metadata, width: frame.width, height: frame.height };
+            if (this.currentPuzzleManifest) this.currentPuzzleManifest = moveManifestIntoFrame(this.currentPuzzleManifest, frame);
         },
         buildCellMap() {
             // Build a map of (x,y) -> cell object from clean Character model
