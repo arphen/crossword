@@ -2,6 +2,7 @@
 // originals are shelved in git history).
 import { entryKey } from '../entryKey';
 import { moveManifestIntoFrame, trimPuzzleFrame } from '../puzzleFrame';
+import { breakCombo, scoreCheck } from '../combo';
 //
 // Writable-first focus: grid inputs persist across renders (stable keys), so
 // handlers focus the live node synchronously instead of waiting for the
@@ -100,6 +101,11 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             currentPuzzleMetadata: null, // To store metadata of the currently loaded puzzle
             currentPuzzleManifest: null, // Optional versioned puzzle document supplied by the host
             score: 100, // Starting score
+            points: 0, // Combo points (combo.js): words solved, times the run's multiplier
+            combo: 0, // Words solved in a row since the last mistake or reveal
+            bestCombo: 0,
+            comboAwarded: [], // Entry keys already paid for, so a re-solve earns nothing
+            lastCheck: null, // What the last check found, for the view to play back
             timer: 0, // Time in seconds
             timerInterval: null, // Timer interval reference
             showFireworks: false, // Display fireworks overlay
@@ -580,6 +586,11 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             this.placeWords();    // Replaces black squares with actual cells
             this.startTimer();
             this.score = 100; // Reset score for new puzzle
+            this.points = 0;
+            this.combo = 0;
+            this.bestCombo = 0;
+            this.comboAwarded = [];
+            this.lastCheck = null;
             this.checksUsed = 0; // Reset checks counter
             this.revealsUsed = 0; // Reset reveals counter
         },
@@ -700,7 +711,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 this.isDarkMode = true;
             }
         },
-        check_all() {
+        check_all({ deferVerdicts = false } = {}) {
             if (this.isChecking) {
                 this.clearChecks();
                 return;
@@ -710,9 +721,17 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             this.checksUsed++; // Increment checks counter
             let allCorrect = true;
             let hasErrors = false; // Track if any incorrect letters found
+            // What this check found, for the combo and for a view that plays
+            // the verdicts back over a moment rather than all in one frame
+            // (deferVerdicts: the classes are then the view's to apply).
+            const verdicts = new Map();
+            const gained = [];
+            const wrongCells = new Set();
 
             this.crossword.forEach(entry => {
                 let isWordCorrect = true;  // Track if entire word is correct
+                const key = entryKey(entry);
+                const wasComplete = this.completedWords.has(key);
 
                 for (let i = 0; i < entry.characters.length; i++) {
                     const x = entry.direction === 'across' ? entry.start_x + i : entry.start_x;
@@ -728,17 +747,24 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                     // visual surface only.
                     const value = String(this.grid[y]?.[x] ?? '').toLowerCase();
                     const correct = entry.characters[i].letters.toLowerCase();
+                    const verdict = value === '' ? 'blank' : value === correct ? 'green' : 'red';
+                    verdicts.set(`${y},${x}`, verdict);
 
-                    if (value === '') {
-                        input.classList.remove('red', 'green');
+                    if (verdict === 'blank') {
+                        if (!deferVerdicts) input.classList.remove('red', 'green');
                         isWordCorrect = false;
                         allCorrect = false;
-                    } else if (value === correct) {
-                        input.classList.add('green');
-                        input.classList.remove('red');
+                    } else if (verdict === 'green') {
+                        if (!deferVerdicts) {
+                            input.classList.add('green');
+                            input.classList.remove('red');
+                        }
                     } else {
-                        input.classList.add('red');
-                        input.classList.remove('green');
+                        if (!deferVerdicts) {
+                            input.classList.add('red');
+                            input.classList.remove('green');
+                        }
+                        wrongCells.add(`${y},${x}`);
                         isWordCorrect = false;
                         allCorrect = false;
                         hasErrors = true;
@@ -748,10 +774,11 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 // If entry is completely correct, add it to completedWords
                 // Keyed by lane and number: two clues can share their wording.
                 if (isWordCorrect) {
-                    this.completedWords.add(entryKey(entry));
+                    this.completedWords.add(key);
+                    if (!wasComplete) gained.push(entry);
                 } else {
                     // If entry was previously marked as complete but is now incorrect, remove it
-                    this.completedWords.delete(entryKey(entry));
+                    this.completedWords.delete(key);
                 }
             });
 
@@ -759,6 +786,23 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             if (hasErrors) {
                 this.score = Math.max(0, this.score - 10);
             }
+
+            // The combo: the words this check solved, in reading order (by
+            // number, Across before Down at a shared number), then any break.
+            gained.sort((a, b) => a.clue_number - b.clue_number || (a.direction === 'across' ? -1 : 1));
+            const scored = scoreCheck(this.comboState(), {
+                gained: gained.map(entry => ({ key: entryKey(entry), length: entry.characters.length })),
+                wrong: wrongCells.size,
+            });
+            this.applyComboState(scored.state);
+            this.lastCheck = {
+                id: (this.lastCheck?.id || 0) + 1,
+                gained: gained.map(entryKey),
+                beats: scored.beats,
+                wrongCells: [...wrongCells],
+                verdicts: deferVerdicts ? [...verdicts] : null,
+                complete: allCorrect,
+            };
 
             // If all words are correct, mark the puzzle as solved
             if (allCorrect) {
@@ -773,6 +817,19 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                     this.markPuzzleSolved(day, puzzleId);
                 }
             }
+        },
+        comboState() {
+            return { points: this.points, combo: this.combo, best: this.bestCombo, awarded: this.comboAwarded };
+        },
+        applyComboState(next) {
+            this.points = next.points;
+            this.combo = next.combo;
+            this.bestCombo = next.best;
+            this.comboAwarded = next.awarded;
+        },
+        breakCombo(reason = 'reveal') {
+            if (!this.combo) return;
+            this.applyComboState(breakCombo(this.comboState(), reason).state);
         },
         getCurrentDay() {
             // Get the day of week from the puzzle metadata date
@@ -1174,6 +1231,8 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
 
                         // Deduct points for revealing a letter (but keep score >= 0)
                         this.score = Math.max(0, this.score - 20);
+                        // A reveal ends the combo run (it keeps its points).
+                        this.breakCombo('reveal');
 
                         // Clear any check marks if they're showing
                         if (this.isChecking) {
@@ -1276,8 +1335,9 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
 
             this.$forceUpdate();
 
-            // Heavy score penalty for revealing all
+            // Heavy score penalty for revealing all; the combo run ends too.
             this.score = Math.max(0, this.score - 50);
+            this.breakCombo('reveal');
 
             // Clear any check marks if they're showing
             if (this.isChecking) {

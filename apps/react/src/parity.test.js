@@ -165,6 +165,47 @@ describe('desktop reference contracts (controller method tests)', () => {
     expect([...app.completedWords]).toEqual(['across-1']);
   });
 
+  it('scores the words a check solves into the combo, and a wrong letter breaks it', () => {
+    const { app } = fresh();
+    [...'CAT'].forEach((letter, c) => fill(app, 0, c, letter));
+    [...'DOG'].forEach((letter, c) => fill(app, 2, c, letter));
+    fill(app, 1, 0, 'A');
+    app.check_all();
+    // CAT, CAD and DOG land in reading order: 1-Across, 1-Down, 3-Across.
+    expect(app.lastCheck.gained).toEqual(['across-1', 'down-1', 'across-3']);
+    expect(app.lastCheck.beats.map(beat => [beat.kind, beat.combo])).toEqual([['word', 1], ['word', 2], ['word', 3]]);
+    expect([app.combo, app.bestCombo, app.points]).toEqual([3, 3, 70 + 70 + 105]);
+    app.check_all();
+    fill(app, 2, 2, 'X');
+    app.check_all();
+    expect(app.lastCheck.gained).toEqual([]);
+    expect(app.lastCheck.wrongCells).toEqual(['2,2']);
+    expect(app.lastCheck.beats).toEqual([{ kind: 'break', reason: 'mistake', lost: 3, wrong: 1, penalty: 15, total: 230 }]);
+    expect([app.combo, app.bestCombo, app.points]).toEqual([0, 3, 230]);
+  });
+
+  it('hands the verdicts to the view instead of painting them when asked to', () => {
+    const { app } = fresh();
+    [...'CAT'].forEach((letter, c) => fill(app, 0, c, letter));
+    fill(app, 1, 0, 'X');
+    app.check_all({ deferVerdicts: true });
+    expect(document.querySelectorAll('.red, .green')).toHaveLength(0);
+    expect(new Map(app.lastCheck.verdicts).get('0,0')).toBe('green');
+    expect(new Map(app.lastCheck.verdicts).get('1,0')).toBe('red');
+    expect(new Map(app.lastCheck.verdicts).get('2,1')).toBe('blank');
+    expect([...app.completedWords]).toEqual(['across-1']);
+  });
+
+  it('ends the combo on a reveal without taking its points', () => {
+    const { app } = fresh();
+    [...'CAT'].forEach((letter, c) => fill(app, 0, c, letter));
+    app.check_all();
+    app.check_all();
+    expect(app.combo).toBe(1);
+    app.handle_crossword_cell_contextmenu({ preventDefault() {} }, 2, 1);
+    expect([app.combo, app.points]).toEqual([0, 70]);
+  });
+
   it('checks the canonical fill behind a displayed multi-character token', () => {
     const { app } = fresh();
     app.crossword[0].characters[0] = { letters: 'SS' };
