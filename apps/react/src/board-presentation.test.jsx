@@ -404,3 +404,20 @@ it('plays a check back word by word, then lands the solved state at once', async
   expect(host.querySelector('.combo-meter .combo-points').textContent).toBe(String(app.points));
   expect(app.combo).toBe(0);
 });
+
+it('leaves the glass layer off unless asked, and never breaks the board when it is', async () => {
+  const plain = await mountBoard();
+  expect(plain.querySelector('.glass-canvas')).toBeNull();
+  expect(board(plain).dataset.glass).toBeUndefined();
+
+  // Asked for through the stored override: whatever this environment can
+  // draw with (WebGPU, WebGL2 or nothing), the board the DOM draws stays whole.
+  localStorage.setItem('crossword.gpu', '1');
+  const host = await mountBoard();
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 300)); });
+  const backend = board(host).dataset.glass;
+  expect([undefined, 'webgpu', 'webgl2']).toContain(backend);
+  expect(host.querySelectorAll('.grid-cell input').length).toBe(plain.querySelectorAll('.grid-cell input').length);
+  // A layer that could not start leaves nothing behind.
+  if (!backend) expect(host.querySelector('.glass-canvas')).toBeNull();
+});

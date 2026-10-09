@@ -172,16 +172,22 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/future/specimens.test.js`
 - `apps/react/src/future/tokenManifest.js` — `FUTURE_TOKEN_MANIFEST_VERSION:16`, `FUTURE_TOKEN_POLICY_VERSION:17`, `FUTURE_TOKEN_CELL_POLICY:18`, `FUTURE_TOKEN_FILL_POLICY:19`, `FUTURE_TOKEN_PRODUCER_VERSION:26`, `isRecord:67`, `exactKeys:71`, `nonEmptyString:79`, `issue:83`, `stableJson:87`, `digest:98`, `sourcePuzzleDigest:109`, `puzzleDimensions:114`, `cellId:123`, `entryCells:127`, `tokenForCharacter:134` (+18 more)
 - `apps/react/src/future/tokenManifest.test.js`
+- `apps/react/src/glass/GlassLayer.jsx` — `GlassLayer:23`
 - `apps/react/src/glass/cellState.test.ts`
 - `apps/react/src/glass/cellState.ts` — `CELL_FLOATS:9`, `SLOT:12`, `FLAG:34`, `NEVER:54`, `CellFacts:56`, `readCellFacts:62`, `CellBook:93`, `constructor:97`, `sweepPositions:158`
+- `apps/react/src/glass/engine.ts` — `GlassBackend:16`, `GlassMood:18`, `GlassEngineOptions:25`, `animationFor:41`, `GlassEngine:50`, `constructor:79`, `read:189`, `visibility:199`, `resize:217`, `onWindowResize:219`, `mutations:221`, `cellOf:244`, `focus:249`, `blur:259`, `typed:264`, `key:272` (+6 more)
 - `apps/react/src/glass/flag.test.ts`
 - `apps/react/src/glass/flag.ts` — `GLASS_STORAGE_KEY:7`, `GlassFlag:9`, `StorageLike:18`, `truthy:22`, `readGlassFlag:24`
+- `apps/react/src/glass/glass.css`
 - `apps/react/src/glass/gpuTypes.ts` — `Descriptor:6`, `GpuLike:8`, `GpuAdapter:13`, `GpuDevice:18`, `GpuQueue:36`, `GpuBuffer:42`, `GpuTexture:49`, `GpuShaderModule:54`, `GpuRenderPipeline:58`, `GpuCommandEncoder:62`, `GpuRenderPass:69`, `GpuCanvasContext:76`, `BUFFER:83`, `TEXTURE:84`, `MAP_READ:85`, `gpuEntry:88`
 - `apps/react/src/glass/palette.test.ts`
 - `apps/react/src/glass/palette.ts` — `Rgb:9`, `GlassPalette:11`, `srgb:35`, `channel:37`, `scale:44`, `Day:53`, `weekdayIndex:75`, `glassPalette:81`, `mix:102`, `PALETTE_SLOTS:123`, `paletteFloats:124`
 - `apps/react/src/glass/renderer.ts` — `GLOBAL_FLOATS:8`, `GLOBAL:11`, `GlassScene:28`, `GlassStats:36`, `GlassRenderer:47`, `LostHandler:63`
 - `apps/react/src/glass/scheduler.test.ts`
 - `apps/react/src/glass/scheduler.ts` — `SchedulerOptions:7`, `DEFAULT_SCHEDULE:14`, `frameDue:22`, `loopNeeded:34`, `nextRenderScale:48`
+- `apps/react/src/glass/shaders.ts` — `GLASS_WGSL:12`
+- `apps/react/src/glass/webgl2.ts` — `compile:150`, `shader:151`, `createWebGl2Glass:168`, `WebGl2Glass:174`, `use:266`
+- `apps/react/src/glass/webgpu.ts` — `Descriptor:12`, `GpuBuffer:13`, `GpuCanvasContext:14`, `GpuDevice:15`, `GpuRenderPass:16`, `GpuRenderPipeline:17`, `GpuTexture:18`, `Target:30`, `Pipelines:36`, `WebGpuOptions:53`, `createWebGpuGlass:58`, `errors:74`, `WebGpuGlass:84`, `make:149`, `run:215`, `settle:294` (+2 more)
 - `apps/react/src/lattice.css`
 - `apps/react/src/main.jsx` — `FutureApp:14`, `App:17`
 - `apps/react/src/mobile.css`

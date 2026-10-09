@@ -10,6 +10,7 @@ import { useRapture } from './useRapture';
 import ComboMeter from './ComboMeter';
 import Volley from './Volley';
 import { comboHeat } from './combo';
+import GlassLayer from './glass/GlassLayer';
 import { createSelectionPresentation } from './selectionPresentation';
 import { cellCues, clueRampStyle, createClueRamp, entryStartingAt, groupRuns, spotlightCues, wordsThroughSquares } from './boardCues';
 import { normalizeViewSettings, readViewSettings, VIEW_DEFAULTS, viewAttributes, writeViewSettings } from './viewSettings';
@@ -93,6 +94,8 @@ export default function CrosswordView({
     annotateClueGrammar = false,
 }) {
     const [cursorCell, setCursorCell] = useState(null);
+    // The optional GPU glass layer (glass/): which backend is drawing, if any.
+    const [glass, setGlass] = useState(/** @type {'webgpu' | 'webgl2' | null} */ (null));
     const [rebusDisplayValue, setRebusDisplayValue] = useState('');
     const inputSources = useRef(new Map());
     const boardRef = useRef(/** @type {HTMLDivElement | null} */ (null));
@@ -596,6 +599,7 @@ export default function CrosswordView({
             data-glow={glowOn ? 'on' : 'off'}
             data-lit={selection.size > 0 ? '' : undefined}
             data-notepad={app.currentPuzzleMetadata?.notepad ? '' : undefined}
+            data-glass={glass || undefined}
             {...viewAttributes(settings)}
             style={/** @type {React.CSSProperties} */ ({
                 '--grid-columns': grid[0]?.length || 15,
@@ -698,6 +702,7 @@ export default function CrosswordView({
                     {/* Crossword Grid */}
                     <div id="crossword-container">
                         <div className="board-glow" ref={glowRef} aria-hidden="true"></div>
+                        <GlassLayer gridRef={boardRef} weekday={displayedPuzzleWeekday(app, displayWeekday)} light={!app.isDarkMode} direction={app.activeDirection === 'down' ? 'down' : 'across'} onBackend={setGlass} />
                         <div className="grid" ref={boardRef} style={{ gridTemplateRows: `repeat(${grid.length}, var(--cell-size))` }}>
                             {grid.map((row, rowIndex) => (
                                 <div className="grid-row" key={rowIndex} style={{ gridTemplateColumns: `repeat(${row.length}, var(--cell-size))` }}>
