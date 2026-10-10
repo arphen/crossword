@@ -14,10 +14,13 @@
    ========================================================================== */
 
 /* Registered so the selection's glow can ease as it ignites instead of
-   blinking; every rule that animates it references this as a plain number. */
+   blinking; every rule that animates it references this as a plain number.
+   Not inherited: each lit element reads it in its own shadow, and an
+   inherited value would restyle every descendant on every frame of the
+   ignition. */
 @property --glow-pulse {
   syntax: '<number>';
-  inherits: true;
+  inherits: false;
   initial-value: 1;
 }
 
@@ -2269,9 +2272,11 @@ html[data-luma='veil'] {
    board, the short spills and the flat room tint behind them, the backlight
    on that lane's side, and the filament, spill and resting ember of the same
    lane's clue boxes, so a lane lit on the board is lit in the ladder too.
-   Both levels are registered numbers animated on the root, so one eased
-   cross-fade carries every dependent in step instead of each surface
-   running its own timing (reduced motion drops the fade, not the states).
+   Both levels change on the root in one step: animating them there would
+   restyle every element on the page every frame of the fade (a direction
+   switch cost a dozen full restyles). The fade lives where the compositor
+   can run it instead: the ticks ease their opacity, and the springs ease
+   their lane's light on their canvas.
    The charge still grows as words are solved, so what the lit lane shows
    gets stronger as fewer words remain; a settled square gives up its tint.
    ========================================================================== */
@@ -2307,13 +2312,6 @@ html[data-luma='veil'] {
      there), more once the square is settled. */
   --solved-mute: 0.12;
   --solved-mute-settled: 0.3;
-  /* A gentle symmetric ease: the shared ease-out is so steep it would be over
-     in a third of the time, and a change of light should be seen to happen. */
-  --lane-fade: 280ms cubic-bezier(0.4, 0, 0.2, 1);
-  transition:
-    --lane-live-across var(--lane-fade),
-    --lane-live-down var(--lane-fade),
-    --lane-warmth var(--lane-fade);
 }
 #app.react-desktop-app[data-direction='down'] {
   --lane-live-across: var(--lane-rest);

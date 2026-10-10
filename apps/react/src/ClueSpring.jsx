@@ -24,7 +24,7 @@ const FADE_IN = 240;
 const JOLT = 760;
 const RELEASE_DELAY = 120;
 const RELEASE = 820;
-// The lane light's cross-fade (vision.css --lane-fade).
+// The lane light's cross-fade, eased here on the canvas (the stylesheet steps it).
 const LANE_FADE = 280;
 const easeOut = (t) => 1 - (1 - t) * (1 - t);
 const easeIn = (t) => t * t;
@@ -103,6 +103,10 @@ function ClueSpring({ lane, numbers, ramp, states }) {
   const coils = useRef({ moved: new Map(), born: new Map(), jolted: new Map(), released: new Map(), shapes: new Map(), gradients: new Map() });
   const ink = useRef(/** @type {any} */ (null));
   const laneLight = useRef({ from: 1, to: 1, at: 0 });
+  // The lane's visible area, kept from its ResizeObserver and scroll events so
+  // painting never reads layout (a read inside a commit would force the whole
+  // page's style).
+  const view = useRef({ width: 0, height: 0, top: 0 });
 
   const liveFor = (now) => {
     const light = laneLight.current;
@@ -143,9 +147,8 @@ function ClueSpring({ lane, numbers, ramp, states }) {
       const live = ink.current.direction === latest.current.lane ? 1 : ink.current.tokens.laneRest;
       laneLight.current = { from: live, to: live, at: 0 };
     }
-    const width = list.clientWidth;
-    const height = list.clientHeight;
-    const top = list.scrollTop;
+    const { width, height, top } = view.current;
+    if (!width || !height) return false;
     const ratio = Math.min(2, window.devicePixelRatio || 1);
     const pixelsX = Math.max(1, Math.round(width * ratio));
     const pixelsY = Math.max(1, Math.round(height * ratio));
@@ -422,29 +425,52 @@ function ClueSpring({ lane, numbers, ramp, states }) {
     // the direction being solved.
     const list = layer.current?.parentElement;
     const root = list?.closest('#app');
-    const refresh = () => {
-      const before = ink.current;
-      ink.current = null;
-      if (!root) return;
-      ink.current = readInk(root);
-      coils.current.gradients = new Map();
-      const live = ink.current.direction === latest.current.lane ? 1 : ink.current.tokens.laneRest;
+    // A direction switch only moves the lane's light: read the attribute,
+    // never the computed style (that would force the whole page's style
+    // inside the key press). Colours are re-read, a frame later and once,
+    // only when the theme or the colour settings change.
+    const aim = () => {
+      const current = ink.current;
+      if (!current || !root) return;
+      const direction = root.getAttribute('data-direction') === 'down' ? 'down' : 'across';
+      if (direction === current.direction) return;
+      current.direction = direction;
+      const live = direction === latest.current.lane ? 1 : current.tokens.laneRest;
       const now = performance.now();
-      const light = laneLight.current;
-      laneLight.current = before ? { from: liveFor(now), to: live, at: now } : { from: live, to: live, at: 0 };
-      if (light.to === live && before) laneLight.current = { ...light };
+      laneLight.current = { from: liveFor(now), to: live, at: now };
       wake();
     };
+    let recolour = 0;
+    const refresh = () => {
+      if (recolour || !root) return;
+      recolour = requestAnimationFrame(() => {
+        recolour = 0;
+        const direction = ink.current?.direction;
+        ink.current = readInk(root);
+        coils.current.gradients = new Map();
+        if (direction) ink.current.direction = direction;
+        aim();
+        wake();
+      });
+    };
+    const watchDirection = typeof MutationObserver === 'undefined' ? null : new MutationObserver(aim);
     const watch = typeof MutationObserver === 'undefined' ? null : new MutationObserver(refresh);
-    if (root && watch) {
-      watch.observe(root, { attributes: true, attributeFilter: ['data-direction', 'data-ramp', 'data-vibrance', 'data-luma'] });
+    if (root && watch && watchDirection) {
+      watchDirection.observe(root, { attributes: true, attributeFilter: ['data-direction'] });
+      watch.observe(root, { attributes: true, attributeFilter: ['data-ramp', 'data-vibrance', 'data-luma'] });
       watch.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
     }
-    const scrolled = () => wake();
+    const scrolled = () => {
+      if (list) view.current.top = list.scrollTop;
+      wake();
+    };
+    if (list) view.current = { width: list.clientWidth, height: list.clientHeight, top: list.scrollTop };
     list?.addEventListener('scroll', scrolled, { passive: true });
     return () => {
       window.removeEventListener(SPRING_EVENT, onMotion);
       watch?.disconnect();
+      watchDirection?.disconnect();
+      cancelAnimationFrame(recolour);
       list?.removeEventListener('scroll', scrolled);
       cancelAnimationFrame(motion.current.frame);
       motion.current.frame = 0;
@@ -469,9 +495,6 @@ function ClueSpring({ lane, numbers, ramp, states }) {
   const key = `${lane}|${numbers.join(',')}|${states.join(',')}`;
   useLayoutEffect(() => {
     redraw(false);
-    // Paint now, in this commit, rather than a frame later.
-    const state = motion.current;
-    if (!state.moving) paint();
   }, [key, ramp]);
 
   useLayoutEffect(() => {
@@ -487,7 +510,15 @@ function ClueSpring({ lane, numbers, ramp, states }) {
         else redraw(true);
       });
     };
-    const observer = new ResizeObserver(schedule);
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target !== list) continue;
+        // After layout, so these reads are free.
+        view.current = { width: list.clientWidth, height: list.clientHeight, top: list.scrollTop };
+        wake();
+      }
+      schedule();
+    });
     observer.observe(list);
     list.querySelectorAll(':scope > li').forEach((row) => observer.observe(row));
     document.fonts?.ready?.then(schedule);

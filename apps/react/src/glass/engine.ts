@@ -145,10 +145,13 @@ export class GlassEngine {
     const now = this.now();
     const changed = mood.light !== this.mood.light || mood.direction !== this.mood.direction;
     const turned = mood.direction !== this.mood.direction;
+    const themed = mood.light !== this.mood.light;
     this.mood = mood;
     if (!changed) return;
     if (turned) this.aimLanes(now, false);
-    this.readColours();
+    // A turn re-tints the flame from the tokens already read; only a change
+    // of theme reads the stylesheet again.
+    this.readColours(true, themed);
     this.invalidate(0.6);
   }
 
@@ -291,14 +294,32 @@ export class GlassEngine {
     });
     // The root carries the colour settings and the board's light (charge,
     // the active word's rank); the document root carries the theme.
-    const rootWatch = new MutationObserver(() => this.readColours());
-    if (this.root) {
-      rootWatch.observe(this.root, {
-        attributes: true,
-        attributeFilter: ['style', 'data-direction', 'data-ramp', 'data-cues', 'data-vibrance', 'data-luma'],
+    // Re-read once, in the next frame, never inside the event that changed
+    // it: the root's inline light (charge, the active word) is cheap to read;
+    // the computed tokens only when the theme or a colour setting changes.
+    // The direction arrives through setMood.
+    let pending = 0;
+    let tokensToo = false;
+    const later = (tokens: boolean) => {
+      tokensToo = tokensToo || tokens;
+      if (pending) return;
+      pending = requestAnimationFrame(() => {
+        pending = 0;
+        this.readColours(true, tokensToo);
+        tokensToo = false;
       });
+    };
+    const lightWatch = new MutationObserver(() => later(false));
+    const rootWatch = new MutationObserver(() => later(true));
+    if (this.root) {
+      lightWatch.observe(this.root, { attributes: true, attributeFilter: ['style'] });
+      rootWatch.observe(this.root, { attributes: true, attributeFilter: ['data-ramp', 'data-cues', 'data-vibrance', 'data-luma'] });
     }
     rootWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
+    this.cleanups.push(() => {
+      cancelAnimationFrame(pending);
+      lightWatch.disconnect();
+    });
     // The answer boxes move when the lanes scroll, when clues come and go
     // (transitions), and change when the lit word or the cursor moves.
     const lanes = new MutationObserver(() => {
@@ -485,10 +506,10 @@ export class GlassEngine {
 
   /** Re-read the root's colour tokens and light, and re-tint every square
    *  whose colour moved. */
-  private readColours(upload = true): void {
+  private readColours(upload = true, rereadTokens = true): void {
     const root = this.root;
     if (!root) return;
-    this.tokens = readTokens(root);
+    if (rereadTokens) this.tokens = readTokens(root);
     const light = readRootLight(root);
     const tokens = this.tokens;
     const g = this.globals;

@@ -74,7 +74,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 - `apps/react/index.html`
 - `apps/react/package.json`
-- `apps/react/src/ClueSpring.jsx` — `SPRING_EVENT:13`, `moveSprings:14`, `reducedMotion:18`, `easeOut:29`, `easeIn:30`, `clamp01:31`, `readCentres:41`, `readInk:59`, `resolve:64`, `ClueSpring:80`, `liveFor:107`, `tintFor:112`, `shapeOf:123`, `paint:135`, `loop:238`, `wake:246` (+12 more)
+- `apps/react/src/ClueSpring.jsx` — `SPRING_EVENT:13`, `moveSprings:14`, `reducedMotion:18`, `easeOut:29`, `easeIn:30`, `clamp01:31`, `readCentres:41`, `readInk:59`, `resolve:64`, `ClueSpring:80`, `liveFor:111`, `tintFor:116`, `shapeOf:127`, `paint:139`, `loop:241`, `wake:249` (+14 more)
 - `apps/react/src/ComboMeter.jsx` — `formatPoints:10`, `multiplierText:11`, `ComboMeter:24`, `later:33`, `pop:34`, `unsubscribe:39`
 - `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:20`, `clueSignalKind:36`, `renderClueSurface:46`, `classes:74`, `CrosswordView:84`, `scheduleTerritory:105`, `changeSettings:116`, `describeRebusInput:121`, `entryContainsCell:138`, `entryAtCell:143`, `directional:144`, `tokenAt:157`, `displayGridValue:160`, `gridValues:185`, `clueClasses:188`, `cellPresentation:226` (+26 more)
 - `apps/react/src/CrosswordView.test.jsx`
@@ -176,7 +176,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/glass/boxes.ts` — `BOX_FLOATS:12`, `BOX:15`, `BOX_FLAG:29`, `BoxBook:40`, `emptyBoxes:45`, `readBoxes:53`
 - `apps/react/src/glass/cellState.test.ts`
 - `apps/react/src/glass/cellState.ts` — `CELL_FLOATS:11`, `SLOT:14`, `FLAG:42`, `NEVER:65`, `CellFacts:67`, `CellCues:75`, `readCellCues:82`, `num:84`, `readCellFacts:100`, `CellBook:136`, `constructor:140`, `sweepPositions:220`
-- `apps/react/src/glass/engine.ts` — `GlassBackend:18`, `GlassMood:20`, `GlassEngineOptions:25`, `animationFor:42`, `ease:51`, `Eased:57`, `GlassEngine:83`, `constructor:124`, `read:237`, `visibility:247`, `resize:265`, `onWindowResize:267`, `mutations:269`, `rootWatch:294`, `lanes:304`, `scrolled:311` (+16 more)
+- `apps/react/src/glass/engine.ts` — `GlassBackend:18`, `GlassMood:20`, `GlassEngineOptions:25`, `animationFor:42`, `ease:51`, `Eased:57`, `GlassEngine:83`, `constructor:124`, `read:240`, `visibility:250`, `resize:268`, `onWindowResize:270`, `mutations:272`, `later:303`, `lightWatch:312`, `rootWatch:313` (+18 more)
 - `apps/react/src/glass/flag.test.ts`
 - `apps/react/src/glass/flag.ts` — `GLASS_STORAGE_KEY:7`, `GlassFlag:9`, `StorageLike:18`, `truthy:22`, `readGlassFlag:24`
 - `apps/react/src/glass/glass.css`
