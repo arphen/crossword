@@ -218,6 +218,17 @@ const isOpen = (grid, row, column) => {
   return grid[row][column] !== null && grid[row][column] !== undefined;
 };
 
+/** The grid's black-and-white pattern as a string ('#' black, '.' open, rows
+ *  joined by '/'): everything the board cues depend on besides the entries.
+ *  Two puzzles of the same size have different shapes, so anything derived
+ *  from the cues can key on this instead of the grid's dimensions. */
+export function gridShape(grid) {
+  if (!Array.isArray(grid)) return '';
+  return grid
+    .map((row, r) => (Array.isArray(row) ? row.map((_, c) => (isOpen(grid, r, c) ? '.' : '#')).join('') : ''))
+    .join('/');
+}
+
 /**
  * Board cues for one square, derived only from its neighbours:
  * - every black square that touches a white square opens a slot on that edge;

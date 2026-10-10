@@ -5,6 +5,7 @@ import {
   clueRampStyle,
   createClueRamp,
   entryStartingAt,
+  gridShape,
   groupRuns,
   groupSizes,
   spotlightCues,
@@ -190,5 +191,20 @@ describe('words through a square', () => {
     expect(wordsThroughSquares([]).size).toBe(0);
     expect(wordsThroughSquares(undefined).size).toBe(0);
     expect(wordsThroughSquares([{ direction: 'across', start_x: 0, start_y: 0 }, null]).size).toBe(0);
+  });
+});
+
+describe('the grid shape the board cues are keyed on', () => {
+  it('tells two same-sized puzzles apart by their black squares', () => {
+    const one = [['A', null], ['B', 'C']];
+    const two = [['A', 'B'], [null, 'C']];
+    expect(gridShape(one)).toBe('.#/..');
+    expect(gridShape(two)).toBe('../#.');
+    expect(gridShape(one)).not.toBe(gridShape(two));
+  });
+
+  it('reads letters and blanks alike as open, and nothing as black', () => {
+    expect(gridShape([['', 'X', undefined]])).toBe('..#');
+    expect(gridShape(null)).toBe('');
   });
 });

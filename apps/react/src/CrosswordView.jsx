@@ -12,7 +12,7 @@ import Volley from './Volley';
 import { comboHeat } from './combo';
 import GlassLayer from './glass/GlassLayer';
 import { createSelectionPresentation } from './selectionPresentation';
-import { cellCues, clueRampStyle, createClueRamp, entryStartingAt, groupRuns, spotlightCues, wordsThroughSquares } from './boardCues';
+import { cellCues, clueRampStyle, createClueRamp, entryStartingAt, gridShape, groupRuns, spotlightCues, wordsThroughSquares } from './boardCues';
 import { normalizeViewSettings, readViewSettings, VIEW_DEFAULTS, viewAttributes, writeViewSettings } from './viewSettings';
 import { normalizeFutureKey } from './future/languageInput';
 import { entryKey } from './entryKey';
@@ -295,6 +295,11 @@ export default function CrosswordView({
     // spotlight distances — depend only on the puzzle definition, never on the
     // selection or the typed letters, so they are walked once per load and read
     // back per square instead of re-walked on every render.
+    // Keyed on the grid's pattern, not its size: a new puzzle's entries arrive
+    // (and render) before its grid is built, so a same-sized next puzzle would
+    // otherwise keep the cues walked over the old grid — wrong start marks,
+    // spills and notch tints until a reload.
+    const shape = gridShape(grid);
     const staticCues = useMemo(() => {
         const cues = new Map();
         const rows = grid.length;
@@ -328,7 +333,7 @@ export default function CrosswordView({
             }
         }
         return cues;
-    }, [entries, clueRamp, grid.length, grid[0]?.length]);
+    }, [entries, clueRamp, shape]);
     // The clues still on the ladder: a solved clue leaves it, and the springs
     // follow the same list so the chips either side of the gap are joined directly.
     // Clues a check has just solved are held a moment so they can celebrate.

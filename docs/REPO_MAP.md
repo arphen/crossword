@@ -90,7 +90,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/behavior/mobile.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/mobile.js` — `createOptions:3`, `myEntries:19`, `sortedEntries:23`, `checkButtonLabel:33`, `toggleCheck:38`, `clearIncorrectAndMarkSolved:48`, `isPerfect:57`, `isEntryFilled:91`, `isCellCorrect:96`, `loadPuzzle:102`, `getCellValue:111`, `getCoordinates:115`, `selectEntry:125`, `focusInput:134`, `handleInput:143`, `handleKeydown:167` (+3 more)
 - `apps/react/src/board-presentation.test.jsx`
-- `apps/react/src/boardCues.js` — `balancedRuns:7`, `isWordSeparator:22`, `groupSizes:35`, `groupRuns:43`, `createClueRamp:100`, `clueRampStyle:122`, `entryStartingAt:132`, `spotlightCues:150`, `wordsThroughSquares:191`, `isOpen:214`, `cellCues:229`
+- `apps/react/src/boardCues.js` — `balancedRuns:7`, `isWordSeparator:22`, `groupSizes:35`, `groupRuns:43`, `createClueRamp:100`, `clueRampStyle:122`, `entryStartingAt:132`, `spotlightCues:150`, `wordsThroughSquares:191`, `isOpen:214`, `gridShape:225`, `cellCues:240`
 - `apps/react/src/boardCues.test.js`
 - `apps/react/src/celebration.css`
 - `apps/react/src/celebration.js` — `celebrationTier:12`, `seeded:21`, `raptureNote:30`, `finaleMessage:38`, `confettiSpecs:53`
