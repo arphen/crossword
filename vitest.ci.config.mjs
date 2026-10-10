@@ -3,7 +3,10 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   esbuild: { jsx: 'automatic' },
   test: {
-    include: ['apps/react/src/**/*.test.{js,jsx}', 'packages/*/src/**/*.test.ts'],
+    include: [
+      'apps/react/src/**/*.test.{js,jsx,ts}',
+      'packages/*/src/**/*.test.ts',
+    ],
     setupFiles: ['apps/react/vitest.setup.js'],
     // Concise console output for agent runs; details stay in the HTML report.
     reporters: ['basic'],

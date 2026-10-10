@@ -538,3 +538,56 @@ class TestNYTParserModelStructure:
             assert "clue_number" in entry
             assert "characters" in entry
             assert isinstance(entry["characters"], list)
+
+
+def _padded(puzzle: str, left: int = 0, right: int = 0, top: int = 0, bottom: int = 0) -> str:
+    """The same puzzle as the API sends a smaller grid: reported square, with
+    whole rows and columns of black squares around the real one."""
+    sections = puzzle.split("\n\n")
+    grid = sections[8].split("\n")
+    width = len(NYTFormatParser._normalize_grid_line(grid[0])) + left + right
+    rows = ["#" * left + row + "#" * right for row in grid]
+    rows = ["#" * width] * top + rows + ["#" * width] * bottom
+    side = max(width, len(rows))
+    sections[4] = str(side)
+    sections[5] = str(side)
+    sections[8] = "\n".join(rows)
+    return "\n\n".join(sections)
+
+
+class TestNYTParserPadding:
+    """Black padding around a rectangular grid is cut away on every side."""
+
+    @pytest.mark.parametrize(
+        "padding",
+        [
+            {"left": 1},
+            {"right": 1},
+            {"left": 2, "bottom": 1},
+            {"top": 1, "right": 1},
+        ],
+    )
+    def test_padding_is_trimmed_and_entries_shift(self, padding):
+        plain = NYTFormatParser.parse(PUZZLE_250520)
+        padded = NYTFormatParser.parse(_padded(PUZZLE_250520, **padding))
+        assert (padded.metadata.width, padded.metadata.height) == (15, 15)
+        assert [
+            (e.clue_number, e.direction, e.start_x, e.start_y, e.answer_text)
+            for e in padded.entries
+        ] == [
+            (e.clue_number, e.direction, e.start_x, e.start_y, e.answer_text)
+            for e in plain.entries
+        ]
+
+    def test_entries_touch_every_edge_after_trimming(self):
+        crossword = NYTFormatParser.parse(_padded(PUZZLE_250520, left=1, bottom=1))
+        cells = set()
+        for entry in crossword.entries:
+            for index in range(len(entry.characters)):
+                if entry.direction == "across":
+                    cells.add((entry.start_x + index, entry.start_y))
+                else:
+                    cells.add((entry.start_x, entry.start_y + index))
+        assert min(x for x, _ in cells) == 0 and min(y for _, y in cells) == 0
+        assert max(x for x, _ in cells) == crossword.metadata.width - 1
+        assert max(y for _, y in cells) == crossword.metadata.height - 1

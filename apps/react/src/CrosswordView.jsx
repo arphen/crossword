@@ -2,15 +2,20 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './desktop.css';
 import './vision.css';
 import './celebration.css';
+import './combo.css';
 import ViewControls from './ViewControls';
 import ClueSpring from './ClueSpring';
-import { Finale, RaptureLayer, RaptureSparks } from './Rapture';
+import { Finale, RaptureLayer } from './Rapture';
 import { useRapture } from './useRapture';
-import { cssVars } from './cssVars';
+import ComboMeter from './ComboMeter';
+import Volley from './Volley';
+import { comboHeat } from './combo';
+import GlassLayer from './glass/GlassLayer';
 import { createSelectionPresentation } from './selectionPresentation';
-import { cellCues, clueRampStyle, createClueRamp, entryStartingAt, groupRuns, spotlightCues } from './boardCues';
+import { cellCues, clueRampStyle, createClueRamp, entryStartingAt, gridShape, groupRuns, spotlightCues, wordsThroughSquares } from './boardCues';
 import { normalizeViewSettings, readViewSettings, VIEW_DEFAULTS, viewAttributes, writeViewSettings } from './viewSettings';
 import { normalizeFutureKey } from './future/languageInput';
+import { entryKey } from './entryKey';
 
 export function displayedPuzzleWeekday(app, displayWeekday) {
     return displayWeekday || app.getCurrentDayName();
@@ -89,6 +94,8 @@ export default function CrosswordView({
     annotateClueGrammar = false,
 }) {
     const [cursorCell, setCursorCell] = useState(null);
+    // The optional GPU glass layer (glass/): which backend is drawing, if any.
+    const [glass, setGlass] = useState(/** @type {'webgpu' | 'webgl2' | null} */ (null));
     const [rebusDisplayValue, setRebusDisplayValue] = useState('');
     const inputSources = useRef(new Map());
     const boardRef = useRef(/** @type {HTMLDivElement | null} */ (null));
@@ -247,6 +254,10 @@ export default function CrosswordView({
         }
         return starts;
     }, [entries]);
+    // How many words run through each square, so a solved square can tell
+    // whether it is finished with (every word through it is solved) or still
+    // lends its letter to an open crossing word.
+    const wordsThroughSquare = useMemo(() => wordsThroughSquares(entries), [entries]);
     // The opposite-lane clues the active word crosses, as a set of
     // `direction:clue_number` keys. app.isClueAffected rebuilds this from nested
     // scans on every call — once per row, several times per render — so it is
@@ -284,6 +295,11 @@ export default function CrosswordView({
     // spotlight distances — depend only on the puzzle definition, never on the
     // selection or the typed letters, so they are walked once per load and read
     // back per square instead of re-walked on every render.
+    // Keyed on the grid's pattern, not its size: a new puzzle's entries arrive
+    // (and render) before its grid is built, so a same-sized next puzzle would
+    // otherwise keep the cues walked over the old grid — wrong start marks,
+    // spills and notch tints until a reload.
+    const shape = gridShape(grid);
     const staticCues = useMemo(() => {
         const cues = new Map();
         const rows = grid.length;
@@ -317,35 +333,29 @@ export default function CrosswordView({
             }
         }
         return cues;
-    }, [entries, clueRamp, grid.length, grid[0]?.length]);
+    }, [entries, clueRamp, shape]);
     // The clues still on the ladder: a solved clue leaves it, and the springs
     // follow the same list so the chips either side of the gap are joined directly.
     // Clues a check has just solved are held a moment so they can celebrate.
-    const rapture = useRapture(app);
+    const rapture = useRapture(app, { boardRef });
     const held = rapture.active?.holding ? rapture.active.order : undefined;
-    const laneEntries = direction => entries.filter(entry => entry.direction === direction && (!completedWords.has(entry.clue_text) || held?.has(entry.clue_text)));
-    const raptureRow = entry => {
-        const index = held?.get(entry.clue_text);
-        if (index === undefined) return {};
-        return {
-            'data-rapture': rapture.active.tier,
-            style: cssVars({ '--rapture-delay': `${Math.min(index, rapture.active.maxStep) * rapture.active.step}ms` })
-        };
-    };
+    // While a check plays back, the board is drawn as it stood before it: the
+    // sequence paints its steps onto the few squares and boxes involved, and
+    // the state that restyles most of the page (solved squares, the root's
+    // light, the boxes' verdicts) lands once, at the end (useRapture.js).
+    const shown = rapture.active?.busy ? rapture.active.shown : null;
+    const settledWords = shown ? shown.completed : completedWords;
+    const shownScore = shown ? shown.score : app.score;
+    const shownCombo = shown ? shown.combo : app.combo;
+    const showVerdicts = isChecking && !shown;
+    const laneEntries = direction => entries.filter(entry => entry.direction === direction && (!completedWords.has(entryKey(entry)) || held?.has(entryKey(entry))));
     // The row carries its own rank next to the chip it already sits beside, so
     // the answer track and every glow on the row read the same hue as the
     // number. The pigment only travels while the reader has Number colours on.
-    const rowProps = entry => {
-        const rowRapture = raptureRow(entry);
-        const ramp = settings.ramp ? clueRampStyle(clueRamp, entry.clue_number) : {};
-        const style = { ...rowRapture.style, ...ramp };
-        return Object.keys(style).length > 0 ? { ...rowRapture, style } : rowRapture;
-    };
-    const raptureSparks = entry => {
-        const index = held?.get(entry.clue_text);
-        return index === undefined ? null : <RaptureSparks specs={rapture.active.sparks} index={index} />;
-    };
-    const springState = entry => (held?.has(entry.clue_text) ? 'rapture' : app.isActiveClue(entry) ? 'active' : isClueAffected(entry) ? 'affected' : '');
+    // (A row a check solves is popped by the sequence itself, at its beat:
+    // useRapture marks it directly, so the hold costs no restyle here.)
+    const rowProps = entry => (settings.ramp ? { style: clueRampStyle(clueRamp, entry.clue_number) } : {});
+    const springState = entry => (app.isActiveClue(entry) ? 'active' : isClueAffected(entry) ? 'affected' : '');
     const laneSprings = (direction, entries) => settings.rail && (
         <ClueSpring
             lane={direction}
@@ -372,7 +382,7 @@ export default function CrosswordView({
     const solvedSquares = new Map();
     const solvedOpenings = new Set();
     for (const entry of entries) {
-        if (!completedWords.has(entry.clue_text)) continue;
+        if (!settledWords.has(entryKey(entry))) continue;
         solvedOpenings.add(`${entry.start_y},${entry.start_x},${entry.direction}`);
         solvedCount += 1;
         entry.characters.forEach((_, index) => {
@@ -383,9 +393,15 @@ export default function CrosswordView({
         });
     }
     const solvedProps = (rowIndex, cellIndex) => {
-        const directions = solvedSquares.get(`${rowIndex},${cellIndex}`);
+        const key = `${rowIndex},${cellIndex}`;
+        const directions = solvedSquares.get(key);
         if (directions) {
-            return { 'data-solved': ['across', 'down'].filter(direction => directions.includes(direction)).join(' ') };
+            const solved = ['across', 'down'].filter(direction => directions.includes(direction));
+            // Settled: no open word is left through this square, so vision.css
+            // can quiet its letter fully; a square an open word still crosses
+            // keeps most of its contrast, because that letter is a clue there.
+            const settled = solved.length >= (wordsThroughSquare.get(key) || 1);
+            return { 'data-solved': solved.join(' '), ...(settled ? { 'data-solved-all': '' } : {}) };
         }
         const closed = [
             solvedOpenings.has(`${rowIndex},${cellIndex + 1},across`) && 'e',
@@ -437,12 +453,13 @@ export default function CrosswordView({
             const col = entry.start_x + (entry.direction === 'across' ? index : 0);
             const rawChar = grid[row]?.[col] || ' ';
             const char = displayGridValue(rawChar, row, col) || ' ';
-            return <span key={index} {...cellPresentation(row, col)} className={classes('state', {
-                red: isChecking && rawChar.toLowerCase() !== character.letters.toLowerCase() && rawChar !== ' ',
-                green: isChecking && rawChar.toLowerCase() === character.letters.toLowerCase() && rawChar !== ' ',
+            return <span key={index} {...cellPresentation(row, col)} data-cell={`${row},${col}`} className={classes('state', {
+                red: showVerdicts && rawChar.toLowerCase() !== character.letters.toLowerCase() && rawChar !== ' ',
+                green: showVerdicts && rawChar.toLowerCase() === character.letters.toLowerCase() && rawChar !== ' ',
                 'intersection-cell-across': app.activeDirection === 'across' && isCellInActiveSelection(entry, index),
                 'intersection-cell-down': app.activeDirection === 'down' && isCellInActiveSelection(entry, index),
                 'cursor-cell': isCursorCell(entry, index),
+                shaded: Boolean(app.getCell(col, row)?.is_shaded),
                 'rebus-state': rawChar.length > 1
             })} onClick={event => {
                 app.handle_cell_click(event, entry, index);
@@ -527,8 +544,18 @@ export default function CrosswordView({
                 publish(`--territory-${lane}-bottom`, rankOf(last));
             }
         };
+        // Read just after a frame has been drawn, when the layout is already
+        // clean: reading row offsets inside the frame, right after a commit,
+        // would force the whole page's style and layout a second time.
+        let after = 0;
         const schedule = () => {
-            if (!frame) frame = requestAnimationFrame(measure);
+            if (frame || after) return;
+            frame = requestAnimationFrame(() => {
+                after = window.setTimeout(() => {
+                    after = 0;
+                    measure();
+                }, 0);
+            });
         };
         schedule();
         scheduleTerritory.current = schedule;
@@ -537,6 +564,7 @@ export default function CrosswordView({
         return () => {
             scheduleTerritory.current = () => {};
             cancelAnimationFrame(frame);
+            window.clearTimeout(after);
             for (const [, list] of lanes) list.removeEventListener('scroll', schedule);
             window.removeEventListener('resize', schedule);
         };
@@ -548,10 +576,13 @@ export default function CrosswordView({
     // leave the lane when holding ends — measuring on size alone would keep
     // the holding-era corners. Typing a letter moves no row, so keystrokes
     // skip the measure (still one frame per burst when it does run).
+    // Not while a check plays back: the read would force a restyle mid-sequence;
+    // the end of the sequence re-reads once.
     const holding = Boolean(rapture.active?.holding);
     useEffect(() => {
+        if (rapture.busy) return;
         scheduleTerritory.current();
-    }, [completedWords.size, holding]);
+    }, [completedWords.size, holding, rapture.busy]);
     // The last notch becomes the fireworks: the board remembers which words
     // were still open, and when the puzzle completes the finale bursts from the
     // opening of the last of them (the black square's edge or the board's rim
@@ -561,7 +592,7 @@ export default function CrosswordView({
     const [finaleOrigin, setFinaleOrigin] = useState(/** @type {{ x: number, y: number } | null | undefined} */ (undefined));
     useEffect(() => {
         if (!app.showFireworks) {
-            const open = entries.filter(entry => !completedWords.has(entry.clue_text));
+            const open = entries.filter(entry => !completedWords.has(entryKey(entry)));
             if (open.length) lastOpen.current = open;
             if (finaleOrigin !== undefined) setFinaleOrigin(undefined);
             return;
@@ -579,9 +610,12 @@ export default function CrosswordView({
     };
 
     return (
-        <div id="app" className={classes({ 'half-completed': app.isHalfCompleted, 'react-desktop-app': true })}
+        <div id="app" className={classes({ 'half-completed': entries.length > 0 && settledWords.size / entries.length > 0.5, 'react-desktop-app': true })}
             data-direction={app.activeDirection || 'across'}
             data-glow={glowOn ? 'on' : 'off'}
+            data-lit={selection.size > 0 ? '' : undefined}
+            data-notepad={app.currentPuzzleMetadata?.notepad ? '' : undefined}
+            data-glass={glass || undefined}
             {...viewAttributes(settings)}
             style={/** @type {React.CSSProperties} */ ({
                 '--grid-columns': grid[0]?.length || 15,
@@ -594,13 +628,15 @@ export default function CrosswordView({
                     ? { '--active-clue-ramp': String(clueRamp.get(activeEntry.clue_number)) }
                     : {}),
                 '--remaining': String(entries.length ? (entries.length - solvedCount) / entries.length : 1),
-                '--libido': String(Math.round(Math.pow(Math.min(1, Math.max(0, app.score / 100)), 1.25) * 1000) / 1000),
+                '--libido': String(Math.round(Math.pow(Math.min(1, Math.max(0, shownScore / 100)), 1.25) * 1000) / 1000),
+                // A clean run warms the notches further (vision.css section 11).
+                '--combo-heat': String(comboHeat(shownCombo)),
             })}>
             <div id="notmenu">
                 <div className={classes('clue-column', { active: app.direction === 'across', inactive: app.direction !== 'across' })} data-label="ACROSS">
                     <ul id="across" ref={acrossRef}>
                         {laneEntries('across').map(entry => (
-                            <li key={'across-' + entry.clue_number} onClick={event => {
+                            <li key={'across-' + entry.clue_number} data-entry={entryKey(entry)} onClick={event => {
                                 app.handle_clue_click(event, entry);
                                 onEntryFocused?.(entry, 'pointer');
                             }} className={clueClasses(entry)} {...rowProps(entry)}>
@@ -609,7 +645,6 @@ export default function CrosswordView({
                                     <div className="state-container">{answer(entry)}</div>
                                 </div>
                                 <strong className="clue-number" style={settings.ramp ? clueRampStyle(clueRamp, entry.clue_number) : undefined}>{entry.clue_number}</strong>
-                                {raptureSparks(entry)}
                             </li>
                         ))}
                         {laneSprings('across', laneEntries('across'))}
@@ -636,11 +671,12 @@ export default function CrosswordView({
                         )}
 
                         <div className="menu-row indicator-bar">
-                            <div className="stat-item stat-progress" style={/** @type {React.CSSProperties} */ ({ '--progress': entries.length ? completedWords.size / entries.length : 0 })}>
+                            <div className="stat-item stat-progress" style={/** @type {React.CSSProperties} */ ({ '--progress': entries.length ? settledWords.size / entries.length : 0 })}>
                                 <span className="stat-label">Completed</span>
-                                <span className="stat-value">{completedWords.size} / {entries.length}</span>
+                                <span className="stat-value">{settledWords.size} / {entries.length}</span>
                                 <span className="progress-track" aria-hidden="true"></span>
                             </div>
+                            <ComboMeter app={app} bus={rapture.bus} />
                             <div className="stat-item stat-time">
                                 <span className="stat-label">Time</span>
                                 <span className="stat-value">{app.formatTime(app.timer)}</span>
@@ -682,6 +718,7 @@ export default function CrosswordView({
                     {/* Crossword Grid */}
                     <div id="crossword-container">
                         <div className="board-glow" ref={glowRef} aria-hidden="true"></div>
+                        <GlassLayer gridRef={boardRef} light={!app.isDarkMode} direction={app.activeDirection === 'down' ? 'down' : 'across'} onBackend={setGlass} />
                         <div className="grid" ref={boardRef} style={{ gridTemplateRows: `repeat(${grid.length}, var(--cell-size))` }}>
                             {grid.map((row, rowIndex) => (
                                 <div className="grid-row" key={rowIndex} style={{ gridTemplateColumns: `repeat(${row.length}, var(--cell-size))` }}>
@@ -816,10 +853,12 @@ export default function CrosswordView({
                     <div className="menu-row action-bar">
                         <button onClick={() => {
                             const wasChecking = app.isChecking;
-                            const solvedBefore = new Set(app.completedWords);
-                            app.check_all();
+                            const before = { completed: new Set(app.completedWords), score: app.score, combo: app.combo };
+                            // The check is worked out at once and played back
+                            // as a short sequence (useRapture), verdicts included.
+                            app.check_all({ deferVerdicts: true });
                             if (!wasChecking && app.isChecking) {
-                                rapture.celebrate(solvedBefore);
+                                rapture.play(app.lastCheck, before);
                                 onCheckAll?.(app);
                             }
                         }} id="check-all" className="action-button blue-action" title="Check all">
@@ -933,7 +972,7 @@ export default function CrosswordView({
                 <div className={classes('clue-column', { active: app.direction === 'down', inactive: app.direction !== 'down' })} data-label="DOWN">
                     <ul id="down" ref={downRef}>
                         {laneEntries('down').map(entry => (
-                            <li key={'down-' + entry.clue_number} onClick={event => {
+                            <li key={'down-' + entry.clue_number} data-entry={entryKey(entry)} onClick={event => {
                                 app.handle_clue_click(event, entry);
                                 onEntryFocused?.(entry, 'pointer');
                             }} className={clueClasses(entry)} {...rowProps(entry)}>
@@ -942,7 +981,6 @@ export default function CrosswordView({
                                     <span className="clue-text">{renderClueSurface(entry.clue_text, annotateClueGrammar)}</span>
                                     <div className="state-container">{answer(entry)}</div>
                                 </div>
-                                {raptureSparks(entry)}
                             </li>
                         ))}
                         {laneSprings('down', laneEntries('down'))}
@@ -1128,8 +1166,10 @@ export default function CrosswordView({
             )}
 
             {/* The finish and the check celebrations are plain DOM, not a canvas. */}
+            <Volley bus={rapture.bus} />
             <RaptureLayer active={rapture.active} />
-            {app.showFireworks && finaleOrigin !== undefined && <Finale app={app} origin={finaleOrigin} />}
+            {/* The finish waits for the check that completed the puzzle to play out. */}
+            {app.showFireworks && finaleOrigin !== undefined && !rapture.busy && <Finale app={app} origin={finaleOrigin} />}
         </div>
     );
 }

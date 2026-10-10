@@ -1,0 +1,327 @@
+/* ==========================================================================
+   Combo — points, the run, and how a check plays back.
+   The meter sits in the masthead beside Time and Score: the points, the
+   run's multiplier and a heat line marked at each tier. It climbs with each
+   word a check pops, flashes when the run reaches a new tier, and cracks when
+   a mistake breaks the run. The board answers the same beats: the notch a
+   word fires from flares, a mistake jolts the board and the springs, and the
+   fireworks are one canvas over everything (Volley.jsx).
+   Motion is transform and opacity on a handful of elements, finite; under
+   prefers-reduced-motion desktop.css switches the animations off and the
+   sequence itself does not run.
+   ========================================================================== */
+#app.react-desktop-app {
+  /* Tier colours: cool and quiet at the first links, through warm, to a
+     white-hot top tier. */
+  --combo-0: color-mix(in oklab, var(--react-muted) 80%, transparent);
+  --combo-1: oklch(0.82 0.11 160);
+  --combo-2: oklch(0.83 0.12 200);
+  --combo-3: oklch(0.86 0.14 95);
+  --combo-4: oklch(0.8 0.16 55);
+  --combo-5: oklch(0.8 0.19 15);
+  --combo-break: var(--react-red);
+}
+:root[style*='color-scheme: light'] #app.react-desktop-app {
+  --combo-1: oklch(0.55 0.12 160);
+  --combo-2: oklch(0.55 0.12 220);
+  --combo-3: oklch(0.6 0.14 85);
+  --combo-4: oklch(0.6 0.17 45);
+  --combo-5: oklch(0.56 0.2 15);
+  --combo-break: #c9343f;
+}
+
+/* --- The masthead makes room for it -------------------------------------- */
+#app.react-desktop-app #menu-top {
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-areas:
+    'info combo time score'
+    'progress progress progress progress';
+}
+#app.react-desktop-app[data-notepad] #menu-top {
+  grid-template-areas:
+    'info combo time score'
+    'notepad notepad notepad notepad'
+    'progress progress progress progress';
+}
+
+/* --- The meter ------------------------------------------------------------ */
+#app.react-desktop-app .combo-meter {
+  --tone: var(--combo-0);
+  position: relative;
+  grid-area: combo;
+  padding-bottom: 6px;
+  cursor: default;
+}
+#app.react-desktop-app .combo-meter[data-tier='1'] { --tone: var(--combo-1); }
+#app.react-desktop-app .combo-meter[data-tier='2'] { --tone: var(--combo-2); }
+#app.react-desktop-app .combo-meter[data-tier='3'] { --tone: var(--combo-3); }
+#app.react-desktop-app .combo-meter[data-tier='4'] { --tone: var(--combo-4); }
+#app.react-desktop-app .combo-meter[data-tier='5'] { --tone: var(--combo-5); }
+#app.react-desktop-app .combo-meter:not([data-live]) { --tone: var(--combo-0); }
+
+#app.react-desktop-app .combo-meter .stat-value {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+#app.react-desktop-app .combo-points {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+#app.react-desktop-app .combo-mult {
+  display: inline-block;
+  padding: 2px 6px 3px;
+  border: 1px solid color-mix(in oklab, var(--tone) 60%, transparent);
+  border-radius: 7px;
+  color: var(--tone);
+  background: color-mix(in oklab, var(--tone) 12%, transparent);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  transform-origin: 50% 70%;
+}
+#app.react-desktop-app .combo-meter:not([data-live]) .combo-mult {
+  opacity: 0.55;
+}
+#app.react-desktop-app .combo-streak {
+  color: var(--tone);
+  letter-spacing: 0.08em;
+}
+
+/* The heat line: how far up the tiers the run is, ticked at each tier. */
+#app.react-desktop-app .combo-heat {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: color-mix(in oklab, var(--react-ink) 10%, transparent);
+  overflow: visible;
+}
+#app.react-desktop-app .combo-heat::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--combo-1),
+    var(--combo-2) 30%,
+    var(--combo-3) 55%,
+    var(--combo-4) 78%,
+    var(--combo-5)
+  );
+  transform: scaleX(var(--run, 0));
+  transform-origin: left center;
+  transition: transform 260ms var(--ease-out, ease-out);
+}
+#app.react-desktop-app .combo-heat i {
+  position: absolute;
+  top: -2px;
+  left: calc(var(--at) * 100%);
+  width: 1px;
+  height: 6px;
+  background: color-mix(in oklab, var(--react-ink) 30%, transparent);
+}
+
+/* Each word that lands: the number takes a small kick; a new tier flares the
+   multiplier. Two names per flash so back-to-back beats restart it. */
+#app.react-desktop-app .combo-meter:is([data-flash='word-0'], [data-flash='tier-0']) .combo-points {
+  animation: combo-kick-a 260ms var(--ease-out, ease-out);
+}
+#app.react-desktop-app .combo-meter:is([data-flash='word-1'], [data-flash='tier-1']) .combo-points {
+  animation: combo-kick-b 260ms var(--ease-out, ease-out);
+}
+#app.react-desktop-app .combo-meter[data-flash^='tier'] .combo-mult {
+  animation: combo-tier 620ms cubic-bezier(0.2, 1.6, 0.4, 1);
+  box-shadow: 0 0 14px -2px var(--tone);
+}
+@keyframes combo-kick-a {
+  30% { transform: translateY(-2px) scale(1.06); }
+}
+@keyframes combo-kick-b {
+  30% { transform: translateY(-2px) scale(1.06); }
+}
+@keyframes combo-tier {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.45) rotate(-4deg); }
+  100% { transform: scale(1); }
+}
+
+/* Points as they arrive, rising off the number. */
+#app.react-desktop-app .combo-deltas {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  pointer-events: none;
+}
+#app.react-desktop-app .combo-deltas b {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  color: var(--tone);
+  font-size: 0.78rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  animation: combo-rise 900ms var(--ease-out, ease-out) both;
+}
+#app.react-desktop-app .combo-deltas b[data-kind='tier'] {
+  font-size: 0.95rem;
+}
+#app.react-desktop-app .combo-deltas b[data-kind='break'] {
+  color: var(--combo-break);
+  animation-name: combo-drop;
+}
+@keyframes combo-rise {
+  0% { opacity: 0; transform: translateY(8px); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-14px); }
+}
+@keyframes combo-drop {
+  0% { opacity: 0; transform: translateY(-4px) scale(1.2); }
+  15% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(14px); }
+}
+
+/* A broken run: the meter takes the blow, cracks, and drains to nothing. */
+#app.react-desktop-app .combo-meter[data-fracture] {
+  --tone: var(--combo-break);
+  animation: combo-hit-a 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+#app.react-desktop-app .combo-meter[data-fracture$='-1'] {
+  animation-name: combo-hit-b;
+}
+#app.react-desktop-app .combo-meter[data-fracture] .combo-heat::before {
+  background: var(--combo-break);
+  transition: transform 700ms cubic-bezier(0.6, 0, 0.8, 0.4);
+}
+#app.react-desktop-app .combo-meter[data-fracture] .combo-points {
+  color: var(--combo-break);
+  transition: color 900ms ease-out;
+}
+#app.react-desktop-app .combo-crack {
+  position: absolute;
+  inset: -6px -8px -4px;
+  width: calc(100% + 16px);
+  height: calc(100% + 10px);
+  overflow: visible;
+  pointer-events: none;
+  fill: none;
+  stroke: var(--combo-break);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  animation: combo-crack-out 1500ms ease-in both;
+}
+#app.react-desktop-app .combo-meter[data-fracture^='dent'] .combo-crack path:nth-child(n + 3) {
+  display: none;
+}
+#app.react-desktop-app .combo-crack path {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+  animation: combo-crack-draw 180ms ease-out calc(var(--i) * 26ms) forwards;
+}
+@keyframes combo-crack-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes combo-crack-out {
+  0%, 60% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes combo-hit-a {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(3px); }
+  30%, 50%, 70% { transform: translateX(-5px) rotate(-1deg); }
+  40%, 60% { transform: translateX(5px) rotate(1deg); }
+}
+@keyframes combo-hit-b {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(3px); }
+  30%, 50%, 70% { transform: translateX(-5px) rotate(-1deg); }
+  40%, 60% { transform: translateX(5px) rotate(1deg); }
+}
+
+/* --- The fireworks layer -------------------------------------------------- */
+#app.react-desktop-app .volley {
+  position: fixed;
+  z-index: 45;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  visibility: hidden;
+}
+#app.react-desktop-app .volley[data-live] {
+  visibility: visible;
+}
+
+/* --- The board takes the blow ------------------------------------------- */
+#app.react-desktop-app #crossword-container[data-jolt='a'] .grid {
+  animation: board-jolt-a 380ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+#app.react-desktop-app #crossword-container[data-jolt='b'] .grid {
+  animation: board-jolt-b 380ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+#app.react-desktop-app #crossword-container[data-jolt] .board-glow {
+  animation: board-hurt 700ms ease-out;
+}
+@keyframes board-jolt-a {
+  15% { transform: translate(-4px, 1px); }
+  30% { transform: translate(4px, -1px); }
+  45% { transform: translate(-3px, 0); }
+  60% { transform: translate(2px, 1px); }
+  80% { transform: translate(-1px, 0); }
+}
+@keyframes board-jolt-b {
+  15% { transform: translate(-4px, 1px); }
+  30% { transform: translate(4px, -1px); }
+  45% { transform: translate(-3px, 0); }
+  60% { transform: translate(2px, 1px); }
+  80% { transform: translate(-1px, 0); }
+}
+@keyframes board-hurt {
+  0% { filter: none; }
+  20% { filter: hue-rotate(-40deg) saturate(1.6); }
+  100% { filter: none; }
+}
+
+/* A wrong letter lands with a little impact rather than just a colour. */
+#app.react-desktop-app .grid-cell input.red {
+  animation: letter-crack 360ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+@keyframes letter-crack {
+  0% { opacity: 0.4; transform: scale(1.25); }
+  40% { opacity: 1; transform: scale(0.92) rotate(-3deg); }
+  70% { transform: scale(1.03) rotate(2deg); }
+  100% { transform: none; }
+}
+
+/* --- The notch a word fires from flares as it goes ----------------------- */
+#app.react-desktop-app[data-cues='on'] .black-cell[data-flare='e']::before,
+#app.react-desktop-app[data-cues='on'] .grid-cell[data-flare='e']::before {
+  animation: notch-flare-e 820ms var(--ease-out, ease-out);
+}
+#app.react-desktop-app[data-cues='on'] .black-cell[data-flare='s']::after,
+#app.react-desktop-app[data-cues='on'] .grid-cell[data-flare='s']::before {
+  animation: notch-flare-s 820ms var(--ease-out, ease-out);
+}
+@keyframes notch-flare-e {
+  0% { opacity: 1; transform: translateY(-50%) scaleY(1); filter: brightness(1); }
+  18% { opacity: 1; transform: translateY(-50%) scaleY(2.1); filter: brightness(2.2); }
+}
+@keyframes notch-flare-s {
+  0% { opacity: 1; transform: translateX(-50%) scaleX(1); filter: brightness(1); }
+  18% { opacity: 1; transform: translateX(-50%) scaleX(2.1); filter: brightness(2.2); }
+}
+
+/* --- Springs take the blow too: ClueSpring flashes the jolted coils in
+   --combo-break (full strength for the first 30% of 760ms, then easing back). */
+
+/* --- The finish card has two more numbers -------------------------------- */
+.finale-card dl {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  row-gap: 12px;
+}

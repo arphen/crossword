@@ -51,6 +51,7 @@ Do not run live-provider tests without explicit opt-in. Generator source belongs
 
 - Commit finished work in small, reviewable commits whose messages state what changed and why. Never end a session with tracked modifications uncommitted, and never mix unrelated changes into one commit.
 - Keep the visible HEAD clean: untracked experiments are either committed (marked as experiments) or removed. `git status --short` should show nothing the next agent has to guess about.
+- Motion: CSS animations and transitions stay finite (transform, opacity or filter, short and non-blocking). Continuous or looping motion belongs only in a canvas/GPU layer (for example the optional WebGPU glass layer, `?gpu=1`) that renders on demand, pauses when the tab is hidden, drops to a static frame under `prefers-reduced-motion`, and stops submitting frames once nothing is moving. Never loop a CSS animation.
 - Run the slice's acceptance commands before committing. The git hooks enforce green gates: pre-commit runs the repo-map regen plus ruff, prettier, eslint and typecheck; pre-push runs the map check and the full `make test` suite. Do not use `--no-verify`; CI enforces the same gates after push.
 
 ## Strict Boundaries

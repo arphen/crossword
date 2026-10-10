@@ -2,39 +2,18 @@ import React, { useState } from 'react';
 import { confettiSpecs, finaleMessage } from './celebration';
 import { cssVars } from './cssVars';
 
-// The pieces of a celebration that are drawn rather than computed. All of it is
-// plain DOM animated by celebration.css (transform and opacity, finite), so there
-// is no canvas and nothing keeps running once the moment has passed.
-
-/** Sparks leaving one solved clue's chip. Alternate rows mirror and rotate the same
- *  spec so a batch does not read as one stamp repeated. */
-export function RaptureSparks({ specs, index = 0 }) {
-  const turned = specs.length ? [...specs.slice(index % specs.length), ...specs.slice(0, index % specs.length)] : specs;
-  return (
-    <span className="rapture-sparks" aria-hidden="true" style={cssVars({ '--flip': index % 2 ? -1 : 1 })}>
-      {turned.map((spark, position) => (
-        <i
-          key={position}
-          data-tone={spark.tone}
-          style={cssVars({
-            '--dx': `${spark.dx}px`,
-            '--dy': `${spark.dy}px`,
-            '--size': `${spark.size}px`,
-            '--spark-delay': `${spark.delay}ms`,
-            '--spark-time': `${spark.duration}ms`,
-          })}
-        />
-      ))}
-    </span>
-  );
-}
+// The pieces of a celebration that are drawn rather than computed: plain DOM
+// animated by celebration.css (transform and opacity, finite), so nothing keeps
+// running once the moment has passed. A check's fireworks are the one canvas
+// (Volley.jsx); these are the board-wide moment and the finish.
 
 /** What a big enough check adds to the whole board: a green wash, a note, and for
  *  a clean sweep a little confetti in the number colours. */
 export function RaptureLayer({ active }) {
   if (!active || active.tier < 2) return null;
   return (
-    <div className="rapture-layer" data-tier={active.tier} aria-hidden={active.note ? undefined : 'true'}>
+    <div className="rapture-layer" data-tier={active.tier} aria-hidden={active.note ? undefined : 'true'}
+      style={cssVars({ '--moment-delay': `${active.noteDelay || 0}ms` })}>
       {active.tier >= 4 && <div className="rapture-wash" />}
       {active.note && (
         <div className="rapture-note" role="status">
@@ -95,6 +74,8 @@ export function Finale({ app, origin = null }) {
         <dl>
           <div><dt>Time</dt><dd>{app.formatTime(app.timer)}</dd></div>
           <div><dt>Score</dt><dd>{app.score}</dd></div>
+          <div><dt>Points</dt><dd>{Math.round(app.points || 0).toLocaleString('en-US')}</dd></div>
+          <div><dt>Best run</dt><dd>{app.bestCombo || 0}</dd></div>
           <div><dt>Checks</dt><dd>{app.checksUsed}</dd></div>
           <div><dt>Reveals</dt><dd>{app.revealsUsed}</dd></div>
         </dl>
