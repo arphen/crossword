@@ -198,3 +198,12 @@ export function readRootLight(root: HTMLElement): { charge: number; activeRank: 
     activeRank: Number.isFinite(active) ? active : null,
   };
 }
+
+/** A linear RGB colour as a CSS rgb() string (for 2D canvas strokes). */
+export function cssRgb(rgb: readonly number[]): string {
+  const encode = (v: number) => {
+    const c = Math.min(1, Math.max(0, v));
+    return Math.round((c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055) * 255);
+  };
+  return `rgb(${encode(rgb[0])} ${encode(rgb[1])} ${encode(rgb[2])})`;
+}

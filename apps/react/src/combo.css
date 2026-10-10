@@ -317,19 +317,8 @@
   18% { opacity: 1; transform: translateX(-50%) scaleX(2.1); filter: brightness(2.2); }
 }
 
-/* --- Springs take the blow too ------------------------------------------- */
-#app.react-desktop-app .spring-coil[data-jolt='a'] {
-  animation: spring-jolt-a 760ms ease-out;
-}
-#app.react-desktop-app .spring-coil[data-jolt='b'] {
-  animation: spring-jolt-b 760ms ease-out;
-}
-@keyframes spring-jolt-a {
-  0%, 30% { stroke: var(--combo-break); opacity: 1; stroke-width: 2.2; }
-}
-@keyframes spring-jolt-b {
-  0%, 30% { stroke: var(--combo-break); opacity: 1; stroke-width: 2.2; }
-}
+/* --- Springs take the blow too: ClueSpring flashes the jolted coils in
+   --combo-break (full strength for the first 30% of 760ms, then easing back). */
 
 /* --- The finish card has two more numbers -------------------------------- */
 .finale-card dl {

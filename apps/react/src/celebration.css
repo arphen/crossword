@@ -112,20 +112,8 @@
   }
 }
 
-/* --- Springs of a row that is leaving: they go green, and let go when the
-   row pops (the sequence marks them, ClueSpring 'release'). ---------------- */
-#app.react-desktop-app .spring-coil[data-release] {
-  stroke: var(--rapture-green);
-  animation: rapture-release 820ms ease-in 120ms both;
-}
-@keyframes rapture-release {
-  from {
-    opacity: 0.9;
-  }
-  to {
-    opacity: 0;
-  }
-}
+/* --- Springs of a row that is leaving go --rapture-green and let go when the
+   row pops (ClueSpring 'release': 0.9 to nothing over 820ms, after 120ms). */
 
 /* --- The board-wide moment: wash, note --------------------------------- */
 .rapture-layer {

@@ -207,7 +207,7 @@
    ember/flame pair (section 1b) spends the chroma on interaction.
    ========================================================================== */
 #app.react-desktop-app
-  :is(.clue-number, .state, .grid-cell, .spring-stop, #across li, #down li) {
+  :is(.clue-number, .state, .grid-cell, #across li, #down li) {
   --clue-hue: calc(
     var(--arc-start-hue) +
       (var(--clue-ramp, 0) * (var(--arc-end-hue) - var(--arc-start-hue)))
@@ -916,50 +916,14 @@
   z-index: -1;
   top: 0;
   left: 0;
-  width: 100%;
-  overflow: hidden;
+  display: block;
   pointer-events: none;
 }
 
-#app.react-desktop-app .spring-stop {
-  stop-color: var(--clue-tint);
-}
-
-#app.react-desktop-app .spring-coil {
-  fill: none;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.7;
-  animation: spring-settle 240ms ease-out both;
-}
-
-#app.react-desktop-app .spring-coil[data-state='affected'] {
-  opacity: 0.88;
-}
-
-#app.react-desktop-app .spring-coil[data-state='active'] {
-  opacity: 1;
-  stroke-width: 2.1;
-}
-
-/* A new spring, made when a solved clue closes a gap, takes up the slack by
-   fading in rather than appearing. Opacity only. */
-@keyframes spring-settle {
-  from {
-    opacity: 0;
-  }
-}
-
-#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
-  .spring-coil {
-  opacity: 0.6;
-}
-
-#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
-  .spring-coil[data-state] {
-  opacity: 0.9;
-}
+/* The coils themselves are painted on that canvas (ClueSpring.jsx), with the
+   weights and strengths this section used to give them: 1.6px at 0.7, a
+   crossing clue's at 0.88, the active one's 2.1px at full; 0.9 for both on
+   the low-bloom tiers; a new spring fading in over 240ms. */
 
 /* ==========================================================================
    3. The letter track: a strip torn from the board.
@@ -2377,16 +2341,8 @@ html[data-luma='veil'] {
   --start-live: var(--lane-live-down);
 }
 
-/* The springs between the chips quiet with their lane; the active and
-   crossing ones keep the strengths set in section 2. */
-#app.react-desktop-app .spring-coil:not([data-state]) {
-  opacity: calc(0.3 + 0.4 * var(--lane-live, 1));
-}
-#app.react-desktop-app:is([data-luma='dim'], [data-luma='veil'])
-  .spring-coil:not([data-state]) {
-  opacity: calc(0.26 + 0.34 * var(--lane-live, 1));
-}
-
+/* The springs between the chips quiet with their lane (0.3 + 0.4 of its
+   level, 0.26 + 0.34 on the low-bloom tiers); ClueSpring paints them so. */
 /* The open words' spills draw on the charge, each at its lane's level; a
    solved word's spill is gone. */
 #app.react-desktop-app .grid-cell:not(.black-cell) {
@@ -2439,9 +2395,11 @@ html[data-luma='veil'] {
 :root[style*='color-scheme: light'] #app.react-desktop-app .grid-cell[data-pop] input {
   --pop-alpha: 26%;
 }
+/* The flash is a glow around the letter in the word's hue: a filter, which
+   the compositor runs, where a background colour would repaint every frame. */
 @keyframes cell-pop {
   0% {
-    background-color: color-mix(in oklab, var(--pop-tint, var(--react-green)) var(--pop-alpha), transparent);
+    filter: drop-shadow(0 0 7px color-mix(in oklab, var(--pop-tint, var(--react-green)) calc(var(--pop-alpha) * 2), transparent));
     transform: scale(1.16);
   }
 }
@@ -2470,14 +2428,15 @@ html[data-luma='veil'] {
   transition: opacity 600ms var(--ease-out, ease);
 }
 
-/* The flow: notches drain and gather rather than jump. */
+/* The flow: notches drain and gather rather than jump. Only transform and
+   opacity move (the compositor runs them); the glow steps with them, since a
+   box-shadow transition repaints on the main thread every frame of a check. */
 #app.react-desktop-app[data-cues='on'] .black-cell::before,
 #app.react-desktop-app[data-cues='on'] .black-cell::after,
 #app.react-desktop-app[data-cues='on'] .grid-cell[data-start]::before {
   transition:
     transform 1100ms var(--ease-out, ease),
-    opacity 900ms var(--ease-out, ease),
-    box-shadow 900ms var(--ease-out, ease);
+    opacity 900ms var(--ease-out, ease);
 }
 
 /* What remains: a solved word's notch contracts to one point of light. */
@@ -2687,9 +2646,8 @@ html[data-luma='veil'] {
       color-mix(in oklab, var(--notch-e-color) calc(var(--notch-e) * 0.55), transparent),
     inset 0 -9px 16px -8px
       color-mix(in oklab, var(--notch-s-color) calc(var(--notch-s) * 0.55), transparent);
-  transition:
-    --gate-e-live 900ms var(--ease-out, ease),
-    --gate-s-live 900ms var(--ease-out, ease);
+  /* No transition on the edge's light: easing --gate-*-live repainted every
+     black square's gradients on the main thread for 900ms of each solve. */
 }
 #app.react-desktop-app[data-cues='on'][data-ramp='on'] .black-cell {
   --notch-e-color: var(--gate-across-tint);

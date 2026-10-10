@@ -1,7 +1,7 @@
-import React, { memo, useLayoutEffect, useRef, useState } from 'react';
+import React, { memo, useLayoutEffect, useRef } from 'react';
 import { coilPath, springEnds, springSegments, springTension } from './springGeometry';
 import { chainAtRest, createChain, cubicBezier, pluck, stepChain } from './springMotion';
-import { cssVars } from './cssVars';
+import { cssRgb, laneTint, readTokens } from './glass/tint';
 
 /** One window event carries every knock and settle to the lanes, so the
  *  springs need no prop (and no render) to move:
@@ -18,11 +18,26 @@ const SETTLE_EASE = cubicBezier(0.3, 1.45, 0.5, 1);
 const reducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
 
+// How long the coils' own moments last (ms), as the stylesheet once timed
+// them: a new spring fading in, a jolt's flash, a popped row letting go.
+const FADE_IN = 240;
+const JOLT = 760;
+const RELEASE_DELAY = 120;
+const RELEASE = 820;
+// The lane light's cross-fade (vision.css --lane-fade).
+const LANE_FADE = 280;
+const easeOut = (t) => 1 - (1 - t) * (1 - t);
+const easeIn = (t) => t * t;
+const clamp01 = (t) => Math.min(1, Math.max(0, t));
+
 // The chips sit at different heights because every clue row sizes itself, so the
-// springs are drawn from measured rectangles rather than from CSS arithmetic. The
-// layer is absolutely positioned inside the scrolling list, which means it scrolls
-// with the clues for free, and it is the list's last child so the ladder's
-// :nth-child rules still count only clue rows.
+// springs are drawn from measured rectangles rather than from CSS arithmetic.
+// They are painted on a canvas the size of the lane's visible area, held in
+// place over the scroll with a transform: a coil moving every frame is a
+// redraw of pixels, never a change to the document, so the springs can ring
+// through a whole check without the page restyling or laying out once. The
+// canvas is the list's last child so the ladder's :nth-child rules still count
+// only clue rows.
 function readCentres(list, chips) {
   const box = list.getBoundingClientRect();
   return chips.map((chip) => {
@@ -38,21 +53,36 @@ function readCentres(list, chips) {
   });
 }
 
-function readHeight(chips) {
-  // From the last row, not scrollHeight: the layer itself counts toward the
-  // list's scrollable height and would hold it open after a clue is solved.
-  const last = chips.at(-1)?.parentElement;
-  return last ? last.offsetTop + last.offsetHeight : 0;
+/** What the stylesheet says about the springs, read once per change of theme
+ *  or setting: the clue hues (tint.ts, as vision.css computes them), the flash
+ *  colours, and the dimmer tiers. */
+function readInk(root) {
+  const tokens = readTokens(root);
+  const probe = document.createElement('span');
+  probe.style.display = 'none';
+  root.appendChild(probe);
+  const resolve = (value, fallback) => {
+    probe.style.color = value;
+    return getComputedStyle(probe).color || fallback;
+  };
+  const ink = {
+    tokens,
+    jolt: resolve('var(--combo-break, #ff9c9c)', '#ff9c9c'),
+    release: resolve('var(--rapture-green, #8fe4b1)', '#8fe4b1'),
+    dim: root.matches?.("[data-luma='dim'], [data-luma='veil']") ?? false,
+    direction: root.getAttribute('data-direction') === 'down' ? 'down' : 'across',
+    tints: new Map(),
+  };
+  probe.remove();
+  return ink;
 }
 
 function ClueSpring({ lane, numbers, ramp, states }) {
   const layer = useRef(null);
-  const [drawn, setDrawn] = useState({ height: 0, segments: [] });
   // Kept in a ref so the observers always measure the latest props without being
   // torn down and rebuilt on every selection change.
   const latest = useRef({ lane, numbers, ramp, states });
   latest.current = { lane, numbers, ramp, states };
-  const stamp = useRef('');
   // Chip geometry only moves when the listed rows change; a selection flip just
   // re-marks the same rows. Re-reading every chip rectangle forces a synchronous
   // layout on each direction switch, so the selection path reuses the cached
@@ -61,15 +91,163 @@ function ClueSpring({ lane, numbers, ramp, states }) {
   // bouncing into place after a check are drawn by the motion layer below),
   // and the row ResizeObservers below repair the cache if a highlight ever does
   // shift a row's height a frame later.
-  const geometry = useRef({ key: '', centres: null, height: 0 });
+  const geometry = useRef({ key: '', centres: null });
   // The springs as one moving object (springMotion.js): knocks travel through
-  // the chain and rows sliding into place carry their chips along. Drawn
-  // straight onto the paths and chips each frame from the cached centres, so
-  // the motion never reads layout and never renders React.
-  const motion = useRef({ chain: createChain(), settles: new Map(), frame: 0, last: 0, chips: null, drawn: new Map(), remeasure: false });
-  const paths = useRef(new Map());
+  // the chain and rows sliding into place carry their chips along. Each frame
+  // the moving coils' paths are recomputed from the cached centres and
+  // painted, so the motion never reads layout and never renders React.
+  const motion = useRef({ chain: createChain(), settles: new Map(), frame: 0, last: 0, chips: null, moving: false, remeasure: false });
   const segmentsRef = useRef(/** @type {any[]} */ ([]));
-  segmentsRef.current = drawn.segments;
+  // Per coil: the path it is drawn with while it moves, and when its moments
+  // began (born, jolted, released).
+  const coils = useRef({ moved: new Map(), born: new Map(), jolted: new Map(), released: new Map(), shapes: new Map(), gradients: new Map() });
+  const ink = useRef(/** @type {any} */ (null));
+  const laneLight = useRef({ from: 1, to: 1, at: 0 });
+
+  const liveFor = (now) => {
+    const light = laneLight.current;
+    return light.from + (light.to - light.from) * easeOut(clamp01((now - light.at) / LANE_FADE));
+  };
+
+  const tintFor = (rank) => {
+    const current = ink.current;
+    const key = rank ?? 0;
+    let tint = current.tints.get(key);
+    if (!tint) {
+      tint = cssRgb(laneTint(current.tokens, latest.current.lane, key));
+      current.tints.set(key, tint);
+    }
+    return tint;
+  };
+
+  const shapeOf = (d) => {
+    const shapes = coils.current.shapes;
+    let shape = shapes.get(d);
+    if (!shape) {
+      if (shapes.size > 600) shapes.clear();
+      shape = new Path2D(d);
+      shapes.set(d, shape);
+    }
+    return shape;
+  };
+
+  /** Paint every visible coil; returns whether a coil is still mid-moment. */
+  const paint = () => {
+    const canvas = layer.current;
+    const list = canvas?.parentElement;
+    const context = canvas?.getContext?.('2d');
+    if (!canvas || !list || !context) return false;
+    const root = list.closest('#app') ?? document.documentElement;
+    if (!ink.current) {
+      ink.current = readInk(root);
+      const live = ink.current.direction === latest.current.lane ? 1 : ink.current.tokens.laneRest;
+      laneLight.current = { from: live, to: live, at: 0 };
+    }
+    const width = list.clientWidth;
+    const height = list.clientHeight;
+    const top = list.scrollTop;
+    const ratio = Math.min(2, window.devicePixelRatio || 1);
+    const pixelsX = Math.max(1, Math.round(width * ratio));
+    const pixelsY = Math.max(1, Math.round(height * ratio));
+    if (canvas.width !== pixelsX || canvas.height !== pixelsY) {
+      canvas.width = pixelsX;
+      canvas.height = pixelsY;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+    }
+    const shift = `translateY(${top}px)`;
+    if (canvas.style.transform !== shift) canvas.style.transform = shift;
+    context.setTransform(ratio, 0, 0, ratio, 0, -top * ratio);
+    context.clearRect(0, top, width, height);
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+
+    const now = performance.now();
+    const current = ink.current;
+    const live = liveFor(now);
+    let busy = now - laneLight.current.at < LANE_FADE;
+    const { moved, born, jolted, released } = coils.current;
+    for (const segment of segmentsRef.current) {
+      const lowest = Math.min(segment.from.y, segment.to.y) - 40;
+      const highest = Math.max(segment.from.y, segment.to.y) + 40;
+      if (highest < top || lowest > top + height) continue;
+      // Opacity and weight as vision.css section 2 set them.
+      let alpha;
+      let lineWidth = 1.6;
+      if (segment.state === 'active') {
+        alpha = current.dim ? 0.9 : 1;
+        lineWidth = 2.1;
+      } else if (segment.state === 'affected') {
+        alpha = current.dim ? 0.9 : 0.88;
+      } else {
+        alpha = current.dim ? 0.26 + 0.34 * live : 0.3 + 0.4 * live;
+      }
+      const age = now - (born.get(segment.key) ?? -Infinity);
+      if (age < FADE_IN) {
+        alpha *= easeOut(clamp01(age / FADE_IN));
+        busy = true;
+      }
+      let stroke;
+      const releasedAt = released.get(segment.key);
+      if (releasedAt !== undefined) {
+        // A popped row's springs go green and let go.
+        const t = (now - releasedAt - RELEASE_DELAY) / RELEASE;
+        alpha = 0.9 * (1 - easeIn(clamp01(t)));
+        stroke = current.release;
+        if (t < 1) busy = true;
+      } else {
+        // A coil's gradient runs between its resting ends: made once per
+        // layout, not per frame.
+        const gradients = coils.current.gradients;
+        stroke = gradients.get(segment);
+        if (!stroke) {
+          stroke = context.createLinearGradient(segment.from.x, segment.from.y, segment.to.x, segment.to.y);
+          stroke.addColorStop(0, tintFor(segment.fromRamp));
+          stroke.addColorStop(1, tintFor(segment.toRamp));
+          gradients.set(segment, stroke);
+        }
+      }
+      if (alpha <= 0.002) continue;
+      const shape = shapeOf(moved.get(segment.key) ?? segment.d);
+      context.globalAlpha = alpha;
+      context.lineWidth = lineWidth;
+      context.strokeStyle = stroke;
+      context.stroke(shape);
+      // A jolt: the coil flashes the break colour, then eases back.
+      const joltedAt = jolted.get(segment.key);
+      if (joltedAt !== undefined) {
+        const t = (now - joltedAt) / JOLT;
+        if (t >= 1) {
+          jolted.delete(segment.key);
+        } else {
+          const flash = t < 0.3 ? 1 : 1 - easeOut((t - 0.3) / 0.7);
+          context.globalAlpha = flash;
+          context.lineWidth = lineWidth + 0.6 * flash;
+          context.strokeStyle = current.jolt;
+          context.stroke(shape);
+          busy = true;
+        }
+      }
+    }
+    context.globalAlpha = 1;
+    return busy;
+  };
+
+  // One loop for everything that moves: the chain's motion, rows settling,
+  // and the coils' own moments. It parks as soon as nothing is moving.
+  const loop = (time) => {
+    const state = motion.current;
+    state.frame = 0;
+    const moving = state.moving ? stepMotion(time) : false;
+    const busy = paint();
+    if (moving || busy) state.frame = requestAnimationFrame(loop);
+  };
+
+  const wake = () => {
+    const state = motion.current;
+    if (state.frame || typeof requestAnimationFrame === 'undefined') return;
+    state.frame = requestAnimationFrame(loop);
+  };
 
   const redraw = (fresh = false) => {
     const list = layer.current?.parentElement;
@@ -78,37 +256,37 @@ function ClueSpring({ lane, numbers, ramp, states }) {
     const numbersKey = numbers.join(',');
     const chips = [...list.querySelectorAll(':scope > li > .clue-number')];
     if (chips.length !== numbers.length) {
-      geometry.current = { key: '', centres: null, height: 0 };
-      if (stamp.current === 'empty') return;
-      stamp.current = 'empty';
-      setDrawn({ height: 0, segments: [] });
+      geometry.current = { key: '', centres: null };
+      segmentsRef.current = [];
+      wake();
       return;
     }
     let centres;
-    let height;
     if (!fresh && geometry.current.key === numbersKey && geometry.current.centres?.length === chips.length) {
-      ({ centres, height } = geometry.current);
+      ({ centres } = geometry.current);
     } else {
       centres = readCentres(list, chips);
-      height = readHeight(chips);
-      geometry.current = { key: numbersKey, centres, height };
+      geometry.current = { key: numbersKey, centres };
     }
     const segments = springSegments({ chips: centres, numbers, ramp, states, lane });
-    const signature = `${height}|${segments.map((segment) => `${segment.key}:${segment.d}:${segment.state}`).join('|')}`;
-    if (signature === stamp.current) return;
-    stamp.current = signature;
-    setDrawn({ height, segments });
+    const now = performance.now();
+    const keys = new Set(segments.map((segment) => segment.key));
+    const { born, jolted, released, moved } = coils.current;
+    for (const segment of segments) if (!born.has(segment.key)) born.set(segment.key, now);
+    for (const map of [born, jolted, released, moved]) {
+      for (const key of map.keys()) if (!keys.has(key)) map.delete(key);
+    }
+    segmentsRef.current = segments;
+    coils.current.gradients = new Map();
+    wake();
   };
 
   const restMotion = () => {
     const state = motion.current;
-    state.frame = 0;
+    state.moving = false;
     state.chips?.forEach((chip) => { chip.style.translate = ''; });
     state.chips = null;
-    for (const segment of segmentsRef.current) {
-      if (state.drawn.has(segment.key)) paths.current.get(segment.key)?.setAttribute('d', segment.d);
-    }
-    state.drawn.clear();
+    coils.current.moved.clear();
     // A resize that arrived while rows were still sliding is measured now.
     if (state.remeasure) {
       state.remeasure = false;
@@ -116,14 +294,15 @@ function ClueSpring({ lane, numbers, ramp, states }) {
     }
   };
 
-  const animate = (time) => {
+  /** Advance the chain one frame; returns whether anything is still moving. */
+  const stepMotion = (time) => {
     const state = motion.current;
     const list = layer.current?.parentElement;
     const { numbers } = latest.current;
     const cached = geometry.current;
     if (!list || !cached.centres || cached.centres.length !== numbers.length) {
       restMotion();
-      return;
+      return false;
     }
     const dt = state.last ? Math.min(0.05, (time - state.last) / 1000) : 1 / 60;
     state.last = time;
@@ -156,30 +335,23 @@ function ClueSpring({ lane, numbers, ramp, states }) {
       return { ...centre, x: centre.x + dx + sway, y: centre.y + dy, sway };
     });
     const index = new Map(numbers.map((number, position) => [number, position]));
+    const moved = coils.current.moved;
     for (const segment of segmentsRef.current) {
-      const element = paths.current.get(segment.key);
       const a = centres[index.get(segment.fromNumber)];
       const b = centres[index.get(segment.toNumber)];
-      if (!element || !a || !b) continue;
-      // Only springs that moved are redrawn; one at rest keeps its path.
-      const signature = `${a.x.toFixed(1)},${a.y.toFixed(1)},${b.x.toFixed(1)},${b.y.toFixed(1)}`;
-      const still = Math.abs(a.x - cached.centres[index.get(segment.fromNumber)].x) < 0.1
-        && Math.abs(b.x - cached.centres[index.get(segment.toNumber)].x) < 0.1
-        && Math.abs(a.y - cached.centres[index.get(segment.fromNumber)].y) < 0.1
-        && Math.abs(b.y - cached.centres[index.get(segment.toNumber)].y) < 0.1;
+      if (!a || !b) continue;
+      const restA = cached.centres[index.get(segment.fromNumber)];
+      const restB = cached.centres[index.get(segment.toNumber)];
+      // A spring at rest keeps its resting path.
+      const still = Math.abs(a.x - restA.x) < 0.1 && Math.abs(b.x - restB.x) < 0.1 && Math.abs(a.y - restA.y) < 0.1 && Math.abs(b.y - restB.y) < 0.1;
       if (still) {
-        if (state.drawn.has(segment.key)) {
-          element.setAttribute('d', segment.d);
-          state.drawn.delete(segment.key);
-        }
+        moved.delete(segment.key);
         continue;
       }
-      if (state.drawn.get(segment.key) === signature) continue;
-      state.drawn.set(segment.key, signature);
       const shear = b.sway - a.sway;
       const tension = springTension(segment.steps);
       const ends = springEnds(a, b);
-      element.setAttribute('d', coilPath(ends.from, ends.to, {
+      moved.set(segment.key, coilPath(ends.from, ends.to, {
         ...tension,
         radius: tension.radius * (1 + Math.min(0.9, Math.abs(shear) / 14)),
         phase: shear * 0.24,
@@ -187,16 +359,19 @@ function ClueSpring({ lane, numbers, ramp, states }) {
     }
     if (!settling && chainAtRest(state.chain)) {
       restMotion();
-      return;
+      return false;
     }
-    state.frame = requestAnimationFrame(animate);
+    return true;
   };
 
   const startMotion = () => {
     const state = motion.current;
-    if (state.frame || typeof requestAnimationFrame === 'undefined' || reducedMotion()) return;
-    state.last = 0;
-    state.frame = requestAnimationFrame(animate);
+    if (reducedMotion()) return;
+    if (!state.moving) {
+      state.moving = true;
+      state.last = 0;
+    }
+    wake();
   };
 
   useLayoutEffect(() => {
@@ -215,11 +390,13 @@ function ClueSpring({ lane, numbers, ramp, states }) {
         return;
       }
       if (detail.lane !== own && detail.lane !== '*') return;
+      const now = performance.now();
       if (detail.kind === 'release') {
         for (const segment of segmentsRef.current) {
           if (segment.fromNumber !== detail.number && segment.toNumber !== detail.number) continue;
-          paths.current.get(segment.key)?.setAttribute('data-release', '');
+          coils.current.released.set(segment.key, now);
         }
+        wake();
         return;
       }
       if (detail.kind === 'pluck') {
@@ -234,23 +411,43 @@ function ClueSpring({ lane, numbers, ramp, states }) {
         });
         for (const segment of segmentsRef.current) {
           if (hit.size && !hit.has(segment.fromNumber) && !hit.has(segment.toNumber)) continue;
-          const element = paths.current.get(segment.key);
-          if (!element) continue;
-          // Two names for one flash, so a second jolt restarts it without
-          // forcing a layout to reset the first.
-          const flash = element.getAttribute('data-jolt') === 'a' ? 'b' : 'a';
-          element.setAttribute('data-jolt', flash);
-          setTimeout(() => {
-            if (element.getAttribute('data-jolt') === flash) element.removeAttribute('data-jolt');
-          }, 760);
+          coils.current.jolted.set(segment.key, now);
         }
         startMotion();
+        wake();
       }
     };
     window.addEventListener(SPRING_EVENT, onMotion);
+    // The colours follow the theme and the settings; the lane's light follows
+    // the direction being solved.
+    const list = layer.current?.parentElement;
+    const root = list?.closest('#app');
+    const refresh = () => {
+      const before = ink.current;
+      ink.current = null;
+      if (!root) return;
+      ink.current = readInk(root);
+      coils.current.gradients = new Map();
+      const live = ink.current.direction === latest.current.lane ? 1 : ink.current.tokens.laneRest;
+      const now = performance.now();
+      const light = laneLight.current;
+      laneLight.current = before ? { from: liveFor(now), to: live, at: now } : { from: live, to: live, at: 0 };
+      if (light.to === live && before) laneLight.current = { ...light };
+      wake();
+    };
+    const watch = typeof MutationObserver === 'undefined' ? null : new MutationObserver(refresh);
+    if (root && watch) {
+      watch.observe(root, { attributes: true, attributeFilter: ['data-direction', 'data-ramp', 'data-vibrance', 'data-luma'] });
+      watch.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
+    const scrolled = () => wake();
+    list?.addEventListener('scroll', scrolled, { passive: true });
     return () => {
       window.removeEventListener(SPRING_EVENT, onMotion);
+      watch?.disconnect();
+      list?.removeEventListener('scroll', scrolled);
       cancelAnimationFrame(motion.current.frame);
+      motion.current.frame = 0;
       restMotion();
     };
   }, []);
@@ -270,7 +467,12 @@ function ClueSpring({ lane, numbers, ramp, states }) {
   // redraws synchronously so a solved clue never leaves a spring dangling for a
   // frame. Selection-only changes reuse the cached geometry (see above).
   const key = `${lane}|${numbers.join(',')}|${states.join(',')}`;
-  useLayoutEffect(() => { redraw(false); }, [key, ramp]);
+  useLayoutEffect(() => {
+    redraw(false);
+    // Paint now, in this commit, rather than a frame later.
+    const state = motion.current;
+    if (!state.moving) paint();
+  }, [key, ramp]);
 
   useLayoutEffect(() => {
     const list = layer.current?.parentElement;
@@ -295,47 +497,7 @@ function ClueSpring({ lane, numbers, ramp, states }) {
     };
   }, [numbers.join(',')]);
 
-  return (
-    <svg
-      ref={layer}
-      className="clue-spring"
-      aria-hidden="true"
-      focusable="false"
-      data-lane={lane}
-      style={{ height: drawn.height || undefined }}
-    >
-      <defs>
-        {drawn.segments.map((segment) => (
-          <linearGradient
-            key={segment.key}
-            id={`spring-${segment.key}`}
-            gradientUnits="userSpaceOnUse"
-            x1={segment.from.x}
-            y1={segment.from.y}
-            x2={segment.to.x}
-            y2={segment.to.y}
-          >
-            <stop offset="0" className="spring-stop" style={cssVars({ '--clue-ramp': segment.fromRamp })} />
-            <stop offset="1" className="spring-stop" style={cssVars({ '--clue-ramp': segment.toRamp })} />
-          </linearGradient>
-        ))}
-      </defs>
-      {drawn.segments.map((segment) => (
-        <path
-          key={segment.key}
-          ref={(element) => {
-            if (element) paths.current.set(segment.key, element);
-            else paths.current.delete(segment.key);
-          }}
-          d={segment.d}
-          className="spring-coil"
-          data-state={segment.state || undefined}
-          data-taut={segment.taut}
-          stroke={`url(#spring-${segment.key})`}
-        />
-      ))}
-    </svg>
-  );
+  return <canvas ref={layer} className="clue-spring" aria-hidden="true" data-lane={lane} />;
 }
 
 export default memo(

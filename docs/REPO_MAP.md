@@ -74,7 +74,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 
 - `apps/react/index.html`
 - `apps/react/package.json`
-- `apps/react/src/ClueSpring.jsx` — `SPRING_EVENT:13`, `moveSprings:14`, `reducedMotion:18`, `readCentres:26`, `readHeight:41`, `ClueSpring:48`, `redraw:74`, `signature:97`, `restMotion:103`, `animate:119`, `offset:137`, `centres:149`, `index:158`, `startMotion:195`, `onMotion:203`, `schedule:279`
+- `apps/react/src/ClueSpring.jsx` — `SPRING_EVENT:13`, `moveSprings:14`, `reducedMotion:18`, `easeOut:29`, `easeIn:30`, `clamp01:31`, `readCentres:41`, `readInk:59`, `resolve:64`, `ClueSpring:80`, `liveFor:107`, `tintFor:112`, `shapeOf:123`, `paint:135`, `loop:238`, `wake:246` (+12 more)
 - `apps/react/src/ComboMeter.jsx` — `formatPoints:10`, `multiplierText:11`, `ComboMeter:24`, `later:33`, `pop:34`, `unsubscribe:39`
 - `apps/react/src/CrosswordView.jsx` — `displayedPuzzleWeekday:20`, `clueSignalKind:36`, `renderClueSurface:46`, `classes:74`, `CrosswordView:84`, `scheduleTerritory:105`, `changeSettings:116`, `describeRebusInput:121`, `entryContainsCell:138`, `entryAtCell:143`, `directional:144`, `tokenAt:157`, `displayGridValue:160`, `gridValues:185`, `clueClasses:188`, `cellPresentation:226` (+26 more)
 - `apps/react/src/CrosswordView.test.jsx`
@@ -86,7 +86,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/behavior/desktop-cache.test.js`
 - `apps/react/src/behavior/desktop-focus.test.js`
 - `apps/react/src/behavior/desktop.d.ts` — `createOptions:2`
-- `apps/react/src/behavior/desktop.js` — `focusCell:12`, `scroll:31`, `focusEntryStart:38`, `createOptions:41`, `data:47`, `isHalfCompleted:131`, `weekdayOptions:137`, `selectedWeekday:148`, `activeDirection:151`, `created:160`, `beforeUnmount:190`, `checkAndStartCaching:197`, `needsMore:200`, `handleOnlineStatus:228`, `updateCachedCounts:237`, `updateSolvedCounts:244` (+88 more)
+- `apps/react/src/behavior/desktop.js` — `focusCell:12`, `scroll:31`, `focusEntryStart:38`, `createOptions:41`, `data:47`, `isHalfCompleted:132`, `weekdayOptions:138`, `selectedWeekday:149`, `activeDirection:152`, `created:161`, `beforeUnmount:191`, `checkAndStartCaching:198`, `needsMore:201`, `handleOnlineStatus:229`, `updateCachedCounts:238`, `updateSolvedCounts:245` (+88 more)
 - `apps/react/src/behavior/mobile.d.ts` — `createOptions:2`
 - `apps/react/src/behavior/mobile.js` — `createOptions:3`, `myEntries:19`, `sortedEntries:23`, `checkButtonLabel:33`, `toggleCheck:38`, `clearIncorrectAndMarkSolved:48`, `isPerfect:57`, `isEntryFilled:91`, `isCellCorrect:96`, `loadPuzzle:102`, `getCellValue:111`, `getCoordinates:115`, `selectEntry:125`, `focusInput:134`, `handleInput:143`, `handleKeydown:167` (+3 more)
 - `apps/react/src/board-presentation.test.jsx`
@@ -98,7 +98,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/checkSequence.js` — `wordStep:11`, `ASCEND_MS:24`, `parseCell:26`, `planSequence:43`, `wrong:88`, `cells:92`
 - `apps/react/src/checkSequence.test.js`
 - `apps/react/src/combo.css`
-- `apps/react/src/combo.js` — `COMBO_TIERS:14`, `MISTAKE_COST:24`, `comboTier:27`, `comboMultiplier:35`, `comboHeat:41`, `wordValue:47`, `newComboState:51`, `scoreCheck:63`, `breakCombo:92`
+- `apps/react/src/combo.js` — `COMBO_TIERS:14`, `MISTAKE_COST:24`, `comboTier:27`, `comboMultiplier:35`, `comboHeat:41`, `wordValue:47`, `newComboState:51`, `scoreCheck:63`, `breakCombo:92`, `forfeitCombo:102`
 - `apps/react/src/combo.test.js`
 - `apps/react/src/controller.d.ts` — `ControllerConfiguration:9`, `Controller:16`, `createController:26`
 - `apps/react/src/controller.js` — `createController:6`, `notify:22`, `unwrap:23`, `observe:24`, `get:31`, `set:48`, `deleteProperty:57`, `setTimeout:64`, `clearTimeout:65`, `setInterval:66`, `clearInterval:67`, `requestAnimationFrame:68`, `cancelAnimationFrame:69`, `subscribe:85`, `flush:87`, `start:88` (+1 more)
@@ -186,7 +186,7 @@ Run `bash .scripts/generate-repo-map.sh --check` to detect drift without writing
 - `apps/react/src/glass/scheduler.ts` — `SchedulerOptions:7`, `DEFAULT_SCHEDULE:14`, `frameDue:22`, `loopNeeded:34`, `nextRenderScale:48`
 - `apps/react/src/glass/shaders.ts` — `GLASS_WGSL:539`
 - `apps/react/src/glass/tint.test.ts`
-- `apps/react/src/glass/tint.ts` — `Rgb:9`, `GlassTokens:11`, `DEFAULT_TOKENS:43`, `srgbToLinear:71`, `parseColor:76`, `hexToLinear:90`, `oklchToLinear:95`, `clip:102`, `contour:110`, `laneTint:116`, `flameTint:127`, `boardCharge:138`, `share:143`, `readTokens:153`, `read:155`, `n:156` (+3 more)
+- `apps/react/src/glass/tint.ts` — `Rgb:9`, `GlassTokens:11`, `DEFAULT_TOKENS:43`, `srgbToLinear:71`, `parseColor:76`, `hexToLinear:90`, `oklchToLinear:95`, `clip:102`, `contour:110`, `laneTint:116`, `flameTint:127`, `boardCharge:138`, `share:143`, `readTokens:153`, `read:155`, `n:156` (+5 more)
 - `apps/react/src/glass/webgl2.ts` — `compile:294`, `shader:295`, `createWebGl2Glass:312`, `Program:318`, `WebGl2Glass:326`, `locate:347`, `use:426`
 - `apps/react/src/glass/webgpu.ts` — `Descriptor:14`, `GpuBuffer:15`, `GpuCanvasContext:16`, `GpuDevice:17`, `GpuRenderPipeline:18`, `GpuTexture:19`, `Target:34`, `Pipelines:40`, `WebGpuOptions:50`, `createWebGpuGlass:55`, `errors:71`, `WebGpuGlass:81`, `make:151`, `settle:307`, `group:369`
 - `apps/react/src/lattice.css`

@@ -539,8 +539,18 @@ export default function CrosswordView({
                 publish(`--territory-${lane}-bottom`, rankOf(last));
             }
         };
+        // Read just after a frame has been drawn, when the layout is already
+        // clean: reading row offsets inside the frame, right after a commit,
+        // would force the whole page's style and layout a second time.
+        let after = 0;
         const schedule = () => {
-            if (!frame) frame = requestAnimationFrame(measure);
+            if (frame || after) return;
+            frame = requestAnimationFrame(() => {
+                after = window.setTimeout(() => {
+                    after = 0;
+                    measure();
+                }, 0);
+            });
         };
         schedule();
         scheduleTerritory.current = schedule;
@@ -549,6 +559,7 @@ export default function CrosswordView({
         return () => {
             scheduleTerritory.current = () => {};
             cancelAnimationFrame(frame);
+            window.clearTimeout(after);
             for (const [, list] of lanes) list.removeEventListener('scroll', schedule);
             window.removeEventListener('resize', schedule);
         };
