@@ -800,10 +800,12 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 wrong: wrongCells.size,
             });
             this.applyComboState(scored.state);
+            // A revealed puzzle's words were not solved: the check settles
+            // them quietly, with no celebration to play.
             this.lastCheck = {
                 id: (this.lastCheck?.id || 0) + 1,
-                gained: gained.map(entryKey),
-                beats: scored.beats,
+                gained: this.revealedAll ? [] : gained.map(entryKey),
+                beats: this.revealedAll ? [] : scored.beats,
                 wrongCells: [...wrongCells],
                 verdicts: deferVerdicts ? [...verdicts] : null,
                 complete: allCorrect,
@@ -813,8 +815,8 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             if (allCorrect) {
                 this.stopTimer(); // Stop the timer when puzzle is complete
 
-                // Celebrate with fireworks and sounds!
-                this.celebrateCompletion();
+                // Celebrate with fireworks and sounds! (Not a revealed one.)
+                if (!this.revealedAll) this.celebrateCompletion();
 
                 const puzzleId = this.getPuzzleId(this.currentPuzzleMetadata);
                 if (puzzleId) {

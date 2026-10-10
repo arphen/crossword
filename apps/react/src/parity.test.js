@@ -217,6 +217,10 @@ describe('desktop reference contracts (controller method tests)', () => {
     expect([app.score, app.points, app.combo, app.revealedAll]).toEqual([0, 0, 0, true]);
     app.check_all();
     expect([app.score, app.points]).toEqual([0, 0]);
+    // Nothing was solved, so the check has nothing to celebrate.
+    expect(app.lastCheck.gained).toEqual([]);
+    expect(app.lastCheck.beats).toEqual([]);
+    expect(app.showFireworks).toBeFalsy();
   });
 
   it('checks the canonical fill behind a displayed multi-character token', () => {
