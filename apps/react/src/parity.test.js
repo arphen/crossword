@@ -206,6 +206,19 @@ describe('desktop reference contracts (controller method tests)', () => {
     expect([app.combo, app.points]).toEqual([0, 70]);
   });
 
+  it('zeroes the score and the points when the whole puzzle is revealed, for good', () => {
+    const { app } = fresh();
+    [...'CAT'].forEach((letter, c) => fill(app, 0, c, letter));
+    app.check_all();
+    app.check_all();
+    expect(app.points).toBeGreaterThan(0);
+    window.confirm = () => true;
+    app.revealAll();
+    expect([app.score, app.points, app.combo, app.revealedAll]).toEqual([0, 0, 0, true]);
+    app.check_all();
+    expect([app.score, app.points]).toEqual([0, 0]);
+  });
+
   it('checks the canonical fill behind a displayed multi-character token', () => {
     const { app } = fresh();
     app.crossword[0].characters[0] = { letters: 'SS' };

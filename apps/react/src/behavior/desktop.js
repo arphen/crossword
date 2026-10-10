@@ -2,7 +2,7 @@
 // originals are shelved in git history).
 import { entryKey } from '../entryKey';
 import { moveManifestIntoFrame, trimPuzzleFrame } from '../puzzleFrame';
-import { breakCombo, scoreCheck } from '../combo';
+import { breakCombo, forfeitCombo, scoreCheck } from '../combo';
 //
 // Writable-first focus: grid inputs persist across renders (stable keys), so
 // handlers focus the live node synchronously instead of waiting for the
@@ -115,6 +115,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             lastLoadedWeekday: 'monday',
             checksUsed: 0, // Track number of times check_all was used
             revealsUsed: 0, // Track number of individual cells revealed
+            revealedAll: false, // The whole puzzle was revealed: no points for it any more
             showRebusMenu: false, // Show rebus context menu
             rebusInputValue: '', // Value in rebus input
             rebusMenuCell: { row: -1, col: -1 }, // Current rebus cell being edited
@@ -593,6 +594,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             this.lastCheck = null;
             this.checksUsed = 0; // Reset checks counter
             this.revealsUsed = 0; // Reset reveals counter
+            this.revealedAll = false;
         },
         fitPuzzleFrame() {
             // The feed pads rectangular grids to a square with whole rows or
@@ -782,8 +784,11 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 }
             });
 
-            // Deduct points if there were errors (but keep score >= 0)
-            if (hasErrors) {
+            // Deduct points if there were errors (but keep score >= 0); a
+            // revealed puzzle stays at zero.
+            if (this.revealedAll) {
+                this.score = 0;
+            } else if (hasErrors) {
                 this.score = Math.max(0, this.score - 10);
             }
 
@@ -1314,7 +1319,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             });
         },
         revealAll() {
-            if (!confirm('Are you sure you want to reveal all answers? This will complete the puzzle but reduce your score.')) {
+            if (!confirm('Are you sure you want to reveal all answers? This will complete the puzzle and set your score to zero.')) {
                 return;
             }
 
@@ -1335,9 +1340,11 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
 
             this.$forceUpdate();
 
-            // Heavy score penalty for revealing all; the combo run ends too.
-            this.score = Math.max(0, this.score - 50);
-            this.breakCombo('reveal');
+            // Revealing everything means the puzzle was not solved: the score
+            // and the combo points go to zero and stay there for this puzzle.
+            this.revealedAll = true;
+            this.score = 0;
+            this.applyComboState(forfeitCombo(this.comboState(), this.crossword.map(entryKey)).state);
 
             // Clear any check marks if they're showing
             if (this.isChecking) {

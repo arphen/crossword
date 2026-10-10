@@ -4,6 +4,7 @@ import {
   comboHeat,
   comboMultiplier,
   comboTier,
+  forfeitCombo,
   MISTAKE_COST,
   newComboState,
   scoreCheck,
@@ -77,6 +78,18 @@ describe('scoring a check', () => {
     const start = newComboState();
     scoreCheck(start, { gained: words(3), wrong: 1 });
     expect(start).toEqual(newComboState());
+  });
+});
+
+describe('revealing the whole puzzle', () => {
+  it('sets the points to zero and pays nothing afterwards', () => {
+    const run = scoreCheck(newComboState(), { gained: words(3, 3, 3), wrong: 0 }).state;
+    const { state, beat } = forfeitCombo(run, ['across-1', 'across-2', 'across-3', 'down-9']);
+    expect(state).toMatchObject({ points: 0, combo: 0, best: 3 });
+    expect(beat).toMatchObject({ kind: 'break', reason: 'reveal-all', penalty: run.points, total: 0 });
+    const after = scoreCheck(state, { gained: [{ key: 'down-9', length: 5 }], wrong: 0 });
+    expect(after.state.points).toBe(0);
+    expect(after.beats[0]).toMatchObject({ repeat: true, points: 0 });
   });
 });
 

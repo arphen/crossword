@@ -96,3 +96,13 @@ export function breakCombo(state, reason = 'reveal') {
     beat: { kind: 'break', reason, lost: current.combo, wrong: 0, penalty: 0, total: current.points },
   };
 }
+
+/** Revealing the whole puzzle means it was not solved: the points go to zero
+ *  and every word counts as already paid, so no later check can earn any. */
+export function forfeitCombo(state, keys = []) {
+  const current = state || newComboState();
+  return {
+    state: { points: 0, combo: 0, best: current.best, awarded: [...new Set([...current.awarded, ...keys])] },
+    beat: { kind: 'break', reason: 'reveal-all', lost: current.combo, wrong: 0, penalty: current.points, total: 0 },
+  };
+}
