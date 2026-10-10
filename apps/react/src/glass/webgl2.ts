@@ -1,217 +1,370 @@
-// The WebGL2 fallback: the same squares, the same lights and states, drawn in
-// one pass without the frosted room, the bloom or the dispersion. Each draw
-// tone maps and encodes its own colour, so it blends straight onto the page.
+// The WebGL2 fallback: the same light over the board and the answer boxes as
+// the WebGPU layer (shaders.ts), in GLSL ES 3.00, for browsers without WebGPU.
+// The cells and boxes travel as float textures read with texelFetch; the
+// notches' glow is worked out where it falls instead of from a light field.
 
+import { BOX_FLOATS } from './boxes';
 import { CELL_FLOATS } from './cellState';
 import { GLOBAL_FLOATS, type GlassRenderer, type GlassScene, type GlassStats, type LostHandler } from './renderer';
 
-const HEADER = /* glsl */ `#version 300 es
+const CELL_TEXELS = CELL_FLOATS / 4;
+const BOX_TEXELS = BOX_FLOATS / 4;
+
+const COMMON = /* glsl */ `#version 300 es
 precision highp float;
+precision highp int;
 uniform vec4 u_g[${GLOBAL_FLOATS / 4}];
+uniform highp sampler2D u_cells;
+uniform highp sampler2D u_boxes;
+
 #define VIEW u_g[0]
 #define BOARD u_g[1]
-#define LIGHT u_g[2]
-#define LIGHT_T u_g[3]
+#define GRID u_g[2]
+#define DIMS u_g[3]
 #define MODE u_g[4]
-#define EVENTS u_g[5]
-#define PAL(i) u_g[6 + (i)].rgb
-const int SKY_LOW = 0; const int SKY_HIGH = 1; const int CAUSTIC = 2; const int GLASS = 3; const int OBSIDIAN = 4;
-const int SHADE = 5; const int RING = 6; const int ACROSS = 7; const int DOWN = 8; const int CORRECT = 9; const int WRONG = 10; const int KEY = 11;
-float cellSize() { return max(LIGHT_T.z, 8.0); }
+#define LANE u_g[5]
+#define SPILL u_g[6]
+#define KEY u_g[7]
+#define ORANGE u_g[8]
+#define BLUE u_g[9]
+#define FLAME u_g[10]
+#define RED u_g[14]
+#define CLIP_A u_g[15]
+#define CLIP_D u_g[16]
+#define IMPULSE(k) u_g[17 + (k)]
+
+const uint BLACK = 1u;
+const uint LETTER = 16u;
+const uint CURSOR = 32u;
+const uint WORD = 64u;
+const uint CORRECT = 128u;
+const uint WRONG = 256u;
+const uint SETTLED = 1024u;
+const uint NOTCH_E = 2048u;
+const uint NOTCH_S = 4096u;
+const uint POP = 32768u;
+const uint SOLVED_A = 65536u;
+const uint SOLVED_D = 131072u;
+const float TAU = 6.2831853;
+const float FLOOR = 0.24;
+
+float now() { return VIEW.w; }
 bool paper() { return MODE.y > 0.5; }
 float motion() { return 1.0 - MODE.z; }
-float hash21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
-float noise(vec2 p) { vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash21(i), hash21(i + vec2(1, 0)), u.x), mix(hash21(i + vec2(0, 1)), hash21(i + vec2(1, 1)), u.x), u.y); }
-float fbm(vec2 p) { float s = 0.0, a = 0.5; for (int k = 0; k < 3; k++) { s += a * noise(p); p = p * 2.03 + vec2(17.1, 9.2); a *= 0.5; } return s; }
-vec2 lightPos() { float k = clamp((VIEW.w - LIGHT_T.x) / max(LIGHT_T.y, 0.001), 0.0, 1.0); k = k * k * (3.0 - 2.0 * k); return mix(LIGHT.xy, LIGHT.zw, k); }
-vec3 room(vec2 px) {
-  vec2 p = px / (cellSize() * 4.5); float t = VIEW.w * 0.035 * motion();
-  float a = fbm(p * 0.8 + vec2(fbm(p + t), fbm(p - t)) * 2.0);
-  vec3 c = mix(PAL(SKY_LOW), PAL(SKY_HIGH), smoothstep(0.28, 0.88, a));
-  vec2 w = p * 3.1; float caustic = pow((0.5 + 0.5 * sin(w.x * 2.7 + sin(w.y * 1.9 + t * 3.0) * 1.6)) * (0.5 + 0.5 * sin(w.y * 2.3 + sin(w.x * 2.2 - t * 2.4) * 1.6)), 5.0);
-  return c + PAL(CAUSTIC) * caustic * 0.3 * (0.35 + 0.65 * a);
+float pitch() { return GRID.z; }
+int cols() { return int(GRID.w); }
+int rows() { return int(DIMS.x); }
+bool has(uint f, uint bit) { return (f & bit) != 0u; }
+float since(float t) { return max(now() - t, 0.0); }
+vec4 cellPart(int i, int part) { return texelFetch(u_cells, ivec2(part, i), 0); }
+uint flagsOf(int i) { return uint(cellPart(i, 1).x); }
+vec2 hash2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
+vec3 roomTint() { return mix(BLUE.rgb, ORANGE.rgb, LANE.z); }
+
+int cellAt(ivec2 c) {
+  if (c.x < 0 || c.y < 0 || c.x >= cols() || c.y >= rows()) return -1;
+  int i = c.y * cols() + c.x;
+  return i < int(DIMS.y) ? i : -1;
 }
-float sdRoundBox(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + vec2(r); return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
-vec2 sdGrad(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + vec2(r); vec2 s = vec2(p.x >= 0.0 ? 1.0 : -1.0, p.y >= 0.0 ? 1.0 : -1.0);
-  if (max(q.x, q.y) > 0.0) return s * normalize(max(q, 0.0) + 1e-5); return q.x > q.y ? vec2(s.x, 0.0) : vec2(0.0, s.y); }
-vec3 tonemap(vec3 c) { c *= EVENTS.z; c = clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), 0.0, 1.0);
-  return mix(1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, c * 12.92, vec3(lessThanEqual(c, vec3(0.0031308)))); }
-`;
 
-const FULL_VS = /* glsl */ `#version 300 es
-out vec2 v_uv;
-void main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); v_uv = vec2(p.x, 1.0 - p.y); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }
-`;
-
-const BACKDROP_FS = `${HEADER}
-in vec2 v_uv; out vec4 o;
-void main() {
-  vec2 px = v_uv * VIEW.xy; float cs = cellSize();
-  vec2 center = BOARD.xy + BOARD.zw * 0.5;
-  float d = sdRoundBox(px - center, BOARD.zw * 0.5 + vec2(cs * 0.16), cs * 0.36);
-  float inside = 1.0 - smoothstep(-1.0, 1.0, d);
-  vec3 col = room(px) * (paper() ? 0.9 : 0.42) + PAL(KEY) * exp(-abs(d + 1.0) * 0.5) * 0.12;
-  float shadow = (1.0 - smoothstep(-cs * 0.1, cs * 1.3, d)) * (paper() ? 0.22 : 0.6) * (1.0 - inside);
-  o = vec4(tonemap(col) * inside, inside + shadow);
+float spillLevel(float dist, float along) {
+  float a0 = clamp(1.0 - dist * 0.42, 0.0, 1.0);
+  float a1 = clamp(1.0 - (dist + 1.0) * 0.42, 0.0, 1.0);
+  return mix(a0, a1, clamp(along, 0.0, 1.0));
 }
-`;
-
-const TILE_VS = /* glsl */ `#version 300 es
-precision highp float;
-layout(location = 0) in vec4 a_rect;
-layout(location = 1) in vec4 a_b;
-layout(location = 2) in vec4 a_c;
-uniform vec4 u_g[${GLOBAL_FLOATS / 4}];
-uniform float u_pad;
-out vec2 v_local; out vec2 v_screen; flat out vec4 v_rect; flat out vec4 v_b; flat out vec4 v_c;
-void main() {
-  vec2 corner = vec2(float(gl_VertexID & 1), float((gl_VertexID >> 1) & 1)) * 2.0 - 1.0;
-  float cs = max(u_g[3].z, 8.0);
-  vec2 hb = a_rect.zw * 0.5 + vec2(cs * u_pad);
-  vec2 screen = a_rect.xy + a_rect.zw * 0.5 + corner * hb;
-  v_local = corner * hb; v_screen = screen; v_rect = a_rect; v_b = a_b; v_c = a_c;
-  gl_Position = vec4(screen / u_g[0].xy * vec2(2.0, -2.0) + vec2(-1.0, 1.0), 0.0, 1.0);
+float waterLevel(float dist, float along) {
+  return max(spillLevel(dist, along), FLOOR * exp(-max(dist + along - 2.4, 0.0) * 0.12));
 }
-`;
 
-const SHADOW_FS = `${HEADER}
-in vec2 v_local; in vec2 v_screen; flat in vec4 v_rect; flat in vec4 v_b; flat in vec4 v_c; out vec4 o;
-void main() {
-  float cs = cellSize(); int flags = int(v_b.x + 0.5);
-  float lift = (flags & 32) != 0 ? 1.0 : 0.0;
-  vec2 away = normalize(v_screen - lightPos() + vec2(0.0, 1e-3));
-  vec2 hb = v_rect.zw * 0.5 - vec2(max(1.0, cs * 0.05));
-  float blur = cs * (0.06 + 0.13 * lift);
-  float d = sdRoundBox(v_local - away * cs * (0.035 + 0.11 * lift), hb, cs * 0.17);
-  float strength = (paper() ? 0.3 : 0.55) * ((flags & 1) != 0 ? 0.35 : 1.0);
-  o = vec4(0.0, 0.0, 0.0, (1.0 - smoothstep(-blur, blur, d)) * strength);
+vec3 filamentGlow(vec2 u, vec2 at, bool vertical, vec3 tint, float level) {
+  vec2 d = vertical ? vec2(u.x - at.x, max(abs(u.y - at.y) - 0.19, 0.0)) : vec2(max(abs(u.x - at.x) - 0.19, 0.0), u.y - at.y);
+  float r = length(d) * pitch();
+  float glow = exp(-r / (3.0 + 3.0 * min(LANE.w, 2.0))) * 0.55 + exp(-r / 14.0) * 0.12;
+  return tint * glow * level;
 }
-`;
 
-const TILE_FS = `${HEADER}
-in vec2 v_local; in vec2 v_screen; flat in vec4 v_rect; flat in vec4 v_b; flat in vec4 v_c; out vec4 o;
-void main() {
-  float cs = cellSize(); float t = VIEW.w; float m = motion(); float px = 1.0 / VIEW.z;
-  int flags = int(v_b.x + 0.5);
-  bool black = (flags & 1) != 0; bool cursor = (flags & 32) != 0;
-  float lift = cursor ? mix(1.0, 1.0 - exp(-(t - v_b.z) * 9.0) * cos((t - v_b.z) * 13.0), m) : 0.0;
-  float pressAge = t - v_b.w; float press = (pressAge > 0.0 && pressAge < 2.0) ? exp(-pressAge * 15.0) * sin(pressAge * 28.0) * m : 0.0;
-  float popAge = t - v_c.y - v_c.z * 0.32; float pop = (popAge > -0.3 && popAge < 1.4) ? exp(-popAge * popAge * 26.0) : 0.0;
-  float scale = 1.0 + 0.05 * lift - 0.05 * press + 0.035 * pop * m;
-  vec2 local = (v_local - vec2(0.0, -cs * 0.03 * lift)) / scale;
-  vec2 hb = v_rect.zw * 0.5 - vec2(max(1.0, cs * 0.05));
-  float radius = cs * 0.17;
-  float d = sdRoundBox(local, hb, radius);
-  float coverage = 1.0 - smoothstep(-px, px, d);
-  if (d > cs * 0.55) discard;
-  float bevel = cs * (black ? 0.1 : 0.17);
-  float s = clamp(-d / bevel, 0.0, 1.0);
-  vec2 grad = sdGrad(local, hb, radius);
-  vec3 n = normalize(vec3(grad * (2.0 * (1.0 - s) / bevel) * cs * (black ? -0.05 : 0.11), 1.0));
-  if (!black) n = normalize(n + vec3(local / (cs * 3.2), 0.0));
-  vec3 dirCol = MODE.x > 0.5 ? PAL(DOWN) : PAL(ACROSS);
-  vec3 seen = room(v_screen - n.xy * cs * 0.4);
-  vec3 body; vec3 emissive = vec3(0.0); vec3 glow = vec3(0.0);
-  float verdictAge = t - v_c.x;
-  if (black) {
-    body = PAL(OBSIDIAN) + seen * (paper() ? 0.06 : 0.16);
-    float laneE = MODE.x > 0.5 ? 0.3 : 1.0; float laneS = MODE.x > 0.5 ? 1.0 : 0.3;
-    if ((flags & 2048) != 0) emissive += PAL(ACROSS) * exp(-max(hb.x - local.x, 0.0) / (cs * 0.14)) * smoothstep(hb.y * 1.05, hb.y * 0.15, abs(local.y)) * 0.55 * laneE;
-    if ((flags & 4096) != 0) emissive += PAL(DOWN) * exp(-max(hb.y - local.y, 0.0) / (cs * 0.14)) * smoothstep(hb.x * 1.05, hb.x * 0.15, abs(local.x)) * 0.55 * laneS;
-  } else {
-    body = mix(seen * (paper() ? 1.0 : 0.9), PAL(GLASS), paper() ? 0.5 : 0.45);
-    float pool = distance(v_screen, lightPos()) / (cs * 6.5);
-    body *= paper() ? 0.9 + 0.1 * exp(-pool * pool) : 0.78 + 0.45 * exp(-pool * pool);
-    if ((flags & 2) != 0) body = mix(body, PAL(SHADE), 0.5);
-    if ((flags & 64) != 0) { float flow = 0.5 + 0.5 * sin(6.2832 * (v_b.y * 1.2 - t * 0.42 * m)); body = mix(body, dirCol * (paper() ? 0.75 : 0.42), 0.26 + 0.2 * flow); }
-    if (cursor) { body = mix(body, dirCol * (paper() ? 0.85 : 0.5), 0.3); float ring = abs(d + px * 1.5); emissive += dirCol * exp(-ring * ring / (px * px * 2.2)) * 1.4;
-      glow += dirCol * exp(-max(d, 0.0) / (cs * 0.13)) * step(0.0, d) * 0.35 * lift; }
-    if ((flags & 128) != 0) { body = mix(body, PAL(CORRECT) * (paper() ? 0.8 : 0.32), 0.4 * smoothstep(0.0, 0.3, verdictAge));
-      if (verdictAge >= 0.0 && verdictAge < 1.2) { float ring = (length(local) - verdictAge * cs * 1.9) / (cs * 0.09); emissive += PAL(CORRECT) * exp(-ring * ring) * exp(-verdictAge * 3.2) * m * 1.1 * coverage; } }
-    if ((flags & 256) != 0) { body = mix(body, PAL(WRONG) * (paper() ? 0.8 : 0.32), 0.5); emissive += PAL(WRONG) * 0.9 * exp(-max(verdictAge, 0.0) * 4.0); }
-    if ((flags & 4) != 0) { float r = length(local) - min(hb.x, hb.y) * 0.8; emissive += PAL(RING) * exp(-r * r / (px * px * 2.0 + cs * cs * 0.0004)) * 0.5; }
+vec3 notchGlow(vec2 u) {
+  ivec2 base = ivec2(floor(u));
+  float lit = min(1.0, LANE.w);
+  vec3 light = vec3(0.0);
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      ivec2 c = base + ivec2(x, y);
+      int i = cellAt(c);
+      if (i < 0) continue;
+      uint f = flagsOf(i);
+      if (!has(f, BLACK)) continue;
+      vec4 sa = cellPart(i, 3);
+      vec4 sd = cellPart(i, 4);
+      vec2 o = vec2(c);
+      if (has(f, NOTCH_E)) light += filamentGlow(u, o + vec2(1.0, 0.5), true, sa.w >= 0.0 ? sa.rgb : ORANGE.rgb, lit * LANE.x);
+      if (has(f, NOTCH_S)) light += filamentGlow(u, o + vec2(0.5, 1.0), false, sd.w >= 0.0 ? sd.rgb : BLUE.rgb, lit * LANE.y);
+    }
   }
-  emissive += (PAL(KEY) * 0.55 + PAL(CORRECT) * 0.55) * pop;
-  vec3 ldir = normalize(vec3(lightPos(), cs * 5.5) - vec3(v_screen, cs * 0.1 * s));
-  vec3 hv = normalize(ldir + vec3(0.0, 0.0, 1.0));
-  float ndh = max(dot(n, hv), 0.0);
-  float lightNear = exp(-pow(distance(v_screen, lightPos()) / (cs * 9.0), 2.0));
-  float spec = (pow(ndh, black ? 320.0 : 90.0) * (black ? 3.2 : 1.4) + pow(ndh, 12.0) * 0.03) * (paper() ? 0.45 : 1.0) * (0.45 + 0.55 * lightNear) * 0.55; // ACES clips harder than AgX
-  float fres = pow(1.0 - max(n.z, 0.0), 2.6);
-  vec3 col = body * (0.62 + 0.38 * max(dot(n, ldir), 0.0)) + PAL(KEY) * spec * (0.7 + 0.5 * lift) + (PAL(KEY) * 0.22 + seen * 0.7) * fres * (paper() ? 0.5 : 1.0);
-  col += PAL(KEY) * 0.1 * (1.0 - s) * max(-grad.y, 0.0);
-  col *= 1.0 - 0.22 * (1.0 - s) * max(grad.y, 0.0);
-  col += emissive;
-  o = vec4(tonemap(col) * coverage + tonemap(glow) * (1.0 - coverage), coverage);
+  return light;
+}
+
+vec3 ripples(vec2 p) {
+  float h = 0.0;
+  vec2 grad = vec2(0.0);
+  for (int k = 0; k < 6; k++) {
+    vec4 im = IMPULSE(k);
+    float age = now() - im.z;
+    if (age < 0.0 || age > 2.6 || im.w <= 0.0) continue;
+    vec2 dv = (p - im.xy) / pitch();
+    float r = length(dv) + 0.0001;
+    float front = age * 5.0;
+    float env = im.w * exp(-age * 1.9) * exp(-r * 0.3) * smoothstep(front + 0.9, front - 1.2, r);
+    float phase = (r - front) * 2.3;
+    h += sin(phase) * env;
+    grad += cos(phase) * 2.3 * env * dv / r;
+  }
+  return vec3(h, grad) * motion();
+}
+
+float softness(uint f) {
+  if (has(f, SETTLED)) return 0.15;
+  if (has(f, SOLVED_A) || has(f, SOLVED_D)) return 0.4;
+  if (has(f, LETTER)) return 0.7;
+  return 1.0;
+}
+
+float fracture(vec2 f, float seed) {
+  vec2 p = f * 2.4 + seed * 7.13;
+  vec2 base = floor(p);
+  float best = 9.0;
+  float second = 9.0;
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      vec2 o = base + vec2(float(x), float(y));
+      float d = length(p - (o + hash2(o + seed)));
+      if (d < best) { second = best; best = d; } else if (d < second) { second = d; }
+    }
+  }
+  return (second - best) / 2.4;
+}
+
+float caustic(vec2 u, vec2 bend) {
+  float t = now() * 0.32 * DIMS.w * motion() + 23.0;
+  vec2 p = (u + bend) * 1.45 - 250.0;
+  vec2 q = p;
+  float c = 1.0;
+  for (int n = 0; n < 4; n++) {
+    float tt = t * (1.0 - 3.5 / float(n + 1));
+    q = p + vec2(cos(tt - q.x) + sin(tt + q.y), sin(tt - q.y) + cos(tt + q.x));
+    c += 1.0 / length(vec2(p.x / (sin(q.x + tt) / 0.006), p.y / (cos(q.y + tt) / 0.006)));
+  }
+  c /= 4.0;
+  c = 1.17 - pow(c, 1.4);
+  float net = clamp(pow(abs(c), 8.0), 0.0, 1.5);
+  return max(net - 0.12, 0.0) * 1.25;
+}
+
+vec3 encode(vec3 c) {
+  return mix(1.055 * pow(max(c, 0.0), vec3(1.0 / 2.4)) - 0.055, c * 12.92, vec3(lessThanEqual(c, vec3(0.0031308))));
+}
+
+vec3 liquid(int cell, vec2 f, vec2 u, vec3 held, vec3 glow, vec3 wave, float along, bool cursor) {
+  uint flags = cell >= 0 ? flagsOf(cell) : 0u;
+  float soft = softness(flags);
+  vec3 light = held * caustic(u, wave.yz * 0.6 * soft) * 2.6 + glow * 0.05;
+  light += (held * 3.0 + glow + roomTint() * 0.04) * max(wave.x, 0.0) * soft * 0.5;
+  if (along >= 0.0 && FLAME.w > 0.5) {
+    float flow = pow(0.5 + 0.5 * sin((along * 1.6 - now() * 0.45 * DIMS.w) * TAU), 8.0);
+    light += FLAME.rgb * (0.03 + 0.07 * flow * motion()) * (1.0 - along * 0.6);
+  }
+  if (cell < 0) return light;
+  vec4 a = cellPart(cell, 1);
+  vec4 b = cellPart(cell, 2);
+  if (cursor) {
+    float breathe = 0.5 + 0.5 * sin(now() * 2.2 * DIMS.w);
+    light += FLAME.rgb * (0.04 + 0.03 * breathe * motion() + 0.18 * exp(-since(a.z) * 4.0));
+  }
+  float pressAge = since(a.w);
+  if (pressAge < 1.2) {
+    float r = max(abs(f.x - 0.5), abs(f.y - 0.5)) * 2.0;
+    float ring = exp(-pow((r - (1.0 - pressAge * 2.2)) / 0.08, 2.0)) * exp(-pressAge * 3.0);
+    light += (FLAME.rgb * 0.5 + held * 2.0) * ring * 0.5 * soft * motion();
+  }
+  if (has(flags, CORRECT)) {
+    float t = since(b.x);
+    light += vec3(0.55, 0.62, 0.58) * exp(-pow((f.x + f.y) * 0.5 - (t * 1.6 - 0.3), 2.0) * 90.0) * exp(-t * 1.1) * motion();
+  }
+  if (has(flags, WRONG)) {
+    float t = since(b.x);
+    float crack = 1.0 - smoothstep(0.0, 0.016, fracture(f, float(cell) * 0.618));
+    light += mix(vec3(1.0), RED.rgb, 0.45) * crack * (0.1 + 0.6 * exp(-t * 1.3)) + RED.rgb * 0.12 * exp(-t * 2.0);
+  }
+  if (has(flags, POP)) {
+    float t = since(b.y) - b.z * 0.38;
+    if (t > 0.0) {
+      vec4 sa = cellPart(cell, 3);
+      vec3 tone = has(flags, SOLVED_A) && sa.w >= 0.0 ? sa.rgb : cellPart(cell, 4).rgb;
+      light += tone * exp(-t * 3.0) * 0.45;
+    }
+  }
+  return light;
+}
+
+vec3 ceremonyAt(vec2 p) {
+  float t = now() - DIMS.z;
+  if (t <= 0.0 || t >= 5.0) return vec3(0.0);
+  float r = length(p - (BOARD.xy + BOARD.zw * 0.5)) / pitch();
+  return mix(ORANGE.rgb, BLUE.rgb, 0.5 + 0.5 * sin(r * 0.5)) * exp(-pow(r - t * 4.5, 2.0) * 0.35) * exp(-t * 0.6) * 0.4;
+}
+
+vec4 emit(vec3 light) {
+  vec3 l = light * (1.0 - 0.5 * MODE.w);
+  if (paper()) {
+    float peak = max(l.r, max(l.g, l.b));
+    return vec4(mix(vec3(1.0), l / max(peak, 0.0001), clamp(peak * 2.2, 0.0, 0.42)), 1.0);
+  }
+  vec3 o = encode(min(l, vec3(1.0)));
+  return vec4(o, max(o.r, max(o.g, o.b)));
+}
+
+vec2 viewPoint() { return vec2(gl_FragCoord.x, VIEW.y * VIEW.z - gl_FragCoord.y) / VIEW.z; }
+`;
+
+const QUAD_VS = /* glsl */ `#version 300 es
+precision highp float;
+uniform vec4 u_g[${GLOBAL_FLOATS / 4}];
+uniform highp sampler2D u_boxes;
+uniform int u_mode;
+flat out int v_box;
+void main() {
+  vec2 corner = vec2(float(gl_VertexID & 1), float(gl_VertexID >> 1));
+  vec4 rect = u_mode == 0 ? u_g[1] : texelFetch(u_boxes, ivec2(0, gl_InstanceID), 0);
+  vec2 ndc = (rect.xy + corner * rect.zw) / u_g[0].xy * 2.0 - 1.0;
+  gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);
+  v_box = gl_InstanceID;
+}
+`;
+
+const BOARD_FS =
+  COMMON +
+  /* glsl */ `
+flat in int v_box;
+out vec4 outColor;
+void main() {
+  vec2 p = viewPoint();
+  vec2 u = (p - GRID.xy) / pitch();
+  int i = cellAt(ivec2(floor(u)));
+  if (i < 0) { outColor = emit(vec3(0.0)); return; }
+  uint flags = flagsOf(i);
+  vec2 f = u - floor(u);
+  vec3 wave = ripples(p);
+  if (has(flags, BLACK)) { outColor = emit(notchGlow(u) * 0.12 + ceremonyAt(p)); return; }
+  vec4 a = cellPart(i, 1);
+  vec4 sa = cellPart(i, 3);
+  vec4 sd = cellPart(i, 4);
+  vec3 held = vec3(0.0);
+  if (sa.w >= 0.0 && !has(flags, SOLVED_A)) held += sa.rgb * waterLevel(sa.w, f.x) * SPILL.x * LANE.x;
+  if (sd.w >= 0.0 && !has(flags, SOLVED_D)) held += sd.rgb * waterLevel(sd.w, f.y) * SPILL.x * LANE.y;
+  float along = has(flags, WORD) ? max(a.y, 0.0) : -1.0;
+  outColor = emit(liquid(i, f, u, held, vec3(0.0), wave, along, has(flags, CURSOR)) + ceremonyAt(p));
+}
+`;
+
+const BOX_FS =
+  COMMON +
+  /* glsl */ `
+flat in int v_box;
+out vec4 outColor;
+void main() {
+  vec2 p = viewPoint();
+  vec4 rect = texelFetch(u_boxes, ivec2(0, v_box), 0);
+  vec4 tint = texelFetch(u_boxes, ivec2(1, v_box), 0);
+  vec4 info = texelFetch(u_boxes, ivec2(2, v_box), 0);
+  float lane = info.y;
+  vec4 clip = lane > 0.5 ? CLIP_D : CLIP_A;
+  if (any(lessThan(p, clip.xy)) || any(greaterThanEqual(p, clip.xy + clip.zw))) discard;
+  uint flags = uint(info.z);
+  vec2 f = (p - rect.xy) / rect.zw;
+  int cell = int(info.x);
+  float live = lane > 0.5 ? LANE.y : LANE.x;
+  bool solved = cell >= 0 && has(flagsOf(cell), lane > 0.5 ? SOLVED_D : SOLVED_A);
+  vec3 held = !solved && (flags & 64u) != 0u ? tint.rgb * waterLevel(tint.w, f.x) * SPILL.x * live : vec3(0.0);
+  float along = (flags & 2u) != 0u ? tint.w / max(info.w - 1.0, 1.0) : -1.0;
+  vec2 u = vec2(tint.w + f.x + lane * 7.3, f.y + floor(rect.y / rect.w) * 1.7);
+  outColor = emit(liquid(cell, f, u, held, vec3(0.0), vec3(0.0), along, (flags & 1u) != 0u));
 }
 `;
 
 function compile(gl: WebGL2RenderingContext, vertex: string, fragment: string): WebGLProgram {
   const shader = (type: number, source: string) => {
     const s = gl.createShader(type);
-    if (!s) throw new Error('Could not create a shader');
+    if (!s) throw new Error('Could not create shader');
     gl.shaderSource(s, source);
     gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'Shader did not compile');
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(`Glass shader: ${gl.getShaderInfoLog(s)}`);
     return s;
   };
   const program = gl.createProgram();
-  if (!program) throw new Error('Could not create a program');
+  if (!program) throw new Error('Could not create program');
   gl.attachShader(program, shader(gl.VERTEX_SHADER, vertex));
   gl.attachShader(program, shader(gl.FRAGMENT_SHADER, fragment));
   gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program) || 'Program did not link');
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(`Glass program: ${gl.getProgramInfoLog(program)}`);
   return program;
 }
 
 export function createWebGl2Glass(canvas: HTMLCanvasElement, onLost: LostHandler): WebGl2Glass {
-  const gl = canvas.getContext('webgl2', { premultipliedAlpha: true, alpha: true, antialias: false, powerPreference: 'high-performance' });
+  const gl = canvas.getContext('webgl2', { premultipliedAlpha: true, antialias: false });
   if (!gl) throw new Error('WebGL2 is not available');
   return new WebGl2Glass(canvas, gl, onLost);
 }
 
+interface Program {
+  program: WebGLProgram;
+  globals: WebGLUniformLocation | null;
+  cells: WebGLUniformLocation | null;
+  boxes: WebGLUniformLocation | null;
+  mode: WebGLUniformLocation | null;
+}
+
 export class WebGl2Glass implements GlassRenderer {
   readonly kind = 'webgl2' as const;
-  private readonly backdrop: WebGLProgram;
-  private readonly shadow: WebGLProgram;
-  private readonly tile: WebGLProgram;
+  private readonly board: Program;
+  private readonly box: Program;
   private readonly vao: WebGLVertexArrayObject;
-  private readonly cells: WebGLBuffer;
+  private readonly cellTexture: WebGLTexture;
+  private readonly boxTexture: WebGLTexture;
   private readonly globals = new Float32Array(GLOBAL_FLOATS);
-  private count = 0;
-  private capacity = 0;
+  private cellCount = 0;
+  private boxCount = 0;
   private cssWidth = 1;
   private cssHeight = 1;
   private pixelRatio = 1;
   private destroyed = false;
   private readonly lostListener: (event: Event) => void;
-  private readonly locations: Map<WebGLProgram, { globals: WebGLUniformLocation | null; pad: WebGLUniformLocation | null }>;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly gl: WebGL2RenderingContext,
     onLost: LostHandler,
   ) {
-    this.backdrop = compile(gl, FULL_VS, BACKDROP_FS);
-    this.shadow = compile(gl, TILE_VS, SHADOW_FS);
-    this.tile = compile(gl, TILE_VS, TILE_FS);
-    this.locations = new Map(
-      [this.backdrop, this.shadow, this.tile].map((program) => [program, { globals: gl.getUniformLocation(program, 'u_g'), pad: gl.getUniformLocation(program, 'u_pad') }]),
-    );
+    const locate = (program: WebGLProgram): Program => ({
+      program,
+      globals: gl.getUniformLocation(program, 'u_g'),
+      cells: gl.getUniformLocation(program, 'u_cells'),
+      boxes: gl.getUniformLocation(program, 'u_boxes'),
+      mode: gl.getUniformLocation(program, 'u_mode'),
+    });
+    this.board = locate(compile(gl, QUAD_VS, BOARD_FS));
+    this.box = locate(compile(gl, QUAD_VS, BOX_FS));
     const vao = gl.createVertexArray();
-    const cells = gl.createBuffer();
-    if (!vao || !cells) throw new Error('Could not create buffers');
+    const cells = gl.createTexture();
+    const boxes = gl.createTexture();
+    if (!vao || !cells || !boxes) throw new Error('Could not create resources');
     this.vao = vao;
-    this.cells = cells;
-    gl.bindVertexArray(vao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, cells);
-    for (let location = 0; location < 3; location += 1) {
-      gl.enableVertexAttribArray(location);
-      gl.vertexAttribPointer(location, 4, gl.FLOAT, false, CELL_FLOATS * 4, location * 16);
-      gl.vertexAttribDivisor(location, 1);
+    this.cellTexture = cells;
+    this.boxTexture = boxes;
+    for (const texture of [cells, boxes]) {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     }
-    gl.bindVertexArray(null);
     this.lostListener = (event: Event) => {
       event.preventDefault();
       if (!this.destroyed) onLost('WebGL context lost', false);
@@ -227,55 +380,61 @@ export class WebGl2Glass implements GlassRenderer {
     this.canvas.height = Math.round(this.cssHeight * this.pixelRatio);
   }
 
-  setScene(scene: GlassScene): void {
+  private upload(texture: WebGLTexture, texels: number, rows: number, data: Float32Array): void {
     const gl = this.gl;
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texels, Math.max(1, rows), 0, gl.RGBA, gl.FLOAT, data, 0);
+  }
+
+  setScene(scene: GlassScene): void {
     if (scene.globals) this.globals.set(scene.globals.subarray(0, GLOBAL_FLOATS));
     if (scene.cells) {
-      const count = scene.count ?? Math.floor(scene.cells.length / CELL_FLOATS);
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.cells);
-      if (count > this.capacity) {
-        this.capacity = count;
-        gl.bufferData(gl.ARRAY_BUFFER, scene.cells.subarray(0, count * CELL_FLOATS), gl.DYNAMIC_DRAW);
-      } else {
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, scene.cells, 0, count * CELL_FLOATS);
-      }
-      this.count = count;
+      this.cellCount = scene.count ?? Math.floor(scene.cells.length / CELL_FLOATS);
+      if (this.cellCount > 0) this.upload(this.cellTexture, CELL_TEXELS, this.cellCount, scene.cells.subarray(0, this.cellCount * CELL_FLOATS));
+    }
+    if (scene.boxes) {
+      this.boxCount = scene.boxCount ?? Math.floor(scene.boxes.length / BOX_FLOATS);
+      if (this.boxCount > 0) this.upload(this.boxTexture, BOX_TEXELS, this.boxCount, scene.boxes.subarray(0, this.boxCount * BOX_FLOATS));
     }
   }
 
   setCellState(index: number, floats: Float32Array): void {
-    if (index < 0 || index >= this.count) return;
+    if (index < 0 || index >= this.cellCount) return;
     const gl = this.gl;
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.cells);
-    gl.bufferSubData(gl.ARRAY_BUFFER, index * CELL_FLOATS * 4, floats, 0, CELL_FLOATS);
+    gl.bindTexture(gl.TEXTURE_2D, this.cellTexture);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, index, CELL_TEXELS, 1, gl.RGBA, gl.FLOAT, floats, 0);
   }
 
   frame(time: number): void {
     const gl = this.gl;
-    if (this.destroyed || gl.isContextLost()) return;
+    if (this.destroyed || gl.isContextLost() || this.cellCount === 0) return;
     this.globals[0] = this.cssWidth;
     this.globals[1] = this.cssHeight;
     this.globals[2] = this.pixelRatio;
     this.globals[3] = time;
+    const paper = this.globals[17] > 0.5;
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    gl.clearColor(0, 0, 0, 0);
+    // Light over the page is nothing; dye over the page is white.
+    gl.clearColor(paper ? 1 : 0, paper ? 1 : 0, paper ? 1 : 0, paper ? 1 : 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.disable(gl.BLEND);
     gl.bindVertexArray(this.vao);
-    const use = (program: WebGLProgram, pad: number | null) => {
-      const location = this.locations.get(program);
-      gl.useProgram(program);
-      gl.uniform4fv(location?.globals ?? null, this.globals);
-      if (pad !== null) gl.uniform1f(location?.pad ?? null, pad);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.cellTexture);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.boxTexture);
+    const use = (p: Program, mode: number) => {
+      gl.useProgram(p.program);
+      gl.uniform4fv(p.globals, this.globals);
+      gl.uniform1i(p.cells, 0);
+      gl.uniform1i(p.boxes, 1);
+      gl.uniform1i(p.mode, mode);
     };
-    use(this.backdrop, null);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-    if (this.count > 0) {
-      use(this.shadow, 0.36);
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.count);
-      use(this.tile, 0.55);
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.count);
+    use(this.board, 0);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    if (this.boxCount > 0) {
+      use(this.box, 1);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.boxCount);
     }
     gl.bindVertexArray(null);
   }
@@ -289,10 +448,10 @@ export class WebGl2Glass implements GlassRenderer {
     this.destroyed = true;
     this.canvas.removeEventListener('webglcontextlost', this.lostListener);
     const gl = this.gl;
-    gl.deleteProgram(this.backdrop);
-    gl.deleteProgram(this.shadow);
-    gl.deleteProgram(this.tile);
-    gl.deleteBuffer(this.cells);
+    gl.deleteProgram(this.board.program);
+    gl.deleteProgram(this.box.program);
+    gl.deleteTexture(this.cellTexture);
+    gl.deleteTexture(this.boxTexture);
     gl.deleteVertexArray(this.vao);
   }
 }

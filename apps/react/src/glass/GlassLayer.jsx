@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { readGlassFlag } from './flag';
 import { GlassEngine } from './engine';
-import { weekdayIndex } from './palette';
 import './glass.css';
 
 // The optional glass layer behind the board (?gpu=1, or the stored override;
@@ -14,13 +13,12 @@ import './glass.css';
 /**
  * @param {{
  *   gridRef: { current: HTMLElement | null },
- *   weekday: string,
  *   light: boolean,
  *   direction: 'across' | 'down',
  *   onBackend: (backend: 'webgpu' | 'webgl2' | null) => void,
  * }} props
  */
-export default function GlassLayer({ gridRef, weekday, light, direction, onBackend }) {
+export default function GlassLayer({ gridRef, light, direction, onBackend }) {
   const [flag] = useState(() => readGlassFlag(
     typeof window === 'undefined' ? '' : window.location.search,
     typeof window === 'undefined' ? null : window.localStorage,
@@ -29,7 +27,7 @@ export default function GlassLayer({ gridRef, weekday, light, direction, onBacke
   const debug = useRef(/** @type {HTMLDivElement | null} */ (null));
   const report = useRef(onBackend);
   report.current = onBackend;
-  const mood = { weekday: weekdayIndex(weekday), light, direction };
+  const mood = { light, direction };
   const latestMood = useRef(mood);
   latestMood.current = mood;
 
@@ -56,7 +54,7 @@ export default function GlassLayer({ gridRef, weekday, light, direction, onBacke
 
   useEffect(() => {
     engine.current?.setMood(mood);
-  }, [mood.weekday, mood.light, mood.direction]);
+  }, [mood.light, mood.direction]);
 
   if (!flag.debug) return null;
   return <div className="glass-debug" ref={debug} aria-hidden="true" />;

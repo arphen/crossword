@@ -702,7 +702,7 @@ export default function CrosswordView({
                     {/* Crossword Grid */}
                     <div id="crossword-container">
                         <div className="board-glow" ref={glowRef} aria-hidden="true"></div>
-                        <GlassLayer gridRef={boardRef} weekday={displayedPuzzleWeekday(app, displayWeekday)} light={!app.isDarkMode} direction={app.activeDirection === 'down' ? 'down' : 'across'} onBackend={setGlass} />
+                        <GlassLayer gridRef={boardRef} light={!app.isDarkMode} direction={app.activeDirection === 'down' ? 'down' : 'across'} onBackend={setGlass} />
                         <div className="grid" ref={boardRef} style={{ gridTemplateRows: `repeat(${grid.length}, var(--cell-size))` }}>
                             {grid.map((row, rowIndex) => (
                                 <div className="grid-row" key={rowIndex} style={{ gridTemplateColumns: `repeat(${row.length}, var(--cell-size))` }}>
