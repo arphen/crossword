@@ -271,6 +271,40 @@ it('publishes each answer\u2019s fading light on its squares', async () => {
   }
 });
 
+it('follows the direction being solved, so CSS can light one lane at a time', async () => {
+  const host = await mountBoard();
+  const { app } = controllers[controllers.length - 1];
+  const across = app.crossword.find((entry) => entry.direction === 'across');
+  const down = app.crossword.find((entry) => entry.direction === 'down');
+  await act(async () => { app.handle_clue_click({}, down); });
+  expect(board(host).dataset.direction).toBe('down');
+  await act(async () => { app.handle_clue_click({}, across); });
+  expect(board(host).dataset.direction).toBe('across');
+});
+
+it('settles a solved word’s own squares, not the ones an open word still crosses', async () => {
+  const host = await mountBoard();
+  const { app } = controllers[controllers.length - 1];
+  // Solve only the Down word: NEVER, down the first column.
+  await act(async () => {
+    [...'NEVER'].forEach((letter, row) => { app.grid[row][0] = letter; });
+    app.check_all();
+  });
+  const square = (row, column) => host.querySelectorAll('.grid-row')[row].querySelectorAll('.grid-cell')[column];
+  // The middle of the column belongs to that word alone: finished with.
+  expect(square(2, 0).getAttribute('data-solved')).toBe('down');
+  expect(square(2, 0).hasAttribute('data-solved-all')).toBe(true);
+  // The top and the foot are also the starts of open Across words, so their
+  // letters are still clues there and keep most of their contrast.
+  for (const row of [0, 4]) {
+    expect(square(row, 0).getAttribute('data-solved')).toBe('down');
+    expect(square(row, 0).hasAttribute('data-solved-all')).toBe(false);
+  }
+  // Squares of unsolved words carry neither mark.
+  expect(square(0, 5).hasAttribute('data-solved')).toBe(false);
+  expect(square(0, 5).hasAttribute('data-solved-all')).toBe(false);
+});
+
 it('hands the appearance back to CSS when a view choice changes', async () => {
   const host = await mountBoard();
   await choose(host, 'Letter track', 'Solid');
@@ -294,4 +328,96 @@ it('resizes the board without losing the settings it started with', async () => 
   await choose(host, 'Board size', 'L');
   expect(board(host).dataset).toMatchObject({ scale: 'full', grouping: 'auto', cues: 'on' });
   expect(JSON.parse(localStorage.getItem(VIEW_SETTINGS_KEY))).toMatchObject({ scale: 'full' });
+});
+
+it('marks a shaded square on the board and in the clue letters it belongs to', async () => {
+  const shaded = entries();
+  // The third square of NEVERSOONER (the second E) is shaded; it is only an
+  // Across square, so it appears in exactly one clue's letter track.
+  shaded[0].characters[2] = { letters: 'V', is_shaded: true };
+  const host = await mountBoard(shaded);
+  const square = (row, column) => host.querySelectorAll('.grid-row')[row].querySelectorAll('.grid-cell')[column];
+  expect(square(0, 2).classList.contains('shaded')).toBe(true);
+  expect(square(0, 1).classList.contains('shaded')).toBe(false);
+  const across = host.querySelector('#across .state-container');
+  expect([...across.querySelectorAll('.state')].map((box) => box.classList.contains('shaded')).indexOf(true)).toBe(2);
+  expect(across.querySelectorAll('.state.shaded')).toHaveLength(1);
+  // The Down word does not pass through it.
+  expect(host.querySelectorAll('#down .state.shaded')).toHaveLength(0);
+});
+
+it('keeps a clue on the ladder when another clue with the same wording is solved', async () => {
+  // Cross-references often repeat word for word; solving one must not take the
+  // other with it.
+  const twins = entries();
+  twins[1].clue_text = twins[0].clue_text;
+  const host = await mountBoard(twins);
+  const { app } = controllers[controllers.length - 1];
+  await act(async () => {
+    [...'NEVERSOONER'].forEach((letter, column) => { app.grid[0][column] = letter; });
+    app.check_all();
+  });
+  expect(app.completedWords.size).toBe(1);
+  // Let the celebration release the solved row.
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 3600)); });
+  expect(host.querySelectorAll('#across > li')).toHaveLength(1);
+  expect([...host.querySelectorAll('#down > li .clue-text')].map((text) => text.textContent)).toEqual([twins[0].clue_text]);
+});
+
+it('draws a puzzle padded with a black column without the black bar', async () => {
+  // The feed reports a square grid; this one carries a blank column on its
+  // left, as cached puzzles from before the server trimmed it still do.
+  const padded = entries().map((entry) => ({ ...entry, start_x: entry.start_x + 1 }));
+  const host = await mountBoard(padded);
+  const { app } = controllers[controllers.length - 1];
+  expect(app.grid[0]).toHaveLength(11);
+  expect(app.currentPuzzleMetadata.width).toBe(11);
+  const columns = app.grid[0].length;
+  for (let column = 0; column < columns; column += 1) {
+    expect([column, app.grid.every((row) => row[column] === null)]).toEqual([column, false]);
+  }
+  expect(host.querySelectorAll('.grid-row')[0].querySelectorAll('.grid-cell')).toHaveLength(11);
+});
+
+it('plays a check back word by word, then lands the solved state at once', async () => {
+  const host = await mountBoard();
+  const { app } = controllers[controllers.length - 1];
+  // 1-Across right, and one wrong letter at the start of the bottom row.
+  await act(async () => {
+    [...'NEVERSOONER'].forEach((letter, column) => { app.grid[0][column] = letter; });
+    app.grid[4][1] = 'X';
+    app.$forceUpdate();
+  });
+  await act(async () => { host.querySelector('#check-all').click(); });
+  expect(app.lastCheck.beats.map((beat) => beat.kind)).toEqual(['word', 'break']);
+  // The click's own frame paints nothing and restyles nothing: the board is
+  // still drawn as it stood, with the solved row held on the ladder.
+  expect(host.querySelectorAll('.grid-cell input:is(.green, .red)')).toHaveLength(0);
+  expect(host.querySelector('.grid-cell[data-solved]')).toBeNull();
+  expect(host.querySelector('#across li[data-entry="across-1"]')).not.toBeNull();
+  // Then the sequence plays out and lands.
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 2600)); });
+  expect(host.querySelectorAll('.grid-row')[0].querySelector('input').classList.contains('green')).toBe(true);
+  expect(host.querySelectorAll('.grid-row')[4].querySelectorAll('input')[1].classList.contains('red')).toBe(true);
+  expect(host.querySelector('#across li[data-entry="across-1"]')).toBeNull();
+  expect(host.querySelector('.grid-cell[data-solved]')).not.toBeNull();
+  expect(host.querySelector('.combo-meter .combo-points').textContent).toBe(String(app.points));
+  expect(app.combo).toBe(0);
+});
+
+it('leaves the glass layer off unless asked, and never breaks the board when it is', async () => {
+  const plain = await mountBoard();
+  expect(plain.querySelector('.glass-canvas')).toBeNull();
+  expect(board(plain).dataset.glass).toBeUndefined();
+
+  // Asked for through the stored override: whatever this environment can
+  // draw with (WebGPU, WebGL2 or nothing), the board the DOM draws stays whole.
+  localStorage.setItem('crossword.gpu', '1');
+  const host = await mountBoard();
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 300)); });
+  const backend = board(host).dataset.glass;
+  expect([undefined, 'webgpu', 'webgl2']).toContain(backend);
+  expect(host.querySelectorAll('.grid-cell input').length).toBe(plain.querySelectorAll('.grid-cell input').length);
+  // A layer that could not start leaves nothing behind.
+  if (!backend) expect(host.querySelector('.glass-canvas')).toBeNull();
 });

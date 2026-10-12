@@ -790,8 +790,9 @@ export class FutureSessionRecorder {
               ) === checkedEntry.id,
           );
           if (matchingClue) {
-            if (isCorrect) app.completedWords.add(matchingClue.clue_text);
-            else app.completedWords.delete(matchingClue.clue_text);
+            const key = `${matchingClue.direction}-${matchingClue.clue_number}`;
+            if (isCorrect) app.completedWords.add(key);
+            else app.completedWords.delete(key);
           }
         }
       }
@@ -830,7 +831,8 @@ export class FutureSessionRecorder {
       const id = this.canonicalEntryId(
         `${entry.direction}-${entry.clue_number}`,
       );
-      if (checked.get(id) === true) app.completedWords.add(entry.clue_text);
+      if (checked.get(id) === true)
+        app.completedWords.add(`${entry.direction}-${entry.clue_number}`);
     }
   }
 

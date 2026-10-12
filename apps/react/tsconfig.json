@@ -15,10 +15,11 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.d.ts", "vite.config.js"],
+  "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "vite.config.js"],
   "exclude": [
     "src/**/*.test.js",
     "src/**/*.test.jsx",
+    "src/**/*.test.ts",
     "src/controller.js",
     "src/behavior/desktop.js",
     "src/behavior/mobile.js"

@@ -55,9 +55,10 @@ const round = (value) => Math.round(value * 10) / 10;
  * A coil from `from` to `to`: a prolate trochoid, the curve a helix makes when it
  * is drawn at a slant, which is what a spring looks like in a diagram. The radius
  * is eased in over the first and last tenth so both ends meet their chip on the
- * axis instead of mid-swing.
+ * axis instead of mid-swing. `phase` turns the helix about its axis, which is
+ * how a coil being shaken looks.
  */
-export function coilPath(from, to, { coils, radius, loop }) {
+export function coilPath(from, to, { coils, radius, loop, phase = 0 }) {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const length = Math.hypot(dx, dy);
@@ -72,7 +73,7 @@ export function coilPath(from, to, { coils, radius, loop }) {
   const points = [];
   for (let step = 0; step <= steps; step += 1) {
     const s = step / steps;
-    const theta = turn * s;
+    const theta = turn * s + phase;
     const ease = smooth(Math.min(1, s / 0.1, (1 - s) / 0.1));
     const along = length * s - ease * loopRadius * Math.sin(theta);
     const across = ease * radius * Math.cos(theta);
@@ -105,6 +106,8 @@ export function springSegments({ chips, numbers, ramp, states = [], lane = 'lane
     const pair = [states[index], states[index + 1]];
     segments.push({
       key: `${lane}-${numbers[index]}-${numbers[index + 1]}`,
+      fromNumber: numbers[index],
+      toNumber: numbers[index + 1],
       d,
       from: ends.from,
       to: ends.to,

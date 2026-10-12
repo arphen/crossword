@@ -1,5 +1,8 @@
 // Solver behavior for the React desktop client (frozen port; the Vue
 // originals are shelved in git history).
+import { entryKey } from '../entryKey';
+import { moveManifestIntoFrame, trimPuzzleFrame } from '../puzzleFrame';
+import { breakCombo, forfeitCombo, scoreCheck } from '../combo';
 //
 // Writable-first focus: grid inputs persist across renders (stable keys), so
 // handlers focus the live node synchronously instead of waiting for the
@@ -56,7 +59,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             direction: 'across',
             isChecking: false,
             baseUrl: window.location.origin,
-            completedWords: new Set(),  // Track completed words
+            completedWords: new Set(),  // Solved clues, by entryKey (`across-17`), never by wording
             activeClueNumber: null,  // Track which clue is active for highlighting
             activeDirection: null,   // Track active clue's direction
             isOffline: false,
@@ -98,6 +101,11 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             currentPuzzleMetadata: null, // To store metadata of the currently loaded puzzle
             currentPuzzleManifest: null, // Optional versioned puzzle document supplied by the host
             score: 100, // Starting score
+            points: 0, // Combo points (combo.js): words solved, times the run's multiplier
+            combo: 0, // Words solved in a row since the last mistake or reveal
+            bestCombo: 0,
+            comboAwarded: [], // Entry keys already paid for, so a re-solve earns nothing
+            lastCheck: null, // What the last check found, for the view to play back
             timer: 0, // Time in seconds
             timerInterval: null, // Timer interval reference
             showFireworks: false, // Display fireworks overlay
@@ -107,6 +115,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             lastLoadedWeekday: 'monday',
             checksUsed: 0, // Track number of times check_all was used
             revealsUsed: 0, // Track number of individual cells revealed
+            revealedAll: false, // The whole puzzle was revealed: no points for it any more
             showRebusMenu: false, // Show rebus context menu
             rebusInputValue: '', // Value in rebus input
             rebusMenuCell: { row: -1, col: -1 }, // Current rebus cell being edited
@@ -571,14 +580,36 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
         init() {
             this.clearChecks(); // Reset visual indicators
             this.completedWords.clear(); // Clear completed words
+            this.fitPuzzleFrame(); // Cut away black padding around a rectangular grid
             this.buildCellMap();  // Build cell map from crossword entries with new Character model
             this.calculateGridSize();
             this.generateGrid();  // Now creates full grid of black squares
             this.placeWords();    // Replaces black squares with actual cells
             this.startTimer();
             this.score = 100; // Reset score for new puzzle
+            this.points = 0;
+            this.combo = 0;
+            this.bestCombo = 0;
+            this.comboAwarded = [];
+            this.lastCheck = null;
             this.checksUsed = 0; // Reset checks counter
             this.revealsUsed = 0; // Reset reveals counter
+            this.revealedAll = false;
+        },
+        fitPuzzleFrame() {
+            // The feed pads rectangular grids to a square with whole rows or
+            // columns of black squares, on any side; the server trims them now,
+            // and puzzles cached before it did are trimmed here, the same way,
+            // so every client agrees on coordinates. Puzzles carrying a token
+            // manifest are generated in-frame and address squares by
+            // coordinate, so they are left exactly as they are.
+            if (this.currentPuzzleTokenManifest) return;
+            const metadata = this.currentPuzzleMetadata;
+            const frame = trimPuzzleFrame({ entries: this.crossword, width: metadata?.width, height: metadata?.height });
+            if (!frame.trimmed) return;
+            this.crossword = frame.entries;
+            if (metadata) this.currentPuzzleMetadata = { ...metadata, width: frame.width, height: frame.height };
+            if (this.currentPuzzleManifest) this.currentPuzzleManifest = moveManifestIntoFrame(this.currentPuzzleManifest, frame);
         },
         buildCellMap() {
             // Build a map of (x,y) -> cell object from clean Character model
@@ -682,7 +713,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 this.isDarkMode = true;
             }
         },
-        check_all() {
+        check_all({ deferVerdicts = false } = {}) {
             if (this.isChecking) {
                 this.clearChecks();
                 return;
@@ -692,9 +723,17 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             this.checksUsed++; // Increment checks counter
             let allCorrect = true;
             let hasErrors = false; // Track if any incorrect letters found
+            // What this check found, for the combo and for a view that plays
+            // the verdicts back over a moment rather than all in one frame
+            // (deferVerdicts: the classes are then the view's to apply).
+            const verdicts = new Map();
+            const gained = [];
+            const wrongCells = new Set();
 
             this.crossword.forEach(entry => {
                 let isWordCorrect = true;  // Track if entire word is correct
+                const key = entryKey(entry);
+                const wasComplete = this.completedWords.has(key);
 
                 for (let i = 0; i < entry.characters.length; i++) {
                     const x = entry.direction === 'across' ? entry.start_x + i : entry.start_x;
@@ -710,17 +749,24 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                     // visual surface only.
                     const value = String(this.grid[y]?.[x] ?? '').toLowerCase();
                     const correct = entry.characters[i].letters.toLowerCase();
+                    const verdict = value === '' ? 'blank' : value === correct ? 'green' : 'red';
+                    verdicts.set(`${y},${x}`, verdict);
 
-                    if (value === '') {
-                        input.classList.remove('red', 'green');
+                    if (verdict === 'blank') {
+                        if (!deferVerdicts) input.classList.remove('red', 'green');
                         isWordCorrect = false;
                         allCorrect = false;
-                    } else if (value === correct) {
-                        input.classList.add('green');
-                        input.classList.remove('red');
+                    } else if (verdict === 'green') {
+                        if (!deferVerdicts) {
+                            input.classList.add('green');
+                            input.classList.remove('red');
+                        }
                     } else {
-                        input.classList.add('red');
-                        input.classList.remove('green');
+                        if (!deferVerdicts) {
+                            input.classList.add('red');
+                            input.classList.remove('green');
+                        }
+                        wrongCells.add(`${y},${x}`);
                         isWordCorrect = false;
                         allCorrect = false;
                         hasErrors = true;
@@ -728,25 +774,49 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                 }
 
                 // If entry is completely correct, add it to completedWords
+                // Keyed by lane and number: two clues can share their wording.
                 if (isWordCorrect) {
-                    this.completedWords.add(entry.clue_text);
+                    this.completedWords.add(key);
+                    if (!wasComplete) gained.push(entry);
                 } else {
                     // If entry was previously marked as complete but is now incorrect, remove it
-                    this.completedWords.delete(entry.clue_text);
+                    this.completedWords.delete(key);
                 }
             });
 
-            // Deduct points if there were errors (but keep score >= 0)
-            if (hasErrors) {
+            // Deduct points if there were errors (but keep score >= 0); a
+            // revealed puzzle stays at zero.
+            if (this.revealedAll) {
+                this.score = 0;
+            } else if (hasErrors) {
                 this.score = Math.max(0, this.score - 10);
             }
+
+            // The combo: the words this check solved, in reading order (by
+            // number, Across before Down at a shared number), then any break.
+            gained.sort((a, b) => a.clue_number - b.clue_number || (a.direction === 'across' ? -1 : 1));
+            const scored = scoreCheck(this.comboState(), {
+                gained: gained.map(entry => ({ key: entryKey(entry), length: entry.characters.length })),
+                wrong: wrongCells.size,
+            });
+            this.applyComboState(scored.state);
+            // A revealed puzzle's words were not solved: the check settles
+            // them quietly, with no celebration to play.
+            this.lastCheck = {
+                id: (this.lastCheck?.id || 0) + 1,
+                gained: this.revealedAll ? [] : gained.map(entryKey),
+                beats: this.revealedAll ? [] : scored.beats,
+                wrongCells: [...wrongCells],
+                verdicts: deferVerdicts ? [...verdicts] : null,
+                complete: allCorrect,
+            };
 
             // If all words are correct, mark the puzzle as solved
             if (allCorrect) {
                 this.stopTimer(); // Stop the timer when puzzle is complete
 
-                // Celebrate with fireworks and sounds!
-                this.celebrateCompletion();
+                // Celebrate with fireworks and sounds! (Not a revealed one.)
+                if (!this.revealedAll) this.celebrateCompletion();
 
                 const puzzleId = this.getPuzzleId(this.currentPuzzleMetadata);
                 if (puzzleId) {
@@ -754,6 +824,19 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
                     this.markPuzzleSolved(day, puzzleId);
                 }
             }
+        },
+        comboState() {
+            return { points: this.points, combo: this.combo, best: this.bestCombo, awarded: this.comboAwarded };
+        },
+        applyComboState(next) {
+            this.points = next.points;
+            this.combo = next.combo;
+            this.bestCombo = next.best;
+            this.comboAwarded = next.awarded;
+        },
+        breakCombo(reason = 'reveal') {
+            if (!this.combo) return;
+            this.applyComboState(breakCombo(this.comboState(), reason).state);
         },
         getCurrentDay() {
             // Get the day of week from the puzzle metadata date
@@ -1155,6 +1238,8 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
 
                         // Deduct points for revealing a letter (but keep score >= 0)
                         this.score = Math.max(0, this.score - 20);
+                        // A reveal ends the combo run (it keeps its points).
+                        this.breakCombo('reveal');
 
                         // Clear any check marks if they're showing
                         if (this.isChecking) {
@@ -1236,7 +1321,7 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
             });
         },
         revealAll() {
-            if (!confirm('Are you sure you want to reveal all answers? This will complete the puzzle but reduce your score.')) {
+            if (!confirm('Are you sure you want to reveal all answers? This will complete the puzzle and set your score to zero.')) {
                 return;
             }
 
@@ -1257,8 +1342,11 @@ export function createOptions({ axios, socket, ROOM_ID, INITIAL_ROLE, setTimeout
 
             this.$forceUpdate();
 
-            // Heavy score penalty for revealing all
-            this.score = Math.max(0, this.score - 50);
+            // Revealing everything means the puzzle was not solved: the score
+            // and the combo points go to zero and stay there for this puzzle.
+            this.revealedAll = true;
+            this.score = 0;
+            this.applyComboState(forfeitCombo(this.comboState(), this.crossword.map(entryKey)).state);
 
             // Clear any check marks if they're showing
             if (this.isChecking) {
